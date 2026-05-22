@@ -1,0 +1,280 @@
+[gd_scene load_steps=16 format=3 uid="uid://dck01ibc7cr71"]
+
+[ext_resource type="Script" uid="uid://cmtlynk8dabtw" path="res://Scripts/Nodes/NCharacterSelector.cs" id="1_lsn80"]
+[ext_resource type="Texture2D" uid="uid://bx7y6ggsxsgty" path="res://Resources/images/sceneui/bg_gray.9d1fe428.png" id="1_wb8iy"]
+[ext_resource type="Shader" uid="uid://8uf51kmnmlpy" path="res://Resources/shaders/mix_color_and_line.gdshader" id="3_d01qe"]
+[ext_resource type="Texture2D" uid="uid://2d3vyqtct4cj" path="res://Resources/images/sceneui/img_sakiko-togawa_2.webp" id="4_h6w26"]
+[ext_resource type="FontVariation" uid="uid://b8ce4a71ref23" path="res://themes/spectral_bold_shared.tres" id="5_6ssl6"]
+[ext_resource type="Texture2D" uid="uid://cknkfj7wdeoq1" path="res://Resources/images/sceneui/health.png" id="6_qx2vw"]
+[ext_resource type="FontVariation" uid="uid://c7kiei3ejbckl" path="res://themes/fonts/jpn/noto_sans_cjkjp_medium_shared.tres" id="7_1vjgo"]
+[ext_resource type="Texture2D" uid="uid://1efrtqal7gmo" path="res://Resources/images/sceneui/gold.png" id="7_qx2vw"]
+[ext_resource type="Shader" uid="uid://cqflpm46dms13" path="res://Resources/shaders/set_color.gdshader" id="7_wb8iy"]
+[ext_resource type="Texture2D" uid="uid://7rsapkx7gv6" path="res://Resources/images/sceneui/music_draw.png" id="8_lsn80"]
+[ext_resource type="FontVariation" uid="uid://b31wycusbsq8w" path="res://themes/fonts/jpn/noto_sans_cjkjp_bold_shared.tres" id="11_pypbo"]
+[ext_resource type="Script" uid="uid://c2oywrx8xbqfx" path="res://addons/mega_text/MegaRichTextLabel.cs" id="12_5vb0t"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_3jwpl"]
+bg_color = Color(1, 1, 1, 1)
+border_width_right = 5
+border_color = Color(0.46666667, 0.6, 0.8, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_h6w26"]
+shader = ExtResource("3_d01qe")
+shader_parameter/bg_color = Color(0.46666667, 0.6, 0.8, 1)
+shader_parameter/line_color = Color(0.95686275, 0.95686275, 0.95686275, 0.4117647)
+shader_parameter/line_count = 5
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_dkolo"]
+shader = ExtResource("7_wb8iy")
+shader_parameter/target_color = Color(0.34220693, 0.34220695, 0.3422069, 1)
+
+[node name="CharacterSelector" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+offset_left = 349.0
+offset_top = 98.0
+offset_right = 349.0
+offset_bottom = 98.0
+script = ExtResource("1_lsn80")
+
+[node name="ScreenBackground" type="TextureRect" parent="."]
+layout_mode = 0
+offset_left = -1067.0
+offset_top = -435.0
+offset_right = 2422.0
+offset_bottom = 1531.0
+texture = ExtResource("1_wb8iy")
+
+[node name="ShowCharacterInfo" type="Panel" parent="."]
+custom_minimum_size = Vector2(700, 400)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = 342.5
+offset_top = 205.5
+offset_right = 1577.5
+offset_bottom = 875.5
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_3jwpl")
+
+[node name="CharacterButtons" type="VBoxContainer" parent="ShowCharacterInfo"]
+unique_name_in_owner = true
+show_behind_parent = true
+layout_mode = 1
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 0
+grow_vertical = 2
+theme_override_constants/separation = 80
+
+[node name="SplitContainer" type="SplitContainer" parent="ShowCharacterInfo"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+split_offset = 550
+dragging_enabled = false
+dragger_visibility = 2
+
+[node name="ShowBg" type="Panel" parent="ShowCharacterInfo/SplitContainer"]
+material = SubResource("ShaderMaterial_h6w26")
+layout_mode = 2
+
+[node name="CharacterPoster" type="TextureRect" parent="ShowCharacterInfo/SplitContainer/ShowBg"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -200.0
+offset_top = -160.0
+offset_right = 200.0
+offset_bottom = 240.0
+grow_horizontal = 2
+grow_vertical = 2
+pivot_offset = Vector2(475, 535)
+texture = ExtResource("4_h6w26")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Introduction" type="Control" parent="ShowCharacterInfo/SplitContainer"]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="ShowCharacterInfo/SplitContainer/Introduction"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 80
+theme_override_constants/margin_top = 40
+theme_override_constants/margin_right = 80
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="SmallIntro" type="Label" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+modulate = Color(0.46666667, 0.6, 0.8, 1)
+layout_mode = 2
+text = "Key.  Sakiko Togawa"
+
+[node name="ClassLabel" type="Label" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.07450981, 0.105882354, 0.16470589, 1)
+theme_override_font_sizes/font_size = 42
+text = "Key.  "
+
+[node name="BigIntro" type="Label" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.07450981, 0.105882354, 0.16470589, 1)
+theme_override_font_sizes/font_size = 60
+text = "丰川祥子"
+
+[node name="HealthAndGold" type="SplitContainer" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+split_offset = 150
+dragging_enabled = false
+dragger_visibility = 1
+
+[node name="Health" type="Control" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer/VBoxContainer/HealthAndGold"]
+layout_mode = 2
+
+[node name="Icon" type="TextureRect" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer/VBoxContainer/HealthAndGold/Health"]
+modulate = Color(0.07450981, 0.105882354, 0.16470589, 1)
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_top = -16.0
+offset_right = 32.0
+offset_bottom = 16.0
+grow_vertical = 2
+texture = ExtResource("6_qx2vw")
+expand_mode = 1
+
+[node name="HealthLabel" type="Label" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer/VBoxContainer/HealthAndGold/Health"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 50.0
+offset_top = -17.0
+offset_right = 77.0
+offset_bottom = 17.0
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.07450981, 0.105882354, 0.16470589, 1)
+theme_override_font_sizes/font_size = 24
+text = "75"
+
+[node name="Gold" type="Control" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer/VBoxContainer/HealthAndGold"]
+layout_mode = 2
+
+[node name="TextureRect" type="TextureRect" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer/VBoxContainer/HealthAndGold/Gold"]
+modulate = Color(0.07450981, 0.105882354, 0.16470589, 1)
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_top = -16.0
+offset_right = 32.0
+offset_bottom = 16.0
+grow_vertical = 2
+texture = ExtResource("7_qx2vw")
+expand_mode = 1
+
+[node name="GoldLabel" type="Label" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer/VBoxContainer/HealthAndGold/Gold"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 50.0
+offset_top = -17.0
+offset_right = 90.0
+offset_bottom = 17.0
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.07450981, 0.105882354, 0.16470589, 1)
+theme_override_font_sizes/font_size = 24
+text = "99"
+
+[node name="SpiltLine1" type="Control" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Line2D" type="Line2D" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer/VBoxContainer/SpiltLine1"]
+points = PackedVector2Array(0, 0, 520, 0)
+width = 2.0
+default_color = Color(0.07450981, 0.105882354, 0.16470589, 0.53333336)
+
+[node name="Description" type="RichTextLabel" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/default_color = Color(0.07450981, 0.105882354, 0.16470589, 1)
+theme_override_fonts/normal_font = ExtResource("7_1vjgo")
+bbcode_enabled = true
+text = "羽丘女子学园高一学生。丰川集团的千金小姐，谈吐温文尔雅。她下定决心要背负所有团员的人生，构筑起了AveMujica。为了守护AveMujica的世界观，她倾投入了全部的心血。"
+fit_content = true
+shortcut_keys_enabled = false
+
+[node name="SpiltLine2" type="Control" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Line2D" type="Line2D" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer/VBoxContainer/SpiltLine2"]
+points = PackedVector2Array(0, 0, 520, 0)
+width = 2.0
+default_color = Color(0.07450981, 0.105882354, 0.16470589, 0.53333336)
+
+[node name="Relic" type="SplitContainer" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 84)
+layout_mode = 2
+split_offset = 90
+
+[node name="RelicIcon" type="TextureRect" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer/VBoxContainer/Relic"]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_dkolo")
+layout_mode = 2
+texture = ExtResource("8_lsn80")
+expand_mode = 1
+stretch_mode = 4
+
+[node name="RelicInfo" type="VBoxContainer" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer/VBoxContainer/Relic"]
+layout_mode = 2
+
+[node name="RelicName" type="Label" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer/VBoxContainer/Relic/RelicInfo"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.07450981, 0.105882354, 0.16470589, 1)
+theme_override_fonts/font = ExtResource("5_6ssl6")
+theme_override_font_sizes/font_size = 20
+text = "合成器"
+
+[node name="RelicDescription" type="RichTextLabel" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer/VBoxContainer/Relic/RelicInfo"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/default_color = Color(0.07450981, 0.105882354, 0.16470589, 1)
+theme_override_fonts/normal_font = ExtResource("11_pypbo")
+bbcode_enabled = true
+text = "每场战斗首次打出带有[gold]休止[/gold]效果的卡牌时，不会消耗[gold]余音[/gold]。"
+fit_content = true
+script = ExtResource("12_5vb0t")
+theme_override_colors/default_color = Color(0.07450981, 0.105882354, 0.16470589, 1)
+theme_override_fonts/normal_font = ExtResource("11_pypbo")
+metadata/_custom_type_script = "uid://c2oywrx8xbqfx"

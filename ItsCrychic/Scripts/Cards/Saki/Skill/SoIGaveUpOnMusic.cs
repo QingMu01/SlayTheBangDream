@@ -1,0 +1,64 @@
+using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Utils;
+using MegaCrit.Sts2.Core.Commands;
+using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using MegaCrit.Sts2.Core.Localization.DynamicVars;
+using STS2RitsuLib.Keywords;
+
+namespace ItsCrychic.Scripts.Cards.Saki.Skill;
+
+public class SoIGaveUpOnMusic() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget)
+{
+    private const int CustomCost = 1;
+    private const CardType CustomType = CardType.Skill;
+    private const CardRarity CustomRarity = CardRarity.Rare;
+    private const TargetType CustomTarget = TargetType.None;
+
+    protected override bool IsPlayable => IsDupe || Owner.AttachedNode().PerformanceManager.Capacity > 0;
+
+    protected override IEnumerable<CardKeyword> CardKeywords =>
+    [
+        CardKeyword.Exhaust,
+        BangDreamConst.KeywordPerformanceArea.GetModCardKeyword()
+    ];
+
+    protected override IEnumerable<DynamicVar> CardVars =>
+    [
+        new CardsVar(1),
+        new IntVar("Cost", 1)
+    ];
+
+    protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
+    {
+        ArgumentNullException.ThrowIfNull(Owner.PlayerCombatState);
+
+        var drawPileCards = Owner.PlayerCombatState.DrawPile.Cards;
+        if (drawPileCards.Count > 0)
+        {
+            var selectedCards = await CardSelectCmd.FromDeckGeneric(Owner,
+                CardSelectorPrompt.ToPlay.GetFixedPrefs(DynamicVars.Cards.IntValue));
+
+            foreach (var selectedCard in selectedCards)
+            {
+                selectedCard.ExhaustOnNextPlay = true;
+                await CardCmd.AutoPlay(choiceContext, selectedCard, null);
+            }
+        }
+    }
+
+    public override Task AfterCardPlayed(PlayerChoiceContext choiceContext, CardPlay cardPlay)
+    {
+        if (cardPlay.Card == this && cardPlay.PlayIndex == 0 && !IsDupe)
+        {
+            Owner.AttachedNode().PerformanceManager.ReduceCapacity(DynamicVars["Cost"].IntValue);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    protected override void OnUpgrade()
+    {
+        RemoveKeyword(CardKeyword.Exhaust);
+    }
+}

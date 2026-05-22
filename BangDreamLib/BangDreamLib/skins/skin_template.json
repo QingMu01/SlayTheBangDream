@@ -1,0 +1,32 @@
+{
+  "MultiplayerVisual": {
+	"VisualScene": "",
+	"RestSiteScene": "",
+	"MerchantScene": "",
+	"ArmPointingTexture": "",
+	"ArmRockTexture": "",
+	"ArmPaperTexture": "",
+	"ArmScissorsTexture": "",
+	"RestSiteAnimName": "Sit",
+	"MerchantAnimName": "relax"
+  },
+  "LocalVisual": {
+	"EnergyCounterScene": "",
+	"IconScene": "",
+	"IconTexture": "",
+	"IconTextureOutline": "",
+	"MapMarker": ""
+  },
+  "MultiplayerVfx": {
+	"MusicNote": ""
+  },
+  "LocalVfx": {
+	"CardTrail": ""
+  },
+  "Starting": {
+	"StartingDeck": [],
+	"StartingExtraDeck": [],
+	"StartingRelics": [],
+	"StartingPotions": []
+  }
+}

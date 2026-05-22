@@ -1,0 +1,9 @@
+[gd_resource type="ShaderMaterial" load_steps=3 format=3 uid="uid://c1m2ryl1phk12"]
+
+[ext_resource type="Shader" uid="uid://ddpv746gaddfa" path="res://ItsCrychic/shaders/alpha_mask.gdshader" id="1_gdo6b"]
+[ext_resource type="Texture2D" uid="uid://c1cd7gaw14i00" path="res://ItsCrychic/images/vfx/mask_visual.webp" id="2_vj657"]
+
+[resource]
+shader = ExtResource("1_gdo6b")
+shader_parameter/mask = ExtResource("2_vj657")
+shader_parameter/mask_scale = 1.0000000149012

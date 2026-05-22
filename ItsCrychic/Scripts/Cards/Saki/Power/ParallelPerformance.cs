@@ -1,0 +1,39 @@
+using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Utils;
+using ItsCrychic.Scripts.Utils;
+using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using MegaCrit.Sts2.Core.HoverTips;
+using MegaCrit.Sts2.Core.Localization.DynamicVars;
+using STS2RitsuLib.Keywords;
+
+namespace ItsCrychic.Scripts.Cards.Saki.Power;
+
+public class ParallelPerformance() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget)
+{
+    private const int CustomCost = 1;
+    private const CardType CustomType = CardType.Power;
+    private const CardRarity CustomRarity = CardRarity.Uncommon;
+    private const TargetType CustomTarget = TargetType.Self;
+
+    protected override IEnumerable<CardKeyword> CardKeywords =>
+    [
+        BangDreamConst.KeywordPerformanceArea.GetModCardKeyword()
+    ];
+
+    protected override IEnumerable<DynamicVar> CardVars =>
+    [
+        new IntVar("CapacityIncrease", 2)
+    ];
+
+    protected override Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
+    {
+        Owner.AttachedNode().PerformanceManager.AddCapacity(DynamicVars["CapacityIncrease"].IntValue);
+        return Task.CompletedTask;
+    }
+
+    protected override void OnUpgrade()
+    {
+        DynamicVars["CapacityIncrease"].UpgradeValueBy(1);
+    }
+}

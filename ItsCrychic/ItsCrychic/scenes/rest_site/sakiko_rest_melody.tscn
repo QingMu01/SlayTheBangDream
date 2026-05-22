@@ -1,0 +1,60 @@
+[gd_scene load_steps=4 format=3 uid="uid://cmb0uva0tia57"]
+
+[ext_resource type="Script" uid="uid://cn8qxl5kvbfnm" path="res://Scripts/Nodes/MegeScript/CrychicRestSite.cs" id="1_mlldn"]
+[ext_resource type="SpineSkeletonDataResource" uid="uid://7meqgs61esuc" path="res://ItsCrychic/images/charui/sakiko/build_melody_sakiko.tres" id="2_mlldn"]
+[ext_resource type="Script" uid="uid://danxipihvljdy" path="res://Scripts/Nodes/MegeScript/CrychicSelectionReticle.cs" id="3_bfk41"]
+
+[node name="SakikoRestSiteMelody" type="Node2D"]
+position = Vector2(-2, 42)
+scale = Vector2(1.05, 1.05)
+script = ExtResource("1_mlldn")
+
+[node name="SpineSprite" type="SpineSprite" parent="."]
+skeleton_data_res = ExtResource("2_mlldn")
+preview_skin = "Default"
+preview_animation = "Sit"
+preview_frame = false
+preview_time = 0.0
+
+[node name="ControlRoot" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 0
+offset_left = 30.186
+offset_top = -99.5176
+offset_right = 30.186
+offset_bottom = -99.5176
+
+[node name="SelectionReticle" type="Control" parent="ControlRoot"]
+unique_name_in_owner = true
+anchors_preset = 0
+offset_left = -233.0
+offset_top = -231.0
+offset_right = 167.0
+offset_bottom = 269.0
+pivot_offset = Vector2(100, 80)
+script = ExtResource("3_bfk41")
+
+[node name="Hitbox" type="Control" parent="ControlRoot"]
+unique_name_in_owner = true
+anchors_preset = 0
+offset_left = -233.0
+offset_top = -231.0
+offset_right = 167.0
+offset_bottom = 269.0
+pivot_offset = Vector2(210, 320)
+
+[node name="ThoughtBubbleRight" type="Control" parent="ControlRoot"]
+unique_name_in_owner = true
+anchors_preset = 0
+offset_left = 143.497
+offset_top = -278.111
+offset_right = 143.497
+offset_bottom = -278.111
+
+[node name="ThoughtBubbleLeft" type="Control" parent="ControlRoot"]
+unique_name_in_owner = true
+anchors_preset = 0
+offset_left = -194.658
+offset_top = -259.69
+offset_right = -194.658
+offset_bottom = -259.69

@@ -1,0 +1,14 @@
+{
+  "BANG_DREAM_LIB_SUBSIDE.title": "休止",
+  "BANG_DREAM_LIB_SUBSIDE.description": "这张牌不会为你提供[gold]余音[/gold]。\n当你有足够的[gold]余音[/gold]时，打出这张牌触发额外的卡牌效果。",
+  "BANG_DREAM_LIB_KEYWORD_MUSIC.title": "音乐",
+  "BANG_DREAM_LIB_KEYWORD_MUSIC.description": "在战斗开始时放入[gold]额外牌堆[/gold]。\n打出后进入[gold]演奏区[/gold]。",
+  "BANG_DREAM_LIB_KEYWORD_MUSIC_NOTE.title": "音符",
+  "BANG_DREAM_LIB_KEYWORD_MUSIC_NOTE.description": "对随机目标造成基础为[blue]1[/blue]的伤害。",
+  "BANG_DREAM_LIB_KEYWORD_PERFORMANCE.title": "演奏",
+  "BANG_DREAM_LIB_KEYWORD_PERFORMANCE.description": "[gold]音乐牌[/gold]进入[gold]演奏区[/gold]后，视为正在演奏，其演奏效果生效。",
+  "BANG_DREAM_LIB_KEYWORD_PERFORMANCE_AREA.title": "演奏区",
+  "BANG_DREAM_LIB_KEYWORD_PERFORMANCE_AREA.description": "演奏区是带有容量限制的特殊牌堆。",
+  "BANG_DREAM_LIB_KEYWORD_LINGER.title": "余音",
+  "BANG_DREAM_LIB_KEYWORD_LINGER.description": "失去费用时等量生成。\n每获得[blue]7[/blue]点，将[gold]额外牌堆[/gold]顶部的[blue]1[/blue]张牌放入[gold]演奏区[/gold]，然后清除所有余音。"
+}

@@ -1,0 +1,116 @@
+[gd_scene load_steps=18 format=3 uid="uid://crkb2mrgot5f1"]
+
+[ext_resource type="Texture2D" uid="uid://csgqlpjr14bq" path="res://ItsCrychic/images/charui/anon/Chihaya Aine2_dead_2_01.png" id="1_obd8e"]
+[ext_resource type="Texture2D" uid="uid://b2lifalff2j8b" path="res://ItsCrychic/images/charui/anon/Chihaya Aine2_dead_2_02.png" id="2_lma5w"]
+[ext_resource type="Texture2D" uid="uid://clsdbak37xehx" path="res://ItsCrychic/images/charui/anon/Chihaya Aine2_dead_2_03.png" id="3_amqja"]
+[ext_resource type="Texture2D" uid="uid://dmg1qkewv38rb" path="res://ItsCrychic/images/charui/anon/Chihaya Aine2_dead_2_04.png" id="4_att1q"]
+[ext_resource type="Texture2D" uid="uid://1ukeald1juo6" path="res://ItsCrychic/images/charui/anon/Chihaya Aine2_dead_2_05.png" id="5_t42io"]
+[ext_resource type="Texture2D" uid="uid://bm3ucsu7u8dwj" path="res://ItsCrychic/images/charui/anon/Chihaya Aine2_dead_2_06.png" id="6_yusft"]
+[ext_resource type="Texture2D" uid="uid://dv4byyh8ln4sh" path="res://ItsCrychic/images/charui/anon/Chihaya Aine2_dead_2_07.png" id="7_de0jf"]
+[ext_resource type="Texture2D" uid="uid://ckyfw4vgcf7m" path="res://ItsCrychic/images/charui/anon/Chihaya Aine2_dead_2_08.png" id="8_bxydw"]
+[ext_resource type="Texture2D" uid="uid://bues72xduvsyq" path="res://ItsCrychic/images/charui/anon/Chihaya Aine2_idle_01.png" id="9_5tqes"]
+[ext_resource type="Texture2D" uid="uid://c1ayv68t5dru4" path="res://ItsCrychic/images/charui/anon/Chihaya Aine2_idle_02.png" id="10_ucvx0"]
+[ext_resource type="Texture2D" uid="uid://cph6piqnp2b0x" path="res://ItsCrychic/images/charui/anon/Chihaya Aine2_idle_03.png" id="11_7500p"]
+[ext_resource type="Texture2D" uid="uid://2cys53kkhf47" path="res://ItsCrychic/images/charui/anon/Chihaya Aine2_idle_04.png" id="12_h1kfn"]
+[ext_resource type="Texture2D" uid="uid://cc616aribtuxw" path="res://ItsCrychic/images/charui/anon/Chihaya Aine2_run_01.png" id="13_v3mcq"]
+[ext_resource type="Texture2D" uid="uid://clgf7y8bkheny" path="res://ItsCrychic/images/charui/anon/Chihaya Aine2_run_02.png" id="14_muhfe"]
+[ext_resource type="Texture2D" uid="uid://c041wodqhghd2" path="res://ItsCrychic/images/charui/anon/Chihaya Aine2_run_03.png" id="15_j684q"]
+[ext_resource type="Texture2D" uid="uid://dctuvn1u8mi3g" path="res://ItsCrychic/images/charui/anon/Chihaya Aine2_run_04.png" id="16_4sijn"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_0duo1"]
+animations = [{
+"frames": [{
+"duration": 0.8,
+"texture": ExtResource("1_obd8e")
+}, {
+"duration": 0.8,
+"texture": ExtResource("2_lma5w")
+}, {
+"duration": 0.8,
+"texture": ExtResource("3_amqja")
+}, {
+"duration": 0.8,
+"texture": ExtResource("4_att1q")
+}, {
+"duration": 0.8,
+"texture": ExtResource("5_t42io")
+}, {
+"duration": 0.8,
+"texture": ExtResource("6_yusft")
+}, {
+"duration": 0.8,
+"texture": ExtResource("7_de0jf")
+}, {
+"duration": 0.8,
+"texture": ExtResource("8_bxydw")
+}],
+"loop": true,
+"name": &"die",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 0.8,
+"texture": ExtResource("9_5tqes")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_ucvx0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_7500p")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_h1kfn")
+}],
+"loop": true,
+"name": &"idle_loop",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 0.8,
+"texture": ExtResource("13_v3mcq")
+}, {
+"duration": 0.8,
+"texture": ExtResource("14_muhfe")
+}, {
+"duration": 0.8,
+"texture": ExtResource("15_j684q")
+}, {
+"duration": 0.8,
+"texture": ExtResource("16_4sijn")
+}],
+"loop": true,
+"name": &"run",
+"speed": 5.0
+}]
+
+[node name="Anon" type="Node2D"]
+
+[node name="Visuals" type="AnimatedSprite2D" parent="."]
+unique_name_in_owner = true
+position = Vector2(0, -100)
+scale = Vector2(2, 2)
+sprite_frames = SubResource("SpriteFrames_0duo1")
+animation = &"die"
+frame_progress = 0.84786516
+
+[node name="Bounds" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -64.0
+offset_top = -128.0
+offset_right = 64.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="IntentPos" type="Marker2D" parent="."]
+unique_name_in_owner = true
+position = Vector2(0, -250)
+
+[node name="CenterPos" type="Marker2D" parent="."]
+unique_name_in_owner = true
+position = Vector2(0, -80)

@@ -1,0 +1,12 @@
+﻿using BangDreamLib.Scripts.Utils.Infos;
+using STS2RitsuLib.Scaffolding.Content;
+
+namespace ItsCrychic.Scripts.Character.PotionPools;
+
+public class MutsumiPotionPool : TypeListPotionPoolModel
+{
+    public override string EnergyColorName => BangDreamMember.Mutsumi.GetMemberName();
+
+    public override string BigEnergyIconPath => "res://ItsCrychic/Resources/images/charui/sakiko/sakiko_big_energy.png";
+    public override string TextEnergyIconPath => "res://ItsCrychic/Resources/images/charui/sakiko/sakiko_small_energy.png";
+}

@@ -1,0 +1,56 @@
+[gd_scene load_steps=6 format=3 uid="uid://txb6745aun8k"]
+
+[ext_resource type="Script" uid="uid://fmns5ke8lita" path="res://Scripts/Nodes/SubNode/NPerformanceItem.cs" id="1_b1k58"]
+[ext_resource type="Texture2D" uid="uid://bde4kpr8xjure" path="res://Resources/images/sceneui/PerformanceItem.png" id="1_mjt0y"]
+[ext_resource type="Shader" uid="uid://byc3544f8fcou" path="res://Resources/shaders/Circularization.gdshader" id="2_b1k58"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_6dyc6"]
+shader = ExtResource("2_b1k58")
+shader_parameter/smoothness = 0.0
+
+[sub_resource type="PlaceholderTexture2D" id="PlaceholderTexture2D_04grk"]
+size = Vector2(96, 96)
+
+[node name="PerformanceItem" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_b1k58")
+
+[node name="Control" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -32.0
+offset_top = -32.0
+offset_right = 32.0
+offset_bottom = 32.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="CardPortrait" type="TextureRect" parent="Control"]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_6dyc6")
+clip_contents = true
+layout_mode = 2
+texture = SubResource("PlaceholderTexture2D_04grk")
+expand_mode = 2
+stretch_mode = 6
+
+[node name="Outline" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -42.0
+offset_top = -42.0
+offset_right = 42.0
+offset_bottom = 42.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("1_mjt0y")
+expand_mode = 1

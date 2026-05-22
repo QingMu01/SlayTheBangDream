@@ -1,0 +1,47 @@
+﻿{
+  "MultiplayerVisual": {
+    "VisualScene": "res://ItsCrychic/scenes/creature/sakiko_skin_melody.tscn",
+    "RestSiteScene": "res://ItsCrychic/scenes/rest_site/sakiko_rest_melody.tscn",
+    "MerchantScene": "res://ItsCrychic/scenes/merchant/sakiko_merchant_melody.tscn",
+    "ArmPointingTexture": null,
+    "ArmRockTexture": null,
+    "ArmPaperTexture": null,
+    "ArmScissorsTexture": null,
+    "RestSiteAnimName": "Sit",
+    "MerchantAnimName": "relax"
+  },
+  "LocalVisual": {
+    "EnergyCounterScene": "res://ItsCrychic/scenes/sakiko_energy_counter.tscn",
+    "IconScene": "",
+    "IconTexture": "",
+    "IconTextureOutline": "",
+    "MapMarker": ""
+  },
+  "MultiplayerVfx": {
+    "MusicNote": "res://BangDreamLib/scenes/vfx/flying_music_note_default.tscn"
+  },
+  "LocalVfx": {
+    "CardTrail": "res://BangDreamLib/scenes/vfx/card_trail_sakiko.tscn"
+  },
+  "Starting": {
+    "StartingDeck": [
+      "ITS_CRYCHIC_CARD_STRIKE_SAKIKO",
+      "ITS_CRYCHIC_CARD_STRIKE_SAKIKO",
+      "ITS_CRYCHIC_CARD_STRIKE_SAKIKO",
+      "ITS_CRYCHIC_CARD_STRIKE_SAKIKO",
+      "ITS_CRYCHIC_CARD_DEFEND_SAKIKO",
+      "ITS_CRYCHIC_CARD_DEFEND_SAKIKO",
+      "ITS_CRYCHIC_CARD_DEFEND_SAKIKO",
+      "ITS_CRYCHIC_CARD_DEFEND_SAKIKO",
+      "ITS_CRYCHIC_CARD_CLOSED_SOUL",
+      "ITS_CRYCHIC_CARD_OSCILLATION"
+    ],
+    "StartingExtraDeck": [
+      "ITS_CRYCHIC_CARD_SHEET_MUSIC_SAKIKO"
+    ],
+    "StartingRelics": [
+      "ITS_CRYCHIC_RELIC_SYNTHESIZER",
+      "ITS_CRYCHIC_RELIC_SAKIKO_SPECIAL_RULES"
+    ]
+  }
+}

@@ -1,0 +1,39 @@
+using BangDreamLib.Scripts.Attributes;
+using BangDreamLib.Scripts.Cards;
+using BangDreamLib.Scripts.Commands;
+using ItsCrychic.Scripts.Power.Buff;
+using ItsCrychic.Scripts.Utils;
+using MegaCrit.Sts2.Core.Commands;
+using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using MegaCrit.Sts2.Core.HoverTips;
+using MegaCrit.Sts2.Core.Localization.DynamicVars;
+using MegaCrit.Sts2.Core.Models.CardPools;
+using STS2RitsuLib.Scaffolding.Content;
+
+namespace ItsCrychic.Scripts.Cards.Token;
+
+[BangDreamPool(typeof(TokenCardPool))]
+public sealed class GiantNote() : BandCardModel(CustomCost, CustomType, CustomRarity, CustomTarget)
+{
+    private const int CustomCost = 0;
+    private const CardType CustomType = CardType.Skill;
+    private const CardRarity CustomRarity = CardRarity.Token;
+    private const TargetType CustomTarget = TargetType.None;
+
+    protected override CardAssetProfile CardAssetProfile => CrychicConst.DefaultCardAssetProfile(this);
+
+    protected override IEnumerable<DynamicVar> CardVars =>
+    [
+        new CardsVar(1),
+        new RepeatVar(1)
+    ];
+
+    protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
+    {
+        await CardPileCmd.Draw(choiceContext, DynamicVars.Cards.BaseValue, Owner);
+        await MusicNoteCmd.FromCard(choiceContext, this, 1);
+        await PowerCmd.Apply<GiantNotePower>(choiceContext, Owner.Creature, DynamicVars.Repeat.BaseValue,
+            Owner.Creature, this);
+    }
+}

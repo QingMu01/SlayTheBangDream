@@ -1,0 +1,37 @@
+[gd_scene load_steps=2 format=3 uid="uid://22irt17d6lwr"]
+
+[ext_resource type="SpineSkeletonDataResource" uid="uid://r88nefc17660" path="res://ItsCrychic/images/charui/mutsumi/default_mutsumi.tres" id="1_n40xx"]
+
+[node name="MutsumiDefault" type="Node2D"]
+
+[node name="Visuals" type="SpineSprite" parent="."]
+skeleton_data_res = ExtResource("1_n40xx")
+preview_skin = "default"
+preview_animation = "Start"
+preview_frame = false
+preview_time = 0.0
+unique_name_in_owner = true
+scale = Vector2(0.75, 0.75)
+
+[node name="Bounds" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -140.0
+offset_top = -280.0
+offset_right = 180.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="IntentPos" type="Marker2D" parent="."]
+unique_name_in_owner = true
+position = Vector2(0, 350)
+
+[node name="CenterPos" type="Marker2D" parent="."]
+unique_name_in_owner = true
+position = Vector2(0, -120)

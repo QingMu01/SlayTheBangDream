@@ -1,0 +1,12 @@
+[gd_scene load_steps=2 format=3 uid="uid://d2d6u0y3h7c2m"]
+
+[ext_resource type="Script" uid="uid://b8576qt422hi7" path="res://Scripts/Nodes/NPerformanceManager.cs" id="1_i3xyf"]
+
+[node name="PerformanceManage" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_i3xyf")
+
+[node name="PerformanceItems" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 0

@@ -1,0 +1,14 @@
+[gd_scene load_steps=3 format=3 uid="uid://didltoq0l7080"]
+
+[ext_resource type="Script" uid="uid://dgxxnvpum284a" path="res://Scripts/Nodes/MegeScript/CrychicMerchant.cs" id="1_5hofd"]
+[ext_resource type="SpineSkeletonDataResource" uid="uid://7meqgs61esuc" path="res://ItsCrychic/images/charui/sakiko/build_melody_sakiko.tres" id="2_5hofd"]
+
+[node name="SakikoMerchantMelody" type="Node2D"]
+script = ExtResource("1_5hofd")
+
+[node name="SpineSprite" type="SpineSprite" parent="."]
+skeleton_data_res = ExtResource("2_5hofd")
+preview_skin = "Default"
+preview_animation = "Relax"
+preview_frame = false
+preview_time = 0.0

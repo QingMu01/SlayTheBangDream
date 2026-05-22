@@ -1,0 +1,42 @@
+﻿<Project Sdk="Godot.NET.Sdk/4.5.1">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Content Include="BangDreamLib.json"/>
+        <Content Include="BangDreamLib/**"/>
+        <Compile Remove="BangDreamLib/**"/>
+        <EmbeddedResource Remove="BangDreamLib/**"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Remove="animations/**"/>
+        <Compile Remove="fonts/**"/>
+        <Compile Remove="images/**"/>
+        <Compile Remove="materials/**"/>
+        <Compile Remove="models/**"/>
+        <Compile Remove="scenes/**"/>
+        <Compile Remove="shaders/**"/>
+        <Compile Remove="themes/**"/>
+        <EmbeddedResource Remove="animations/**"/>
+        <EmbeddedResource Remove="fonts/**"/>
+        <EmbeddedResource Remove="images/**"/>
+        <EmbeddedResource Remove="materials/**"/>
+        <EmbeddedResource Remove="models/**"/>
+        <EmbeddedResource Remove="scenes/**"/>
+        <EmbeddedResource Remove="shaders/**"/>
+        <EmbeddedResource Remove="themes/**"/>
+    </ItemGroup>
+    
+    <Target Name="Copy Dependencies" AfterTargets="PostBuildEvent">
+        <Message Text="Copying RitsuLib to mods folder." Importance="high"/>
+        <ItemGroup>
+            <RitsuLibDll Include="$(NuGetPackageRoot)/sts2.ritsulib/**/lib/**/STS2-RitsuLib.dll"/>
+            <RitsuLibJson Include="$(NuGetPackageRoot)/sts2.ritsulib/**/contentFiles/**/mod_manifest.json"/>
+        </ItemGroup>
+        <Copy SourceFiles="@(RitsuLibDll)" DestinationFolder="$(Sts2Dir)/mods/STS2-RitsuLib/"/>
+        <Copy SourceFiles="@(RitsuLibJson)" DestinationFolder="$(Sts2Dir)/mods/STS2-RitsuLib/"/>
+    </Target>
+</Project>

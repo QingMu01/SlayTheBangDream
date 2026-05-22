@@ -1,0 +1,214 @@
+[gd_scene load_steps=15 format=3 uid="uid://cs3a5onikvhi4"]
+
+[ext_resource type="Texture2D" uid="uid://d376abe38s27u" path="res://ItsCrychic/images/charui/sakiko/orb/layer1.png" id="1_b2qwf"]
+[ext_resource type="Script" uid="uid://bvfrqq7nrifo8" path="res://Scripts/Nodes/SakikoLingeredCounter.cs" id="1_hmhqd"]
+[ext_resource type="Texture2D" uid="uid://boh6y28vf8nim" path="res://ItsCrychic/images/charui/sakiko/orb/count1.png" id="2_yvdb1"]
+[ext_resource type="Texture2D" uid="uid://b2igqg3l4v45w" path="res://ItsCrychic/images/charui/sakiko/orb/count2.png" id="3_fqs08"]
+[ext_resource type="Texture2D" uid="uid://cf8wsh7gr4psm" path="res://ItsCrychic/images/charui/sakiko/orb/count3.png" id="4_yxjpi"]
+[ext_resource type="Texture2D" uid="uid://dq758iu06mi1i" path="res://ItsCrychic/images/charui/sakiko/orb/count4.png" id="5_fj3o8"]
+[ext_resource type="Texture2D" uid="uid://dab2nlqvlo1gk" path="res://ItsCrychic/images/charui/sakiko/orb/count5.png" id="6_hmhqd"]
+[ext_resource type="Texture2D" uid="uid://dswllmu4qqj0a" path="res://ItsCrychic/images/charui/sakiko/orb/count6.png" id="7_7at46"]
+[ext_resource type="Texture2D" uid="uid://dvxf58ruc7ruq" path="res://ItsCrychic/images/charui/sakiko/orb/count7.png" id="8_qoqw7"]
+[ext_resource type="Texture2D" uid="uid://cbopvdtip8ec" path="res://ItsCrychic/images/charui/sakiko/orb/layer6.png" id="9_efkrr"]
+[ext_resource type="Texture2D" uid="uid://b15e605woiny2" path="res://ItsCrychic/images/charui/sakiko/orb/layer2.png" id="9_fj3o8"]
+[ext_resource type="Texture2D" uid="uid://disqj7ertnce0" path="res://ItsCrychic/images/charui/sakiko/orb/layer3.png" id="10_hmhqd"]
+[ext_resource type="Texture2D" uid="uid://drb1v1fh5w477" path="res://ItsCrychic/images/charui/sakiko/orb/layer4.png" id="11_7at46"]
+[ext_resource type="Texture2D" uid="uid://dr71cjjinm2nf" path="res://ItsCrychic/images/charui/sakiko/orb/layer5.png" id="12_qoqw7"]
+
+[node name="SakikoEnergyCounter" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 200.0
+offset_bottom = 170.0
+metadata/_edit_lock_ = true
+
+[node name="EnergyVfxBack" type="Node2D" parent="."]
+unique_name_in_owner = true
+position = Vector2(72, 90)
+
+[node name="Layers" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Layer1" type="TextureRect" parent="Layers"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("1_b2qwf")
+expand_mode = 1
+
+[node name="RotationLayers" type="Control" parent="Layers"]
+unique_name_in_owner = true
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="TextureRect" type="TextureRect" parent="Layers/RotationLayers"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+pivot_offset = Vector2(71, 91)
+texture = ExtResource("9_fj3o8")
+
+[node name="TextureRect2" type="TextureRect" parent="Layers/RotationLayers"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+pivot_offset = Vector2(71, 91)
+texture = ExtResource("10_hmhqd")
+
+[node name="TextureRect3" type="TextureRect" parent="Layers/RotationLayers"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+pivot_offset = Vector2(71, 91)
+texture = ExtResource("11_7at46")
+
+[node name="TextureRect4" type="TextureRect" parent="Layers/RotationLayers"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+pivot_offset = Vector2(71, 91)
+texture = ExtResource("12_qoqw7")
+
+[node name="LingeredEnergyCounter" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -3.0
+offset_top = 1.0
+offset_right = -3.0
+offset_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_hmhqd")
+
+[node name="CounterImg" type="Control" parent="LingeredEnergyCounter"]
+unique_name_in_owner = true
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Count1" type="TextureRect" parent="LingeredEnergyCounter/CounterImg"]
+visible = false
+layout_mode = 0
+offset_right = 200.0
+offset_bottom = 170.0
+texture = ExtResource("2_yvdb1")
+
+[node name="Count2" type="TextureRect" parent="LingeredEnergyCounter/CounterImg"]
+visible = false
+layout_mode = 0
+offset_right = 200.0
+offset_bottom = 170.0
+texture = ExtResource("3_fqs08")
+
+[node name="Count3" type="TextureRect" parent="LingeredEnergyCounter/CounterImg"]
+visible = false
+layout_mode = 0
+offset_right = 200.0
+offset_bottom = 170.0
+texture = ExtResource("4_yxjpi")
+
+[node name="Count4" type="TextureRect" parent="LingeredEnergyCounter/CounterImg"]
+visible = false
+layout_mode = 0
+offset_right = 200.0
+offset_bottom = 170.0
+texture = ExtResource("5_fj3o8")
+
+[node name="Count5" type="TextureRect" parent="LingeredEnergyCounter/CounterImg"]
+visible = false
+layout_mode = 0
+offset_right = 200.0
+offset_bottom = 170.0
+texture = ExtResource("6_hmhqd")
+
+[node name="Count6" type="TextureRect" parent="LingeredEnergyCounter/CounterImg"]
+visible = false
+layout_mode = 0
+offset_right = 200.0
+offset_bottom = 170.0
+texture = ExtResource("7_7at46")
+
+[node name="Count7" type="TextureRect" parent="LingeredEnergyCounter/CounterImg"]
+visible = false
+layout_mode = 0
+offset_right = 200.0
+offset_bottom = 170.0
+texture = ExtResource("8_qoqw7")
+
+[node name="Layer2" type="TextureRect" parent="LingeredEnergyCounter"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 3.0
+offset_top = -1.0
+offset_right = 3.0
+offset_bottom = -1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("9_efkrr")
+expand_mode = 1
+
+[node name="CounterText" type="Label" parent="LingeredEnergyCounter"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 43.0
+offset_top = 24.0
+offset_right = 11.0
+offset_bottom = 82.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(1, 0.9647059, 0.8862745, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.1882353)
+theme_override_colors/font_outline_color = Color(0.46666667, 0.6, 0.8, 1)
+theme_override_constants/shadow_offset_x = 3
+theme_override_constants/shadow_offset_y = 2
+theme_override_constants/outline_size = 16
+theme_override_constants/shadow_outline_size = 16
+theme_override_font_sizes/font_size = 24
+text = "0"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="EnergyVfxFront" type="Node2D" parent="."]
+unique_name_in_owner = true
+position = Vector2(72, 90)
+
+[node name="Label" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -12.0
+offset_top = -25.0
+offset_right = -44.0
+offset_bottom = 33.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(1, 0.9647059, 0.8862745, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.1882353)
+theme_override_colors/font_outline_color = Color(0.46666667, 0.6, 0.8, 1)
+theme_override_constants/shadow_offset_x = 3
+theme_override_constants/shadow_offset_y = 2
+theme_override_constants/outline_size = 16
+theme_override_constants/shadow_outline_size = 16
+theme_override_font_sizes/font_size = 36
+text = "3/3"
+horizontal_alignment = 1
+vertical_alignment = 1

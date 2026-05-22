@@ -1,0 +1,117 @@
+[gd_scene load_steps=17 format=3 uid="uid://ctq16ouqb6ph1"]
+
+[ext_resource type="Script" uid="uid://bhqlpsqaqqjn0" path="res://Scripts/Nodes/VFX/MusicNoteVfx.cs" id="1_taqy4"]
+[ext_resource type="Texture2D" uid="uid://dtgv5vokmg1c1" path="res://Resources/images/vfx/star_269.png" id="2_taqy4"]
+[ext_resource type="Script" uid="uid://cj4l6wy07qqqo" path="res://Scripts/Nodes/MegeScript/CardTrail.cs" id="3_4wu5m"]
+[ext_resource type="Texture2D" uid="uid://dlh7cfjsrcb6t" path="res://images/packed/vfx/trail3.png" id="3_taqy4"]
+[ext_resource type="Shader" uid="uid://bbtdljk2kl88o" path="res://Resources/shaders/glare.gdshader" id="4_hb0v3"]
+[ext_resource type="Material" uid="uid://djawuiyoxrp1y" path="res://materials/vfx/sprite_additive.tres" id="4_taqy4"]
+[ext_resource type="Texture2D" uid="uid://d2srbops1xqm0" path="res://images/vfx/dot.png" id="5_4cc0w"]
+[ext_resource type="Shader" uid="uid://cs8mgukhp76l1" path="res://Resources/shaders/decal.gdshader" id="5_ryo1r"]
+[ext_resource type="Texture2D" uid="uid://ddg1bga84moge" path="res://Resources/images/vfx/icon_music_note.png" id="9_0fypn"]
+[ext_resource type="Texture2D" uid="uid://ybotd2yrsan2" path="res://Resources/images/vfx/star_269_2.png" id="12_ryo1r"]
+
+[sub_resource type="Curve" id="Curve_taqy4"]
+_data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(1, 1), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="Gradient" id="Gradient_4cc0w"]
+offsets = PackedFloat32Array(0, 0.6, 0.8, 1)
+colors = PackedColorArray(1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0.5882353, 1, 1, 1, 0.8235294)
+metadata/_snap_enabled = true
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ryo1r"]
+shader = ExtResource("5_ryo1r")
+shader_parameter/star_texture = ExtResource("2_taqy4")
+shader_parameter/rows = 4.0
+shader_parameter/density = 4.0
+shader_parameter/size = 1.5000000223518
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_gop3w"]
+shader = ExtResource("4_hb0v3")
+shader_parameter/offset_up = 1.0
+shader_parameter/offset_left = 0.1
+shader_parameter/offset_down = 0.1
+shader_parameter/offset_rigth = 1.0
+shader_parameter/color = Color(1, 0, 0, 0.5)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_6pxmm"]
+shader = ExtResource("4_hb0v3")
+shader_parameter/offset_up = 1.0
+shader_parameter/offset_left = 0.1
+shader_parameter/offset_down = 0.1
+shader_parameter/offset_rigth = 1.0
+shader_parameter/color = Color(1, 0, 0, 0.5)
+
+[sub_resource type="Curve" id="Curve_1yryo"]
+_data = [Vector2(0, 0.51287365), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[node name="FlyingMusicNoteDefault" type="Node2D"]
+script = ExtResource("1_taqy4")
+
+[node name="Trails" type="Node2D" parent="."]
+
+[node name="Trail" type="Line2D" parent="Trails"]
+modulate = Color(1, 0.023529412, 0, 0.5686275)
+material = ExtResource("4_taqy4")
+width = 60.0
+width_curve = SubResource("Curve_taqy4")
+gradient = SubResource("Gradient_4cc0w")
+texture = ExtResource("3_taqy4")
+texture_mode = 2
+joint_mode = 2
+script = ExtResource("3_4wu5m")
+
+[node name="TrailStar" type="Line2D" parent="Trails"]
+modulate = Color(1, 1, 1, 0.627451)
+texture_repeat = 2
+material = SubResource("ShaderMaterial_ryo1r")
+width = 60.0
+width_curve = SubResource("Curve_taqy4")
+gradient = SubResource("Gradient_4cc0w")
+texture = ExtResource("3_taqy4")
+texture_mode = 1
+joint_mode = 2
+script = ExtResource("3_4wu5m")
+
+[node name="GlowBackground1" type="Sprite2D" parent="."]
+self_modulate = Color(0.8117647, 0, 0, 0.37254903)
+material = ExtResource("4_taqy4")
+scale = Vector2(0.48999998, 0.48999998)
+texture = ExtResource("5_4cc0w")
+
+[node name="GlowBackground2" type="Sprite2D" parent="."]
+self_modulate = Color(0.8117647, 0, 0, 0.37254903)
+material = ExtResource("4_taqy4")
+scale = Vector2(0.48999998, 0.48999998)
+texture = ExtResource("5_4cc0w")
+
+[node name="Notes" type="Sprite2D" parent="."]
+material = SubResource("ShaderMaterial_gop3w")
+scale = Vector2(0.7, 0.7)
+texture = ExtResource("9_0fypn")
+hframes = 3
+vframes = 3
+
+[node name="GPUParticles2D" type="CPUParticles2D" parent="."]
+material = SubResource("ShaderMaterial_6pxmm")
+amount = 32
+texture = ExtResource("12_ryo1r")
+lifetime = 1.5
+randomness = 0.3
+emission_shape = 1
+emission_sphere_radius = 36.0
+direction = Vector2(5, -5)
+gravity = Vector2(0, 0)
+initial_velocity_min = 16.0
+initial_velocity_max = 32.0
+angular_velocity_min = -32.0
+angular_velocity_max = 32.0
+damping_min = 1.0
+damping_max = 5.0
+angle_min = -180.0
+angle_max = 180.0
+scale_amount_min = 0.2
+scale_amount_max = 0.6
+scale_amount_curve = SubResource("Curve_1yryo")
