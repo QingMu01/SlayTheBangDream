@@ -16,20 +16,17 @@ public class LingeredEnergyRule : SingletonModel
     public override async Task AfterCardPlayed(PlayerChoiceContext context, CardPlay cardPlay)
     {
         var playedCard = cardPlay.Card;
-        if (playedCard is ISubsideCardFlag subsideCard)
+        if (playedCard is ISubsideCardFlag { CanSubside: true } subsideCard)
         {
-            if (subsideCard.IgnoreSubsideCost || subsideCard.CanSubside)
+            await subsideCard.OnSubside(context, cardPlay);
+            await Cmd.CustomScaledWait(0.1f, 0.2f);
+            if (!subsideCard.IgnoreSubsideCost && playedCard.DynamicVars.TryGetValue("Subside", out var subsideVar))
             {
-                await subsideCard.OnSubside(context, cardPlay);
-                await Cmd.CustomScaledWait(0.1f, 0.2f);
-                if (playedCard.DynamicVars.TryGetValue("Subside", out var subsideVar))
-                {
-                    await LingeredCmd.ReduceLeByCard(playedCard, subsideVar.IntValue);
-                }
-                else
-                {
-                    BangDreamLibCore.Logger.Warn($"Card {playedCard.Title} does not have subside var.");
-                }
+                await LingeredCmd.ReduceLeByCard(playedCard, subsideVar.IntValue);
+            }
+            else
+            {
+                BangDreamLibCore.Logger.Warn($"Card {playedCard.Title} does not have subside var.");
             }
         }
     }

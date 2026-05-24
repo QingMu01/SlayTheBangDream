@@ -29,7 +29,7 @@ public class SakikoSpecialRules : HiddenRelic, ILingeredChangedHook
 
     public async Task<bool> OnLingeredEnergyFilled(Player player, int amount)
     {
-        if (player == Owner && amount >= 7)
+        if (player == Owner && Owner.Creature.CombatState != null && amount >= 7)
         {
             var filledCount = amount / LingeredEnergyCounter.MaxLingeredEnergy;
             for (var i = 0; i < filledCount; i++)
@@ -41,7 +41,8 @@ public class SakikoSpecialRules : HiddenRelic, ILingeredChangedHook
                     var result = await CardPileCmd.Add(firstOrDefault, BangDreamConst.PilePerformance.GetPileType());
                     if (result.success)
                     {
-                        await LingeredCmd.ReduceLeByRelic(this, LingeredEnergyCounter.MaxLingeredEnergy);
+                        await player.AttachedData().LingeredEnergy.ReduceLingeredEnergy(Owner.Creature.CombatState,
+                            LingeredEnergyCounter.MaxLingeredEnergy);
                         ItsCrychic.Logger.Debug(
                             $"Player {player} ({player.Character}) got filled lingered energy and moved a card.");
                     }

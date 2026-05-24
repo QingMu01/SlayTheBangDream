@@ -26,7 +26,7 @@ public interface ISubsideCardFlag
             return card.Owner.AttachedData().LingeredEnergy.Counter >= finalCost;
         }
 
-        return false;
+        return subsideCard.IgnoreSubsideCost;
     };
 
     public static readonly Func<ISubsideCardFlag, bool> DefaultIgnoreCostCondition =
