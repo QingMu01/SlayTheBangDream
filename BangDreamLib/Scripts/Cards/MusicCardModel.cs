@@ -53,9 +53,4 @@ public abstract class MusicCardModel(
     {
         return BangDreamConst.PilePerformance.GetPileType();
     }
-
-    protected override PileType GetResultPileTypeForOnTurnEndInHandEffect()
-    {
-        return BangDreamConst.PileExtraDraw.GetPileType();
-    }
 }
