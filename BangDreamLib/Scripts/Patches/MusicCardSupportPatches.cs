@@ -1,21 +1,16 @@
-﻿using System.Reflection;
-using System.Reflection.Emit;
+﻿using System.Reflection.Emit;
 using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
-using BangDreamLib.Scripts.Rewards;
 using BangDreamLib.Scripts.Utils;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
-using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Nodes.Cards;
 using MegaCrit.Sts2.Core.Nodes.Screens.CardLibrary;
-using MegaCrit.Sts2.Core.Rewards;
-using MegaCrit.Sts2.Core.Runs;
-using MegaCrit.Sts2.Core.Saves.Runs;
+using MegaCrit.Sts2.Core.Nodes.Vfx;
 using STS2RitsuLib.Patching.Core;
 using STS2RitsuLib.Patching.Models;
 
@@ -29,6 +24,7 @@ public class MusicCardSupportPatches : IModPatches
         patcher.RegisterPatch<AddExtraCardPoolToModelDbPatch>();
         patcher.RegisterPatch<ExtraPoolConcatToStandardPoolInLibraryPatch>();
         patcher.RegisterPatch<MusicCardRewardSupportPatch>();
+        patcher.RegisterPatch<MusicCardRewardVfxSupportPatch>();
     }
 }
 
@@ -141,63 +137,42 @@ internal class MusicCardRewardSupportPatch : IPatchMethod
 
     public static ModPatchTarget[] GetTargets()
     {
-        return [new ModPatchTarget(typeof(CardReward), "OnSelect", MethodType.Async)];
+        return
+        [
+            new ModPatchTarget(typeof(CardPileCmd), nameof(CardPileCmd.Add),
+            [
+                typeof(CardModel),
+                typeof(PileType),
+                typeof(CardPilePosition),
+                typeof(AbstractModel),
+                typeof(bool)
+            ])
+        ];
     }
 
-    public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+    public static void Prefix(CardModel card, ref PileType newPileType)
     {
-        var stateMachineType = typeof(CardReward).GetNestedType("<OnSelect>d__49", BindingFlags.NonPublic);
-        var capturedThisField = AccessTools.Field(stateMachineType, "<>4__this");
-
-        var codes = instructions.ToList();
-
-        var cardPileAddMethod = AccessTools.Method(
-            typeof(CardPileCmd), "Add",
-            [typeof(CardModel), typeof(PileType), typeof(CardPilePosition), typeof(AbstractModel), typeof(bool)]
-        );
-        var getTargetPosMethod = AccessTools.Method(
-            typeof(PileTypeExtensions), "GetTargetPosition",
-            [typeof(PileType), typeof(NCard)]
-        );
-
-        for (var i = 0; i < codes.Count; i++)
+        if (IPerformanceCard.CardEnterExtraDeck.GetOrCreate(card))
         {
-            if (codes[i].Calls(cardPileAddMethod))
-            {
-                if (i >= 4 && codes[i - 4].opcode == OpCodes.Ldc_I4_6)
-                {
-                    codes.RemoveAt(i - 4);
-                    codes.InsertRange(i - 4, [
-                        new CodeInstruction(OpCodes.Ldarg_0),
-                        new CodeInstruction(OpCodes.Ldfld, capturedThisField),
-                        new CodeInstruction(OpCodes.Ldc_I4_6),
-                        CodeInstruction.Call(typeof(MusicCardRewardSupportPatch), nameof(ReplacePileType))
-                    ]);
-                    i += 3;
-                }
-            }
-
-            if (codes[i].Calls(getTargetPosMethod))
-            {
-                if (i >= 2 && codes[i - 2].opcode == OpCodes.Ldc_I4_6)
-                {
-                    codes.RemoveAt(i - 2);
-                    codes.InsertRange(i - 2, [
-                        new CodeInstruction(OpCodes.Ldarg_0),
-                        new CodeInstruction(OpCodes.Ldfld, capturedThisField),
-                        new CodeInstruction(OpCodes.Ldc_I4_6),
-                        CodeInstruction.Call(typeof(MusicCardRewardSupportPatch), nameof(ReplacePileType))
-                    ]);
-                    i += 3;
-                }
-            }
+            newPileType = BangDreamConst.PileExtraDeck.GetPileType();
         }
+    }
+}
 
-        return codes;
+internal class MusicCardRewardVfxSupportPatch : IPatchMethod
+{
+    public static string PatchId => "relace_card_reward_added_vfx_target_pile";
+
+    public static ModPatchTarget[] GetTargets()
+    {
+        return [new ModPatchTarget(typeof(NCardFlyVfx), nameof(NCardFlyVfx.Create))];
     }
 
-    private static PileType ReplacePileType(CardReward reward, PileType original)
+    public static void Prefix(NCard card, ref PileType pileType)
     {
-        return reward is MusicCardReward ? BangDreamConst.PileExtraDeck.GetPileType() : original;
+        if (card.Model != null && IPerformanceCard.CardEnterExtraDeck.GetOrCreate(card.Model))
+        {
+            pileType = BangDreamConst.PileExtraDeck.GetPileType();
+        }
     }
 }

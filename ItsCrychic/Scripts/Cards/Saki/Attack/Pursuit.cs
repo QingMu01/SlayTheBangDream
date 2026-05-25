@@ -21,7 +21,7 @@ public class Pursuit() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity
     private const CardRarity CustomRarity = CardRarity.Uncommon;
     private const TargetType CustomTarget = TargetType.AnyEnemy;
 
-    private int _lingeredEnergy;
+    private int _lingeredEnergy = 6;
 
     public int LingeredEnergyCost
     {
@@ -45,7 +45,7 @@ public class Pursuit() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity
         }
     }
 
-    public bool ShouldIncreaseLingeredEnergy => IsDupe;
+    public bool IgnoreSubsideCost => false;
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
