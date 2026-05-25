@@ -1,20 +1,18 @@
 using Godot;
-using MegaCrit.Sts2.Core.Assets;
-using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Random;
 
 namespace BangDreamLib.Scripts.Nodes.VFX;
 
-public partial class MusicNoteVfx : Node2D
+[Tool]
+public partial class MusicNoteVfx : NBangDreamVfx
 {
-    private const string DefaultPath = "res://ItsCrychic/scenes/vfx/flying_music_note_default.tscn";
-
     [Export] public float Speed = 800.0f;
-    [Export] public float FloatAmplitude = 20.0f;
-    [Export] public int FloatFrequency = 2;
-    [Export] public float FloatDirection = -1.0f;
+    
+    private int _floatFrequency = 2;
+    private float _floatAmplitude = 20.0f;
+    private float _floatDirection = -1.0f;
 
-    private Sprite2D _sprites;
+    private Sprite2D? _sprites;
 
     private Vector2 _startPos;
     private Vector2 _endPos;
@@ -22,45 +20,48 @@ public partial class MusicNoteVfx : Node2D
     private float _totalDistance;
     private float _traveledDistance;
     private bool _isMoving;
-    private bool _hasReachedEnd;
 
-    private int _actualFrequency;
-    private float _amplitudeModifier;
-
-    private Func<MusicNoteVfx, Task>? _onReachedEndAsync;
-
-    public static MusicNoteVfx Create(Vector2 start, Vector2 end, string? specialPath = null,
-        Func<MusicNoteVfx, Task>? onReachedEndAsync = null)
+    public void SetPath(Vector2 start, Vector2 end)
     {
-        var instance = PreloadManager.Cache.GetScene(specialPath ?? DefaultPath).Instantiate<MusicNoteVfx>();
-        instance._startPos = start;
-        instance._endPos = end;
-        instance.Position = start;
-        instance._onReachedEndAsync = onReachedEndAsync;
+        _startPos = start;
+        _endPos = end;
+        GlobalPosition = start;
 
-        return instance;
+        _totalDistance = _startPos.DistanceTo(_endPos);
+        if (_totalDistance > 0.001f)
+        {
+            IsFinished = false;
+            _direction = (_endPos - _startPos).Normalized();
+            _traveledDistance = 0f;
+            _isMoving = true;
+        }
+        else
+        {
+            _isMoving = false;
+            IsFinished = true;
+            _ = OnReachedEndAsync();
+        }
     }
 
     public override void _Ready()
     {
-        if (NCombatUi.IsDebugHidingPlayContainer)
-            Visible = false;
+        if (Engine.IsEditorHint())
+            return;
 
         _sprites = GetNode<Sprite2D>("Notes");
-
         _sprites.Frame = Rng.Chaotic.NextInt(0, _sprites.Hframes * _sprites.Vframes - 1);
 
-        _direction = (_endPos - _startPos).Normalized();
-        _totalDistance = _startPos.DistanceTo(_endPos);
-        _traveledDistance = 0f;
-        _isMoving = true;
+        _ = TriggerSpawn();
     }
 
     public override void _Process(double delta)
     {
-        if (!_isMoving) return;
+        if (Engine.IsEditorHint() || !_isMoving)
+            return;
+
         var step = Speed * (float)delta;
         _traveledDistance += step;
+
         if (_traveledDistance >= _totalDistance)
         {
             _traveledDistance = _totalDistance;
@@ -69,39 +70,42 @@ public partial class MusicNoteVfx : Node2D
 
         var linearPos = _startPos + _direction * _traveledDistance;
         var perpendicular = new Vector2(-_direction.Y, _direction.X);
-
         var t = _traveledDistance;
-        var offsetMagnitude = FloatAmplitude * Mathf.Sin(t * FloatFrequency * Mathf.Tau / _totalDistance);
-
-        var floatOffset = perpendicular * offsetMagnitude * FloatDirection;
+        var offsetMagnitude = _floatAmplitude * Mathf.Sin(t * _floatFrequency * Mathf.Tau / _totalDistance);
+        var floatOffset = perpendicular * offsetMagnitude * _floatDirection;
 
         GlobalPosition = linearPos + floatOffset;
         Rotation = _direction.Angle();
-        if (!_hasReachedEnd && _traveledDistance >= _totalDistance)
+
+        // 到达终点后触发命中与结束流程
+        if (!IsFinished && _traveledDistance >= _totalDistance)
         {
-            _hasReachedEnd = true;
-            _ = HandleReachEndAsync();
+            IsFinished = true;
+            _ = OnReachedEndAsync();
         }
     }
 
-    private async Task HandleReachEndAsync()
+    private async Task OnReachedEndAsync()
     {
         try
         {
-            if (_onReachedEndAsync != null)
-            {
-                await _onReachedEndAsync(this);
-            }
+            var tween = CreateTween();
+            tween.TweenProperty(_sprites, "modulate:a", 0f, 0.2f);
+            tween.TweenProperty(_sprites, "scale", Vector2.Zero, 0.2f);
 
-            await Task.Delay(500);
+            // 触发 BeforeHit → HitTriggered → AfterHit
+            await TriggerHit();
+
+            // 等待淡出动画完成，确保视觉效果不突兀
+            await ToSignal(tween, Tween.SignalName.Finished);
         }
         catch (Exception ex)
         {
-            BangDreamLibCore.Logger.Warn($"music note vfx callback has beed exception: {ex}");
+            BangDreamLibCore.Logger.Warn($"MusicNoteVfx lifecycle exception: {ex}");
         }
         finally
         {
-            QueueFree();
+            await TriggerFinish();
         }
     }
 }

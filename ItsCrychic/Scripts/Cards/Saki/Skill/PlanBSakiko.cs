@@ -10,21 +10,19 @@ namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
 public class PlanBSakiko() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget)
 {
-    private const int CustomCost = 0;
+    private const int CustomCost = 1;
     private const CardType CustomType = CardType.Skill;
     private const CardRarity CustomRarity = CardRarity.Common;
     private const TargetType CustomTarget = TargetType.Self;
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        CardKeyword.Retain,
-        CardKeyword.Exhaust,
         BangDreamConst.KeywordLinger.GetModCardKeyword()
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        new EnergyVar(2)
+        new EnergyVar(3)
     ];
 
     protected override bool IsPlayable => Owner.AttachedData().LingeredEnergy.Counter == 0;
@@ -36,6 +34,6 @@ public class PlanBSakiko() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
 
     protected override void OnUpgrade()
     {
-        RemoveKeyword(CardKeyword.Exhaust);
+        AddKeyword(CardKeyword.Retain);
     }
 }

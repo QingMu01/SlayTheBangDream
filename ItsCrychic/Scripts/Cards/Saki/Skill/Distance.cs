@@ -46,7 +46,7 @@ public class Distance() : AbstractSakikoCard(CustomCost, CustomType, CustomRarit
                 item is { IsPlayer: true, IsAlive: true } or { IsPlayer: false, IsHittable: true }).ToList();
             if (allCreatures is { Count: > 0 })
             {
-                await PowerCmd.Apply<DistancePower>(choiceContext, allCreatures, -strengthPower,
+                await PowerCmd.Apply<DistancePower>(choiceContext, allCreatures, strengthPower,
                     Owner.Creature, this);
             }
         }

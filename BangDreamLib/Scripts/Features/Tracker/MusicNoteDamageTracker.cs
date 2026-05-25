@@ -10,54 +10,45 @@ public class MusicNoteDamageTracker : SingletonModel
 {
     public override bool ShouldReceiveCombatHooks => true;
 
-    private readonly Dictionary<int, List<DamageResult>> _combatHistory = new();
+    public readonly Dictionary<int, List<DamageResult>> CombatHistory = new();
 
     public void AddMusicNoteDamage(int turn, DamageResult damageResult)
     {
         AssertMutable();
-        if (_combatHistory.TryGetValue(turn, out var damageCounter))
+        if (CombatHistory.TryGetValue(turn, out var damageResults))
         {
-            damageCounter.Add(damageResult);
+            damageResults.Add(damageResult);
         }
         else
         {
-            _combatHistory.Add(turn, [damageResult]);
+            CombatHistory.Add(turn, [damageResult]);
         }
     }
 
     public List<DamageResult> GetAllDamageResults()
     {
-        return _combatHistory.Values.SelectMany(result => result).ToList();
+        return CombatHistory.Values.SelectMany(result => result).ToList();
     }
 
 
     public List<DamageResult> GetTurnDamageResults(int turn)
     {
-        return _combatHistory.TryGetValue(turn, out var damageCounter)
-            ? damageCounter
+        return CombatHistory.TryGetValue(turn, out var damageResults)
+            ? damageResults
             : [];
     }
-
-    public decimal GetTurnDamagedTotal(int turn)
-    {
-        return _combatHistory.TryGetValue(turn, out var damageCounter)
-            ? damageCounter.Sum(musicNoteDamagedInfo => musicNoteDamagedInfo.TotalDamage)
-            : 0m;
-    }
-
-    public int HistoryLength => _combatHistory.Count;
 
     public override Task AfterCombatEnd(CombatRoom room)
     {
         AssertMutable();
-        _combatHistory.Clear();
+        CombatHistory.Clear();
         return base.AfterCombatEnd(room);
     }
 
     public override Task BeforeCombatStart()
     {
         AssertMutable();
-        _combatHistory.Clear();
+        CombatHistory.Clear();
         return base.BeforeCombatStart();
     }
 }

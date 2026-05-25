@@ -24,7 +24,7 @@
   "ITS_CRYCHIC_CARD_PLAN_B_SAKIKO.title": "备用方案",
   "ITS_CRYCHIC_CARD_PLAN_B_SAKIKO.description": "[gold]余音[/gold]为0时才能打出。\n获得{Energy:energyIcons()}。",
   "ITS_CRYCHIC_CARD_DISTANCE.title": "距离感",
-  "ITS_CRYCHIC_CARD_DISTANCE.description": "{IfUpgraded:show:|抽到时自动打出。\n}所有单位在本回合失去等同于当前[gold]余音[/gold]数的[gold]力量[/gold]。{OnTable:cond:true?\n（失去{StrengthPower:abs()}点）|}",
+  "ITS_CRYCHIC_CARD_DISTANCE.description": "{IfUpgraded:show:|抽到时自动打出。\n}所有单位在本回合失去等同于当前[gold]余音[/gold]数的[gold]力量[/gold]。{OnTable:cond:true?\n（失去{StrengthPower:diff()}点）|}",
   "ITS_CRYCHIC_CARD_MASK.title": "假面",
   "ITS_CRYCHIC_CARD_MASK.description": "获得你[gold]额外牌堆[/gold]中所有牌耗能之和的[gold]格挡[/gold]。{IfUpgraded:show:\n每张[gold]音乐牌[/gold]提供额外的{MusicCardMultiple:diff()}点[gold]格挡[/gold]|}{OnTable:cond:true?\n（获得{CalculatedBlock:diff()}点[gold]格挡[/gold]）|}",
   "ITS_CRYCHIC_CARD_BEST_REGARDS.title": "诚挚问候",

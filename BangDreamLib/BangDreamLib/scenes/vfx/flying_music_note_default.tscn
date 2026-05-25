@@ -1,15 +1,15 @@
 [gd_scene load_steps=17 format=3 uid="uid://ctq16ouqb6ph1"]
 
 [ext_resource type="Script" uid="uid://bhqlpsqaqqjn0" path="res://Scripts/Nodes/VFX/MusicNoteVfx.cs" id="1_taqy4"]
-[ext_resource type="Texture2D" uid="uid://dtgv5vokmg1c1" path="res://Resources/images/vfx/star_269.png" id="2_taqy4"]
+[ext_resource type="Texture2D" uid="uid://dtgv5vokmg1c1" path="res://BangDreamLib/images/vfx/star_269.png" id="2_taqy4"]
 [ext_resource type="Script" uid="uid://cj4l6wy07qqqo" path="res://Scripts/Nodes/MegeScript/CardTrail.cs" id="3_4wu5m"]
 [ext_resource type="Texture2D" uid="uid://dlh7cfjsrcb6t" path="res://images/packed/vfx/trail3.png" id="3_taqy4"]
-[ext_resource type="Shader" uid="uid://bbtdljk2kl88o" path="res://Resources/shaders/glare.gdshader" id="4_hb0v3"]
+[ext_resource type="Shader" uid="uid://bbtdljk2kl88o" path="res://BangDreamLib/shaders/glare.gdshader" id="4_hb0v3"]
 [ext_resource type="Material" uid="uid://djawuiyoxrp1y" path="res://materials/vfx/sprite_additive.tres" id="4_taqy4"]
 [ext_resource type="Texture2D" uid="uid://d2srbops1xqm0" path="res://images/vfx/dot.png" id="5_4cc0w"]
-[ext_resource type="Shader" uid="uid://cs8mgukhp76l1" path="res://Resources/shaders/decal.gdshader" id="5_ryo1r"]
-[ext_resource type="Texture2D" uid="uid://ddg1bga84moge" path="res://Resources/images/vfx/icon_music_note.png" id="9_0fypn"]
-[ext_resource type="Texture2D" uid="uid://ybotd2yrsan2" path="res://Resources/images/vfx/star_269_2.png" id="12_ryo1r"]
+[ext_resource type="Shader" uid="uid://cs8mgukhp76l1" path="res://BangDreamLib/shaders/decal.gdshader" id="5_ryo1r"]
+[ext_resource type="Texture2D" uid="uid://ddg1bga84moge" path="res://BangDreamLib/images/vfx/icon_music_note.png" id="9_0fypn"]
+[ext_resource type="Texture2D" uid="uid://ybotd2yrsan2" path="res://BangDreamLib/images/vfx/star_269_2.png" id="12_ryo1r"]
 
 [sub_resource type="Curve" id="Curve_taqy4"]
 _data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(1, 1), 0.0, 0.0, 0, 0]
@@ -29,10 +29,10 @@ shader_parameter/size = 1.5000000223518
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_gop3w"]
 shader = ExtResource("4_hb0v3")
-shader_parameter/offset_up = 1.0
+shader_parameter/offset_up = 3.500000037253
 shader_parameter/offset_left = 0.1
 shader_parameter/offset_down = 0.1
-shader_parameter/offset_rigth = 1.0
+shader_parameter/offset_rigth = 3.10000003129252
 shader_parameter/color = Color(1, 0, 0, 0.5)
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_6pxmm"]

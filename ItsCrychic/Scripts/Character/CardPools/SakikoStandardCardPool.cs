@@ -15,10 +15,11 @@ public class SakikoStandardCardPool : TypeListCardPoolModel
     public override Color EnergyOutlineColor => new("1D375C");
 
     public override Material PoolFrameMaterial =>
-        MaterialUtils.CreateHsvShaderMaterial(
-            BangDreamMember.Sakiko.GetMemberColor().H,
-            BangDreamMember.Sakiko.GetMemberColor().S,
-            1f);
+        MaterialUtils.CreateReplaceHueShaderMaterial(
+            BangDreamMember.Sakiko.GetMemberColor().R,
+            BangDreamMember.Sakiko.GetMemberColor().G,
+            BangDreamMember.Sakiko.GetMemberColor().B
+            );
 
     public override string BigEnergyIconPath => "res://ItsCrychic/images/charui/sakiko/sakiko_big_energy.png";
     public override string TextEnergyIconPath => "res://ItsCrychic/images/charui/sakiko/sakiko_small_energy.png";

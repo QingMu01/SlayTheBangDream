@@ -41,10 +41,7 @@ public class SakikoSpecialRules : HiddenRelic, ILingeredChangedHook
                     var result = await CardPileCmd.Add(firstOrDefault, BangDreamConst.PilePerformance.GetPileType());
                     if (result.success)
                     {
-                        await player.AttachedData().LingeredEnergy.ReduceLingeredEnergy(Owner.Creature.CombatState,
-                            LingeredEnergyCounter.MaxLingeredEnergy);
-                        ItsCrychic.Logger.Debug(
-                            $"Player {player} ({player.Character}) got filled lingered energy and moved a card.");
+                        await LingeredCmd.JustReduce(Owner, LingeredEnergyCounter.MaxLingeredEnergy);
                     }
                 }
 

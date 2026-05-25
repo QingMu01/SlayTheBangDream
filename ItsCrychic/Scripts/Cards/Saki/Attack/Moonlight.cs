@@ -46,12 +46,17 @@ public class Moonlight() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
         var allDamage = 7m;
         if (card != null)
         {
-            var intVar = card.DynamicVar<IntVar>("TrackTurn");
             var tracker = card.Owner.AttachedData().MusicNoteDamageTracker;
-            var tracebackTurn = Math.Min(intVar.IntValue, tracker.HistoryLength);
+            if (tracker.CombatHistory.Count == 0)
+            {
+                return allDamage;
+            }
+
+            var intVar = card.DynamicVar<IntVar>("TrackTurn");
+            var tracebackTurn = Math.Min(intVar.IntValue, tracker.CombatHistory.Count);
             for (var i = tracebackTurn - 1; i >= 0; i--)
             {
-                allDamage += tracker.GetTurnDamagedTotal(i);
+                allDamage += tracker.GetTurnDamageResults(i + 1).Sum(x => x.TotalDamage);
             }
         }
 

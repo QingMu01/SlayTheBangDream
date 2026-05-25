@@ -15,10 +15,11 @@ public class MutsumiStandardCardPool : TypeListCardPoolModel
     public override Color EnergyOutlineColor => new("1D375C");
 
     public override Material PoolFrameMaterial =>
-        MaterialUtils.CreateHsvShaderMaterial(
-            BangDreamMember.Mutsumi.GetMemberColor().H,
-            BangDreamMember.Mutsumi.GetMemberColor().S,
-            1f);
+        MaterialUtils.CreateReplaceHueShaderMaterial(
+            BangDreamMember.Mutsumi.GetMemberColor().R,
+            BangDreamMember.Mutsumi.GetMemberColor().G,
+            BangDreamMember.Mutsumi.GetMemberColor().B
+            );
 
     public override string BigEnergyIconPath => "res://ItsCrychic/images/charui/sakiko/sakiko_big_energy.png";
     public override string TextEnergyIconPath => "res://ItsCrychic/images/charui/sakiko/sakiko_small_energy.png";

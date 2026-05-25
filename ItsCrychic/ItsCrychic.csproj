@@ -14,5 +14,9 @@
         <Compile Remove="ItsCrychic/**"/>
         <EmbeddedResource Remove="ItsCrychic/**"/>
     </ItemGroup>
+    
+    <ItemGroup>
+      <PackageReference Update="STS2.RitsuLib" Version="0.3.1" />
+    </ItemGroup>
 
 </Project>
