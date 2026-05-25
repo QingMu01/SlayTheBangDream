@@ -15,7 +15,7 @@ public class LingeringSound()
     private const int CustomCost = 0;
     private const CardType CustomType = CardType.Attack;
     private const CardRarity CustomRarity = CardRarity.Uncommon;
-    private const TargetType CustomTarget = TargetType.AllAllies;
+    private const TargetType CustomTarget = TargetType.AllEnemies;
 
     public int LingeredEnergyCost => 1;
 
@@ -39,11 +39,13 @@ public class LingeringSound()
         DynamicVars.Damage.UpgradeValueBy(1m);
     }
 
-    public async Task OnSubside(PlayerChoiceContext choiceContext, CardPlay play)
+    public Task OnSubside(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        if (Pile?.Type != PileType.Hand)
-        {
-            await CardPileCmd.Add(this, PileType.Hand);
-        }
+        return Task.CompletedTask;
+    }
+
+    protected override PileType GetResultPileTypeForCardPlay()
+    {
+        return ((ISubsideCardFlag)this).CanSubside ? PileType.Hand : base.GetResultPileTypeForCardPlay();
     }
 }

@@ -3,6 +3,7 @@ using BangDreamLib.Scripts.Features;
 using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Combat;
+using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;
 
 namespace BangDreamLib.Scripts.Commands;
@@ -21,6 +22,18 @@ public static class LingeredCmd
 
         await context.ReduceLingeredEnergy(card.CombatState, (int)finalReduced);
         return finalReduced <= context.Counter;
+    }
+
+    public static async Task JustAdd(Player player, int amount)
+    {
+        ArgumentNullException.ThrowIfNull(player.Creature.CombatState);
+        await player.AttachedData().LingeredEnergy.AddLingeredEnergy(player.Creature.CombatState, amount);
+    }
+
+    public static async Task JustReduce(Player player, int amount)
+    {
+        ArgumentNullException.ThrowIfNull(player.Creature.CombatState);
+        await player.AttachedData().LingeredEnergy.ReduceLingeredEnergy(player.Creature.CombatState, amount);
     }
 
     public static async Task AddLeByCard(CardModel card, int amount)

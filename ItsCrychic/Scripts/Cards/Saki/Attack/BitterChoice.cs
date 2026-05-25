@@ -44,7 +44,7 @@ public class BitterChoice()
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
 
-        if (!ISubsideCardFlag.DefaultSubsideCondition(this))
+        if (!((ISubsideCardFlag)this).CanSubside)
         {
             var discardPileCards = Owner.PlayerCombatState.DiscardPile.Cards;
             for (var i = 0; i < DynamicVars.Cards.IntValue; i++)

@@ -28,7 +28,7 @@ public class ObliviousPrerogative()
         ArgumentNullException.ThrowIfNull(CombatState);
 
         var handCards = PileType.Hand.GetPile(Owner).Cards.ToList();
-        if (handCards.Count > 0 && !ShouldGlowGold)
+        if (handCards.Count > 0 && !((ISubsideCardFlag)this).CanSubside)
         {
             var selectedCards = await CardSelectCmd.FromSimpleGrid(choiceContext, handCards,
                 Owner, CardSelectorPrompt.ToPlay.GetFixedPrefs(DynamicVars.Cards.IntValue));
@@ -52,9 +52,9 @@ public class ObliviousPrerogative()
 
             foreach (var selectedCard in selectedCards)
             {
-                selectedCard.BaseReplayCount += DynamicVars.Repeat.IntValue;
+                selectedCard.BaseReplayCount += DynamicVars.Repeat.IntValue - 1;
                 await CardCmd.AutoPlay(choiceContext, selectedCard, null);
-                selectedCard.BaseReplayCount -= DynamicVars.Repeat.IntValue;
+                selectedCard.BaseReplayCount -= DynamicVars.Repeat.IntValue - 1;
             }
         }
     }

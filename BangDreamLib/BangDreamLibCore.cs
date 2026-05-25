@@ -212,22 +212,16 @@ public class BangDreamLibCore
                 }
             }
         });
-        ModHelper.SubscribeForRunStateHooks("ExtraSubscribeRun", _ =>
-        {
-            var subscribeModels = new List<AbstractModel>
-            {
-                ModelDb.Singleton<CopySelfAndPlayCardRule>(),
-                ModelDb.Singleton<LingeredEnergyRule>()
-            };
-            return subscribeModels;
-        });
         ModHelper.SubscribeForCombatStateHooks("ExtraSubscribe",
-            combatState =>
+            state =>
             {
-                var subscribeModels = new List<AbstractModel>();
-                subscribeModels.AddRange(combatState.Players.Select(player => player.AttachedData().LingeredEnergy));
-                subscribeModels.AddRange(combatState.Players.Select(player =>
-                    player.AttachedData().MusicNoteDamageTracker));
+                var subscribeModels = new List<AbstractModel>
+                {
+                    ModelDb.Singleton<LingeredEnergyRule>(),
+                    ModelDb.Singleton<CopySelfAndPlayCardRule>()
+                };
+                subscribeModels.AddRange(state.Players.Select(player => player.AttachedData().LingeredEnergy));
+                subscribeModels.AddRange(state.Players.Select(player => player.AttachedData().MusicNoteDamageTracker));
                 return subscribeModels;
             });
     }

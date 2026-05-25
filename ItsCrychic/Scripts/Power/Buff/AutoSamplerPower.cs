@@ -31,7 +31,7 @@ public class AutoSamplerPower : BandPowerModel
                 Flash();
                 await CreatureCmd.GainBlock(Owner,
                     new BlockVar(Amount * lingeredEnergy, ValueProp.Move | ValueProp.Unpowered), null);
-                await LingeredCmd.ReduceLeByPower(this, lingeredEnergy);
+                await LingeredCmd.JustReduce(Owner.Player, lingeredEnergy);
             }
         }
     }

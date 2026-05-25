@@ -1,9 +1,7 @@
 using BangDreamLib.Scripts.Interfaces.CardAugment;
-using ItsCrychic.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.ValueProps;
 
@@ -41,16 +39,14 @@ public class ObliviousMagic()
             .Execute(choiceContext);
     }
 
+    public async Task OnSubside(PlayerChoiceContext choiceContext, CardPlay play)
+    {
+        ArgumentNullException.ThrowIfNull(play.Target);
+        await CreatureCmd.Stun(play.Target);
+    }
 
     protected override void OnUpgrade()
     {
         RemoveKeyword(CardKeyword.Ethereal);
-    }
-
-    public async Task OnSubside(PlayerChoiceContext choiceContext, CardPlay play)
-    {
-        ArgumentNullException.ThrowIfNull(play.Target);
-
-        await CreatureCmd.Stun(play.Target);
     }
 }

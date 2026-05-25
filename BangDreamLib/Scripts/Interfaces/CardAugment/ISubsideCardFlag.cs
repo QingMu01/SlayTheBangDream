@@ -18,7 +18,7 @@ public interface ISubsideCardFlag
 
     Task OnSubside(PlayerChoiceContext choiceContext, CardPlay play);
 
-    public static readonly Func<ISubsideCardFlag, bool> DefaultSubsideCondition = subsideCard =>
+    private static readonly Func<ISubsideCardFlag, bool> DefaultSubsideCondition = subsideCard =>
     {
         if (subsideCard is CardModel { CombatState: not null } card)
         {
@@ -29,6 +29,6 @@ public interface ISubsideCardFlag
         return subsideCard.IgnoreSubsideCost;
     };
 
-    public static readonly Func<ISubsideCardFlag, bool> DefaultIgnoreCostCondition =
+    private static readonly Func<ISubsideCardFlag, bool> DefaultIgnoreCostCondition =
         subsideCard => subsideCard is CardModel { IsDupe: true };
 }
