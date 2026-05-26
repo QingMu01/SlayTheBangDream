@@ -91,7 +91,7 @@ internal class InitExtraDeckPatch : IPatchMethod
                     PopulateDeck(extraDeck, __instance);
                     var extraDeckSaveHelper = ModelDb.Relic<ExtraDeckSaveHelper>().ToMutable();
                     extraDeckSaveHelper.FloorAddedToDeck = 1;
-                    __instance.AddRelicInternal(extraDeckSaveHelper, silent: false);
+                    __instance.AddRelicInternal(extraDeckSaveHelper, silent: true);
                     BangDreamLibCore.Logger.Debug(
                         $"Init character {__instance.Character} Extra Deck({extraDeck.Count}) by SkinInfo.Starting.ExtraDeck");
                 }

@@ -4,6 +4,7 @@ using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
 using BangDreamLib.Scripts.Utils;
 using HarmonyLib;
+using MegaCrit.Sts2.addons.mega_text;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Localization;
@@ -41,36 +42,12 @@ internal class CardNodeSupportMusicTypePatch : IPatchMethod
         return [new ModPatchTarget(typeof(NCard), "UpdateTypePlaque")];
     }
 
-    public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+    public static void Postfix(NCard __instance, MegaLabel ____typeLabel)
     {
-        var codes = new List<CodeInstruction>(instructions);
-
-        var getModelMethod = AccessTools.PropertyGetter(typeof(NCard), "Model");
-        var getTypeMethod = AccessTools.PropertyGetter(typeof(CardModel), "Type");
-        var toLocStringMethod = AccessTools.Method(typeof(CardTypeExtensions), nameof(CardTypeExtensions.ToLocString));
-        var getMusicTypeMethod = AccessTools.Method(typeof(CardNodeSupportMusicTypePatch), nameof(GetMusicType));
-
-        for (var i = 0; i < codes.Count; i++)
+        if (__instance.Model is IPerformanceCard)
         {
-            yield return codes[i];
-            if (codes[i].Calls(getModelMethod))
-            {
-                if (i + 1 < codes.Count && codes[i + 1].Calls(getTypeMethod))
-                {
-                    yield return new CodeInstruction(OpCodes.Dup);
-                }
-            }
-
-            if (codes[i].Calls(toLocStringMethod))
-            {
-                yield return new CodeInstruction(OpCodes.Call, getMusicTypeMethod);
-            }
+            ____typeLabel.SetTextAutoSize(MusicType.GetFormattedText());
         }
-    }
-
-    private static LocString GetMusicType(CardModel card, LocString original)
-    {
-        return card is IPerformanceCard ? MusicType : original;
     }
 }
 

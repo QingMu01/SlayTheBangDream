@@ -1,5 +1,6 @@
 ﻿using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
+using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Saves.Runs;
 
 namespace BangDreamLib.Scripts.Relics.GameRules;
@@ -13,11 +14,6 @@ public class ExtraDeckSaveHelper : HiddenRelic
     {
         get
         {
-            if (_extraCards != null)
-            {
-                return _extraCards;
-            }
-
             _extraCards = [];
             foreach (var cardModel in BangDreamConst.PileExtraDeck.GetPile(Owner).Cards)
             {
@@ -27,5 +23,10 @@ public class ExtraDeckSaveHelper : HiddenRelic
             return _extraCards;
         }
         set => _extraCards = value;
+    }
+
+    public List<CardModel> GetSavedCards()
+    {
+        return _extraCards?.Select(CardModel.FromSerializable).ToList() ?? [];
     }
 }

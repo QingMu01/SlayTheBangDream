@@ -56,9 +56,9 @@ internal class LoadExtraDeckPatch : IPatchMethod
         {
             var extraDeck = BangDreamConst.PileExtraDeck.GetPile(__instance);
             extraDeck.Clear(true);
-            foreach (var serializableCard in extraDeckHelper.ExtraCards)
+            foreach (var card in extraDeckHelper.GetSavedCards())
             {
-                extraDeck.AddInternal(CardModel.FromSerializable(serializableCard), silent: true);
+                extraDeck.AddInternal(card, silent: true);
             }
         }
     }
