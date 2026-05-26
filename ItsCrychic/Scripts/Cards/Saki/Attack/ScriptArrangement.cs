@@ -1,12 +1,8 @@
 using BangDreamLib.Scripts.Commands;
-using BangDreamLib.Scripts.Extensions;
-using BangDreamLib.Scripts.Utils;
-using ItsCrychic.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.ValueProps;
 
@@ -33,11 +29,10 @@ public class ScriptArrangement() : AbstractSakikoCard(CustomCost, CustomType, Cu
         var hitCount = ResolveEnergyXValue();
         if (hitCount > 0)
         {
-            var enemies = CombatState.HittableEnemies.ToList();
             var attackedEnemies = new HashSet<Creature>();
             for (var i = 0; i < hitCount; i++)
             {
-                var enemy = GetNextTarget(enemies, i);
+                var enemy = GetNextTarget(CombatState.HittableEnemies.ToList(), i);
                 if (enemy == null)
                 {
                     return;
@@ -61,7 +56,7 @@ public class ScriptArrangement() : AbstractSakikoCard(CustomCost, CustomType, Cu
         DynamicVars.Damage.UpgradeValueBy(2m);
     }
 
-    private Creature? GetNextTarget(List<Creature> enemies, int startIndex)
+    private static Creature? GetNextTarget(List<Creature> enemies, int startIndex)
     {
         if (enemies.Count == 0)
             return null;
@@ -74,9 +69,9 @@ public class ScriptArrangement() : AbstractSakikoCard(CustomCost, CustomType, Cu
         var currentIndex = startIndex;
         while (searchCount < enemies.Count)
         {
+            currentIndex %= enemies.Count;
             if (enemies[currentIndex].IsHittable)
                 return enemies[currentIndex];
-            currentIndex = (currentIndex + 1) % enemies.Count;
             searchCount++;
         }
 

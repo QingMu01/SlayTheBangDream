@@ -1,4 +1,5 @@
 using BangDreamLib.Scripts.Commands;
+using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
@@ -22,12 +23,12 @@ public class RehearsalPrep() : AbstractSakikoCard(CustomCost, CustomType, Custom
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        new IntVar("Gain", 6)
+        QuickVar.LingeredEnergy.Create(6)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        await LingeredCmd.AddLeByCard(this, DynamicVars["Gain"].IntValue);
+        await LingeredCmd.AddLeByCard(this, DynamicVars["LingeredEnergy"].IntValue);
     }
 
     protected override void OnUpgrade()

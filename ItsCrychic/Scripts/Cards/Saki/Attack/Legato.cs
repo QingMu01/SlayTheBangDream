@@ -1,13 +1,11 @@
 ﻿using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
 using ItsCrychic.Scripts.Cards.Token;
-using ItsCrychic.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using MegaCrit.Sts2.Core.ValueProps;
 using STS2RitsuLib.Keywords;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
@@ -31,8 +29,8 @@ public class Legato() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity,
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        new DamageVar(6, ValueProp.Move),
-        new CardsVar(1)
+        QuickVar.Damage.Create(6),
+        QuickVar.Cards.Create(1)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)

@@ -1,9 +1,9 @@
+using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Interfaces.CardAugment;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using MegaCrit.Sts2.Core.ValueProps;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
@@ -24,7 +24,7 @@ public class ObliviousMagic()
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        new DamageVar(25m, ValueProp.Move)
+        QuickVar.Damage.Create(25)
     ];
 
 

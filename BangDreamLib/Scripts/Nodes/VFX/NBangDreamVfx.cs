@@ -1,4 +1,5 @@
 using Godot;
+using MegaCrit.Sts2.Core.Combat;
 
 namespace BangDreamLib.Scripts.Nodes.VFX;
 
@@ -111,6 +112,10 @@ public abstract partial class NBangDreamVfx : Node2D
 
         VfxContext.Clear();
         QueueFree();
+        if (CombatManager.Instance.IsInProgress)
+        {
+            _ = await CombatManager.Instance.CheckWinCondition();
+        }
     }
 }
 

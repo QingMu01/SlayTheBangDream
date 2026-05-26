@@ -1,4 +1,5 @@
 using BangDreamLib.Scripts.Commands;
+using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Powers;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Players;
@@ -15,11 +16,11 @@ public class GrittedTeethPower : BandPowerModel
 
     public override PowerStackType StackType => PowerStackType.Counter;
 
-    protected override IEnumerable<DynamicVar> CanonicalVars =>
+    protected override IEnumerable<DynamicVar> PowerVars =>
     [
-        new BlockVar(7m, ValueProp.Move | ValueProp.Unpowered),
-        new IntVar("Resonance", 3),
-        new EnergyVar(1)
+        QuickVar.Energy.Create(1),
+        QuickVar.LingeredEnergy.Create(3),
+        new BlockVar(7m, ValueProp.Move | ValueProp.Unpowered)
     ];
 
     public override async Task AfterPlayerTurnStartEarly(PlayerChoiceContext choiceContext, Player player)
@@ -34,7 +35,7 @@ public class GrittedTeethPower : BandPowerModel
             Flash();
             await PlayerCmd.LoseEnergy(1, Owner.Player);
             await CreatureCmd.GainBlock(Owner, DynamicVars.Block, null);
-            await LingeredCmd.AddLeByPower(this, DynamicVars["Resonance"].IntValue);
+            await LingeredCmd.AddLeByPower(this, DynamicVars["LingeredEnergy"].IntValue);
         }
     }
 }

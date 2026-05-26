@@ -1,13 +1,9 @@
+using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Interfaces.CardAugment;
-using ItsCrychic.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using MegaCrit.Sts2.Core.Models.Cards;
-using MegaCrit.Sts2.Core.Models.Powers;
-using MegaCrit.Sts2.Core.ValueProps;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
@@ -24,8 +20,8 @@ public class Pulverise() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        new DamageVar(8m, ValueProp.Move),
-        new EnergyVar(1)
+        QuickVar.Damage.Create(8),
+        QuickVar.Energy.Create(1),
     ];
 
 

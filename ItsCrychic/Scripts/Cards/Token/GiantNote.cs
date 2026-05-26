@@ -1,12 +1,12 @@
 using BangDreamLib.Scripts.Attributes;
 using BangDreamLib.Scripts.Cards;
 using BangDreamLib.Scripts.Commands;
+using BangDreamLib.Scripts.Extensions;
 using ItsCrychic.Scripts.Power.Buff;
 using ItsCrychic.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models.CardPools;
 using STS2RitsuLib.Scaffolding.Content;
@@ -25,8 +25,8 @@ public sealed class GiantNote() : BandCardModel(CustomCost, CustomType, CustomRa
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        new CardsVar(1),
-        new RepeatVar(1)
+        QuickVar.Cards.Create(1),
+        QuickVar.Repeat.Create(1)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)

@@ -1,11 +1,9 @@
-﻿using BangDreamLib.Scripts.Interfaces.CardAugment;
-using ItsCrychic.Scripts.Utils;
+﻿using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Interfaces.CardAugment;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using MegaCrit.Sts2.Core.ValueProps;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
@@ -21,7 +19,7 @@ public class LingeringSound()
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        new DamageVar(3m, ValueProp.Move)
+        QuickVar.Damage.Create(3)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)

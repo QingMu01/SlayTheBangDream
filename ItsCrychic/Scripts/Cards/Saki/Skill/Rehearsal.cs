@@ -22,8 +22,8 @@ public class Rehearsal() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        new CardsVar(1),
-        new CardsVar("Draw", 3)
+        QuickVar.Cards.Create(1),
+        QuickVar.Cards.Create("Draw", 3)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)

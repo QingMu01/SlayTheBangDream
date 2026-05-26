@@ -1,4 +1,4 @@
-﻿using ItsCrychic.Scripts.Utils;
+﻿using BangDreamLib.Scripts.Extensions;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
@@ -18,9 +18,14 @@ public class StressReaction() : AbstractSakikoCard(CustomCost, CustomType, Custo
     private const CardRarity CustomRarity = CardRarity.Common;
     private const TargetType CustomTarget = TargetType.AnyEnemy;
 
+    protected override IEnumerable<IHoverTip> CardHoverTips =>
+    [
+        HoverTipFactory.FromPower<WeakPower>()
+    ];
+
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        new DamageVar(5m, ValueProp.Move),
+        QuickVar.Damage.Create(5),
         new PowerVar<WeakPower>(1)
     ];
 

@@ -1,9 +1,10 @@
 using BangDreamLib.Scripts.Commands;
-using ItsCrychic.Scripts.Utils;
+using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
+using STS2RitsuLib.Keywords;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
@@ -14,9 +15,14 @@ public class CrescentAwakening() : AbstractSakikoCard(CustomCost, CustomType, Cu
     private const CardRarity CustomRarity = CardRarity.Common;
     private const TargetType CustomTarget = TargetType.None;
 
+    protected override IEnumerable<CardKeyword> CardKeywords =>
+    [
+        BangDreamConst.KeywordMusicNote.GetModCardKeyword()
+    ];
+
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        new RepeatVar(5)
+        QuickVar.Repeat.Create(5)
     ];
 
 

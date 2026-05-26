@@ -1,13 +1,11 @@
 using BangDreamLib.Scripts.Commands;
+using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Utils;
-using ItsCrychic.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using MegaCrit.Sts2.Core.ValueProps;
 using STS2RitsuLib.Keywords;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
@@ -39,8 +37,8 @@ public class DivineWrath() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        new DamageVar(8m, ValueProp.Move),
-        new IntVar("Gain", 2)
+        QuickVar.Damage.Create(8),
+        QuickVar.LingeredEnergy.Create(2)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
@@ -53,7 +51,7 @@ public class DivineWrath() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
 
-        await LingeredCmd.AddLeByCard(this, DynamicVars["Gain"].IntValue);
+        await LingeredCmd.AddLeByCard(this, QuickVar.LingeredEnergy.Get(DynamicVars).IntValue);
 
         if (Owner.RunState.Rng.CombatTargets.NextBool())
         {
@@ -63,6 +61,6 @@ public class DivineWrath() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
 
     protected override void OnUpgrade()
     {
-        DynamicVars["Gain"].UpgradeValueBy(1m);
+        DynamicVars["LingeredEnergy"].UpgradeValueBy(1m);
     }
 }

@@ -1,11 +1,9 @@
-﻿using BangDreamLib.Scripts.Interfaces.CardAugment;
-using ItsCrychic.Scripts.Utils;
+﻿using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Interfaces.CardAugment;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using MegaCrit.Sts2.Core.ValueProps;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
@@ -22,8 +20,8 @@ public class BestRegards() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        new BlockVar(7m, ValueProp.Move),
-        new CardsVar(1)
+        QuickVar.Block.Create(7),
+        QuickVar.Cards.Create(1)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)

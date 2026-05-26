@@ -28,7 +28,7 @@
   "ITS_CRYCHIC_POWER_ELEGANCE_POWER.smartDescription": "本回合，打出的下[blue]{Amount}[/blue]张牌放入[gold]演奏区[/gold]。",
   "ITS_CRYCHIC_POWER_GRITTED_TEETH_POWER.title": "咬紧牙关",
   "ITS_CRYCHIC_POWER_GRITTED_TEETH_POWER.description": "回合开始时，失去1点能量，获得[gold]格挡[/gold]和[gold]余音[/gold]。",
-  "ITS_CRYCHIC_POWER_GRITTED_TEETH_POWER.smartDescription": "在[blue]{Amount}[/blue]个回合内，回合开始时，失去1点能量，获得{Block}点[gold]格挡[/gold]和{Resonance}点[gold]余音[/gold]。",
+  "ITS_CRYCHIC_POWER_GRITTED_TEETH_POWER.smartDescription": "在[blue]{Amount}[/blue]个回合内，回合开始时，失去1点能量，获得{Block}点[gold]格挡[/gold]和{LingeredEnergy}点[gold]余音[/gold]。",
   "ITS_CRYCHIC_POWER_GIANT_NOTE_POWER.title": "巨大化",
   "ITS_CRYCHIC_POWER_GIANT_NOTE_POWER.description": "本回合，打出的[gold]巨大音符[/gold]弹奏的[gold]音符[/gold]数量翻倍。",
   "ITS_CRYCHIC_POWER_GIANT_NOTE_POWER.smartDescription": "本回合，打出的[gold]巨大音符[/gold]弹奏的[gold]音符[/gold]数量翻{Amount}倍。",

@@ -1,3 +1,4 @@
+using BangDreamLib.Scripts.Extensions;
 using ItsCrychic.Scripts.Cards.Token;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -26,7 +27,7 @@ public class InspirationBurst() : AbstractSakikoCard(CustomCost, CustomType, Cus
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        new CardsVar(2)
+        QuickVar.Cards.Create(2)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)

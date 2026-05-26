@@ -1,3 +1,4 @@
+using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
@@ -19,8 +20,8 @@ public class ObliviousPrerogative()
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        new CardsVar(1),
-        new RepeatVar(2)
+        QuickVar.Cards.Create(1),
+        QuickVar.Repeat.Create(2)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)

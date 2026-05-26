@@ -37,8 +37,6 @@ public abstract class MusicCardModel(
 
     public virtual bool IsInstant { get; set; } = false;
 
-    public virtual PileType WhenStopMoveToPile => BangDreamConst.PileExtraDraw.GetPileType();
-
     public virtual Task OnStartPerformance(PlayerChoiceContext choiceContext)
     {
         return Task.CompletedTask;
@@ -47,6 +45,15 @@ public abstract class MusicCardModel(
     public virtual Task OnStopPerformance(PlayerChoiceContext choiceContext)
     {
         return Task.CompletedTask;
+    }
+
+    public virtual PileType WhenStopMoveToPile
+    {
+        get
+        {
+            var moveTo = base.GetResultPileTypeForCardPlay();
+            return moveTo == PileType.Discard ? BangDreamConst.PileExtraDraw.GetPileType() : moveTo;
+        }
     }
 
     protected sealed override PileType GetResultPileTypeForCardPlay()

@@ -4,6 +4,7 @@ using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.ValueProps;
+using STS2RitsuLib.Combat.CardTargeting;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
@@ -12,7 +13,7 @@ public class SetTheStage() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
     private const int CustomCost = 1;
     private const CardType CustomType = CardType.Skill;
     private const CardRarity CustomRarity = CardRarity.Common;
-    private const TargetType CustomTarget = TargetType.AnyAlly;
+    private static readonly TargetType CustomTarget = CustomTargetType.Anyone;
 
     protected override IEnumerable<IHoverTip> CardHoverTips =>
     [

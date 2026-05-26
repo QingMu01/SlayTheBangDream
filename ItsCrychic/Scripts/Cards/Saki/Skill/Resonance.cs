@@ -1,8 +1,11 @@
+using BangDreamLib.Scripts.Utils;
 using ItsCrychic.Scripts.Power.Temporary;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
+using STS2RitsuLib.Cards.DynamicVars;
+using STS2RitsuLib.Keywords;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
@@ -13,9 +16,14 @@ public class Resonance() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
     private const CardRarity CustomRarity = CardRarity.Common;
     private const TargetType CustomTarget = TargetType.None;
 
+    protected override IEnumerable<CardKeyword> CardKeywords =>
+    [
+        BangDreamConst.KeywordMusicNote.GetModCardKeyword()
+    ];
+
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        new IntVar("AddedDamage", 1)
+        ModCardVars.Int("AddedDamage", 1)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)

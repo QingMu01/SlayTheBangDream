@@ -21,7 +21,7 @@ public class Revenge() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        new IntVar("Multiplier", 2),
+        ModCardVars.Int("Multiplier", 2),
         ModCardVars.Computed("CalcDamage", 7m,
             (card, target) =>
                 DynamicVarHelper.ResolveBaseVar(card, target, CalculateDamage),
@@ -33,7 +33,7 @@ public class Revenge() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity
     {
         ArgumentNullException.ThrowIfNull(play.Target);
 
-        await DamageCmd.Attack(this.DynamicVar<ComputedDynamicVar>("CalcDamage").Calculate(play.Target))
+        await DamageCmd.Attack(DynamicVars.ComputeVar("CalcDamage").Calculate(play.Target))
             .FromCard(this)
             .Targeting(play.Target)
             .WithHitFx("vfx/vfx_attack_slash")
@@ -49,7 +49,7 @@ public class Revenge() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity
     {
         if (card != null)
         {
-            var multiplier = card.DynamicVar<IntVar>("Multiplier").BaseValue;
+            var multiplier = card.DynamicVars["Multiplier"].BaseValue;
             var hasAttacked = CombatManager.Instance.History.Entries.OfType<CreatureAttackedEntry>()
                 .Any(item => item.Actor == target && item.DamageResults.Any(result =>
                     result.Receiver == card.Owner.Creature && result.TotalDamage > 0));

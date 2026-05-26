@@ -22,7 +22,7 @@ public class PlanBSakiko() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        new EnergyVar(3)
+        QuickVar.Energy.Create(3)
     ];
 
     protected override bool IsPlayable => Owner.AttachedData().LingeredEnergy.Counter == 0;

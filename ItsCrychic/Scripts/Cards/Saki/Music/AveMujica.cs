@@ -1,11 +1,11 @@
 using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models;
-using MegaCrit.Sts2.Core.Models.Cards;
-using STS2RitsuLib.CardPiles.Patches;
+using STS2RitsuLib.Keywords;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
@@ -15,6 +15,11 @@ public class AveMujica() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
     private const TargetType CustomTarget = TargetType.None;
 
     private List<CardModel> _effectCards = [];
+
+    protected override IEnumerable<CardKeyword> CardKeywords =>
+    [
+        BangDreamConst.KeywordPerformance.GetModCardKeyword()
+    ];
 
     protected override IEnumerable<IHoverTip> CardHoverTips =>
     [

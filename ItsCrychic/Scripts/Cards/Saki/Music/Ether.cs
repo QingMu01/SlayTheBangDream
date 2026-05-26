@@ -1,9 +1,9 @@
 using BangDreamLib.Scripts.Extensions;
-using ItsCrychic.Scripts.Utils;
+using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
+using STS2RitsuLib.Keywords;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
@@ -14,7 +14,9 @@ public class Ether() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        CardKeyword.Exhaust
+        CardKeyword.Exhaust,
+        BangDreamConst.KeywordPerformance.GetModCardKeyword(),
+        BangDreamConst.KeywordPerformanceArea.GetModCardKeyword()
     ];
 
     protected override IEnumerable<DynamicVar> CardVars => [];

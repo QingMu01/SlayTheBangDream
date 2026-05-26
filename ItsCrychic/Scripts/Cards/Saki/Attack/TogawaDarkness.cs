@@ -18,7 +18,7 @@ public class TogawaDarkness() : AbstractSakikoCard(CustomCost, CustomType, Custo
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        new IntVar("GoldReq", 15),
+        ModCardVars.Int("GoldReq", 15),
         ModCardVars.Computed("CalcDamage", 9m, card =>
                 DynamicVarHelper.ResolveBaseVar(card, CalculateDamage),
             (card, mode, target, runHooks) =>
@@ -29,7 +29,7 @@ public class TogawaDarkness() : AbstractSakikoCard(CustomCost, CustomType, Custo
     {
         ArgumentNullException.ThrowIfNull(play.Target);
 
-        await DamageCmd.Attack(this.DynamicVar<ComputedDynamicVar>("CalcDamage").Calculate())
+        await DamageCmd.Attack(DynamicVars.ComputeVar("CalcDamage").Calculate())
             .FromCard(this)
             .Targeting(play.Target)
             .WithHitFx("vfx/vfx_attack_slash")
@@ -45,7 +45,7 @@ public class TogawaDarkness() : AbstractSakikoCard(CustomCost, CustomType, Custo
     {
         if (card is { IsMutable: true })
         {
-            return 9m + card.Owner.Gold / card.DynamicVar<IntVar>("GoldReq").BaseValue;
+            return 9m + Math.Round(card.Owner.Gold / card.DynamicVars["GoldReq"].BaseValue);
         }
 
         return 9m;

@@ -1,12 +1,10 @@
-using ItsCrychic.Scripts.Utils;
+using BangDreamLib.Scripts.Extensions;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Nodes.Vfx;
-using MegaCrit.Sts2.Core.ValueProps;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
@@ -19,8 +17,8 @@ public class Desuwa() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity,
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        new DamageVar(1m, ValueProp.Move),
-        new BlockVar(1m, ValueProp.Move)
+        QuickVar.Damage.Create(1),
+        QuickVar.Block.Create(1)
     ];
 
     public override async Task AfterCardPlayedLate(PlayerChoiceContext choiceContext, CardPlay cardPlay)

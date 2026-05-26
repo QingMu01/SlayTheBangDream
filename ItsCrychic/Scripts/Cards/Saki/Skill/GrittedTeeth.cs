@@ -1,3 +1,4 @@
+using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
 using ItsCrychic.Scripts.Power.Buff;
 using MegaCrit.Sts2.Core.Commands;
@@ -5,7 +6,6 @@ using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using MegaCrit.Sts2.Core.ValueProps;
 using STS2RitsuLib.Keywords;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Skill;
@@ -30,9 +30,9 @@ public class GrittedTeeth() : AbstractSakikoCard(CustomCost, CustomType, CustomR
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        new EnergyVar(1),
-        new BlockVar(7m, ValueProp.Unpowered),
-        new IntVar("Resonance", 3),
+        QuickVar.Energy.Create(1),
+        QuickVar.Block.Create(7),
+        QuickVar.LingeredEnergy.Create(3),
         new PowerVar<GrittedTeethPower>(3)
     ];
 

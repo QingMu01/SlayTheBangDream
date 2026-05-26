@@ -31,9 +31,9 @@ internal class PreloadCommonPatch : IPatchMethod
         ];
     }
 
-    public static async void Postfix()
+    public static void Postfix()
     {
-        await BangDreamPreloadManager.LoadCommonAssets();
+        _ = BangDreamPreloadManager.LoadCommonAssets();
     }
 }
 
@@ -51,8 +51,8 @@ internal class PreloadRunPatch : IPatchMethod
         ];
     }
 
-    public static async void Postfix(RunState runState)
+    public static void Postfix(RunState runState)
     {
-        await BangDreamPreloadManager.LoadRunAssets(runState.Players);
+        _ = BangDreamPreloadManager.LoadRunAssets(runState.Players);
     }
 }

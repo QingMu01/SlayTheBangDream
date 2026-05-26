@@ -18,7 +18,7 @@ public class Moonlight() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        new IntVar("TrackTurn", 2),
+        ModCardVars.Int("TrackTurn", 2),
         ModCardVars.Computed("CalcDamage", 7m, card =>
                 DynamicVarHelper.ResolveBaseVar(card, CalculateDamage),
             (card, mode, target, runHooks) =>
@@ -29,7 +29,7 @@ public class Moonlight() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
     {
         ArgumentNullException.ThrowIfNull(play.Target);
 
-        await DamageCmd.Attack(this.DynamicVar<ComputedDynamicVar>("CalcDamage").Calculate())
+        await DamageCmd.Attack(DynamicVars.ComputeVar("CalcDamage").Calculate())
             .FromCard(this)
             .Targeting(play.Target)
             .WithHitFx("vfx/vfx_attack_slash")
@@ -52,7 +52,7 @@ public class Moonlight() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
                 return allDamage;
             }
 
-            var intVar = card.DynamicVar<IntVar>("TrackTurn");
+            var intVar = card.DynamicVars["TrackTurn"];
             var tracebackTurn = Math.Min(intVar.IntValue, tracker.CombatHistory.Count);
             for (var i = tracebackTurn - 1; i >= 0; i--)
             {

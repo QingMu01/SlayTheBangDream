@@ -1,6 +1,7 @@
-﻿using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using MegaCrit.Sts2.Core.Models;
+﻿using System.Diagnostics.CodeAnalysis;
+using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.ValueProps;
+using STS2RitsuLib.Cards.DynamicVars;
 
 namespace BangDreamLib.Scripts.Extensions;
 
@@ -12,12 +13,26 @@ public static class DynamicVarsExtensions
         [QuickVar.Damage] = baseValue => new DamageVar(baseValue, ValueProp.Move),
         [QuickVar.Block] = baseValue => new BlockVar(baseValue, ValueProp.Move),
         [QuickVar.Energy] = baseValue => new EnergyVar(baseValue),
-        [QuickVar.Subside] = baseValue => new IntVar("Subside", baseValue),
+        [QuickVar.LingeredEnergy] = baseValue => new IntVar("LingeredEnergy", baseValue),
         [QuickVar.Gold] = baseValue => new GoldVar(baseValue),
         [QuickVar.Heal] = baseValue => new HealVar(baseValue),
         [QuickVar.HpLoss] = baseValue => new HpLossVar(baseValue),
         [QuickVar.Repeat] = baseValue => new RepeatVar(baseValue),
         [QuickVar.Stars] = baseValue => new StarsVar(baseValue)
+    };
+
+    private static readonly Dictionary<QuickVar, Func<string, int, DynamicVar>> QuickVarTypeWithNameMap = new()
+    {
+        [QuickVar.Cards] = (name, baseValue) => new CardsVar(name, baseValue),
+        [QuickVar.Damage] = (name, baseValue) => new DamageVar(name, baseValue, ValueProp.Move),
+        [QuickVar.Block] = (name, baseValue) => new BlockVar(name, baseValue, ValueProp.Move),
+        [QuickVar.Energy] = (name, baseValue) => new EnergyVar(name, baseValue),
+        [QuickVar.LingeredEnergy] = (name, baseValue) => new IntVar(name, baseValue),
+        [QuickVar.Gold] = (name, baseValue) => new GoldVar(name, baseValue),
+        [QuickVar.Heal] = (name, baseValue) => new HealVar(name, baseValue),
+        [QuickVar.HpLoss] = (name, baseValue) => new HpLossVar(name, baseValue),
+        [QuickVar.Repeat] = (name, baseValue) => new RepeatVar(name, baseValue),
+        [QuickVar.Stars] = (name, baseValue) => new StarsVar(name, baseValue)
     };
 
     private static readonly Dictionary<QuickVar, string> QuickVarNameMap = new()
@@ -26,7 +41,7 @@ public static class DynamicVarsExtensions
         [QuickVar.Damage] = nameof(DynamicVarSet.Damage),
         [QuickVar.Block] = nameof(DynamicVarSet.Block),
         [QuickVar.Energy] = nameof(DynamicVarSet.Energy),
-        [QuickVar.Subside] = "Subside",
+        [QuickVar.LingeredEnergy] = "LingeredEnergy",
         [QuickVar.Gold] = nameof(DynamicVarSet.Gold),
         [QuickVar.Heal] = nameof(DynamicVarSet.Heal),
         [QuickVar.HpLoss] = nameof(DynamicVarSet.HpLoss),
@@ -34,67 +49,34 @@ public static class DynamicVarsExtensions
         [QuickVar.Stars] = nameof(DynamicVarSet.Stars)
     };
 
-    public static T DynamicVar<T>(this CardModel cardModel, string name) where T : DynamicVar
+    private static bool Var<T>(DynamicVarSet varSet, string name, [MaybeNullWhen(false)] out T var)
+        where T : DynamicVar
     {
-        return cardModel.DynamicVars.VarOrNull<T>(name) ??
-               throw new ArgumentNullException($"Card ({cardModel}) does not have dynamic var: {name}");
-    }
-
-    public static DynamicVar DynamicVar(this CardModel cardModel, string name)
-    {
-        return cardModel.DynamicVar<DynamicVar>(name);
-    }
-
-    public static T DynamicVar<T>(this PowerModel powerModel, string name) where T : DynamicVar
-    {
-        return powerModel.DynamicVars.VarOrNull<T>(name) ??
-               throw new ArgumentNullException($"Power ({powerModel}) does not have dynamic var: {name}");
-    }
-
-    public static DynamicVar DynamicVar(this PowerModel powerModel, string name)
-    {
-        return powerModel.DynamicVar<DynamicVar>(name);
-    }
-
-    public static T DynamicVar<T>(this RelicModel relicModel, string name) where T : DynamicVar
-    {
-        return relicModel.DynamicVars.VarOrNull<T>(name) ??
-               throw new ArgumentNullException($"Relic ({relicModel}) does not have dynamic var: {name}");
-    }
-
-    public static DynamicVar DynamicVar(this RelicModel relicModel, string name)
-    {
-        return relicModel.DynamicVar<DynamicVar>(name);
-    }
-
-    public static T Var<T>(this DynamicVarSet varSet, string name) where T : DynamicVar
-    {
+        var = null;
         if (varSet.TryGetValue(name, out var dynamicVar))
         {
             if (dynamicVar is T targetVar)
             {
-                return targetVar;
+                var = targetVar;
+                return true;
             }
 
-            BangDreamLibCore.Logger.Warn($"Dynamic var ({name}) is not {typeof(T)}");
+            BangDreamLibCore.Logger.Warn($"Find dynamic var ({name}) but type  is not {typeof(T)}");
         }
 
-        throw new ArgumentNullException($"Dynamic var ({name}) does not exist.");
+        return false;
     }
 
-    public static T? VarOrNull<T>(this DynamicVarSet varSet, string name) where T : DynamicVar
+    public static ComputedDynamicVar ComputeVar(this DynamicVarSet varSet, string name)
     {
-        if (varSet.TryGetValue(name, out var dynamicVar))
-        {
-            if (dynamicVar is T targetVar)
-            {
-                return targetVar;
-            }
+        return Var<ComputedDynamicVar>(varSet, name, out var computedVar)
+            ? computedVar
+            : throw new KeyNotFoundException($"Compute dynamic var {name} not found");
+    }
 
-            BangDreamLibCore.Logger.Warn($"Dynamic var ({name}) is not {typeof(T)}");
-        }
-
-        return null;
+    public static DynamicVar Create(this QuickVar quickVar, string name, int baseValue)
+    {
+        return QuickVarTypeWithNameMap[quickVar].Invoke(name, baseValue);
     }
 
     public static DynamicVar Create(this QuickVar quickVar, int baseValue)
@@ -102,9 +84,16 @@ public static class DynamicVarsExtensions
         return QuickVarTypeMap[quickVar].Invoke(baseValue);
     }
 
+    public static DynamicVar Get(this QuickVar quickVar, DynamicVarSet varSet, string name)
+    {
+        return Var<DynamicVar>(varSet, name, out var dynamicVar)
+            ? dynamicVar
+            : throw new KeyNotFoundException($"QuickVar {quickVar} not found");
+    }
+
     public static DynamicVar Get(this QuickVar quickVar, DynamicVarSet varSet)
     {
-        return varSet.Var<DynamicVar>(QuickVarNameMap[quickVar]);
+        return quickVar.Get(varSet, QuickVarNameMap[quickVar]);
     }
 }
 
@@ -114,7 +103,7 @@ public enum QuickVar
     Damage,
     Block,
     Energy,
-    Subside,
+    LingeredEnergy,
     Gold,
     Heal,
     HpLoss,

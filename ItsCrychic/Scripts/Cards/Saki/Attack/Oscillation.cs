@@ -1,12 +1,11 @@
 ﻿using BangDreamLib.Scripts.Commands;
+using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
-using ItsCrychic.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using MegaCrit.Sts2.Core.ValueProps;
+using STS2RitsuLib.Cards.DynamicVars;
 using STS2RitsuLib.Keywords;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
@@ -25,8 +24,8 @@ public class Oscillation() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        new("Oscillation", 1),
-        new DamageVar(8, ValueProp.Move)
+        ModCardVars.Int("Oscillation", 1),
+        QuickVar.Damage.Create(8),
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)

@@ -1,13 +1,10 @@
 ﻿using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Utils;
-using ItsCrychic.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using MegaCrit.Sts2.Core.ValueProps;
 using STS2RitsuLib.Keywords;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Skill;
@@ -28,8 +25,8 @@ public class Evacuation() : AbstractSakikoCard(CustomCost, CustomType, CustomRar
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        new BlockVar(4m, ValueProp.Move),
-        new BlockVar("ExtraBlock", 5m, ValueProp.Move)
+        QuickVar.Block.Create(4),
+        QuickVar.Block.Create("ExtraBlock", 5)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)

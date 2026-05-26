@@ -33,7 +33,7 @@ public class StressBeat()
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        new IntVar("VulnerableDamage", 3),
+        ModCardVars.Int("VulnerableDamage", 3),
         ModCardVars.Computed("CalcDamage", 14m,
             (card, target) =>
                 DynamicVarHelper.ResolveBaseVar(card, target, CalculateDamage),
@@ -48,7 +48,7 @@ public class StressBeat()
     {
         ArgumentNullException.ThrowIfNull(play.Target);
 
-        await DamageCmd.Attack(this.DynamicVar<ComputedDynamicVar>("CalcDamage").Calculate(play.Target))
+        await DamageCmd.Attack(DynamicVars.ComputeVar("CalcDamage").Calculate(play.Target))
             .FromCard(this)
             .Targeting(play.Target)
             .WithHitFx("vfx/vfx_attack_slash")
@@ -72,7 +72,7 @@ public class StressBeat()
         var powerAmount = target?.GetPowerAmount<VulnerablePower>();
         if (cardModel != null && powerAmount.HasValue)
         {
-            return 14m + powerAmount.Value * cardModel.DynamicVar<IntVar>("VulnerableDamage").BaseValue;
+            return 14m + powerAmount.Value * cardModel.DynamicVars["VulnerableDamage"].BaseValue;
         }
 
         return 14m;

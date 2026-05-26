@@ -1,8 +1,8 @@
+using BangDreamLib.Scripts.Extensions;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using MegaCrit.Sts2.Core.ValueProps;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
@@ -13,6 +13,8 @@ public class PorkCutletBento() : AbstractSakikoCard(CustomCost, CustomType, Cust
     private const CardRarity CustomRarity = CardRarity.Rare;
     private const TargetType CustomTarget = TargetType.Self;
 
+    public override bool GainsBlock => true;
+
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
         CardKeyword.Exhaust
@@ -20,10 +22,10 @@ public class PorkCutletBento() : AbstractSakikoCard(CustomCost, CustomType, Cust
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        new HealVar(10m),
-        new BlockVar(10m, ValueProp.Move)
+        QuickVar.Heal.Create(10),
+        QuickVar.Block.Create(10)
     ];
-    
+
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
         await CreatureCmd.Heal(Owner.Creature, DynamicVars.Heal.BaseValue);

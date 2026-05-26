@@ -1,12 +1,12 @@
 using BangDreamLib.Scripts.Attributes;
 using BangDreamLib.Scripts.Cards;
 using BangDreamLib.Scripts.Commands;
+using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
 using ItsCrychic.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models.CardPools;
 using STS2RitsuLib.Keywords;
@@ -32,14 +32,20 @@ public class MemoryPuzzle() : BandCardModel(CustomCost, CustomType, CustomRarity
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        new CardsVar(1),
-        new IntVar("Resonance", 1)
+        QuickVar.Cards.Create(1),
+        QuickVar.LingeredEnergy.Create(1),
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
         await CardPileCmd.Draw(choiceContext, DynamicVars.Cards.BaseValue, Owner);
 
-        await LingeredCmd.AddLeByCard(this, DynamicVars["Resonance"].IntValue);
+        await LingeredCmd.AddLeByCard(this, DynamicVars["LingeredEnergy"].IntValue);
+    }
+
+    protected override void OnUpgrade()
+    {
+        DynamicVars.Cards.UpgradeValueBy(1);
+        DynamicVars["LingeredEnergy"].UpgradeValueBy(1);
     }
 }

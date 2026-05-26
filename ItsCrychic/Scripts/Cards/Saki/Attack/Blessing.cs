@@ -33,22 +33,21 @@ public class Blessing() : AbstractSakikoCard(CustomCost, CustomType, CustomRarit
             (card, mode, target, runHooks) =>
                 DynamicVarHelper.ResolvePreviewBlockVar(card, mode, target, runHooks, CalcIncrease)),
         QuickVar.Repeat.Create(0),
-        new IntVar("IncreaseStep", 1)
+        ModCardVars.Int("IncreaseStep", 1)
     ];
-
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
         ArgumentNullException.ThrowIfNull(play.Target);
 
-        await DamageCmd.Attack(this.DynamicVar("BaseDamage").BaseValue)
+        await DamageCmd.Attack(DynamicVars.ComputeVar("BaseDamage").Calculate(play.Target))
             .FromCard(this)
             .Targeting(play.Target)
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
 
         await CreatureCmd.GainBlock(Owner.Creature,
-            new BlockVar(this.DynamicVar("BaseBlock").BaseValue, ValueProp.Move), play);
+            new BlockVar(DynamicVars.ComputeVar("BaseBlock").Calculate(), ValueProp.Move), play);
     }
 
     public Task OnSubside(PlayerChoiceContext choiceContext, CardPlay play)
@@ -64,7 +63,7 @@ public class Blessing() : AbstractSakikoCard(CustomCost, CustomType, CustomRarit
 
     private static decimal CalcIncrease(CardModel? card)
     {
-        if (card != null && card.DynamicVars.TryGetValue("Repeat",out var dynamicVar))
+        if (card != null && card.DynamicVars.TryGetValue("Repeat", out var dynamicVar))
         {
             return 4m + dynamicVar.BaseValue;
         }

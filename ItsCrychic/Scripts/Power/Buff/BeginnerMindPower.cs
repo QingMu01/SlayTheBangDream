@@ -18,9 +18,9 @@ public class BeginnerMindPower : BandPowerModel
 
     public override PowerStackType StackType => PowerStackType.Counter;
 
-    protected override IEnumerable<DynamicVar> CanonicalVars =>
+    protected override IEnumerable<DynamicVar> PowerVars =>
     [
-        new EnergyVar(1)
+        QuickVar.Energy.Create(1)
     ];
 
     public override async Task AfterPlayerTurnStart(PlayerChoiceContext choiceContext, Player player)

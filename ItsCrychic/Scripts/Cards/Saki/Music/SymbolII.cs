@@ -2,14 +2,14 @@ using BangDreamLib.Scripts.Commands;
 using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Interfaces.GameHook;
 using BangDreamLib.Scripts.Utils;
-using ItsCrychic.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models;
+using STS2RitsuLib.Cards.DynamicVars;
+using STS2RitsuLib.Keywords;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
@@ -18,11 +18,17 @@ public class SymbolIi() : AbstractSakikoMusicCard(CustomRarity, CustomTarget), I
     private const CardRarity CustomRarity = CardRarity.Uncommon;
     private const TargetType CustomTarget = TargetType.None;
 
+    protected override IEnumerable<CardKeyword> CardKeywords =>
+    [
+        BangDreamConst.KeywordPerformance.GetModCardKeyword(),
+        BangDreamConst.KeywordPerformanceArea.GetModCardKeyword()
+    ];
+
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        new RepeatVar(5),
-        new IntVar("AddedDamage", 2),
-        new CardsVar(1)
+        QuickVar.Repeat.Create(5),
+        QuickVar.Cards.Create(1),
+        ModCardVars.Int("AddedDamage", 2)
     ];
 
     public override async Task OnStartPerformance(PlayerChoiceContext choiceContext)

@@ -16,8 +16,9 @@ public class SakikoMusicalCardPool : TypeListCardPoolModel
         MaterialUtils.CreateReplaceHueShaderMaterial(
             BangDreamMember.Sakiko.GetMemberColor().R,
             BangDreamMember.Sakiko.GetMemberColor().G,
-            BangDreamMember.Sakiko.GetMemberColor().B
-            );
+            BangDreamMember.Sakiko.GetMemberColor().B,
+            1.1f
+        );
 
     public override string BigEnergyIconPath => "res://ItsCrychic/images/charui/sakiko/sakiko_big_energy.png";
     public override string TextEnergyIconPath => "res://ItsCrychic/images/charui/sakiko/sakiko_small_energy.png";

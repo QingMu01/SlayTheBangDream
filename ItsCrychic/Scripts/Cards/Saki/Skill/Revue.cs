@@ -5,6 +5,7 @@ using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models;
+using STS2RitsuLib.Keywords;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
@@ -14,6 +15,11 @@ public class Revue() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, 
     private const CardType CustomType = CardType.Skill;
     private const CardRarity CustomRarity = CardRarity.Rare;
     private const TargetType CustomTarget = TargetType.None;
+
+    protected override IEnumerable<CardKeyword> CardKeywords =>
+    [
+        BangDreamConst.KeywordPerformanceArea.GetModCardKeyword()
+    ];
 
     protected override IEnumerable<DynamicVar> CardVars => [];
 

@@ -7,7 +7,6 @@ using ItsCrychic.Scripts.Character.CardPools;
 using ItsCrychic.Scripts.Utils;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.CardPools;
@@ -37,7 +36,7 @@ public class MelodyFragments() : MusicCardModel(CustomCost, CustomRarity, Custom
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        new RepeatVar(3)
+        QuickVar.Repeat.Create(3)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay cardPlay)

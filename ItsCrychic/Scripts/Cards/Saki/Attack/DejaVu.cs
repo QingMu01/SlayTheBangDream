@@ -1,11 +1,9 @@
-﻿using BangDreamLib.Scripts.Interfaces.CardAugment;
-using ItsCrychic.Scripts.Utils;
+﻿using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Interfaces.CardAugment;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using MegaCrit.Sts2.Core.ValueProps;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
@@ -20,8 +18,8 @@ public class DejaVu() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity,
     public int LingeredEnergyCost => 3;
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        new DamageVar(3, ValueProp.Move),
-        new RepeatVar(1)
+        QuickVar.Damage.Create(3),
+        QuickVar.Repeat.Create(1),
     ];
 
     public Task OnSubside(PlayerChoiceContext choiceContext, CardPlay play)

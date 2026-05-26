@@ -18,7 +18,8 @@ public class PunishmentPower : BandPowerModel
     public override async Task AfterDamageReceived(PlayerChoiceContext choiceContext, Creature target,
         DamageResult result, ValueProp props, Creature? dealer, CardModel? cardSource)
     {
-        if (target == Owner && !props.HasFlag(ValueProp.Unpowered) && !props.HasFlag(ValueProp.Unblockable) &&
+        if (target == Owner && !props.HasFlag(ValueProp.Move) &&
+            !props.HasFlag(ValueProp.Unpowered | ValueProp.Unblockable) &&
             result.TotalDamage > 0)
         {
             await CreatureCmd.Damage(choiceContext, target,

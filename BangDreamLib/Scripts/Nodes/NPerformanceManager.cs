@@ -297,9 +297,7 @@ public partial class NPerformanceManager : Control
         var nextPile = PileType.Discard;
         if (card is IPerformanceCard performanceCard)
         {
-            nextPile = !card.Keywords.Contains(CardKeyword.Exhaust)
-                ? PileType.Exhaust
-                : performanceCard.WhenStopMoveToPile;
+            nextPile =  performanceCard.WhenStopMoveToPile;
 
             await performanceCard.OnStopPerformance(new HookPlayerChoiceContext(card, card.Owner.NetId,
                 card.CombatState!, GameActionType.Combat));
