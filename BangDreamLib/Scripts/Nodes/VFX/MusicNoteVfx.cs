@@ -20,6 +20,7 @@ public partial class MusicNoteVfx : NBangDreamVfx
     private float _totalDistance;
     private float _traveledDistance;
     private bool _isMoving;
+    private bool _isHit;
 
     public void SetPath(Vector2 start, Vector2 end)
     {
@@ -78,9 +79,9 @@ public partial class MusicNoteVfx : NBangDreamVfx
         Rotation = _direction.Angle();
 
         // 到达终点后触发命中与结束流程
-        if (!IsFinished && _traveledDistance >= _totalDistance)
+        if (!_isHit && _traveledDistance >= _totalDistance)
         {
-            IsFinished = true;
+            _isHit = true;
             _ = OnReachedEndAsync();
         }
     }
@@ -93,10 +94,8 @@ public partial class MusicNoteVfx : NBangDreamVfx
             tween.TweenProperty(_sprites, "modulate:a", 0f, 0.2f);
             tween.TweenProperty(_sprites, "scale", Vector2.Zero, 0.2f);
 
-            // 触发 BeforeHit → HitTriggered → AfterHit
             await TriggerHit();
 
-            // 等待淡出动画完成，确保视觉效果不突兀
             await ToSignal(tween, Tween.SignalName.Finished);
         }
         catch (Exception ex)

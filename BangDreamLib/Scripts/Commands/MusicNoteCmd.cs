@@ -84,6 +84,13 @@ public static class MusicNoteCmd
 
                 return Task.CompletedTask;
             })
+            .SetOnFinish(async _ =>
+            {
+                if (card.CombatState != null)
+                {
+                    await BangDreamHook.OnMusicNotePlayed(card.CombatState, card.Owner);
+                }
+            })
             .Emit(0.1f, 8, 0.25f);
     }
 
