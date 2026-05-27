@@ -1,4 +1,5 @@
 using Godot;
+using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Random;
 
 namespace BangDreamLib.Scripts.Nodes.VFX;
@@ -57,7 +58,7 @@ public partial class MusicNoteVfx : NBangDreamVfx
 
     public override void _Process(double delta)
     {
-        if (Engine.IsEditorHint() || !_isMoving)
+        if (Engine.IsEditorHint() || !_isMoving || !CombatManager.Instance.IsInProgress)
             return;
 
         var step = Speed * (float)delta;

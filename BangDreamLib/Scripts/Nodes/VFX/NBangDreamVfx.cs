@@ -1,5 +1,4 @@
 using Godot;
-using MegaCrit.Sts2.Core.Combat;
 
 namespace BangDreamLib.Scripts.Nodes.VFX;
 
@@ -16,8 +15,6 @@ public abstract partial class NBangDreamVfx : Node2D
     public event Func<Task>? VfxFinished;
 
     public bool IsFinished { get; protected set; }
-
-    public VfxContext VfxContext { get; } = new();
 
     protected async Task TriggerSpawn()
     {
@@ -110,25 +107,6 @@ public abstract partial class NBangDreamVfx : Node2D
             }
         }
 
-        VfxContext.Clear();
         QueueFree();
-        if (CombatManager.Instance.IsInProgress)
-        {
-            _ = await CombatManager.Instance.CheckWinCondition();
-        }
-    }
-}
-
-public class VfxContext
-{
-    private readonly Dictionary<string, object> _data = new();
-
-    public void Set<T>(string key, T value) => _data[key] = value!;
-    public T? Get<T>(string key) => _data.TryGetValue(key, out var v) ? (T?)v : default;
-    public void Remove(string key) => _data.Remove(key);
-    public void Clear() => _data.Clear();
-
-    internal VfxContext()
-    {
     }
 }

@@ -54,7 +54,8 @@ public class SakikoSpecialRules : HiddenRelic, ILingeredChangedHook
 
     public override bool TryModifyRewards(Player player, List<Reward> rewards, AbstractRoom? room)
     {
-        if (player == Owner && player.Character is IExtraDeckSupportCharacter extraDeck && room != null)
+        if (player == Owner && rewards.Count > 0 && player.Character is IExtraDeckSupportCharacter extraDeck &&
+            room != null)
         {
             MusicCardReward? cardReward = null;
             switch (room.RoomType)

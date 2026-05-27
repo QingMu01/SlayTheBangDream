@@ -14,6 +14,6 @@ public class IncreaseLoudspeakerPower : BandPowerModel, IMusicNoteModifyHook
     public decimal ModifyMusicNoteDamageMultiplicative(Creature? target, decimal amount, Creature? dealer,
         AbstractModel? source)
     {
-        return dealer == Owner ? amount * Amount : amount;
+        return dealer == Owner ? Amount : 1m;
     }
 }

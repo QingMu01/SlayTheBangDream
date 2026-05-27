@@ -14,6 +14,6 @@ public class IncreaseVolumePower : BandPowerModel, IMusicNoteModifyHook
     public decimal ModifyMusicNoteDamageAdditive(Creature? target, decimal amount, Creature? dealer,
         AbstractModel? source)
     {
-        return amount + Amount;
+        return Amount;
     }
 }

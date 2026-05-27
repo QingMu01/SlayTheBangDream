@@ -65,9 +65,9 @@ public class SymbolIi() : AbstractSakikoMusicCard(CustomRarity, CustomTarget), I
     {
         if (Pile?.Type == BangDreamConst.PilePerformance.GetPileType() && dealer == Owner.Creature)
         {
-            return amount + DynamicVars["AddedDamage"].IntValue;
+            return DynamicVars["AddedDamage"].IntValue;
         }
 
-        return amount;
+        return 0m;
     }
 }

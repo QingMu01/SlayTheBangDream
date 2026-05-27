@@ -3,6 +3,7 @@ using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
 using BangDreamLib.Scripts.Utils;
 using Godot;
+using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Context;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -19,8 +20,8 @@ namespace BangDreamLib.Scripts.Nodes;
 
 public partial class NPerformanceManager : Control
 {
-    private static readonly LocString EmptyThink = new("combat_messages", "BANG_DREAM_LIB_PERFORMANCE_PILE.empty");
-    private static readonly LocString MaxSizeThink = new("combat_messages", "BANG_DREAM_LIB_PERFORMANCE_PILE.filled");
+    private static readonly LocString EmptyThink = new("combat_messages", "BANG_DREAM_LIB_FILL_PERFORMANCE_PILE.empty");
+    private static readonly LocString MaxSizeThink = new("combat_messages", "BANG_DREAM_LIB_MAX_SIZE_PERFORMANCE_PILE.filled");
 
     private Control _ItemContainer;
     private NCreature _creatureNode;
@@ -107,7 +108,7 @@ public partial class NPerformanceManager : Control
     {
         if (amount <= 0) return;
         Capacity += amount;
-        if (Capacity >= MaxCapacity && !force)
+        if (Capacity > MaxCapacity && !force)
         {
             Capacity = MaxCapacity;
             ThinkCmd.Play(MaxSizeThink, Player.Creature, 1.5d);
@@ -145,6 +146,11 @@ public partial class NPerformanceManager : Control
 
     private async void OnCardAdded(CardModel cardModel)
     {
+        if (!CombatManager.Instance.IsInProgress)
+        {
+            return;
+        }
+
         var isInstant = cardModel is IPerformanceCard { IsInstant: true };
         NPerformanceItem? slot = null;
         if (!isInstant && Capacity == 0)
@@ -297,7 +303,7 @@ public partial class NPerformanceManager : Control
         var nextPile = PileType.Discard;
         if (card is IPerformanceCard performanceCard)
         {
-            nextPile =  performanceCard.WhenStopMoveToPile;
+            nextPile = performanceCard.WhenStopMoveToPile;
 
             await performanceCard.OnStopPerformance(new HookPlayerChoiceContext(card, card.Owner.NetId,
                 card.CombatState!, GameActionType.Combat));
@@ -356,6 +362,6 @@ public partial class NPerformanceManager : Control
     private Vector2 GetSlotPos(int slotIndex)
     {
         var localPos = new Vector2(0, slotIndex * ItemStep);
-        return _ItemContainer?.GlobalPosition + localPos ?? localPos;
+        return _ItemContainer.GlobalPosition + localPos;
     }
 }

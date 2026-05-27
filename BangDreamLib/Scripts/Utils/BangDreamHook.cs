@@ -6,7 +6,6 @@ using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Hooks;
 using MegaCrit.Sts2.Core.Models;
-using MegaCrit.Sts2.Core.Runs;
 
 namespace BangDreamLib.Scripts.Utils;
 
@@ -14,164 +13,112 @@ public static class BangDreamHook
 {
     public static decimal ModifyLingeredEnergyAdd(ICombatState combatState, decimal amount)
     {
-        foreach (var model in combatState.IterateHookListeners())
-        {
-            if (model is IModifyLingeredHook modifyHook)
-            {
-                amount = modifyHook.ModifyLingeredEnergyAdd(amount);
-            }
-        }
-
-        return amount;
+        return combatState.IterateHookListeners().OfType<IModifyLingeredHook>()
+            .Aggregate(amount, (current, hook) => hook.ModifyLingeredEnergyAdd(current));
     }
 
     public static decimal ModifyLingeredEnergyReduce(ICombatState combatState, decimal amount)
     {
-        foreach (var model in combatState.IterateHookListeners())
-        {
-            if (model is IModifyLingeredHook modifyHook)
-            {
-                amount = modifyHook.ModifyLingeredEnergyReduce(amount);
-            }
-        }
-
-        return amount;
+        return combatState.IterateHookListeners().OfType<IModifyLingeredHook>()
+            .Aggregate(amount, (current, hook) => hook.ModifyLingeredEnergyReduce(current));
     }
 
-    public static decimal ModifyMusicNoteDamage(IRunState runState,
-        ICombatState? combatState,
+    public static decimal ModifyMusicNoteDamage(
+        ICombatState combatState,
         Creature? target,
         Creature? dealer,
         decimal damage,
         AbstractModel? source,
-        ModifyDamageHookType modifyDamageHookType,
-        out IEnumerable<AbstractModel> modifiers)
+        ModifyDamageHookType modifyDamageHookType
+    )
     {
-        var modelModifiers = new List<AbstractModel>();
         var damageAmount = damage;
         if (modifyDamageHookType.HasFlag(ModifyDamageHookType.Additive))
         {
-            foreach (var iterateHookListener in runState.IterateHookListeners(combatState))
-            {
-                if (iterateHookListener is IMusicNoteModifyHook modifyHook)
-                {
-                    var num = modifyHook.ModifyMusicNoteDamageAdditive(target, damageAmount, dealer, source);
-                    damageAmount += num;
-                    if (num != 0M)
-                        modelModifiers.Add(iterateHookListener);
-                }
-            }
+            damageAmount = combatState.IterateHookListeners().OfType<IMusicNoteModifyHook>()
+                .Aggregate(damageAmount,
+                    (current, modifyHook) =>
+                        current + modifyHook.ModifyMusicNoteDamageAdditive(target, current, dealer, source));
         }
 
         if (modifyDamageHookType.HasFlag(ModifyDamageHookType.Multiplicative))
         {
-            foreach (var iterateHookListener in runState.IterateHookListeners(combatState))
-            {
-                if (iterateHookListener is IMusicNoteModifyHook modifyHook)
-                {
-                    var num = modifyHook.ModifyMusicNoteDamageMultiplicative(target, damageAmount, dealer,
-                        source);
-                    damageAmount *= num;
-                    if (num != 1M)
-                        modelModifiers.Add(iterateHookListener);
-                }
-            }
+            damageAmount = combatState.IterateHookListeners().OfType<IMusicNoteModifyHook>()
+                .Aggregate(damageAmount,
+                    (current, modifyHook) =>
+                        current * modifyHook.ModifyMusicNoteDamageMultiplicative(target, current, dealer, source));
         }
 
-        modifiers = modelModifiers;
         return damageAmount;
     }
 
     public static decimal ModifyMusicNoteShotCount(ICombatState combatState, Creature? dealer, decimal amount,
         AbstractModel? source)
     {
-        foreach (var model in combatState.IterateHookListeners())
-        {
-            if (model is IMusicNoteModifyHook modifyHook)
-            {
-                amount = modifyHook.ModifyMusicNoteShotCount(amount, dealer, source);
-            }
-        }
-
-        return amount;
+        return combatState.IterateHookListeners().OfType<IMusicNoteModifyHook>().Aggregate(amount,
+            (current, model) => model.ModifyMusicNoteShotCount(current, dealer, source));
     }
 
     public static async Task AfterLingeredEnergyAdded(ICombatState combatState, Player player, int amount)
     {
-        foreach (var model in combatState.IterateHookListeners())
+        foreach (var model in combatState.IterateHookListeners().OfType<ILingeredChangedHook>())
         {
-            if (model is ILingeredChangedHook changedHook)
-            {
-                await changedHook.AfterLingeredEnergyAdded(player, amount);
-            }
+            await model.AfterLingeredEnergyAdded(player, amount);
         }
     }
 
     public static async Task AfterLingeredEnergyReduced(ICombatState combatState, Player player, int amount)
     {
-        foreach (var model in combatState.IterateHookListeners())
+        foreach (var model in combatState.IterateHookListeners().OfType<ILingeredChangedHook>())
         {
-            if (model is ILingeredChangedHook changedHook)
-            {
-                await changedHook.AfterLingeredEnergyReduced(player, amount);
-            }
+            await model.AfterLingeredEnergyReduced(player, amount);
         }
     }
 
     public static async Task OnLingeredEnergyFilled(ICombatState combatState, Player player, int amount)
     {
-        foreach (var model in combatState.IterateHookListeners())
+        foreach (var model in combatState.IterateHookListeners().OfType<ILingeredChangedHook>())
         {
-            if (model is ILingeredChangedHook changedHook)
-            {
-                await changedHook.OnLingeredEnergyFilled(player, amount);
-            }
+            await model.OnLingeredEnergyFilled(player, amount);
         }
     }
 
     public static async Task FinalUnprocessedOverflow(ICombatState combatState, Player player, int amount)
     {
-        foreach (var model in combatState.IterateHookListeners())
+        foreach (var model in combatState.IterateHookListeners().OfType<ILingeredChangedHook>())
         {
-            if (model is ILingeredChangedHook changedHook)
-            {
-                await changedHook.FinalUnprocessedOverflow(player, amount);
-            }
+            await model.FinalUnprocessedOverflow(player, amount);
         }
     }
 
 
     public static async Task OnCardEnterPerformanceArea(ICombatState combatState, CardModel cardModel)
     {
-        foreach (var model in combatState.IterateHookListeners())
+        foreach (var model in combatState.IterateHookListeners().OfType<ICardPerformanceHook>())
         {
-            if (model != cardModel && model is ICardPerformanceHook performanceHook)
+            if (model != cardModel)
             {
-                await performanceHook.OnCardEnterPerformanceArea(cardModel);
+                await model.OnCardEnterPerformanceArea(cardModel);
             }
         }
     }
 
     public static async Task OnCardLeavePerformanceArea(ICombatState combatState, CardModel cardModel)
     {
-        foreach (var model in combatState.IterateHookListeners())
+        foreach (var model in combatState.IterateHookListeners().OfType<ICardPerformanceHook>())
         {
-            if (model != cardModel && model is ICardPerformanceHook performanceHook)
+            if (model != cardModel)
             {
-                await performanceHook.OnCardLeavePerformanceArea(cardModel);
+                await model.OnCardLeavePerformanceArea(cardModel);
             }
         }
     }
 
     public static async Task OnMusicNotePlayed(ICombatState combatState, Player source)
     {
-        foreach (var model in combatState.IterateHookListeners())
+        foreach (var model in combatState.IterateHookListeners().OfType<IMusicNotePlayedHook>())
         {
-            if (model is IMusicNotePlayedHook playedHook)
-            {
-                await playedHook.OnMusicNotePlayed(new HookPlayerChoiceContext(source, source.NetId,
-                    GameActionType.Combat));
-            }
+            await model.OnMusicNotePlayed(new HookPlayerChoiceContext(source, source.NetId, GameActionType.Combat));
         }
     }
 }

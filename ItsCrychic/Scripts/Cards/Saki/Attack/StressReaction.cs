@@ -40,7 +40,6 @@ public class StressReaction() : AbstractSakikoCard(CustomCost, CustomType, Custo
             .Execute(choiceContext);
 
         var damageResult = attackCommand.Results.SelectMany(r => r).FirstOrDefault();
-        ItsCrychic.Logger.Info($"DamageResult: {damageResult}");
         if (damageResult is { Receiver.IsHittable: true })
         {
             await PowerCmd.Apply<WeakPower>(choiceContext, damageResult.Receiver, DynamicVars.Weak.IntValue,

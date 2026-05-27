@@ -8,13 +8,13 @@ public interface IMusicNoteModifyHook
     decimal ModifyMusicNoteDamageAdditive(Creature? target, decimal amount,
         Creature? dealer, AbstractModel? source)
     {
-        return amount;
+        return 0m;
     }
 
     decimal ModifyMusicNoteDamageMultiplicative(Creature? target, decimal amount,
         Creature? dealer, AbstractModel? source)
     {
-        return amount;
+        return 1m;
     }
 
     decimal ModifyMusicNoteShotCount(decimal amount, Creature? dealer, AbstractModel? source)

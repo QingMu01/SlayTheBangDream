@@ -34,6 +34,6 @@ public class Resonance() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
 
     protected override void OnUpgrade()
     {
-        DynamicVars["AddedDamage"].UpgradeValueBy(1m);
+        DynamicVars["AddedDamage"].UpgradeValueBy(1);
     }
 }
