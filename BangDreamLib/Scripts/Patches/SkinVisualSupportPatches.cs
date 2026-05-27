@@ -10,12 +10,13 @@ using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Entities.TreasureRelicPicking;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.RestSite;
-using MegaCrit.Sts2.Core.Nodes.Rooms;
-using MegaCrit.Sts2.Core.Nodes.Screens.Shops;
 using MegaCrit.Sts2.Core.Nodes.Screens.TreasureRoomRelic;
 using STS2RitsuLib.Patching.Core;
 using STS2RitsuLib.Patching.Models;
+using STS2RitsuLib.Scaffolding.Characters.Patches;
+using STS2RitsuLib.Scaffolding.Characters.Visuals;
 using STS2RitsuLib.Scaffolding.Godot;
+using STS2RitsuLib.Utils.HarmonyIl;
 
 namespace BangDreamLib.Scripts.Patches;
 
@@ -136,60 +137,58 @@ internal class MerchantScenePatch : IPatchMethod
 
     public static ModPatchTarget[] GetTargets()
     {
-        return [new ModPatchTarget(typeof(NMerchantRoom), "AfterRoomIsLoaded")];
+        return
+        [
+            new ModPatchTarget(typeof(NMerchantRoomProceduralCharacterInstantiationPatch), "RunAfterRoomIsLoaded"),
+            new ModPatchTarget(typeof(NFakeMerchantProceduralCharacterInstantiationPatch), "RunAfterRoomIsLoaded")
+        ];
     }
 
-    [HarmonyPriority(1024)]
     public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
     {
-        var codes = instructions.ToList();
-        var targetInstantiate = typeof(PackedScene)
-            .GetMethods()
-            .First(m => m is { Name: "Instantiate", IsGenericMethod: true })
-            .MakeGenericMethod(typeof(NMerchantCharacter));
-        var createMethod = AccessTools.Method(typeof(BangDreamMerchant), nameof(BangDreamMerchant.Create));
-        var playersField = AccessTools.Field(typeof(NMerchantRoom), "_players");
-        var listItemGetter = AccessTools.Method(typeof(List<Player>), "get_Item");
+        var targetMethod = AccessTools.Method(typeof(ModWorldSceneVisualNodeFactory),
+            nameof(ModWorldSceneVisualNodeFactory.TryInstantiateMerchantCharacter));
+        var customMethod = AccessTools.Method(typeof(BangDreamMerchant), nameof(BangDreamMerchant.Create));
 
-        var startIndex = -1;
-        var endIndex = -1;
+        var rewriter = HarmonyIlRewriter.From(instructions);
 
-        for (var i = 0; i < codes.Count; i++)
+        var pattern = HarmonyIlPattern.Sequence(
+            HarmonyIl.IsLdloc(),
+            HarmonyIl.IsCall(AccessTools.PropertyGetter(typeof(Player), nameof(Player.Character))),
+            HarmonyIl.IsCall(targetMethod)
+        );
+
+        if (rewriter.TryFind(pattern, out var match))
         {
-            if (codes[i].Calls(targetInstantiate))
+            LocalBuilder? local = null;
+            foreach (var currentCode in rewriter.Code)
             {
-                endIndex = i;
-                for (var j = i; j >= 0; j--)
+                if (currentCode.opcode == OpCodes.Ldloc_S)
                 {
-                    if (codes[j].opcode == OpCodes.Call &&
-                        codes[j].operand is MethodInfo { Name: "get_Cache" })
+                    if (currentCode.IsLdloc() && currentCode.operand is LocalBuilder lb)
                     {
-                        startIndex = j;
-                        break;
+                        if (lb.LocalType == typeof(Player))
+                        {
+                            local = lb;
+                        }
                     }
                 }
+            }
 
-                break;
+            if (local != null)
+            {
+                rewriter.InsertAfter(match, [
+                    HarmonyIl.Ldloc(local.LocalIndex),
+                    HarmonyIl.Call(customMethod)
+                ]);
+            }
+            else
+            {
+                BangDreamLibCore.Logger.Error("transpiler failed");
             }
         }
-
-        if (startIndex != -1 && endIndex != -1)
-        {
-            codes.RemoveRange(startIndex, endIndex - startIndex + 1);
-
-            var newInstructions = new List<CodeInstruction>
-            {
-                new(OpCodes.Ldarg_0),
-                new(OpCodes.Ldfld, playersField),
-                new(OpCodes.Ldloc_S, 5),
-                new(OpCodes.Callvirt, listItemGetter),
-                new(OpCodes.Call, createMethod)
-            };
-
-            codes.InsertRange(startIndex, newInstructions);
-        }
-
-        return codes.AsEnumerable();
+        
+        return rewriter.InstructionsChecked();
     }
 }
 

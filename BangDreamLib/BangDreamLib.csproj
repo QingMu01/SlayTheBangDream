@@ -29,10 +29,6 @@
         <EmbeddedResource Remove="shaders/**"/>
         <EmbeddedResource Remove="themes/**"/>
     </ItemGroup>
-
-    <ItemGroup>
-      <PackageReference Update="STS2.RitsuLib" Version="0.3.1" />
-    </ItemGroup>
     
     <Target Name="Copy Dependencies" AfterTargets="PostBuildEvent">
         <Message Text="Copying RitsuLib to mods folder." Importance="high"/>

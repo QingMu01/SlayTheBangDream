@@ -7,6 +7,6 @@ public class SakikoPotionPool : TypeListPotionPoolModel
 {
     public override string EnergyColorName => BangDreamMember.Sakiko.GetMemberName();
 
-    public override string BigEnergyIconPath => "res://ItsCrychic/Resources/images/charui/sakiko/sakiko_big_energy.png";
-    public override string TextEnergyIconPath => "res://ItsCrychic/Resources/images/charui/sakiko/sakiko_small_energy.png";
+    public override string BigEnergyIconPath => "res://ItsCrychic/images/charui/sakiko/sakiko_big_energy.png";
+    public override string TextEnergyIconPath => "res://ItsCrychic/images/charui/sakiko/sakiko_small_energy.png";
 }

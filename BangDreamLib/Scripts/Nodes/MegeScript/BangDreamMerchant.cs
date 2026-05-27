@@ -3,7 +3,6 @@ using BangDreamLib.Scripts.Interfaces.CharacterAugment;
 using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Nodes.Screens.Shops;
-using STS2RitsuLib.Scaffolding.Godot;
 
 namespace BangDreamLib.Scripts.Nodes.MegeScript;
 
@@ -23,26 +22,25 @@ public partial class BangDreamMerchant : NMerchantCharacter
         }
     }
 
-    public static NMerchantCharacter? Create(Player player)
+    public static NMerchantCharacter? Create(NMerchantCharacter? original, Player player)
     {
         if (player.Character is ISkinSupportCharacter)
         {
             var skinInfo = player.AttachedData().SkinManager.CurrentSkin?.SkinTemplate;
             var path = skinInfo?.MultiplayerVisual.MerchantScene;
             var name = skinInfo?.MultiplayerVisual.MerchantAnimName;
-            BangDreamMerchant? merchant = null;
             if (path != null)
             {
-                merchant = RitsuGodotNodeFactories.CreateFromScenePath<BangDreamMerchant>(path);
+                var merchant = PreloadManager.Cache.GetScene(path).Instantiate<BangDreamMerchant>();
                 if (!string.IsNullOrEmpty(name))
                 {
                     merchant._animName = name;
+                    BangDreamLibCore.Logger.Info($"Use Skin Support Merchant Replace Merchant Scene({path})");
+                    return merchant;
                 }
             }
-
-            return merchant;
         }
 
-        return PreloadManager.Cache.GetScene(player.Character.MerchantAnimPath).Instantiate<NMerchantCharacter>();
+        return original;
     }
 }

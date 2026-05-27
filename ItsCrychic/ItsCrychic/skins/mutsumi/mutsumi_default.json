@@ -8,7 +8,7 @@
     "ArmPaperTexture": null,
     "ArmScissorsTexture": null,
     "RestSiteAnimName": "Sit",
-    "MerchantAnimName": "relax"
+    "MerchantAnimName": "Relax"
   },
   "LocalVisual": {
     "EnergyCounterScene": "res://ItsCrychic/scenes/sakiko_energy_counter.tscn",
