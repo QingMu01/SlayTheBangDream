@@ -1,7 +1,9 @@
 using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Utils;
 using Godot;
+using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Nodes.Cards;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 
 namespace BangDreamLib.Scripts.Nodes.SubNode;
@@ -13,6 +15,8 @@ public partial class NPerformanceItem : NClickableControl
     private bool _isLocal;
 
     private CardModel? _model;
+
+    private NCard? _card;
 
     public CardModel? Model
     {
@@ -38,6 +42,9 @@ public partial class NPerformanceItem : NClickableControl
 
     private Tween? _rotateTween;
 
+    private Tween? _fadeInTween;
+    private Tween? _fadeOutTween;
+
     public static NPerformanceItem Create(bool isLocal, CardModel? model = null)
     {
         var item = PreloadKey.PerformanceItem.GetScene().Instantiate<NPerformanceItem>();
@@ -59,6 +66,8 @@ public partial class NPerformanceItem : NClickableControl
         {
             Modulate = new Color(0.5f, 0.5f, 0.5f);
         }
+
+        ConnectSignals();
     }
 
     private void StartRotateLoop()
@@ -71,21 +80,40 @@ public partial class NPerformanceItem : NClickableControl
         _rotateTween.Finished += StartRotateLoop;
     }
 
-    // TODO:获取焦点时展示当前卡牌
     protected override void OnFocus()
     {
         if (Model != null)
         {
-            base.OnFocus();
+            var cardNode = _card ?? NCard.Create(Model);
+            if (cardNode != null)
+            {
+                _card = cardNode;
+                GetParent().AddChild(_card);
+
+                _card.UpdateVisuals(PileType.Hand, CardPreviewMode.Normal);
+
+                _card.Scale = Vector2.Zero;
+                _card.GlobalPosition = GetViewport().GetVisibleRect().GetCenter();
+
+                _fadeInTween?.Kill();
+                _fadeOutTween?.Kill();
+
+                _fadeInTween = CreateTween();
+                _fadeInTween.TweenProperty(_card, "scale", Vector2.One, 0.2f);
+            }
         }
     }
 
-    // TODO:失去焦点时隐藏当前卡牌
     protected override void OnUnfocus()
     {
-        if (Model != null)
+        if (Model != null && _card != null)
         {
-            base.OnUnfocus();
+            _fadeInTween?.Kill();
+            _fadeOutTween?.Kill();
+
+            _fadeOutTween = CreateTween();
+            _fadeOutTween.TweenProperty(_card, "scale", Vector2.Zero, 0.2f);
+            _fadeOutTween.Finished += () => GetParent().RemoveChild(_card);
         }
     }
 }
