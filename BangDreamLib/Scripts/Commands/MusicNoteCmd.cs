@@ -36,6 +36,7 @@ public static class MusicNoteCmd
             .RepeatCount((int)finalCount)
             .SetOnSpawn((vfx, context) =>
             {
+                context.Clear();
                 var attackTarget = target ??
                                    card.Owner.RunState.Rng.CombatTargets.NextItem(card.CombatState.HittableEnemies);
                 var creatureSrc = card.Owner.Creature.GetCreatureNode();
@@ -55,55 +56,49 @@ public static class MusicNoteCmd
 
                 return Task.CompletedTask;
             })
-            .SetOnBeforeHit((_, context) =>
-            {
-                var attackTarget = context.Get<Creature>("Target");
-                context.Set("Damage", BangDreamHook.ModifyMusicNoteDamage(card.CombatState,
-                    attackTarget, card.Owner.Creature, baseDamage, card, ModifyDamageHookType.All));
-                return Task.CompletedTask;
-            })
             .SetOnHit(async (vfx, context) =>
             {
-                var damage = context.Get<decimal>("Damage");
                 var attackTarget = context.Get<Creature>("Target");
-                if (attackTarget is { IsHittable: true })
+
+                if (attackTarget is { IsHittable: true } && card.CombatState != null)
                 {
-                    var results = await CreatureCmd.Damage(choiceContext, attackTarget,
-                        new DamageVar(damage, ValueProp.Unpowered | ValueProp.SkipHurtAnim), card);
-                    context.Set("Results", results.ToList());
-                }
-                else
-                {
-                    vfx.QueueFree();
-                }
-            }).SetOnAfterHit((_, context) =>
-            {
-                var results = context.Get<List<DamageResult>>("Results");
-                if (results != null)
-                {
+                    var damage = BangDreamHook.ModifyMusicNoteDamage(
+                        card.CombatState,
+                        attackTarget,
+                        card.Owner.Creature,
+                        baseDamage,
+                        card,
+                        ModifyDamageHookType.All
+                    );
+
+                    var results = await CreatureCmd.Damage(
+                        choiceContext,
+                        attackTarget,
+                        new DamageVar(damage, ValueProp.Unpowered | ValueProp.SkipHurtAnim),
+                        card
+                    );
+
                     var damageTracker = card.Owner.AttachedData().MusicNoteDamageTracker;
                     foreach (var damageResult in results)
                     {
                         damageTracker.AddMusicNoteDamage(card.CombatState.RoundNumber, damageResult);
-                    }
-                }
-
-                return Task.CompletedTask;
-            })
-            .SetOnFinish(async (_, _) =>
-            {
-                if (CombatManager.Instance.IsInProgress)
-                {
-                    var checkWinCondition = await CombatManager.Instance.CheckWinCondition();
-                    if (checkWinCondition)
-                    {
-                        return;
                     }
 
                     if (card.CombatState != null)
                     {
                         await BangDreamHook.OnMusicNotePlayed(card.CombatState, card.Owner);
                     }
+                }
+                else
+                {
+                    vfx.QueueFree();
+                }
+            })
+            .SetOnFinish(async (_, _) =>
+            {
+                if (CombatManager.Instance.IsInProgress)
+                {
+                    await CombatManager.Instance.CheckWinCondition();
                 }
             })
             .Emit(NoteSpawnInterval, NoteGroupSize, NoteGroupDelay);

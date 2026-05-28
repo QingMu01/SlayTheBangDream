@@ -22,11 +22,7 @@ public class Revenge() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity
     protected override IEnumerable<DynamicVar> CardVars =>
     [
         ModCardVars.Int("Multiplier", 2),
-        ModCardVars.Computed("CalcDamage", 7m,
-            (card, target) =>
-                DynamicVarHelper.ResolveBaseVar(card, target, CalculateDamage),
-            (card, mode, target, runHooks) =>
-                DynamicVarHelper.ResolvePreviewDamageVar(card, mode, target, runHooks, CalculateDamage))
+        ComputedDynamicVarHelper.CreateDamageVar("CalcDamage", 7m, CalculateDamage)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)

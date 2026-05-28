@@ -3,6 +3,7 @@ using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models;
@@ -24,14 +25,8 @@ public class Blessing() : AbstractSakikoCard(CustomCost, CustomType, CustomRarit
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        ModCardVars.Computed("BaseDamage", 4m,
-            card => DynamicVarHelper.ResolveBaseVar(card, CalcIncrease),
-            (card, mode, target, runHooks) =>
-                DynamicVarHelper.ResolvePreviewDamageVar(card, mode, target, runHooks, CalcIncrease)),
-        ModCardVars.Computed("BaseBlock", 4m,
-            card => DynamicVarHelper.ResolveBaseVar(card, CalcIncrease),
-            (card, mode, target, runHooks) =>
-                DynamicVarHelper.ResolvePreviewBlockVar(card, mode, target, runHooks, CalcIncrease)),
+        ComputedDynamicVarHelper.CreateDamageVar("BaseDamage", 4m, CalcIncrease),
+        ComputedDynamicVarHelper.CreateBlockVar("BaseBlock", 4m, CalcIncrease),
         QuickVar.Repeat.Create(0),
         ModCardVars.Int("IncreaseStep", 1)
     ];
@@ -61,7 +56,7 @@ public class Blessing() : AbstractSakikoCard(CustomCost, CustomType, CustomRarit
         DynamicVars["IncreaseStep"].UpgradeValueBy(1m);
     }
 
-    private static decimal CalcIncrease(CardModel? card)
+    private static decimal CalcIncrease(CardModel? card, Creature? target)
     {
         if (card != null && card.DynamicVars.TryGetValue("Repeat", out var dynamicVar))
         {

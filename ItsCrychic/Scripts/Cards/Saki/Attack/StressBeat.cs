@@ -34,14 +34,9 @@ public class StressBeat()
     protected override IEnumerable<DynamicVar> CardVars =>
     [
         ModCardVars.Int("VulnerableDamage", 3),
-        ModCardVars.Computed("CalcDamage", 14m,
-            (card, target) =>
-                DynamicVarHelper.ResolveBaseVar(card, target, CalculateDamage),
-            (card, mode, target, runHooks) =>
-                DynamicVarHelper.ResolvePreviewDamageVar(card, mode, target, runHooks, CalculateDamage)),
-        ModCardVars.Computed(nameof(VulnerablePower), 0m, card =>
-                DynamicVarHelper.ResolveBaseVar(card, GetLingered),
-            (card, _, _, _) => GetLingered(card))
+        ComputedDynamicVarHelper.CreateDamageVar("CalcDamage", 14m, CalculateDamage),
+        ComputedDynamicVarHelper.CreateBaseVar(nameof(VulnerablePower), 0m,
+            card => card?.Owner.AttachedData().LingeredEnergy.Counter ?? 0m)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
@@ -67,25 +62,15 @@ public class StressBeat()
         DynamicVars["VulnerableDamage"].UpgradeValueBy(2m);
     }
 
-    private static decimal CalculateDamage(CardModel? cardModel, Creature? target)
+    private static decimal CalculateDamage(CardModel? card, Creature? target)
     {
         var powerAmount = target?.GetPowerAmount<VulnerablePower>();
-        if (cardModel != null && powerAmount.HasValue)
+        if (card != null && powerAmount.HasValue &&
+            card.DynamicVars.TryGetValue("VulnerableDamage", out var vulnerableDamage))
         {
-            return 14m + powerAmount.Value * cardModel.DynamicVars["VulnerableDamage"].BaseValue;
+            return 14m + powerAmount.Value * vulnerableDamage.BaseValue;
         }
 
         return 14m;
-    }
-
-    private static decimal GetLingered(CardModel? cardModel)
-    {
-        var counter = cardModel?.Owner.AttachedData().LingeredEnergy.Counter;
-        if (counter.HasValue)
-        {
-            return counter.Value;
-        }
-
-        return 0m;
     }
 }

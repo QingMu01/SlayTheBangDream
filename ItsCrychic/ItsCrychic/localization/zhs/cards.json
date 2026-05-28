@@ -91,7 +91,7 @@
   "ITS_CRYCHIC_CARD_SET_PERFORMANCE.title": "既定演出",
   "ITS_CRYCHIC_CARD_SET_PERFORMANCE.description": "本回合，位于[gold]演奏区[/gold]的[gold]音乐牌[/gold]不会离开所处区域。",
   "ITS_CRYCHIC_CARD_COMPOSE_MUSIC.title": "谱曲",
-  "ITS_CRYCHIC_CARD_COMPOSE_MUSIC.description": "获得{Energy:energyIcons()}。\n本回合，你打出的非[gold]音乐牌[/gold]放入[gold]额外牌堆[/gold]底部。",
+  "ITS_CRYCHIC_CARD_COMPOSE_MUSIC.description": "获得{Energy:energyIcons()}。\n本回合，你打出的攻击牌与技能牌放入[gold]额外牌堆[/gold]底部。",
   "ITS_CRYCHIC_CARD_BEGINNER_MIND.title": "初心",
   "ITS_CRYCHIC_CARD_BEGINNER_MIND.description": "本回合，当[gold]音乐牌[/gold]进入你的[gold]演奏区[/gold]时，获得{Energy:energyIcons()}。",
   "ITS_CRYCHIC_CARD_DRAW_KILL.title": "抽杀",

@@ -38,13 +38,13 @@ public class WaningMoonEcho()
     {
         ArgumentNullException.ThrowIfNull(play.Target);
 
-        await MusicNoteCmd.FromCard(choiceContext, this, baseCount: DynamicVars.Repeat.IntValue);
-
         await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
             .FromCard(this)
             .Targeting(play.Target)
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
+
+        await MusicNoteCmd.FromCard(choiceContext, this, DynamicVars.Repeat.IntValue);
     }
 
     public async Task OnSubside(PlayerChoiceContext choiceContext, CardPlay play)

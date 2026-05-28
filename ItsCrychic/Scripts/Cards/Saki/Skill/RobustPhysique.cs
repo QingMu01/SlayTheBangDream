@@ -7,7 +7,6 @@ using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models.Powers;
-using STS2RitsuLib.Cards.DynamicVars;
 using STS2RitsuLib.Keywords;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Skill;
@@ -33,9 +32,8 @@ public class RobustPhysique()
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        ModCardVars.Computed("Armor", 1,
-            (card, _) => card == null ? 0 : card.Owner.AttachedData().LingeredEnergy.Counter,
-            (card, _, _, _) => card == null ? 0 : card.Owner.AttachedData().LingeredEnergy.Counter)
+        ComputedDynamicVarHelper.CreateBaseVar("Armor", 0m,
+            (card, _) => card?.Owner.AttachedData().LingeredEnergy.Counter ?? 0m)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)

@@ -2,6 +2,7 @@ using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models;
@@ -19,10 +20,7 @@ public class TogawaDarkness() : AbstractSakikoCard(CustomCost, CustomType, Custo
     protected override IEnumerable<DynamicVar> CardVars =>
     [
         ModCardVars.Int("GoldReq", 15),
-        ModCardVars.Computed("CalcDamage", 9m, card =>
-                DynamicVarHelper.ResolveBaseVar(card, CalculateDamage),
-            (card, mode, target, runHooks) =>
-                DynamicVarHelper.ResolvePreviewDamageVar(card, mode, target, runHooks, CalculateDamage))
+        ComputedDynamicVarHelper.CreateDamageVar("CalcDamage", 9m, CalculateDamage)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
@@ -41,7 +39,7 @@ public class TogawaDarkness() : AbstractSakikoCard(CustomCost, CustomType, Custo
         DynamicVars["GoldReq"].UpgradeValueBy(-5);
     }
 
-    private static decimal CalculateDamage(CardModel? card)
+    private static decimal CalculateDamage(CardModel? card, Creature? target)
     {
         if (card is { IsMutable: true })
         {

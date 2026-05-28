@@ -2,6 +2,7 @@ using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models;
@@ -25,10 +26,7 @@ public class Finale() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity,
     protected override IEnumerable<DynamicVar> CardVars =>
     [
         ModCardVars.Int("IncreaseStep", 2),
-        ModCardVars.Computed("CalcDamage", 8m, card =>
-                DynamicVarHelper.ResolveBaseVar(card, CalculateDamage),
-            (card, mode, target, runHooks) =>
-                DynamicVarHelper.ResolvePreviewDamageVar(card, mode, target, runHooks, CalculateDamage))
+        ComputedDynamicVarHelper.CreateDamageVar("CalcDamage", 8m, CalculateDamage)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
@@ -47,7 +45,7 @@ public class Finale() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity,
         EnergyCost.UpgradeBy(-1);
     }
 
-    private static decimal CalculateDamage(CardModel? card)
+    private static decimal CalculateDamage(CardModel? card, Creature? target)
     {
         if (card != null)
         {
