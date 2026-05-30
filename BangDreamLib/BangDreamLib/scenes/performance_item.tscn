@@ -1,8 +1,8 @@
 [gd_scene load_steps=6 format=3 uid="uid://txb6745aun8k"]
 
 [ext_resource type="Script" uid="uid://fmns5ke8lita" path="res://Scripts/Nodes/SubNode/NPerformanceItem.cs" id="1_b1k58"]
-[ext_resource type="Texture2D" uid="uid://bde4kpr8xjure" path="res://Resources/images/sceneui/PerformanceItem.png" id="1_mjt0y"]
-[ext_resource type="Shader" uid="uid://byc3544f8fcou" path="res://Resources/shaders/Circularization.gdshader" id="2_b1k58"]
+[ext_resource type="Texture2D" uid="uid://bde4kpr8xjure" path="res://BangDreamLib/images/sceneui/PerformanceItem.png" id="1_mjt0y"]
+[ext_resource type="Shader" uid="uid://byc3544f8fcou" path="res://BangDreamLib/shaders/Circularization.gdshader" id="2_b1k58"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_6dyc6"]
 shader = ExtResource("2_b1k58")

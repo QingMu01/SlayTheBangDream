@@ -7,7 +7,7 @@ namespace BangDreamLib.Scripts.Nodes.SubNode;
 
 public partial class NCharacterButton : Button
 {
-    private NCharacterSelector _parent;
+    private BangDreamCharacterSelector? _parent;
 
     private Tween? _hoverTween;
 
@@ -31,7 +31,7 @@ public partial class NCharacterButton : Button
         }
     }
 
-    public static NCharacterButton Create(NCharacterSelector selector, CharacterModel character)
+    public static NCharacterButton Create(BangDreamCharacterSelector selector, CharacterModel character)
     {
         var button = PreloadKey.CharacterButton.GetScene().Instantiate<NCharacterButton>();
         button.Character = character;
@@ -89,7 +89,7 @@ public partial class NCharacterButton : Button
             return;
         Select();
 
-        _parent.SelectCharacter(this);
+        _parent?.SelectCharacter(this);
     }
 
     public void Deselect()

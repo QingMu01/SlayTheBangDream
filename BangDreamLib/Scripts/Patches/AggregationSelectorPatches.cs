@@ -5,8 +5,10 @@ using BangDreamLib.Scripts.Nodes;
 using BangDreamLib.Scripts.Utils;
 using Godot;
 using HarmonyLib;
+using MegaCrit.Sts2.Core.Entities.UI;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Multiplayer.Game.Lobby;
 using MegaCrit.Sts2.Core.Nodes.Screens.CharacterSelect;
 using STS2RitsuLib.Patching.Core;
 using STS2RitsuLib.Patching.Models;
@@ -25,7 +27,7 @@ public class AggregationSelectorPatches : IModPatches
     internal static readonly FieldInfo CacheBgContainer =
         AccessTools.Field(typeof(NCharacterSelectScreen), "_bgContainer");
 
-    internal static readonly AttachedState<NCharacterSelectScreen, NCharacterSelector> Selector = new();
+    internal static readonly AttachedState<NCharacterSelectScreen, BangDreamCharacterSelector> Selector = new();
 
     public static void AddTo(ModPatcher patcher)
     {
@@ -34,6 +36,9 @@ public class AggregationSelectorPatches : IModPatches
         patcher.RegisterPatch<SetupAggregationSelectorPatch>();
         patcher.RegisterPatch<InitSelectorPatch>();
         patcher.RegisterPatch<InterceptGroupButtonPatch>();
+        patcher.RegisterPatch<AscensionPanelHostModePatch>();
+        patcher.RegisterPatch<AscensionPanelMultiplayerModePatch>();
+        patcher.RegisterPatch<AscensionPanelSingleplayerModePatch>();
     }
 }
 
@@ -115,7 +120,7 @@ internal class SetupAggregationSelectorPatch : IPatchMethod
         __instance.AddChildSafely(duplicate);
         var originalIndex = __instance.GetChildren().IndexOf(____bgContainer);
         __instance.MoveChild(duplicate, originalIndex + 1);
-        var characterSelector = PreloadKey.CharacterSelector.GetScene().Instantiate<NCharacterSelector>();
+        var characterSelector = PreloadKey.CharacterSelector.GetScene().Instantiate<BangDreamCharacterSelector>();
         characterSelector.Name = "BangDreamSelector";
         characterSelector.Visible = false;
         duplicate.AddChildSafely(characterSelector);
@@ -143,11 +148,6 @@ internal class InitSelectorPatch : IPatchMethod
             {
                 AggregationSelectorPatches.Selector[screen].Init(group, __instance, ____delegate);
             }
-            else
-            {
-                SetupAggregationSelectorPatch.Postfix(screen, screen.GetNode<Control>((NodePath)"AnimatedBg"));
-                AggregationSelectorPatches.Selector[screen].Init(group, __instance, ____delegate);
-            }
         }
     }
 }
@@ -165,5 +165,74 @@ internal class InterceptGroupButtonPatch : IPatchMethod
         ref CharacterModel characterModel)
     {
         return characterModel is not IAggregationGroup;
+    }
+}
+
+internal class AscensionPanelHostModePatch : IPatchMethod
+{
+    public static string PatchId => "bang_dream_style_ascension_panel_setup_host_mode";
+
+    public static ModPatchTarget[] GetTargets()
+    {
+        return
+        [
+            new ModPatchTarget(typeof(NCharacterSelectScreen),
+                nameof(NCharacterSelectScreen.InitializeMultiplayerAsHost))
+        ];
+    }
+
+
+    public static void Postfix(NCharacterSelectScreen __instance, StartRunLobby ____lobby)
+    {
+        if (AggregationSelectorPatches.Selector.TryGetValue(__instance, out var selector))
+        {
+            selector.Lobby = ____lobby;
+            selector.AscensionPanel.Initialize(MultiplayerUiMode.Host);
+        }
+    }
+}
+
+internal class AscensionPanelMultiplayerModePatch : IPatchMethod
+{
+    public static string PatchId => "bang_dream_style_ascension_panel_setup_multiplayer_mode";
+
+    public static ModPatchTarget[] GetTargets()
+    {
+        return
+        [
+            new ModPatchTarget(typeof(NCharacterSelectScreen),
+                nameof(NCharacterSelectScreen.InitializeMultiplayerAsClient))
+        ];
+    }
+
+    public static void Postfix(NCharacterSelectScreen __instance, StartRunLobby ____lobby)
+    {
+        if (AggregationSelectorPatches.Selector.TryGetValue(__instance, out var selector))
+        {
+            selector.Lobby = ____lobby;
+            selector.AscensionPanel.Initialize(MultiplayerUiMode.Client);
+        }
+    }
+}
+
+internal class AscensionPanelSingleplayerModePatch : IPatchMethod
+{
+    public static string PatchId => "bang_dream_style_ascension_panel_setup_singleplayer_mode";
+
+    public static ModPatchTarget[] GetTargets()
+    {
+        return
+        [
+            new ModPatchTarget(typeof(NCharacterSelectScreen), nameof(NCharacterSelectScreen.InitializeSingleplayer))
+        ];
+    }
+
+    public static void Postfix(NCharacterSelectScreen __instance, StartRunLobby ____lobby)
+    {
+        if (AggregationSelectorPatches.Selector.TryGetValue(__instance, out var selector))
+        {
+            selector.Lobby = ____lobby;
+            selector.AscensionPanel.Initialize(MultiplayerUiMode.Singleplayer);
+        }
     }
 }

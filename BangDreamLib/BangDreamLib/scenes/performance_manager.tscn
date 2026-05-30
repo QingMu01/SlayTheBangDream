@@ -9,4 +9,4 @@ script = ExtResource("1_i3xyf")
 
 [node name="PerformanceItems" type="Control" parent="."]
 unique_name_in_owner = true
-layout_mode = 0
+anchors_preset = 0
