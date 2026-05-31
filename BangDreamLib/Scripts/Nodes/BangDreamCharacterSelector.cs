@@ -1,5 +1,6 @@
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
 using BangDreamLib.Scripts.Nodes.MegeScript;
+using BangDreamLib.Scripts.Nodes.SubNode;
 using BangDreamLib.Scripts.Utils.Infos;
 using Godot;
 using MegaCrit.Sts2.Core.Assets;
@@ -10,7 +11,6 @@ using MegaCrit.Sts2.Core.Multiplayer.Game;
 using MegaCrit.Sts2.Core.Multiplayer.Game.Lobby;
 using MegaCrit.Sts2.Core.Nodes.Screens.CharacterSelect;
 using MegaCrit.Sts2.Core.Saves;
-using NCharacterButton = BangDreamLib.Scripts.Nodes.SubNode.NCharacterButton;
 
 namespace BangDreamLib.Scripts.Nodes;
 
@@ -39,6 +39,8 @@ public partial class BangDreamCharacterSelector : Control
     private BangDreamRichTextLabel? _relicDescription;
 
     private BangDreamAscensionPanel? _ascensionPanel;
+
+    private BangDreamSkinSelector? _skinSelector;
 
     private Tween? _posterTween;
 
@@ -69,7 +71,7 @@ public partial class BangDreamCharacterSelector : Control
         _relicIcon = GetNode<TextureRect>("%RelicIcon");
         _relicDescription = GetNode<BangDreamRichTextLabel>("%RelicDescription");
         _ascensionPanel = GetNode<BangDreamAscensionPanel>("%AscensionPanel");
-        GD.Print($"Node BangDreamAscensionPanel:{_ascensionPanel}");
+        _skinSelector = GetNode<BangDreamSkinSelector>("%SkinSelector");
 
         // 缓存并复用 StyleBox
         if (_showInfo.GetThemeStylebox("panel") is StyleBoxFlat styleBox)
@@ -82,12 +84,12 @@ public partial class BangDreamCharacterSelector : Control
             Callable.From(OnAscensionPanelLevelChanged));
     }
 
-    public void SelectCharacter(NCharacterButton selectedButton)
+    public void SelectCharacter(CharacterModel character)
     {
         // 同步按钮状态
         foreach (var button in _buttons)
         {
-            if (button == selectedButton)
+            if (button.Character == character)
             {
                 button.Select();
             }
@@ -99,10 +101,11 @@ public partial class BangDreamCharacterSelector : Control
 
         if (_delegate != null && _sourceButton != null)
         {
-            _delegate.SelectCharacter(_sourceButton, selectedButton.Character);
+            _delegate.SelectCharacter(_sourceButton, character);
+            _skinSelector?.Init(character);
         }
 
-        if (selectedButton.Character is IAggregationCharacter aggregationCharacter)
+        if (character is IAggregationCharacter aggregationCharacter)
         {
             if (_infoStyleBox != null)
             {
@@ -122,7 +125,7 @@ public partial class BangDreamCharacterSelector : Control
             if (_smallIntro != null)
             {
                 _smallIntro.Text = $"{aggregationCharacter.MemberClass} {aggregationCharacter.MemberNameRoman}";
-                _smallIntro.Modulate = selectedButton.Character.NameColor;
+                _smallIntro.Modulate = character.NameColor;
             }
 
             if (_classLabel != null)
@@ -132,27 +135,27 @@ public partial class BangDreamCharacterSelector : Control
 
             if (_bigIntro != null)
             {
-                _bigIntro.Text = new LocString("characters", selectedButton.Character.CharacterSelectTitle)
+                _bigIntro.Text = new LocString("characters", character.CharacterSelectTitle)
                     .GetFormattedText();
             }
 
             if (_description != null)
-                _description.Text = new LocString("characters", selectedButton.Character.CharacterSelectDesc)
+                _description.Text = new LocString("characters", character.CharacterSelectDesc)
                     .GetFormattedText();
 
             if (_healthLabel != null)
             {
-                _healthLabel.Text = selectedButton.Character.StartingHp.ToString();
+                _healthLabel.Text = character.StartingHp.ToString();
             }
 
             if (_goldLabel != null)
             {
-                _goldLabel.Text = selectedButton.Character.StartingGold.ToString();
+                _goldLabel.Text = character.StartingGold.ToString();
             }
 
-            if (selectedButton.Character.StartingRelics.Count > 0)
+            if (character.StartingRelics.Count > 0)
             {
-                var relic = selectedButton.Character.StartingRelics[0];
+                var relic = character.StartingRelics[0];
                 if (_relicIcon != null)
                 {
                     _relicIcon.Texture = relic.Icon;
@@ -165,13 +168,13 @@ public partial class BangDreamCharacterSelector : Control
             // 设置背景着色器颜色
             if (_showBg?.Material is ShaderMaterial shader)
             {
-                shader.Set("shader_parameter/bg_color", selectedButton.Character.NameColor);
+                shader.Set("shader_parameter/bg_color", character.NameColor);
             }
         }
 
         if (_ascensionPanel != null)
         {
-            var characterStats = SaveManager.Instance.Progress.GetOrCreateCharacterStats(selectedButton.Character.Id);
+            var characterStats = SaveManager.Instance.Progress.GetOrCreateCharacterStats(character.Id);
             if (characterStats.MaxAscension > 0)
             {
                 _ascensionPanel.SetMaxAscension(characterStats.MaxAscension);
@@ -183,8 +186,9 @@ public partial class BangDreamCharacterSelector : Control
         _posterTween?.Kill();
 
         _posterTween = CreateTween();
-        _posterTween.Parallel().TweenProperty(_characterPoster, "modulate:a", 1f, 0.5f);
-        _posterTween.Parallel().TweenProperty(_characterPoster, "scale", Vector2.One, 0.25f);
+        _posterTween.Parallel();
+        _posterTween.TweenProperty(_characterPoster, "modulate:a", 1f, 0.5f);
+        _posterTween.TweenProperty(_characterPoster, "scale", Vector2.One, 0.25f);
     }
 
     public void Init(IAggregationGroup pageGroup,
@@ -223,13 +227,12 @@ public partial class BangDreamCharacterSelector : Control
                 if (character is IAggregationCharacter aggregationCharacter)
                 {
                     button.Visible = !aggregationCharacter.IsHidden;
-                    button.Disabled = !aggregationCharacter.AllowSelect;
                 }
 
                 if (!autoSelectedFirst && character is IAggregationCharacter { AllowSelect: true })
                 {
                     button.Select();
-                    SelectCharacter(button);
+                    SelectCharacter(character);
                     autoSelectedFirst = true;
                 }
                 else

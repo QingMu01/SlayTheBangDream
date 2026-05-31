@@ -23,7 +23,8 @@ public sealed class WakabaMutsumi()
     public override string MemberNameRoman => BangDreamMember.Mutsumi.GetMemberNameRoman();
     public override string MemberClass => BangDreamClass.Guitar.GetBandClass();
 
-    public override string? SelectIcon => null;
+    public override bool AllowSelect => false;
+
     public override string SelectPoster => "res://ItsCrychic/images/charui/img_mutsumi-wakaba_2.webp";
     public bool ShouldAlwaysShowExtraDeckAndPile => true;
     public CardPoolModel ExtraCardPool => ModelDb.CardPool<MutsumiMusicalCardPool>();

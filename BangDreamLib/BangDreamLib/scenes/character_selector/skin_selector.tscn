@@ -1,36 +1,129 @@
-[gd_scene load_steps=5 format=3 uid="uid://bfq1kub0qqf3m"]
+[gd_scene load_steps=8 format=3 uid="uid://bfq1kub0qqf3m"]
 
-[ext_resource type="Texture2D" uid="uid://cakri10dsey1d" path="res://images/packed/common_ui/settings_tiny_left_arrow.png" id="1_4svu3"]
-[ext_resource type="Texture2D" uid="uid://c7kumcmbdvuji" path="res://images/packed/common_ui/settings_tiny_right_arrow.png" id="2_yewq2"]
+[ext_resource type="Script" uid="uid://bfud75nlnqvyj" path="res://Scripts/Nodes/MegeScript/BangDreamGoldArrowButton.cs" id="1_g0ugm"]
+[ext_resource type="Script" uid="uid://btg1yndbt2aic" path="res://Scripts/Nodes/BangDreamSkinSelector.cs" id="1_meeur"]
+[ext_resource type="Shader" uid="uid://c66gb6g7tup3n" path="res://shaders/hsv.gdshader" id="2_meeur"]
+[ext_resource type="Texture2D" uid="uid://b4ffylh" path="res://images/atlases/ui_atlas.sprites/settings_tiny_left_arrow.tres" id="3_4rpgq"]
+[ext_resource type="Texture2D" uid="uid://kjsi4o" path="res://images/atlases/ui_atlas.sprites/settings_tiny_right_arrow.tres" id="5_jmns7"]
 
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_miv4s"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_m28hs"]
+resource_local_to_scene = true
+shader = ExtResource("2_meeur")
+shader_parameter/h = 1.0
+shader_parameter/s = 1.0
+shader_parameter/v = 1.0
 
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_y53ti"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_mub7k"]
+resource_local_to_scene = true
+shader = ExtResource("2_meeur")
+shader_parameter/h = 1.0
+shader_parameter/s = 1.0
+shader_parameter/v = 1.0
 
 [node name="SkinSelector" type="Control"]
 layout_mode = 3
-anchors_preset = 0
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 0
+pivot_offset = Vector2(190, 0)
+script = ExtResource("1_meeur")
 
-[node name="Prev" type="Button" parent="."]
+[node name="VSplitContainer" type="VSplitContainer" parent="."]
 layout_mode = 1
-anchors_preset = 1
-anchor_left = 1.0
+anchors_preset = 10
 anchor_right = 1.0
-offset_left = -175.0
-offset_top = -150.0
-offset_right = -47.0
-offset_bottom = -22.0
-grow_horizontal = 0
-scale = Vector2(0.3, 0.3)
-theme_override_icons/icon = ExtResource("1_4svu3")
-theme_override_styles/normal = SubResource("StyleBoxEmpty_miv4s")
+offset_right = 380.0
+offset_bottom = 76.0
+grow_horizontal = 2
+collapsed = true
+dragging_enabled = false
+dragger_visibility = 1
 
-[node name="Next" type="Button" parent="."]
+[node name="SkinContainer" type="Control" parent="VSplitContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(280, 200)
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VSplitContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="LeftArrowContainer" type="Control" parent="VSplitContainer/HBoxContainer"]
+custom_minimum_size = Vector2(80, 64)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="LeftArrow" type="Control" parent="VSplitContainer/HBoxContainer/LeftArrowContainer"]
 layout_mode = 1
-offset_left = 175.0
-offset_top = -150.0
-offset_right = 311.0
-offset_bottom = -14.0
-scale = Vector2(0.3, 0.3)
-theme_override_icons/icon = ExtResource("2_yewq2")
-theme_override_styles/normal = SubResource("StyleBoxEmpty_y53ti")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_g0ugm")
+
+[node name="TextureRect" type="TextureRect" parent="VSplitContainer/HBoxContainer/LeftArrowContainer/LeftArrow"]
+material = SubResource("ShaderMaterial_m28hs")
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -16.0
+offset_top = -60.0
+offset_right = 16.0
+offset_bottom = 60.0
+grow_horizontal = 2
+grow_vertical = 2
+pivot_offset = Vector2(16, 60)
+mouse_filter = 2
+texture = ExtResource("3_4rpgq")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Space" type="Control" parent="VSplitContainer/HBoxContainer"]
+custom_minimum_size = Vector2(120, 40)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="RightArrowContainer" type="Control" parent="VSplitContainer/HBoxContainer"]
+custom_minimum_size = Vector2(80, 64)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="RightArrow" type="Control" parent="VSplitContainer/HBoxContainer/RightArrowContainer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_g0ugm")
+
+[node name="TextureRect" type="TextureRect" parent="VSplitContainer/HBoxContainer/RightArrowContainer/RightArrow"]
+material = SubResource("ShaderMaterial_mub7k")
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -16.0
+offset_top = -60.0
+offset_right = 16.0
+offset_bottom = 60.0
+grow_horizontal = 2
+grow_vertical = 2
+pivot_offset = Vector2(16, 60)
+mouse_filter = 2
+texture = ExtResource("5_jmns7")
+expand_mode = 1
+stretch_mode = 5

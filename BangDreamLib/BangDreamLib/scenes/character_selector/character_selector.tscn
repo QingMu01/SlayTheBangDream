@@ -1,4 +1,4 @@
-[gd_scene load_steps=21 format=3 uid="uid://dck01ibc7cr71"]
+[gd_scene load_steps=22 format=3 uid="uid://dck01ibc7cr71"]
 
 [ext_resource type="Script" uid="uid://cmtlynk8dabtw" path="res://Scripts/Nodes/BangDreamCharacterSelector.cs" id="1_4y8i4"]
 [ext_resource type="Texture2D" uid="uid://bx7y6ggsxsgty" path="res://BangDreamLib/images/sceneui/bg_gray.9d1fe428.png" id="2_308mo"]
@@ -13,6 +13,7 @@
 [ext_resource type="PackedScene" uid="uid://r3e6mea37phd" path="res://BangDreamLib/scenes/character_selector/ascension_panel.tscn" id="12_4y8i4"]
 [ext_resource type="FontVariation" uid="uid://b8ce4a71ref23" path="res://themes/spectral_bold_shared.tres" id="12_308mo"]
 [ext_resource type="FontVariation" uid="uid://b31wycusbsq8w" path="res://themes/fonts/jpn/noto_sans_cjkjp_bold_shared.tres" id="12_pbs0m"]
+[ext_resource type="PackedScene" uid="uid://bfq1kub0qqf3m" path="res://BangDreamLib/scenes/character_selector/skin_selector.tscn" id="14_kq4ob"]
 
 [sub_resource type="Curve" id="Curve_kq4ob"]
 _data = [Vector2(0, 0.50128955), 0.0, 0.0, 0, 0, Vector2(0.7518797, 0), 0.0, 0.0, 0, 0]
@@ -34,7 +35,7 @@ use_hdr = true
 [sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_rlwux"]
 lifetime_randomness = 0.4
 emission_shape = 3
-emission_box_extents = Vector3(2000, 100, 100)
+emission_box_extents = Vector3(2000, 10, 100)
 direction = Vector3(1, 1, 0)
 gravity = Vector3(-350, 98, 0)
 scale_min = 0.099999994
@@ -78,10 +79,10 @@ texture = ExtResource("2_308mo")
 
 [node name="GPUParticles2D" type="GPUParticles2D" parent="ScreenBackground"]
 position = Vector2(2885, 376)
-amount = 16
+amount = 24
 texture = ExtResource("3_308mo")
 lifetime = 15.0
-speed_scale = 1.99
+speed_scale = 2.0
 trail_enabled = true
 trail_lifetime = 2.5
 trail_sections = 2
@@ -265,7 +266,6 @@ default_color = Color(0.07450981, 0.105882354, 0.16470589, 0.53333336)
 
 [node name="Description" type="RichTextLabel" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer/VBoxContainer"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 80)
 layout_mode = 2
 theme_override_colors/default_color = Color(0.07450981, 0.105882354, 0.16470589, 1)
 theme_override_fonts/normal_font = ExtResource("7_rlwux")
@@ -289,6 +289,7 @@ custom_minimum_size = Vector2(0, 84)
 layout_mode = 2
 split_offset = 90
 dragging_enabled = false
+dragger_visibility = 1
 
 [node name="RelicIcon" type="TextureRect" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer/VBoxContainer/Relic"]
 unique_name_in_owner = true
@@ -327,3 +328,18 @@ default_color = Color(0.07450981, 0.105882354, 0.16470589, 0.53333336)
 [node name="AscensionPanel" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer/VBoxContainer" instance=ExtResource("12_4y8i4")]
 unique_name_in_owner = true
 layout_mode = 2
+
+[node name="SkinSelector" parent="ShowCharacterInfo" instance=ExtResource("14_kq4ob")]
+unique_name_in_owner = true
+layout_mode = 0
+anchors_preset = 0
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 0.0
+anchor_bottom = 0.0
+offset_left = 832.5
+offset_top = 0.5
+offset_right = 832.5
+offset_bottom = 0.5
+grow_horizontal = 1
+grow_vertical = 1

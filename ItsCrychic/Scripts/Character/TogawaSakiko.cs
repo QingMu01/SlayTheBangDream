@@ -22,8 +22,6 @@ public sealed class TogawaSakiko() : BandMemberModel<SakikoStandardCardPool, Sak
     public override string MemberNameRoman => BangDreamMember.Sakiko.GetMemberNameRoman();
     public override string MemberClass => BangDreamClass.Keyboard.GetBandClass();
 
-    public override string? SelectIcon => null;
-
     public override string SelectPoster => "res://ItsCrychic/images/charui/img_sakiko-togawa_2.webp";
 
     public bool ShouldAlwaysShowExtraDeckAndPile => true;
