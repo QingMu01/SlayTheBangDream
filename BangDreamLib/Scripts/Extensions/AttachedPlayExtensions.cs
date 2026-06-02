@@ -9,9 +9,4 @@ public static class AttachedPlayExtensions
     {
         return AttachePlayerData.State.GetOrCreate(player);
     }
-
-    public static AttachePlayerNode AttachedNode(this Player player)
-    {
-        return AttachePlayerNode.State.GetOrCreate(player.Creature.GetCreatureNode()!);
-    }
 }

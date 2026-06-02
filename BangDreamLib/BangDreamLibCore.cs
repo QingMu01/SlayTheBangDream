@@ -6,7 +6,6 @@ using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Features;
 using BangDreamLib.Scripts.Features.Rules;
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
-using BangDreamLib.Scripts.Multiplayer;
 using BangDreamLib.Scripts.Patches;
 using BangDreamLib.Scripts.Rewards;
 using BangDreamLib.Scripts.Saved;
@@ -14,7 +13,6 @@ using BangDreamLib.Scripts.Utils;
 using BangDreamLib.Scripts.Utils.Infos;
 using Godot;
 using ItsCrychic.Scripts.Patches;
-using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Modding;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Runs;
@@ -128,16 +126,8 @@ public class BangDreamLibCore
             Scope = ModCardPileScope.CombatOnly,
             Style = ModCardPileUiStyle.Headless,
             FlightTargetPositionResolver = context =>
-            {
-                var player = context.CardNode?.Model?.Owner;
-                if (player != null)
-                {
-                    var manager = player.AttachedNode().PerformanceManager;
-                    return manager.GetSlotPosWithAutoFlip();
-                }
-
-                return Vector2.Zero;
-            }
+                context.CardModel?.Owner.AttachedData().PerformanceManager.PerformanceArea?.GetSlotPosWithAutoFlip() ??
+                Vector2.Zero
         });
 
         // 注册公共内容
@@ -196,22 +186,6 @@ public class BangDreamLibCore
             }
         });
 
-        // 为玩家节点添加新内容
-        RitsuLibFramework.SubscribeLifecycle<CombatStartingEvent>(c =>
-        {
-            if (c.CombatState != null)
-            {
-                foreach (var creature in c.CombatState.Creatures)
-                {
-                    var creatureNode = creature.GetCreatureNode();
-                    if (creatureNode is { Entity.IsPlayer: true })
-                    {
-                        var attacheCreatureNode = AttachePlayerNode.State.GetOrCreate(creatureNode);
-                        creatureNode.AddChildSafely(attacheCreatureNode.PerformanceManager);
-                    }
-                }
-            }
-        });
         ModHelper.SubscribeForCombatStateHooks("ExtraSubscribe",
             state =>
             {
@@ -221,6 +195,7 @@ public class BangDreamLibCore
                     ModelDb.Singleton<CopySelfAndPlayCardRule>()
                 };
                 subscribeModels.AddRange(state.Players.Select(player => player.AttachedData().LingeredEnergy));
+                subscribeModels.AddRange(state.Players.Select(player => player.AttachedData().PerformanceManager));
                 subscribeModels.AddRange(state.Players.Select(player => player.AttachedData().MusicNoteDamageTracker));
                 return subscribeModels;
             });

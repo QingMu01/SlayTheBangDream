@@ -4,6 +4,7 @@ using BangDreamLib.Scripts.Utils.Infos;
 using ItsCrychic.Scripts.Character.CardPools;
 using ItsCrychic.Scripts.Character.PotionPools;
 using ItsCrychic.Scripts.Character.RelicPools;
+using ItsCrychic.Scripts.Utils;
 using MegaCrit.Sts2.Core.Animation;
 using MegaCrit.Sts2.Core.Bindings.MegaSpine;
 using MegaCrit.Sts2.Core.Models;
@@ -11,7 +12,7 @@ using MegaCrit.Sts2.Core.Models;
 namespace ItsCrychic.Scripts.Character;
 
 public sealed class TogawaSakiko() : BandMemberModel<SakikoStandardCardPool, SakikoRelicPool, SakikoPotionPool>(
-    BangDreamMember.Sakiko.GetMemberColor()), IExtraDeckSupportCharacter
+    CrychicMemberEnum.Sakiko.GetMemberColor()), IExtraDeckSupportCharacter
 {
     public override int StartingHp => 75;
     public override int StartingGold => 99;
@@ -19,7 +20,7 @@ public sealed class TogawaSakiko() : BandMemberModel<SakikoStandardCardPool, Sak
     public override int GetDefaultCapacity => 3;
 
     public override BangDreamBand Band => BangDreamBand.Crychic;
-    public override string MemberNameRoman => BangDreamMember.Sakiko.GetMemberNameRoman();
+    public override string MemberNameRoman => CrychicMemberEnum.Sakiko.GetMemberNameRoman();
     public override string MemberClass => BangDreamClass.Keyboard.GetBandClass();
 
     public override string SelectPoster => "res://ItsCrychic/images/charui/img_sakiko-togawa_2.webp";

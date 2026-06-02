@@ -1,12 +1,17 @@
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
 using BangDreamLib.Scripts.Utils;
 using Godot;
+using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Random;
+using STS2RitsuLib.Ui.Toast;
 
 namespace BangDreamLib.Scripts.Nodes.SubNode;
 
 public partial class NCharacterButton : Button
 {
+    private const string MessagePrefixKey = "BANG_DREAM_LIB_CHARACTER_CANT_SELECT_";
+
     private BangDreamCharacterSelector? _parent;
 
     private Tween? _hoverTween;
@@ -14,7 +19,7 @@ public partial class NCharacterButton : Button
     private Vector2 _originalPosition;
     private bool _isSelected;
 
-    public CharacterModel Character { get; private set; }
+    public CharacterModel? Character { get; private set; }
 
     public bool IsSelected
     {
@@ -41,7 +46,7 @@ public partial class NCharacterButton : Button
 
     public override void _Ready()
     {
-        Modulate = Character.NameColor;
+        Modulate = Character?.NameColor ?? Colors.Black;
         _originalPosition = Position;
 
         if (IsSelected)
@@ -85,11 +90,19 @@ public partial class NCharacterButton : Button
 
     private void OnPressed()
     {
-        if (Disabled || IsSelected || Character is IAggregationCharacter { AllowSelect: false })
+        if (Character is IAggregationCharacter { AllowSelect: false })
+        {
+            var randomTips = Rng.Chaotic.NextInt(0, 3);
+            var locString = new LocString("gameplay_ui", $"{MessagePrefixKey}{randomTips}.message");
+            RitsuToastService.ShowInfo(locString.GetFormattedText(), Character.Title.GetFormattedText());
             return;
-        Select();
+        }
 
-        _parent?.SelectCharacter(this);
+        if (!IsSelected && Character != null)
+        {
+            Select();
+            _parent?.SelectCharacter(Character);
+        }
     }
 
     public void Deselect()

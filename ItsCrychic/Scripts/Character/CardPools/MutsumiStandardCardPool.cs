@@ -1,5 +1,5 @@
-﻿using BangDreamLib.Scripts.Utils.Infos;
-using Godot;
+﻿using Godot;
+using ItsCrychic.Scripts.Utils;
 using STS2RitsuLib.Scaffolding.Content;
 using STS2RitsuLib.Utils;
 
@@ -7,18 +7,18 @@ namespace ItsCrychic.Scripts.Character.CardPools;
 
 public class MutsumiStandardCardPool : TypeListCardPoolModel
 {
-    public override string Title => BangDreamMember.Mutsumi.GetMemberName() + "StandardPool";
+    public override string Title => CrychicMemberEnum.Mutsumi.GetMemberName() + "StandardPool";
 
-    public override string EnergyColorName => BangDreamMember.Mutsumi.GetMemberName();
+    public override string EnergyColorName => CrychicMemberEnum.Mutsumi.GetMemberName();
 
     public override Color DeckEntryCardColor => new("406090");
     public override Color EnergyOutlineColor => new("1D375C");
 
     public override Material PoolFrameMaterial =>
         MaterialUtils.CreateReplaceHueShaderMaterial(
-            BangDreamMember.Mutsumi.GetMemberColor().R,
-            BangDreamMember.Mutsumi.GetMemberColor().G,
-            BangDreamMember.Mutsumi.GetMemberColor().B
+            CrychicMemberEnum.Mutsumi.GetMemberColor().R,
+            CrychicMemberEnum.Mutsumi.GetMemberColor().G,
+            CrychicMemberEnum.Mutsumi.GetMemberColor().B
             );
 
     public override string BigEnergyIconPath => "res://ItsCrychic/images/charui/sakiko/sakiko_big_energy.png";

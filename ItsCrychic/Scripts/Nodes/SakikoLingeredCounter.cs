@@ -5,8 +5,8 @@ namespace ItsCrychic.Scripts.Nodes;
 
 public partial class SakikoLingeredCounter : Control
 {
-    private Control _counterImg;
-    private Label _counterText;
+    private Control? _counterImg;
+    private Label? _counterText;
 
     private LingeredEnergyCounter? _counter;
 
@@ -40,24 +40,30 @@ public partial class SakikoLingeredCounter : Control
 
     private void OnEnergyChanged()
     {
-        _counterText.Text = _counter!.Counter.ToString();
-
-        var textureRects = (from textureRect in _counterImg.GetChildren()
-            where textureRect is TextureRect
-            select textureRect).ToList();
-        foreach (var textureRect in textureRects)
+        if (_counterText != null)
         {
-            ((TextureRect)textureRect).Visible = false;
+            _counterText.Text = _counter!.Counter.ToString();
         }
 
-        switch (_counter.Counter)
+        if (_counterImg != null)
         {
-            case >= 7:
-                ((TextureRect)textureRects[6]).Visible = true;
-                break;
-            case > 0:
-                ((TextureRect)textureRects[_counter.Counter - 1]).Visible = true;
-                break;
+            var textureRects = (from textureRect in _counterImg.GetChildren()
+                where textureRect is TextureRect
+                select textureRect).ToList();
+            foreach (var textureRect in textureRects)
+            {
+                ((TextureRect)textureRect).Visible = false;
+            }
+
+            switch (_counter?.Counter)
+            {
+                case >= 7:
+                    ((TextureRect)textureRects[6]).Visible = true;
+                    break;
+                case > 0:
+                    ((TextureRect)textureRects[_counter.Counter - 1]).Visible = true;
+                    break;
+            }
         }
     }
 }

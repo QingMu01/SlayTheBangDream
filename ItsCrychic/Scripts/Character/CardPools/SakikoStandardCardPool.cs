@@ -1,5 +1,5 @@
-﻿using BangDreamLib.Scripts.Utils.Infos;
-using Godot;
+﻿using Godot;
+using ItsCrychic.Scripts.Utils;
 using STS2RitsuLib.Scaffolding.Content;
 using STS2RitsuLib.Utils;
 
@@ -7,18 +7,18 @@ namespace ItsCrychic.Scripts.Character.CardPools;
 
 public class SakikoStandardCardPool : TypeListCardPoolModel
 {
-    public override string Title => BangDreamMember.Sakiko.GetMemberName() + "StandardPool";
+    public override string Title => CrychicMemberEnum.Sakiko.GetMemberName() + "StandardPool";
 
-    public override string EnergyColorName => BangDreamMember.Sakiko.GetMemberName();
+    public override string EnergyColorName => CrychicMemberEnum.Sakiko.GetMemberName();
 
     public override Color DeckEntryCardColor => new("406090");
     public override Color EnergyOutlineColor => new("1D375C");
 
     public override Material PoolFrameMaterial =>
         MaterialUtils.CreateReplaceHueShaderMaterial(
-            BangDreamMember.Sakiko.GetMemberColor().R,
-            BangDreamMember.Sakiko.GetMemberColor().G,
-            BangDreamMember.Sakiko.GetMemberColor().B,
+            CrychicMemberEnum.Sakiko.GetMemberColor().R,
+            CrychicMemberEnum.Sakiko.GetMemberColor().G,
+            CrychicMemberEnum.Sakiko.GetMemberColor().B,
             1.1f
             );
 

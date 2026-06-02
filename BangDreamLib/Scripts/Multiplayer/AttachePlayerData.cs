@@ -14,15 +14,19 @@ public class AttachePlayerData
 
     public SkinManager SkinManager { get; private set; }
     public LingeredEnergyCounter LingeredEnergy { get; }
+    public PerformanceManager PerformanceManager { get; }
     public MusicNoteDamageTracker MusicNoteDamageTracker { get; }
 
     private AttachePlayerData(Player player)
     {
         SkinManager = new SkinManager(player);
         LingeredEnergy = (LingeredEnergyCounter)ModelDb.Singleton<LingeredEnergyCounter>().MutableClone();
+        PerformanceManager = (PerformanceManager)ModelDb.Singleton<PerformanceManager>().MutableClone();
+        
         MusicNoteDamageTracker = (MusicNoteDamageTracker)ModelDb.Singleton<MusicNoteDamageTracker>().MutableClone();
 
         LingeredEnergy.Owner = player;
+        PerformanceManager.Player = player;
     }
 
     public void SetMultiplayerSkin(Player player, SavedSkin savedSkin)

@@ -16,9 +16,11 @@ public static class BangDreamPreloadManager
     internal static readonly Dictionary<PreloadKey, string> SceneAssets = new()
     {
         { PreloadKey.PerformanceItem, "res://BangDreamLib/scenes/performance_item.tscn" },
-        { PreloadKey.PerformanceManager, "res://BangDreamLib/scenes/performance_manager.tscn" },
-        { PreloadKey.CharacterSelector, "res://BangDreamLib/scenes/character_selector.tscn" },
-        { PreloadKey.CharacterButton, "res://BangDreamLib/scenes/character_button.tscn" }
+        { PreloadKey.PerformanceArea, "res://BangDreamLib/scenes/performance_area.tscn" },
+        { PreloadKey.CharacterSelector, "res://BangDreamLib/scenes/character_selector/character_selector.tscn" },
+        { PreloadKey.CharacterButton, "res://BangDreamLib/scenes/character_selector/character_button.tscn" },
+        { PreloadKey.AscensionPanel, "res://BangDreamLib/scenes/character_selector/ascension_panel.tscn" },
+        { PreloadKey.SkinSelector, "res://BangDreamLib/scenes/character_selector/skin_selector.tscn" },
     };
 
     public static async Task LoadCommonAssets()
@@ -31,11 +33,6 @@ public static class BangDreamPreloadManager
             if (!string.IsNullOrEmpty(character.SelectPoster))
             {
                 hashSet.Add(character.SelectPoster);
-            }
-
-            if (!string.IsNullOrEmpty(character.SelectIcon))
-            {
-                hashSet.Add(character.SelectIcon);
             }
         }
 
@@ -68,7 +65,7 @@ public static class BangDreamPreloadManager
         CustomRunAssets.Add(name, path);
     }
 
-    private static async Task<AssetLoadingSession> LoadAssetSets(string name, params IEnumerable<string>[] assetSets)
+    private static async Task LoadAssetSets(string name, params IEnumerable<string>[] assetSets)
     {
         var assetPath = new HashSet<string>();
         foreach (var assetSet in assetSets)
@@ -82,8 +79,7 @@ public static class BangDreamPreloadManager
         var loadedCacheAssets = PreloadManager.Cache.GetLoadedCacheAssets();
         var needLoad = assetPath.Except(loadedCacheAssets);
         await Task.Yield();
-        var assetLoadingSession = LoadAssets(needLoad, name);
-        return assetLoadingSession;
+        _ = LoadAssets(needLoad, name);
     }
 
     private static AssetLoadingSession LoadAssets(IEnumerable<string> assetPaths, string name)
@@ -97,9 +93,11 @@ public static class BangDreamPreloadManager
 public enum PreloadKey
 {
     PerformanceItem,
-    PerformanceManager,
+    PerformanceArea,
     CharacterSelector,
-    CharacterButton
+    CharacterButton,
+    AscensionPanel,
+    SkinSelector,
 }
 
 public static class PreloadKeyExtensions

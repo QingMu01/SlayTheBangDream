@@ -13,6 +13,5 @@ public interface IAggregationCharacter : IModCharacterVanillaSelectionPolicy
     bool IsHidden { get; }
     bool AllowSelect { get; }
 
-    string? SelectIcon { get; }
     string? SelectPoster { get; }
 }

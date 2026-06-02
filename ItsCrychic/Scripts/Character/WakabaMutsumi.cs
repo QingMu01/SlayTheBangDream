@@ -4,6 +4,7 @@ using BangDreamLib.Scripts.Utils.Infos;
 using ItsCrychic.Scripts.Character.CardPools;
 using ItsCrychic.Scripts.Character.PotionPools;
 using ItsCrychic.Scripts.Character.RelicPools;
+using ItsCrychic.Scripts.Utils;
 using MegaCrit.Sts2.Core.Animation;
 using MegaCrit.Sts2.Core.Bindings.MegaSpine;
 using MegaCrit.Sts2.Core.Models;
@@ -12,7 +13,7 @@ namespace ItsCrychic.Scripts.Character;
 
 public sealed class WakabaMutsumi()
     : BandMemberModel<MutsumiStandardCardPool, MutsumiRelicPool, MutsumiPotionPool>(
-        BangDreamMember.Mutsumi.GetMemberColor()), IExtraDeckSupportCharacter
+        CrychicMemberEnum.Mutsumi.GetMemberColor()), IExtraDeckSupportCharacter
 {
     public override int StartingHp => 20;
     public override int StartingGold => 99;
@@ -20,7 +21,7 @@ public sealed class WakabaMutsumi()
     public override int GetDefaultCapacity => 1;
 
     public override BangDreamBand Band => BangDreamBand.Crychic;
-    public override string MemberNameRoman => BangDreamMember.Mutsumi.GetMemberNameRoman();
+    public override string MemberNameRoman => CrychicMemberEnum.Mutsumi.GetMemberNameRoman();
     public override string MemberClass => BangDreamClass.Guitar.GetBandClass();
 
     public override bool AllowSelect => false;
