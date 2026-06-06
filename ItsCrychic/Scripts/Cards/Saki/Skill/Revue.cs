@@ -1,11 +1,8 @@
-using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using MegaCrit.Sts2.Core.Models;
-using STS2RitsuLib.Keywords;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
@@ -18,7 +15,7 @@ public class Revue() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, 
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.KeywordPerformanceArea.GetModCardKeyword()
+        BangDreamConst.PerformanceArea
     ];
 
     protected override IEnumerable<DynamicVar> CardVars => [];
@@ -27,8 +24,8 @@ public class Revue() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, 
     {
         ArgumentNullException.ThrowIfNull(Owner.PlayerCombatState);
 
-        var cardModels = new List<CardModel>(BangDreamConst.PilePerformance.GetPile(Owner).Cards);
-        foreach (var card in cardModels)
+        var performanceCards = BangDreamTools.GetPile(BangDreamConst.PerformanceTable, Owner).Cards.ToList();
+        foreach (var card in performanceCards)
         {
             if (Owner.PlayerCombatState.Hand.Cards.Count < CardPile.MaxCardsInHand)
             {

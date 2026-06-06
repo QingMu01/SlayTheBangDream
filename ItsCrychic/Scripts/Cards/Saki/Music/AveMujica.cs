@@ -1,11 +1,11 @@
 using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models;
-using STS2RitsuLib.Keywords;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
@@ -14,11 +14,11 @@ public class AveMujica() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
     private const CardRarity CustomRarity = CardRarity.Rare;
     private const TargetType CustomTarget = TargetType.None;
 
-    private List<CardModel> _effectCards = [];
+    private readonly List<CardModel> _effectCards = [];
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.KeywordPerformance.GetModCardKeyword()
+        BangDreamConst.Performance
     ];
 
     protected override IEnumerable<IHoverTip> CardHoverTips =>
@@ -37,7 +37,7 @@ public class AveMujica() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
 
         foreach (var card in combatState.AllPiles.SelectMany(pile => pile.Cards))
         {
-            if (card.Rarity == CardRarity.Basic)
+            if (card.Rarity == CardRarity.Basic && card is not IPerformanceCard)
             {
                 card.BaseReplayCount += QuickVar.Repeat.Get(DynamicVars).IntValue;
                 _effectCards.Add(card);
@@ -54,6 +54,10 @@ public class AveMujica() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
             foreach (var effectCard in _effectCards)
             {
                 effectCard.BaseReplayCount -= QuickVar.Repeat.Get(DynamicVars).IntValue;
+                if (effectCard.BaseReplayCount <= 0)
+                {
+                    effectCard.BaseReplayCount = 0;
+                }
             }
         }
 

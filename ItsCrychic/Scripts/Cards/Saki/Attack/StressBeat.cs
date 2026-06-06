@@ -1,4 +1,4 @@
-﻿using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -9,7 +9,6 @@ using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Powers;
 using STS2RitsuLib.Cards.DynamicVars;
-using STS2RitsuLib.Keywords;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
@@ -23,7 +22,7 @@ public class StressBeat()
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.KeywordLinger.GetModCardKeyword()
+        BangDreamConst.Linger
     ];
 
     protected override IEnumerable<IHoverTip> CardHoverTips =>

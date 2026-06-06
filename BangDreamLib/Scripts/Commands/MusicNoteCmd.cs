@@ -1,11 +1,14 @@
 using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Interfaces;
 using BangDreamLib.Scripts.Nodes.VFX;
 using BangDreamLib.Scripts.Utils;
 using BangDreamLib.Scripts.Utils.Builder;
+using BangDreamLib.Scripts.Utils.Infos;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Hooks;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models;
@@ -21,8 +24,8 @@ public static class MusicNoteCmd
     private const int NoteGroupSize = 8;
     private const float NoteGroupDelay = 0.25f;
 
-    public static async Task FromCard(PlayerChoiceContext choiceContext, CardModel card, int baseCount,
-        decimal baseDamage = 1m, Creature? target = null)
+    public static async Task FromCard(CardModel card, int baseCount,
+        decimal baseDamage = 1m, Creature? target = null, Action<MusicNoteVfx>? beforeInstance = null)
     {
         ArgumentNullException.ThrowIfNull(card.RunState);
         ArgumentNullException.ThrowIfNull(card.CombatState);
@@ -32,80 +35,129 @@ public static class MusicNoteCmd
 
         var finalCount = BangDreamHook.ModifyMusicNoteShotCount(card.CombatState, card.Owner.Creature, baseCount, card);
 
-        await new VfxBuilder<MusicNoteVfx>(vfxPath)
-            .RepeatCount((int)finalCount)
-            .SetOnSpawn((vfx, context) =>
+        var noteVfxes = new VfxCreator<MusicNoteVfx>(vfxPath).CreateBatch((int)finalCount);
+
+        var vfxHandlerPairs = noteVfxes.Select(vfx =>
+        {
+            var handler = new MusicNoteEffectHandler(card, baseDamage, target);
+            return (vfx, handler);
+        }).ToList();
+
+        await SubmitNote(vfxHandlerPairs, NoteSpawnInterval, NoteGroupSize, NoteGroupDelay, beforeInstance);
+    }
+
+    private static async Task SubmitNote(IEnumerable<(MusicNoteVfx vfx, MusicNoteEffectHandler handler)> pairs,
+        float eachDelay = 0.0f, int groupCount = 0, float groupDelay = 0.0f,
+        Action<MusicNoteVfx>? beforeInstance = null)
+    {
+        if (groupCount < 0)
+        {
+            groupCount = 0;
+        }
+
+        var currentIndex = 0;
+        foreach (var (vfx, handler) in pairs)
+        {
+            beforeInstance?.Invoke(vfx);
+
+            BangDreamVfxManager.Instance?.SubmitVfx(vfx, handler);
+
+            if (groupCount > 0)
             {
-                context.Clear();
-                var attackTarget = target ??
-                                   card.Owner.RunState.Rng.CombatTargets.NextItem(card.CombatState.HittableEnemies);
-                var creatureSrc = card.Owner.Creature.GetCreatureNode();
-                var creatureTarget = attackTarget?.GetCreatureNode();
-
-                if (creatureTarget != null && creatureSrc != null)
-                {
-                    context.Set("Target", attackTarget);
-                    vfx.SetPath(creatureSrc.VfxSpawnPosition, creatureTarget.VfxSpawnPosition);
-                }
-                else
-                {
-                    vfx.QueueFree();
-                    BangDreamLibCore.Logger.Warn(
-                        $"Can't init MusicNoteVfx Move Path.(source: {creatureSrc}, target: {creatureTarget})");
-                }
-
-                return Task.CompletedTask;
-            })
-            .SetOnHit(async (vfx, context) =>
+                var isNewGroup = currentIndex > 0 && currentIndex % groupCount == 0;
+                await Cmd.Wait(isNewGroup ? groupDelay : eachDelay);
+            }
+            else
             {
-                var attackTarget = context.Get<Creature>("Target");
+                await Cmd.Wait(eachDelay);
+            }
 
-                if (attackTarget is { IsHittable: true } && card.CombatState != null)
-                {
-                    var damage = BangDreamHook.ModifyMusicNoteDamage(
-                        card.CombatState,
-                        attackTarget,
-                        card.Owner.Creature,
-                        baseDamage,
-                        card,
-                        ModifyDamageHookType.All
-                    );
-
-                    var results = await CreatureCmd.Damage(
-                        choiceContext,
-                        attackTarget,
-                        new DamageVar(damage, ValueProp.Unpowered | ValueProp.SkipHurtAnim),
-                        card
-                    );
-
-                    var damageTracker = card.Owner.AttachedData().MusicNoteDamageTracker;
-                    foreach (var damageResult in results)
-                    {
-                        damageTracker.AddMusicNoteDamage(card.CombatState.RoundNumber, damageResult);
-                    }
-
-                    if (card.CombatState != null)
-                    {
-                        await BangDreamHook.OnMusicNotePlayed(card.CombatState, card.Owner);
-                    }
-                }
-                else
-                {
-                    vfx.QueueFree();
-                }
-            })
-            .SetOnFinish(async (_, _) =>
-            {
-                if (CombatManager.Instance.IsInProgress)
-                {
-                    await CombatManager.Instance.CheckWinCondition();
-                }
-            })
-            .Emit(NoteSpawnInterval, NoteGroupSize, NoteGroupDelay);
+            currentIndex++;
+        }
     }
 
     private static string GetMusicNoteVfxPath(CardModel card)
     {
         return card.Owner.AttachedData().SkinManager.CurrentSkin?.SkinTemplate.MultiplayerVfx.MusicNote ?? DefaultPath;
+    }
+}
+
+internal class MusicNoteEffectHandler(
+    CardModel card,
+    decimal baseDamage,
+    Creature? target)
+    : IVfxEffectHandler
+{
+    public Task OnSpawn(VfxContext context)
+    {
+        ArgumentNullException.ThrowIfNull(card.RunState);
+        ArgumentNullException.ThrowIfNull(card.CombatState);
+        ArgumentNullException.ThrowIfNull(card.Owner.Creature);
+
+        var attackTarget = target ?? card.Owner.RunState.Rng.CombatTargets.NextItem(card.CombatState.HittableEnemies);
+
+        var creatureSrc = card.Owner.Creature.GetCreatureNode();
+        var creatureTarget = attackTarget?.GetCreatureNode();
+
+        if (creatureTarget != null && creatureSrc != null)
+        {
+            context.Set("Target", attackTarget);
+            ((MusicNoteVfx)context.VfxNode!).SetPath(creatureSrc.VfxSpawnPosition, creatureTarget.VfxSpawnPosition);
+        }
+        else
+        {
+            context.VfxNode?.QueueFreeSafely();
+            BangDreamLibCore.Logger.Warn(
+                $"Can't init MusicNoteVfx Move Path.(source: {creatureSrc}, target: {creatureTarget})");
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public async Task OnHit(VfxContext context)
+    {
+        var attackTarget = context.Get<Creature>("Target");
+
+        if (attackTarget is { IsHittable: true } && card.CombatState != null)
+        {
+            var damage = BangDreamHook.ModifyMusicNoteDamage(
+                card.CombatState,
+                attackTarget,
+                card.Owner.Creature,
+                baseDamage,
+                card,
+                ModifyDamageHookType.All
+            );
+
+            var results = await CreatureCmd.Damage(
+                new BlockingPlayerChoiceContext(),
+                attackTarget,
+                new DamageVar(damage, ValueProp.Unpowered | ValueProp.SkipHurtAnim),
+                card
+            );
+
+            var damageTracker = card.Owner.AttachedData().MusicNoteDamageTracker;
+            foreach (var damageResult in results)
+            {
+                damageTracker.AddMusicNoteDamage(card.CombatState.RoundNumber, damageResult);
+            }
+        }
+        else
+        {
+            context.VfxNode?.QueueFreeSafely();
+        }
+    }
+
+    public async Task OnFinish(VfxContext context)
+    {
+        if (card.CombatState != null)
+        {
+            await BangDreamHook.OnMusicNotePlayed(card.CombatState, card.Owner);
+        }
+
+        if (CombatManager.Instance.IsInProgress)
+        {
+            await CombatManager.Instance.CheckWinCondition();
+        }
     }
 }

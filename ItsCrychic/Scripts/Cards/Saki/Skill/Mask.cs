@@ -1,17 +1,15 @@
-﻿using BangDreamLib.Scripts.Extensions;
-using BangDreamLib.Scripts.Interfaces.CardAugment;
+using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Interfaces.GameHook;
 using BangDreamLib.Scripts.Utils;
+using ItsCrychic.Scripts.Power.Buff;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
-using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using MegaCrit.Sts2.Core.Models;
-using STS2RitsuLib.Cards.DynamicVars;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
-public class Mask() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget)
+public class Mask() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget), IModifyLingeredHook
 {
     private const int CustomCost = 1;
     private const CardType CustomType = CardType.Skill;
@@ -20,34 +18,24 @@ public class Mask() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, C
 
     public override bool GainsBlock => true;
 
+    protected override IEnumerable<CardKeyword> CardKeywords =>
+    [
+        BangDreamConst.Linger
+    ];
+
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        ComputedDynamicVarHelper.CreateBlockVar("BaseBlock", 0m, CalculateExtraBlock),
-        ModCardVars.Int("MusicCardMultiple", 3)
+        QuickVar.Block.Create(8)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        if (DynamicVars.Block.BaseValue > 0)
-        {
-            await CreatureCmd.GainBlock(Owner.Creature, DynamicVars.CalculatedBlock.Calculate(play.Target),
-                DynamicVars.CalculatedBlock.Props, play);
-        }
+        await CreatureCmd.GainBlock(Owner.Creature, DynamicVars.Block, play);
+        await PowerCmd.Apply<MaskPower>(choiceContext, Owner.Creature, 1m, Owner.Creature, this);
     }
 
-    private static decimal CalculateExtraBlock(CardModel? card, Creature? target)
+    protected override void OnUpgrade()
     {
-        var costCount = 0m;
-        if (card == null) return costCount;
-        foreach (var cardModel in BangDreamConst.PileExtraDraw.GetPile(card.Owner).Cards)
-        {
-            costCount += cardModel.EnergyCost.GetResolved();
-            if (card.IsUpgraded && cardModel is IPerformanceCard)
-            {
-                costCount += card.DynamicVars["MusicCardMultiple"].IntValue;
-            }
-        }
-
-        return costCount;
+        AddKeyword(CardKeyword.Innate);
     }
 }

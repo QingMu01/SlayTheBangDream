@@ -1,4 +1,3 @@
-using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Powers;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
@@ -33,7 +32,7 @@ public class CelestialRotationPower : BandPowerModel
 
                 foreach (var selectedCard in selectedCards)
                 {
-                    await CardPileCmd.Add(selectedCard, BangDreamConst.PilePerformance.GetPileType());
+                    await CardPileCmd.Add(selectedCard, BangDreamConst.PerformanceTable);
                 }
             }
         }

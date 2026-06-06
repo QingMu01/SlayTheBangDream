@@ -1,4 +1,5 @@
-﻿using BangDreamLib.Scripts.Interfaces.CharacterAugment;
+﻿using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Interfaces.CharacterAugment;
 using BangDreamLib.Scripts.Utils;
 using BangDreamLib.Scripts.Utils.Infos;
 using Godot;

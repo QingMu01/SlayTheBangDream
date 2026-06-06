@@ -1,7 +1,9 @@
 using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Interfaces.GameHook;
 using BangDreamLib.Scripts.Powers;
+using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Powers;
+using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models;
 
 namespace ItsCrychic.Scripts.Power.Buff;
@@ -11,6 +13,8 @@ public class MelodyMasterPower : BandPowerModel, ICardPerformanceHook
     public override PowerType Type => PowerType.Buff;
 
     public override PowerStackType StackType => PowerStackType.Single;
+
+    private List<CardModel> _applySlyCards = [];
 
     public async Task OnCardEnterPerformanceArea(CardModel cardModel)
     {
@@ -22,7 +26,18 @@ public class MelodyMasterPower : BandPowerModel, ICardPerformanceHook
         if (cardModel is not IPerformanceCard && cardModel.Owner == Owner.Player)
         {
             Flash();
-            cardModel.GiveSingleTurnSly();
+            cardModel.AddKeyword(CardKeyword.Sly);
+            _applySlyCards.Add(cardModel);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public override Task AfterCardPlayedLate(PlayerChoiceContext choiceContext, CardPlay cardPlay)
+    {
+        if (_applySlyCards.Contains(cardPlay.Card))
+        {
+            _applySlyCards.Remove(cardPlay.Card);
         }
 
         return Task.CompletedTask;

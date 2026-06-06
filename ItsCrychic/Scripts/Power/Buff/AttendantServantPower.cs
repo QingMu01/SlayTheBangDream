@@ -1,4 +1,4 @@
-﻿using BangDreamLib.Scripts.Interfaces.GameHook;
+using BangDreamLib.Scripts.Interfaces.GameHook;
 using BangDreamLib.Scripts.Powers;
 using BangDreamLib.Scripts.Utils;
 using ItsCrychic.Scripts.Cards.Token;
@@ -7,7 +7,6 @@ using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Entities.Powers;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using STS2RitsuLib.CardPiles;
 
 namespace ItsCrychic.Scripts.Power.Buff;
 
@@ -32,9 +31,10 @@ public class AttendantServantPower : BandPowerModel, IMusicNotePlayedHook
         if (Owner.Player != null)
         {
             Flash();
-            await CardPileCmd.AddGeneratedCardToCombat(Owner.CombatState.CreateCard<SakikoShield>(Owner.Player),
-                BangDreamConst.PileExtraDraw.GetModCardPileType(),
-                Owner.Player, CardPilePosition.Top);
+            CardCmd.PreviewCardPileAdd(await CardPileCmd.AddGeneratedCardToCombat(
+                Owner.CombatState.CreateCard<SakikoShield>(Owner.Player),
+                BangDreamConst.ExtraDraw,
+                Owner.Player, CardPilePosition.Top));
         }
     }
 }

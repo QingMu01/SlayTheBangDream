@@ -31,7 +31,6 @@ public abstract class BandMemberModel<TCardPoolModel, TRelicPoolModel, TPotionPo
     public abstract BangDreamBand Band { get; }
     public abstract string MemberNameRoman { get; }
     public abstract string MemberClass { get; }
-    public abstract string? SelectIcon { get; }
     public abstract string? SelectPoster { get; }
     public abstract List<string> CharacterSkinList { get; }
 

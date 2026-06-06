@@ -29,7 +29,7 @@ public class Command() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity
     {
         ArgumentNullException.ThrowIfNull(CombatState);
 
-        var extraDrawCards = BangDreamConst.PileExtraDraw.GetPile(Owner).Cards.ToList();
+        var extraDrawCards = BangDreamTools.GetPile(BangDreamConst.ExtraDraw, Owner).Cards.ToList();
         if (extraDrawCards.Count > 0)
         {
             var selectedCards = await CardSelectCmd.FromSimpleGrid(choiceContext, extraDrawCards,
@@ -44,6 +44,6 @@ public class Command() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity
 
     protected override void OnUpgrade()
     {
-        EnergyCost.UpgradeBy(-1);
+        RemoveKeyword(CardKeyword.Exhaust);
     }
 }

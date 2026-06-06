@@ -1,4 +1,3 @@
-﻿using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Audio.Debug;
 using MegaCrit.Sts2.Core.Combat;
@@ -34,7 +33,7 @@ public static class ExtraPileCmd
         var combatState = player.Creature.CombatState;
         var result = new List<CardModel>();
         var hand = PileType.Hand.GetPile(player);
-        var drawPile = BangDreamConst.PileExtraDraw.GetPile(player);
+        var drawPile = BangDreamTools.GetPile(BangDreamConst.ExtraDraw, player);
         var drawsRequested = count > 0M ? (int)Math.Ceiling(count) : 0;
         if (drawsRequested == 0)
             return result;
@@ -75,7 +74,7 @@ public static class ExtraPileCmd
 
     private static bool CheckIfDrawIsPossibleAndShowThoughtBubbleIfNot(Player player)
     {
-        if (BangDreamConst.PileExtraDraw.GetPile(player).Cards.Count == 0)
+        if (BangDreamTools.GetPile(BangDreamConst.ExtraDraw, player).Cards.Count == 0)
         {
             ThinkCmd.Play(new LocString("combat_messages", "NO_DRAW"), player.Creature, 2.0);
             return false;

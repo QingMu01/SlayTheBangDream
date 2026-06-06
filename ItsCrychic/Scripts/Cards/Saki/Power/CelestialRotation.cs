@@ -5,7 +5,6 @@ using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using STS2RitsuLib.Keywords;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Power;
 
@@ -18,7 +17,7 @@ public class CelestialRotation() : AbstractSakikoCard(CustomCost, CustomType, Cu
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.KeywordPerformanceArea.GetModCardKeyword()
+        BangDreamConst.PerformanceArea
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>

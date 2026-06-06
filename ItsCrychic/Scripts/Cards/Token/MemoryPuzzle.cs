@@ -9,7 +9,6 @@ using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models.CardPools;
-using STS2RitsuLib.Keywords;
 using STS2RitsuLib.Scaffolding.Content;
 
 namespace ItsCrychic.Scripts.Cards.Token;
@@ -27,7 +26,7 @@ public class MemoryPuzzle() : BandCardModel(CustomCost, CustomType, CustomRarity
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
         CardKeyword.Exhaust,
-        BangDreamConst.KeywordLinger.GetModCardKeyword()
+        BangDreamConst.Linger
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>

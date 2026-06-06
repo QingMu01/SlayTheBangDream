@@ -1,25 +1,22 @@
 using BangDreamLib.Scripts.Extensions;
-using BangDreamLib.Scripts.Utils;
 using ItsCrychic.Scripts.Power.Debuff;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using STS2RitsuLib.Keywords;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
 public class ComposeMusic() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget)
 {
-    private const int CustomCost = 1;
+    private const int CustomCost = 0;
     private const CardType CustomType = CardType.Skill;
     private const CardRarity CustomRarity = CardRarity.Uncommon;
     private const TargetType CustomTarget = TargetType.Self;
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        CardKeyword.Exhaust,
-        BangDreamConst.KeywordMusic.GetModCardKeyword()
+        CardKeyword.Exhaust
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
@@ -34,5 +31,10 @@ public class ComposeMusic() : AbstractSakikoCard(CustomCost, CustomType, CustomR
 
         await PowerCmd.Apply<ComposeMusicPower>(choiceContext, Owner.Creature,
             DynamicVars["ComposeMusicPower"].IntValue, Owner.Creature, this);
+    }
+
+    protected override void OnUpgrade()
+    {
+        DynamicVars.Energy.UpgradeValueBy(1m);
     }
 }

@@ -2,9 +2,10 @@ using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using STS2RitsuLib.Keywords;
+using MegaCrit.Sts2.Core.Models;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
@@ -17,12 +18,12 @@ public class FinishTimes() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.KeywordPerformanceArea.GetModCardKeyword()
+        BangDreamConst.PerformanceArea
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Damage.Create(5),
+        ComputedDynamicVarHelper.CreateDamageVar("BaseDamage", 4m, CalculateDamage),
         QuickVar.Repeat.Create(4)
     ];
 
@@ -30,18 +31,30 @@ public class FinishTimes() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
     {
         ArgumentNullException.ThrowIfNull(play.Target);
 
-        await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
+        await DamageCmd.Attack(DynamicVars.ComputeVar("BaseDamage").Calculate())
             .FromCard(this)
             .WithHitCount(DynamicVars.Repeat.IntValue)
             .Targeting(play.Target)
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
+    }
 
-        var attackCards = BangDreamConst.PilePerformance.GetPile(Owner).Cards
-            .Where(card => card.Type == CardType.Attack).ToList();
-        foreach (var card in attackCards)
+    private static decimal CalculateDamage(CardModel? cardModel, Creature? target)
+    {
+        if (cardModel != null)
         {
-            await CardCmd.AutoPlay(choiceContext, card, play.Target.IsHittable ? play.Target : null);
+            var performanceCards = BangDreamTools.GetPile(BangDreamConst.PerformanceTable, cardModel.Owner).Cards.ToList();
+            var card = performanceCards.FirstOrDefault();
+            if (card != null)
+            {
+                if (performanceCards.All(c => c.Type == card.Type))
+                {
+                    var multiplier = cardModel.IsUpgraded ? 2m : 1.5m;
+                    return 4m * multiplier;
+                }
+            }
         }
+
+        return 4m;
     }
 }

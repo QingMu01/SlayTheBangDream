@@ -1,4 +1,3 @@
-﻿using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Players;
@@ -27,8 +26,8 @@ internal class PopulateExtraDeckInCombatPatch : IPatchMethod
 
     public static void Postfix(Player __instance, Rng rng, CombatState state)
     {
-        var extraDeck = BangDreamConst.PileExtraDeck.GetPile(__instance);
-        var extraDraw = BangDreamConst.PileExtraDraw.GetPile(__instance);
+        var extraDeck = BangDreamTools.GetPile(BangDreamConst.ExtraDeck, __instance);
+        var extraDraw = BangDreamTools.GetPile(BangDreamConst.ExtraDraw, __instance);
         foreach (var deckCard in extraDeck.Cards)
         {
             var cloneCard = state.CloneCard(deckCard);

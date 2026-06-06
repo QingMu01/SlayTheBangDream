@@ -32,7 +32,7 @@ public sealed class GiantNote() : BandCardModel(CustomCost, CustomType, CustomRa
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
         await CardPileCmd.Draw(choiceContext, DynamicVars.Cards.BaseValue, Owner);
-        await MusicNoteCmd.FromCard(choiceContext, this, 1);
+        await MusicNoteCmd.FromCard(this, 1);
         await PowerCmd.Apply<GiantNotePower>(choiceContext, Owner.Creature, DynamicVars.Repeat.BaseValue,
             Owner.Creature, this);
     }

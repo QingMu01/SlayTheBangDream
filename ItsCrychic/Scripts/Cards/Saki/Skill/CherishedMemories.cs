@@ -49,7 +49,7 @@ public class CherishedMemories() : AbstractSakikoCard(CustomCost, CustomType, Cu
             generatedCards.Add(CombatState.CreateCard<MemoryPuzzle>(Owner));
         }
 
-        await CardPileCmd.AddGeneratedCardsToCombat(generatedCards, BangDreamConst.PileExtraDraw.GetPileType(),
+        await CardPileCmd.AddGeneratedCardsToCombat(generatedCards, BangDreamConst.ExtraDraw,
             Owner, CardPilePosition.Top);
     }
 

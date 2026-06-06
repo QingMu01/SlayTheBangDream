@@ -6,7 +6,6 @@ using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using STS2RitsuLib.Cards.DynamicVars;
-using STS2RitsuLib.Keywords;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Power;
 
@@ -24,18 +23,22 @@ public class Interlude() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        CardKeyword.Innate,
-        BangDreamConst.KeywordMusic.GetModCardKeyword()
+        BangDreamConst.PerformanceArea
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        ModCardVars.Int("GainBlock", 3)
+        ModCardVars.Int("GainBlock", 2)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
         await PowerCmd.Apply<InterludePower>(choiceContext, Owner.Creature, DynamicVars["GainBlock"].IntValue,
             Owner.Creature, this);
+    }
+
+    protected override void OnUpgrade()
+    {
+        DynamicVars["GainBlock"].UpgradeValueBy(1m);
     }
 }

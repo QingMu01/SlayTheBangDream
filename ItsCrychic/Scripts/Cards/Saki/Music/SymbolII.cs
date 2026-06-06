@@ -9,7 +9,6 @@ using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models;
 using STS2RitsuLib.Cards.DynamicVars;
-using STS2RitsuLib.Keywords;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
@@ -20,8 +19,8 @@ public class SymbolIi() : AbstractSakikoMusicCard(CustomRarity, CustomTarget), I
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.KeywordPerformance.GetModCardKeyword(),
-        BangDreamConst.KeywordPerformanceArea.GetModCardKeyword()
+        BangDreamConst.Performance,
+        BangDreamConst.PerformanceArea
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
@@ -33,7 +32,7 @@ public class SymbolIi() : AbstractSakikoMusicCard(CustomRarity, CustomTarget), I
 
     public override async Task OnStartPerformance(PlayerChoiceContext choiceContext)
     {
-        await MusicNoteCmd.FromCard(choiceContext, this, baseCount: DynamicVars.Repeat.IntValue);
+        await MusicNoteCmd.FromCard(this, DynamicVars.Repeat.IntValue);
     }
 
     public override async Task OnStopPerformance(PlayerChoiceContext choiceContext)
@@ -63,7 +62,7 @@ public class SymbolIi() : AbstractSakikoMusicCard(CustomRarity, CustomTarget), I
     public decimal ModifyMusicNoteDamageAdditive(Creature? target, decimal amount, Creature? dealer,
         AbstractModel? source)
     {
-        if (Pile?.Type == BangDreamConst.PilePerformance.GetPileType() && dealer == Owner.Creature)
+        if (Pile?.Type == BangDreamConst.PerformanceTable && dealer == Owner.Creature)
         {
             return DynamicVars["AddedDamage"].IntValue;
         }

@@ -1,11 +1,9 @@
-﻿using BangDreamLib.Scripts.Commands;
 using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using STS2RitsuLib.Keywords;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
@@ -18,13 +16,12 @@ public class Audition() : AbstractSakikoCard(CustomCost, CustomType, CustomRarit
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.KeywordMusicNote.GetModCardKeyword()
+        BangDreamConst.PerformanceArea
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Damage.Create(7),
-        QuickVar.Repeat.Create(2)
+        QuickVar.Damage.Create(8)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
@@ -37,12 +34,19 @@ public class Audition() : AbstractSakikoCard(CustomCost, CustomType, CustomRarit
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
 
-        await MusicNoteCmd.FromCard(choiceContext, this, DynamicVars.Repeat.IntValue);
+        var extraDrawCards = BangDreamTools.GetPile(BangDreamConst.ExtraDraw, Owner).Cards.ToList();
+        if (extraDrawCards.Count > 0)
+        {
+            var randomCard = Owner.RunState.Rng.CombatCardSelection.NextItem(extraDrawCards);
+            if (randomCard != null)
+            {
+                await CardPileCmd.Add(randomCard, BangDreamConst.PerformanceTable);
+            }
+        }
     }
 
     protected override void OnUpgrade()
     {
-        DynamicVars.Damage.UpgradeValueBy(2m);
-        DynamicVars.Repeat.UpgradeValueBy(2);
+        DynamicVars.Damage.UpgradeValueBy(3m);
     }
 }

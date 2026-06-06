@@ -15,10 +15,10 @@ public class DivineCarriage() : AbstractSakikoCard(CustomCost, CustomType, Custo
     private const TargetType CustomTarget = TargetType.AllEnemies;
 
     protected override bool IsPlayable =>
-        BangDreamConst.PileExtraDraw.GetPile(Owner).Cards.Count > Owner.PlayerCombatState!.DrawPile.Cards.Count;
+        BangDreamTools.GetPile(BangDreamConst.ExtraDraw, Owner).Cards.Count > Owner.PlayerCombatState!.DrawPile.Cards.Count;
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Damage.Create(20)
+        QuickVar.Damage.Create(30)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
@@ -34,6 +34,6 @@ public class DivineCarriage() : AbstractSakikoCard(CustomCost, CustomType, Custo
 
     protected override void OnUpgrade()
     {
-        DynamicVars.Damage.UpgradeValueBy(6m);
+        DynamicVars.Damage.UpgradeValueBy(10m);
     }
 }

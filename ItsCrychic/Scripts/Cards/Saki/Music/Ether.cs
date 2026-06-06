@@ -3,7 +3,6 @@ using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using STS2RitsuLib.Keywords;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
@@ -15,8 +14,8 @@ public class Ether() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
         CardKeyword.Exhaust,
-        BangDreamConst.KeywordPerformance.GetModCardKeyword(),
-        BangDreamConst.KeywordPerformanceArea.GetModCardKeyword()
+        BangDreamConst.Performance,
+        BangDreamConst.PerformanceArea
     ];
 
     protected override IEnumerable<DynamicVar> CardVars => [];
@@ -25,7 +24,7 @@ public class Ether() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
 
     public override Task OnStartPerformance(PlayerChoiceContext choiceContext)
     {
-        var performanceManager = Owner.AttachedNode().PerformanceManager;
+        var performanceManager = Owner.AttachedData().PerformanceManager;
         _addedCapacity = 7 - performanceManager.Capacity;
         if (_addedCapacity > 0)
         {
@@ -41,10 +40,12 @@ public class Ether() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
 
     public override Task OnStopPerformance(PlayerChoiceContext choiceContext)
     {
-        var performanceManager = Owner.AttachedNode().PerformanceManager;
+        var performanceManager = Owner.AttachedData().PerformanceManager;
         if (_addedCapacity > 0)
         {
+            ItsCrychic.Logger.Info($"Ether: Reduce capacity{_addedCapacity}");
             performanceManager.ReduceCapacity(_addedCapacity);
+            _addedCapacity = 0;
         }
 
         return Task.CompletedTask;

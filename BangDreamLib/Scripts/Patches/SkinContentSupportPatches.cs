@@ -1,4 +1,3 @@
-﻿using BangDreamLib;
 using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
 using BangDreamLib.Scripts.Relics.GameRules;
@@ -8,7 +7,7 @@ using MegaCrit.Sts2.Core.Models;
 using STS2RitsuLib.Patching.Core;
 using STS2RitsuLib.Patching.Models;
 
-namespace ItsCrychic.Scripts.Patches;
+namespace BangDreamLib.Scripts.Patches;
 
 public class SkinContentSupportPatches : IModPatches
 {
@@ -101,7 +100,7 @@ internal class InitExtraDeckPatch : IPatchMethod
 
     private static void PopulateDeck(IEnumerable<CardModel> cards, Player player, bool silent = false)
     {
-        var extraDeck = BangDreamConst.PileExtraDeck.GetPile(player);
+        var extraDeck = BangDreamTools.GetPile(BangDreamConst.ExtraDeck, player);
         if (extraDeck.Cards.Any())
             throw new InvalidOperationException("Extra Deck has already been populated.");
 

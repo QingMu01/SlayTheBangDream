@@ -4,7 +4,6 @@ using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using STS2RitsuLib.Cards.DynamicVars;
-using STS2RitsuLib.Keywords;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Power;
 
@@ -17,7 +16,7 @@ public class ParallelPerformance() : AbstractSakikoCard(CustomCost, CustomType, 
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.KeywordPerformanceArea.GetModCardKeyword()
+        BangDreamConst.PerformanceArea
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
@@ -27,7 +26,7 @@ public class ParallelPerformance() : AbstractSakikoCard(CustomCost, CustomType, 
 
     protected override Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        Owner.AttachedNode().PerformanceManager.AddCapacity(DynamicVars["CapacityIncrease"].IntValue);
+        Owner.AttachedData().PerformanceManager.AddCapacity(DynamicVars["CapacityIncrease"].IntValue);
         return Task.CompletedTask;
     }
 

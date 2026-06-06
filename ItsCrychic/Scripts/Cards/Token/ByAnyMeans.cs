@@ -1,5 +1,6 @@
 using BangDreamLib.Scripts.Attributes;
 using BangDreamLib.Scripts.Cards;
+using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
 using ItsCrychic.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
@@ -25,7 +26,11 @@ public class ByAnyMeans() : BandCardModel(CustomCost, CustomType, CustomRarity, 
     [
         CardKeyword.Exhaust
     ];
-    protected override IEnumerable<DynamicVar> CardVars => [];
+
+    protected override IEnumerable<DynamicVar> CardVars =>
+    [
+        QuickVar.Cards.Create(1),
+    ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
@@ -34,7 +39,8 @@ public class ByAnyMeans() : BandCardModel(CustomCost, CustomType, CustomRarity, 
         var drawPileCards = Owner.PlayerCombatState.DrawPile.Cards;
         if (drawPileCards.Count > 0)
         {
-            var selectedCards = await CardSelectCmd.FromDeckGeneric(Owner, CardSelectorPrompt.ToPlay.GetFixedPrefs(1));
+            var selectedCards = await CardSelectCmd.FromSimpleGrid(choiceContext, drawPileCards, Owner,
+                CardSelectorPrompt.ToPlay.GetFixedPrefs(DynamicVars.Cards.IntValue));
 
             foreach (var selectedCard in selectedCards)
             {

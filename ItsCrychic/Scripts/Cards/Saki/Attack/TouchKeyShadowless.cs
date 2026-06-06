@@ -6,7 +6,6 @@ using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using STS2RitsuLib.Keywords;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
@@ -19,7 +18,7 @@ public class TouchKeyShadowless() : AbstractSakikoCard(CustomCost, CustomType, C
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.KeywordLinger.GetModCardKeyword()
+        BangDreamConst.Linger
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>

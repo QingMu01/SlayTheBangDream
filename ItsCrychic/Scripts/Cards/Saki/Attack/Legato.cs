@@ -1,12 +1,12 @@
-﻿using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
-using ItsCrychic.Scripts.Cards.Token;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using STS2RitsuLib.Keywords;
+using MegaCrit.Sts2.Core.Models;
+using STS2RitsuLib.Cards.DynamicVars;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
@@ -19,40 +19,40 @@ public class Legato() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity,
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.KeywordPerformanceArea.GetModCardKeyword()
-    ];
-
-    protected override IEnumerable<IHoverTip> CardHoverTips =>
-    [
-        HoverTipFactory.FromCard<MelodyFragments>()
+        BangDreamConst.Linger
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Damage.Create(6),
-        QuickVar.Cards.Create(1)
+        ComputedDynamicVarHelper.CreateDamageVar("BaseDamage", 6, CalculateDamage),
+        ModCardVars.Int("PerLingerDamage", 1)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
         ArgumentNullException.ThrowIfNull(play.Target);
-        ArgumentNullException.ThrowIfNull(CombatState);
 
-        await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
+        await DamageCmd.Attack(DynamicVars.ComputeVar("BaseDamage").Calculate())
             .FromCard(this)
             .Targeting(play.Target)
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
-
-        for (var i = 0; i < DynamicVars.Cards.IntValue; i++)
-        {
-            await CardPileCmd.AddGeneratedCardToCombat(CombatState.CreateCard<MelodyFragments>(Owner),
-                BangDreamConst.PilePerformance.GetPileType(), Owner);
-        }
     }
 
     protected override void OnUpgrade()
     {
-        DynamicVars.Cards.UpgradeValueBy(1);
+        DynamicVars["PerLingerDamage"].UpgradeValueBy(1);
+    }
+
+    private static decimal CalculateDamage(CardModel? cardModel, Creature? target)
+    {
+        if (cardModel == null)
+        {
+            return 6m;
+        }
+
+        var lingerCount = cardModel.Owner.AttachedData().LingeredEnergy.Counter;
+        var totalDamage = lingerCount * cardModel.DynamicVars["PerLingerDamage"].IntValue;
+        return 6m + totalDamage;
     }
 }

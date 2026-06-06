@@ -1,5 +1,3 @@
-﻿using System.Reflection.Emit;
-using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
 using BangDreamLib.Scripts.Utils;
@@ -110,7 +108,7 @@ internal class ExtraPoolConcatToStandardPoolInLibraryPatch : IPatchMethod
 
 internal class MusicCardRewardSupportPatch : IPatchMethod
 {
-    public static string PatchId => "relace_card_reward_added_target_pile";
+    public static string PatchId => "replace_card_reward_added_target_pile";
 
     public static ModPatchTarget[] GetTargets()
     {
@@ -131,14 +129,14 @@ internal class MusicCardRewardSupportPatch : IPatchMethod
     {
         if (IPerformanceCard.CardEnterExtraDeck.GetOrCreate(card))
         {
-            newPileType = BangDreamConst.PileExtraDeck.GetPileType();
+            newPileType = BangDreamConst.ExtraDeck;
         }
     }
 }
 
 internal class MusicCardRewardVfxSupportPatch : IPatchMethod
 {
-    public static string PatchId => "relace_card_reward_added_vfx_target_pile";
+    public static string PatchId => "replace_card_reward_added_vfx_target_pile";
 
     public static ModPatchTarget[] GetTargets()
     {
@@ -149,7 +147,7 @@ internal class MusicCardRewardVfxSupportPatch : IPatchMethod
     {
         if (card.Model != null && IPerformanceCard.CardEnterExtraDeck.GetOrCreate(card.Model))
         {
-            pileType = BangDreamConst.PileExtraDeck.GetPileType();
+            pileType = BangDreamConst.ExtraDeck;
         }
     }
 }

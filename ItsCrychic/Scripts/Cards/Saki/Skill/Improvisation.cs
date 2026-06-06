@@ -1,12 +1,12 @@
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
 using BangDreamLib.Scripts.Utils;
+using ItsCrychic.Scripts.Character.CardPools;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Factories;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models;
-using STS2RitsuLib.Keywords;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
@@ -20,7 +20,7 @@ public class Improvisation() : AbstractSakikoCard(CustomCost, CustomType, Custom
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
         CardKeyword.Exhaust,
-        BangDreamConst.KeywordMusic.GetModCardKeyword()
+        BangDreamConst.Music
     ];
 
     protected override IEnumerable<DynamicVar> CardVars => [];
@@ -33,6 +33,11 @@ public class Improvisation() : AbstractSakikoCard(CustomCost, CustomType, Custom
         if (Owner.Character is IExtraDeckSupportCharacter character && character.ExtraCardPool.AllCards.Any())
         {
             musicCards.AddRange(character.ExtraCardPool.AllCards);
+        }
+        else
+        {
+            musicCards.AddRange(ModelDb.CardPool<SakikoMusicalCardPool>().AllCards);
+            musicCards.AddRange(ModelDb.CardPool<MutsumiMusicalCardPool>().AllCards);
         }
 
         var cardList = CardFactory.FilterForCombat(musicCards);

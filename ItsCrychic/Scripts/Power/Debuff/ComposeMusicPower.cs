@@ -1,4 +1,3 @@
-using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Powers;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
@@ -28,8 +27,8 @@ public class ComposeMusicPower : BandPowerModel
         bool isAutoPlay,
         ResourceInfo resources, PileType pileType, CardPilePosition position)
     {
-        return card.Type is CardType.Attack or CardType.Skill && pileType != PileType.Exhaust
-            ? (BangDreamConst.PileExtraDraw.GetPileType(), CardPilePosition.Bottom)
-            : base.ModifyCardPlayResultPileTypeAndPosition(card, isAutoPlay, resources, pileType, position);
+        return pileType == PileType.Discard && card is { Type: CardType.Attack or CardType.Skill }
+            ? (BangDreamConst.ExtraDraw, CardPilePosition.Bottom)
+            : (pileType, position);
     }
 }

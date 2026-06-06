@@ -6,7 +6,6 @@ using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using STS2RitsuLib.Keywords;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
@@ -20,7 +19,7 @@ public class GrittedTeeth() : AbstractSakikoCard(CustomCost, CustomType, CustomR
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
         CardKeyword.Exhaust,
-        BangDreamConst.KeywordLinger.GetModCardKeyword()
+        BangDreamConst.Linger
     ];
 
     protected override IEnumerable<IHoverTip> CardHoverTips =>

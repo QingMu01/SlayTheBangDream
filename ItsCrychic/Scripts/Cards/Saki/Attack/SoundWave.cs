@@ -6,7 +6,6 @@ using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models;
-using STS2RitsuLib.Keywords;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
@@ -21,7 +20,7 @@ public class SoundWave() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.KeywordPerformanceArea.GetModCardKeyword()
+        BangDreamConst.PerformanceArea
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
@@ -74,7 +73,8 @@ public class SoundWave() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
     private void InitSet()
     {
         _performanceCards.Clear();
-        foreach (var card in BangDreamConst.PilePerformance.GetPile(Owner).Cards)
+        var performanceCards = BangDreamTools.GetPile(BangDreamConst.PerformanceTable, Owner).Cards.ToList();
+        foreach (var card in performanceCards)
         {
             _performanceCards.Add(card);
         }

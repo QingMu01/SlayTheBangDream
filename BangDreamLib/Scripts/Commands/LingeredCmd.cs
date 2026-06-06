@@ -1,6 +1,5 @@
 ﻿using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Features;
-using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Players;
@@ -10,20 +9,6 @@ namespace BangDreamLib.Scripts.Commands;
 
 public static class LingeredCmd
 {
-    public static async Task<bool> Subside(ISubsideCardFlag subsideCard)
-    {
-        var card = (CardModel)subsideCard;
-        var context = card.Owner.AttachedData().LingeredEnergy;
-        if (card.CombatState == null) return false;
-        var finalReduced = BangDreamHook.ModifyLingeredEnergyReduce(card.CombatState,
-            card.DynamicVars.TryGetValue("Subside", out var subsideVar)
-                ? subsideVar.IntValue
-                : subsideCard.LingeredEnergyCost);
-
-        await context.ReduceLingeredEnergy(card.CombatState, (int)finalReduced);
-        return finalReduced <= context.Counter;
-    }
-
     public static async Task JustAdd(Player player, int amount)
     {
         ArgumentNullException.ThrowIfNull(player.Creature.CombatState);

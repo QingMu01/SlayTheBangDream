@@ -1,4 +1,5 @@
 ﻿using BangDreamLib.Scripts.Character;
+using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
 using BangDreamLib.Scripts.Utils.Infos;
 using ItsCrychic.Scripts.Character.CardPools;

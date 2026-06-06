@@ -5,7 +5,6 @@ using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using STS2RitsuLib.Cards.DynamicVars;
-using STS2RitsuLib.Keywords;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
@@ -16,12 +15,12 @@ public class SoIGaveUpOnMusic() : AbstractSakikoCard(CustomCost, CustomType, Cus
     private const CardRarity CustomRarity = CardRarity.Rare;
     private const TargetType CustomTarget = TargetType.None;
 
-    protected override bool IsPlayable => IsDupe || Owner.AttachedNode().PerformanceManager.Capacity > 0;
+    protected override bool IsPlayable => IsDupe || Owner.AttachedData().PerformanceManager.Capacity > 0;
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
         CardKeyword.Exhaust,
-        BangDreamConst.KeywordPerformanceArea.GetModCardKeyword()
+        BangDreamConst.PerformanceArea
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
@@ -37,7 +36,7 @@ public class SoIGaveUpOnMusic() : AbstractSakikoCard(CustomCost, CustomType, Cus
         var drawPileCards = Owner.PlayerCombatState.DrawPile.Cards;
         if (drawPileCards.Count > 0)
         {
-            var selectedCards = await CardSelectCmd.FromDeckGeneric(Owner,
+            var selectedCards = await CardSelectCmd.FromSimpleGrid(choiceContext, drawPileCards, Owner,
                 CardSelectorPrompt.ToPlay.GetFixedPrefs(DynamicVars.Cards.IntValue));
 
             foreach (var selectedCard in selectedCards)
@@ -52,7 +51,7 @@ public class SoIGaveUpOnMusic() : AbstractSakikoCard(CustomCost, CustomType, Cus
     {
         if (cardPlay.Card == this && cardPlay.PlayIndex == 0 && !IsDupe)
         {
-            Owner.AttachedNode().PerformanceManager.ReduceCapacity(DynamicVars["Cost"].IntValue);
+            Owner.AttachedData().PerformanceManager.ReduceCapacity(DynamicVars["Cost"].IntValue);
         }
 
         return Task.CompletedTask;

@@ -34,11 +34,11 @@ public class SakikoSpecialRules : HiddenRelic, ILingeredChangedHook
             var filledCount = amount / LingeredEnergyCounter.MaxLingeredEnergy;
             for (var i = 0; i < filledCount; i++)
             {
-                var extraDraw = BangDreamConst.PileExtraDraw.GetPile(player);
+                var extraDraw = BangDreamTools.GetPile(BangDreamConst.ExtraDraw, player);
                 var firstOrDefault = extraDraw.Cards.ToList().FirstOrDefault();
                 if (firstOrDefault != null)
                 {
-                    var result = await CardPileCmd.Add(firstOrDefault, BangDreamConst.PilePerformance.GetPileType());
+                    var result = await CardPileCmd.Add(firstOrDefault, BangDreamConst.PerformanceTable);
                     if (result.success)
                     {
                         await LingeredCmd.JustReduce(Owner, LingeredEnergyCounter.MaxLingeredEnergy);

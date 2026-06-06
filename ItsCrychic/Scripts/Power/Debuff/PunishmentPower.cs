@@ -19,11 +19,12 @@ public class PunishmentPower : BandPowerModel
         DamageResult result, ValueProp props, Creature? dealer, CardModel? cardSource)
     {
         if (target == Owner && !props.HasFlag(ValueProp.Move) &&
-            !props.HasFlag(ValueProp.Unpowered | ValueProp.Unblockable) &&
+            !props.HasFlag(ValueProp.Unpowered | ValueProp.Unblockable | ValueProp.SkipHurtAnim) &&
             result.TotalDamage > 0)
         {
             await CreatureCmd.Damage(choiceContext, target,
-                new DamageVar(Amount, ValueProp.Unpowered | ValueProp.Unblockable), Owner, null);
+                new DamageVar(Amount, ValueProp.Unpowered | ValueProp.Unblockable | ValueProp.SkipHurtAnim), Owner,
+                null);
         }
     }
 }

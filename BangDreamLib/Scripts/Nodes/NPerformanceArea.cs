@@ -5,6 +5,8 @@ using BangDreamLib.Scripts.Utils;
 using Godot;
 using MegaCrit.Sts2.Core.Context;
 using MegaCrit.Sts2.Core.Helpers;
+using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 
 namespace BangDreamLib.Scripts.Nodes;
 
@@ -19,7 +21,8 @@ public partial class NPerformanceArea : Control
     private readonly List<NPerformanceItem> _items = [];
     private readonly ConditionalWeakTable<NPerformanceItem, Tween> _itemAnims = new();
 
-    private bool _flipFlag;
+    private TaskCompletionSource? _layoutCompletion;
+    private Tween? _layoutTween;
 
     public static NPerformanceArea Create(PerformanceManager manager, Vector2 offset)
     {
@@ -30,63 +33,130 @@ public partial class NPerformanceArea : Control
         return area;
     }
 
-    public Vector2 GetSlotPosWithAutoFlip()
-    {
-        int? currentIndex = null;
-        var count = _manager?.PerformancePile.Cards.Count ?? 0;
-        var capacity = _manager?.Capacity ?? 0;
-
-        if (count == capacity)
-        {
-            if (_flipFlag)
-            {
-                _flipFlag = !_flipFlag;
-                currentIndex = 0;
-            }
-        }
-
-        currentIndex ??= Math.Max(0, count - 1);
-
-        return (_itemContainer?.GlobalPosition ?? Vector2.Zero) + new Vector2(0, currentIndex.Value * ItemStep);
-    }
-
     public override void _Ready()
     {
         _itemContainer = GetNode<Control>((NodePath)"%PerformanceItems");
         if (!_isLocal) Modulate = new Color(0.5f, 0.5f, 0.5f);
 
-        OnRefreshLayout();
+        if (_manager != null)
+            _ = OnCapacityChanged(_manager.Capacity);
     }
 
     public override void _EnterTree()
     {
         if (_manager != null)
-            _manager.RefreshLayout += OnRefreshLayout;
+        {
+            _manager.CardEnteredPerformance += OnCardEnteredPerformance;
+            _manager.CardLeftPerformance += OnCardLeftPerformance;
+            _manager.CapacityChanged += OnCapacityChanged;
+        }
     }
 
     public override void _ExitTree()
     {
         if (_manager != null)
-            _manager.RefreshLayout -= OnRefreshLayout;
+        {
+            _manager.CardEnteredPerformance -= OnCardEnteredPerformance;
+            _manager.CardLeftPerformance -= OnCardLeftPerformance;
+            _manager.CapacityChanged -= OnCapacityChanged;
+        }
     }
 
-    private void OnRefreshLayout()
+    public Vector2? GetPilePost(CardModel? card)
     {
-        UpdateCapacityChanged();
+        if (_items.Count == 0 || card == null)
+        {
+            return _itemContainer?.GlobalPosition;
+        }
 
-        UpdateItemsChanged();
+        var item = _items.FirstOrDefault(performanceItem => performanceItem.Model == card);
+        if (item != null)
+        {
+            return item.GlobalPosition;
+        }
 
-        var hasTween = false;
+        var emptyItem = _items.FirstOrDefault(performanceItem => performanceItem.Model == null);
+        if (emptyItem != null)
+        {
+            return GetGlobalItemPosition(_items.IndexOf(emptyItem));
+        }
+
+        return GetGlobalItemPosition(_items.Count);
+    }
+
+    private async Task OnCardEnteredPerformance(CardModel card)
+    {
+        var emptyItem = _items.FirstOrDefault(item => item.Model == null);
+        if (emptyItem != null)
+        {
+            emptyItem.Model = card;
+        }
+        else
+        {
+            AddItem(NPerformanceItem.Create(_isLocal, card));
+        }
+
+        await AnimateLayout();
+    }
+
+    private async Task OnCardLeftPerformance(CardModel card)
+    {
+        var item = _items.FirstOrDefault(item => item.Model == card);
+        if (item != null)
+        {
+            RemoveItem(item);
+        }
+
+        await OnCapacityChanged(_manager?.Capacity ?? 0);
+
+        await AnimateLayout();
+    }
+
+    private async Task OnCapacityChanged(int newCapacity)
+    {
+        var diff = newCapacity - _items.Count;
+        if (diff > 0)
+        {
+            for (var i = 0; i < diff; i++)
+            {
+                AddItem(NPerformanceItem.Create(_isLocal));
+            }
+        }
+        else if (diff < 0)
+        {
+            for (var i = 0; i < -diff; i++)
+            {
+                var toRemove = _items.LastOrDefault();
+                if (toRemove != null)
+                {
+                    RemoveItem(toRemove);
+                }
+            }
+        }
+
+        await AnimateLayout();
+    }
+
+    private Task AnimateLayout()
+    {
+        _layoutTween?.Kill();
+        _layoutCompletion?.TrySetResult();
+        _layoutTween = null;
+        _layoutCompletion = null;
+
         var tween = CreateTween();
         tween.SetParallel();
         tween.SetPauseMode(Tween.TweenPauseMode.Stop);
+
+        var hasTween = false;
         for (var i = 0; i < _items.Count; i++)
         {
             var currentItem = _items[i];
-            if (Math.Abs(currentItem.Position.Y - i * ItemStep) > 0.5)
+            var newPos = GetItemPosition(i);
+            if (Math.Abs(currentItem.Position.DistanceTo(newPos)) > 5f)
             {
                 hasTween = true;
-                tween.TweenProperty(currentItem, "position:y", i * ItemStep, 0.25f)
+                tween.TweenProperty(currentItem, "position", newPos, 0.25f)
                     .SetDelay(0.5f)
                     .SetTrans(Tween.TransitionType.Quad)
                     .SetEase(Tween.EaseType.InOut);
@@ -96,108 +166,71 @@ public partial class NPerformanceArea : Control
         if (!hasTween)
         {
             tween.Kill();
-            return;
+            return Task.CompletedTask;
         }
 
+        var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        _layoutTween = tween;
+        _layoutCompletion = completion;
+        tween.Finished += () =>
+        {
+            completion.TrySetResult();
+            if (_layoutTween != tween) return;
+
+            _layoutTween = null;
+            _layoutCompletion = null;
+        };
         tween.SetPauseMode(Tween.TweenPauseMode.Process);
+        return completion.Task;
     }
 
     private void AddItem(NPerformanceItem item)
     {
-        item.Position = new Vector2(0, _items.Count * ItemStep);
+        if (item.IsValid())
+        {
+            item.Position = GetItemPosition(_items.Count);
 
-        var tween = CreateTween();
-        TrackTween(item, tween);
-        item.Scale = Vector2.Zero;
-        tween.TweenProperty(item, "scale", Vector2.One, 1f)
-            .SetTrans(Tween.TransitionType.Back)
-            .SetEase(Tween.EaseType.Out)
-            .Set("backStrength", 8f);
-        _items.Add(item);
-        _itemContainer?.AddChildSafely(item);
-        tween.Finished += () => { _itemAnims.Remove(item); };
+            var tween = CreateTween();
+            TrackTween(item, tween);
+            item.Scale = Vector2.Zero;
+            tween.TweenProperty(item, "scale", Vector2.One, 1f)
+                .SetTrans(Tween.TransitionType.Back)
+                .SetEase(Tween.EaseType.Out)
+                .Set("backStrength", 8f);
+            _items.Add(item);
+            _itemContainer?.AddChildSafely(item);
+            tween.Finished += () => { _itemAnims.Remove(item); };
+        }
     }
 
     private void RemoveItem(NPerformanceItem item)
     {
-        var tween = CreateTween();
-        TrackTween(item, tween);
-        item.Scale = Vector2.One;
-        tween.TweenProperty(item, "scale", Vector2.Zero, 1f)
-            .SetTrans(Tween.TransitionType.Back)
-            .SetEase(Tween.EaseType.In)
-            .Set("backStrength", 5f);
-        _items.Remove(item);
-        tween.Finished += () =>
+        if (item.IsValid())
         {
-            _itemAnims.Remove(item);
-            item.QueueFreeSafely();
-        };
-    }
-
-    private void UpdateItemsChanged()
-    {
-        if (_manager == null)
-        {
-            BangDreamLibCore.Logger.Error("PerformanceArea: PerformanceManager is null.");
-            return;
-        }
-
-        var cardPileCards = _manager.PerformancePile.Cards;
-
-        // 同步已添加的卡牌
-        foreach (var card in cardPileCards)
-        {
-            if (_items.Any(item => item.Model == card))
+            var tween = CreateTween();
+            TrackTween(item, tween);
+            item.Scale = Vector2.One;
+            tween.TweenProperty(item, "scale", Vector2.Zero, 1f)
+                .SetTrans(Tween.TransitionType.Back)
+                .SetEase(Tween.EaseType.In)
+                .Set("backStrength", 8f);
+            _items.Remove(item);
+            tween.Finished += () =>
             {
-                continue;
-            }
-
-            var performanceItem = _items.FirstOrDefault(item => item.Model == null);
-            if (performanceItem != null)
-            {
-                performanceItem.Model = card;
-            }
-            else
-            {
-                AddItem(NPerformanceItem.Create(card.Owner == _manager.Player, card));
-            }
-        }
-
-        // 同步已被移除演奏区的卡牌
-        foreach (var item in _items.Where(item => item.Model != null && !cardPileCards.Contains(item.Model)).ToList())
-        {
-            RemoveItem(item);
+                _itemAnims.Remove(item);
+                item.QueueFreeSafely();
+            };
         }
     }
 
-    private void UpdateCapacityChanged()
+    private static Vector2 GetItemPosition(int index)
     {
-        if (_manager == null)
-        {
-            BangDreamLibCore.Logger.Error("PerformanceArea: PerformanceManager is null.");
-            return;
-        }
+        return new Vector2(index >= 5 ? ItemStep : 0, index % 5 * ItemStep);
+    }
 
-        var diffCapacity = _manager.Capacity - _items.Count;
-        if (diffCapacity > 0)
-        {
-            for (var i = 0; i < diffCapacity; i++)
-            {
-                AddItem(NPerformanceItem.Create(_isLocal));
-            }
-        }
-        else if (diffCapacity < 0)
-        {
-            for (var i = 0; i < -diffCapacity; i++)
-            {
-                var performanceItem = _items.FirstOrDefault(item => item.Model != null) ?? _items.LastOrDefault();
-                if (performanceItem != null)
-                {
-                    RemoveItem(performanceItem);
-                }
-            }
-        }
+    private Vector2? GetGlobalItemPosition(int index)
+    {
+        return _itemContainer?.GetGlobalTransform() * GetItemPosition(index);
     }
 
     private void TrackTween(NPerformanceItem item, Tween tween)

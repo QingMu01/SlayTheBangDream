@@ -30,7 +30,7 @@ public static class ComputedDynamicVarHelper
     {
         return ModCardVars.Computed(name, baseValue,
             calc,
-            (card, mode, target, runHooks) => ApplyEnchantmentWithHooks(card, mode, target, runHooks, prop, true, calc)
+            (card, mode, target, runHooks) => ApplyHooks(card, mode, target, runHooks, prop, true, calc)
         );
     }
 
@@ -39,11 +39,11 @@ public static class ComputedDynamicVarHelper
     {
         return ModCardVars.Computed(name, baseValue,
             calc,
-            (card, mode, target, runHooks) => ApplyEnchantmentWithHooks(card, mode, target, runHooks, prop, false, calc)
+            (card, mode, target, runHooks) => ApplyHooks(card, mode, target, runHooks, prop, false, calc)
         );
     }
 
-    private static decimal ApplyEnchantmentWithHooks(CardModel? card, CardPreviewMode mode, Creature? target,
+    private static decimal ApplyHooks(CardModel? card, CardPreviewMode mode, Creature? target,
         bool runHooks,
         ValueProp prop, bool isDamage, Func<CardModel?, Creature?, decimal> calc)
     {

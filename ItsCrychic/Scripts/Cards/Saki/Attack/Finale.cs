@@ -7,7 +7,6 @@ using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models;
 using STS2RitsuLib.Cards.DynamicVars;
-using STS2RitsuLib.Keywords;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
@@ -20,7 +19,7 @@ public class Finale() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity,
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.KeywordMusicNote.GetModCardKeyword()
+        BangDreamConst.MusicNote
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>

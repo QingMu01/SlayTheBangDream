@@ -5,7 +5,6 @@ using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models;
-using STS2RitsuLib.Keywords;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
@@ -18,7 +17,7 @@ public class CagedBird() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.KeywordPerformanceArea.GetModCardKeyword()
+        BangDreamConst.PerformanceArea
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
@@ -29,7 +28,7 @@ public class CagedBird() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
 
     public override async Task AfterCardChangedPilesLate(CardModel card, PileType oldPileType, AbstractModel? source)
     {
-        if (Pile == BangDreamConst.PileExtraDraw.GetPile(Owner))
+        if (Pile == BangDreamTools.GetPile(BangDreamConst.ExtraDraw, Owner))
         {
             await CardCmd.AutoPlay(new ThrowingPlayerChoiceContext(), this, null);
         }
@@ -45,7 +44,7 @@ public class CagedBird() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
 
-        if (BangDreamConst.PilePerformance.GetPile(Owner).Cards.Count == 0)
+        if (BangDreamTools.GetPile(BangDreamConst.PerformanceTable, Owner).Cards.Count == 0)
         {
             await PlayerCmd.GainEnergy(DynamicVars.Energy.BaseValue, Owner);
         }

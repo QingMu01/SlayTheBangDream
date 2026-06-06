@@ -1,112 +1,65 @@
+using BangDreamLib.Scripts.Utils.Infos;
 using Godot;
+using MegaCrit.Sts2.Core.Helpers;
 
 namespace BangDreamLib.Scripts.Nodes.VFX;
 
 public abstract partial class NBangDreamVfx : Node2D
 {
-    public event Func<Task>? VfxSpawned;
+    [Signal]
+    public delegate void VfxSpawnedEventHandler(VfxContext vfxContext);
 
-    public event Func<Task>? BeforeHit;
+    [Signal]
+    public delegate void BeforeHitEventHandler(VfxContext vfxContext);
 
-    public event Func<Task>? HitTriggered;
+    [Signal]
+    public delegate void HitTriggeredEventHandler(VfxContext vfxContext);
 
-    public event Func<Task>? AfterHit;
+    [Signal]
+    public delegate void AfterHitEventHandler(VfxContext vfxContext);
 
-    public event Func<Task>? VfxFinished;
+    [Signal]
+    public delegate void VfxFinishedEventHandler(VfxContext vfxContext);
 
-    public bool IsFinished { get; protected set; }
+    private VfxContext? _context;
+    protected bool IsFinished { get; set; }
 
-    protected async Task TriggerSpawn()
+    public VfxContext Context
     {
-        if (VfxSpawned != null)
-        {
-            foreach (var @delegate in VfxSpawned.GetInvocationList())
-            {
-                var handler = (Func<Task>)@delegate;
-                try
-                {
-                    await handler();
-                }
-                catch (Exception e)
-                {
-                    BangDreamLibCore.Logger.Error($"Error in VfxSpawned event handler:{e}");
-                }
-            }
-        }
+        get { return _context ??= new VfxContext(this); }
     }
 
-    protected async Task TriggerHit()
+    protected void EmitSpawnSignal()
     {
-        if (BeforeHit != null)
-        {
-            foreach (var @delegate in BeforeHit.GetInvocationList())
-            {
-                var handler = (Func<Task>)@delegate;
-                try
-                {
-                    await handler();
-                }
-                catch (Exception e)
-                {
-                    BangDreamLibCore.Logger.Error($"Error in BeforeHit event handler:{e}");
-                }
-            }
-        }
-
-        if (HitTriggered != null)
-        {
-            foreach (var @delegate in HitTriggered.GetInvocationList())
-            {
-                var handler = (Func<Task>)@delegate;
-                try
-                {
-                    await handler();
-                }
-                catch (Exception e)
-                {
-                    BangDreamLibCore.Logger.Error($"Error in HitTriggered event handler:{e}");
-                }
-            }
-        }
-
-        if (AfterHit != null)
-        {
-            foreach (var @delegate in AfterHit.GetInvocationList())
-            {
-                var handler = (Func<Task>)@delegate;
-                try
-                {
-                    await handler();
-                }
-                catch (Exception e)
-                {
-                    BangDreamLibCore.Logger.Error($"Error in AfterHit event handler:{e}");
-                }
-            }
-        }
+        EmitSignal(SignalName.VfxSpawned, Context);
     }
 
-    protected async Task TriggerFinish()
+    protected void EmitBeforeHitSignal()
+    {
+        EmitSignal(SignalName.BeforeHit, Context);
+    }
+
+    protected void EmitHitSignal()
+    {
+        EmitSignal(SignalName.HitTriggered, Context);
+    }
+
+    protected void EmitAfterHitSignal()
+    {
+        EmitSignal(SignalName.AfterHit, Context);
+    }
+
+    protected void EmitFinishSignal()
     {
         if (IsFinished) return;
         IsFinished = true;
+        EmitSignal(SignalName.VfxFinished, Context);
 
-        if (VfxFinished != null)
-        {
-            foreach (var @delegate in VfxFinished.GetInvocationList())
-            {
-                var handler = (Func<Task>)@delegate;
-                try
-                {
-                    await handler();
-                }
-                catch (Exception e)
-                {
-                    BangDreamLibCore.Logger.Error($"Error in VfxFinished event handler:{e}");
-                }
-            }
-        }
+        CallDeferred(nameof(Destroy));
+    }
 
-        QueueFree();
+    private void Destroy()
+    {
+        this.QueueFreeSafely();
     }
 }

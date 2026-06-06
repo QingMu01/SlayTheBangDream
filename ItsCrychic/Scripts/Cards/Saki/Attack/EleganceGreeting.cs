@@ -1,11 +1,10 @@
 using BangDreamLib.Scripts.Extensions;
-using BangDreamLib.Scripts.Utils;
-using ItsCrychic.Scripts.Power.Buff;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using STS2RitsuLib.Keywords;
+using MegaCrit.Sts2.Core.Models.Powers;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
@@ -19,32 +18,41 @@ public class EleganceGreeting() : AbstractSakikoCard(CustomCost, CustomType, Cus
     protected override HashSet<CardKeyword> CardKeywords =>
     [
         CardKeyword.Innate,
-        BangDreamConst.KeywordPerformanceArea.GetModCardKeyword()
+        CardKeyword.Exhaust
+    ];
+
+    protected override IEnumerable<IHoverTip> CardHoverTips =>
+    [
+        HoverTipFactory.FromPower<WeakPower>()
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
         QuickVar.Damage.Create(7),
-        QuickVar.Cards.Create(1),
+        new PowerVar<WeakPower>(1)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
         ArgumentNullException.ThrowIfNull(play.Target);
 
-        await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
+        var attackCommand = await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
             .FromCard(this)
             .Targeting(play.Target)
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
 
-        await PowerCmd.Apply<ElegancePower>(choiceContext, Owner.Creature, DynamicVars.Cards.BaseValue,
-            Owner.Creature, this);
+        var damageResult = attackCommand.Results.SelectMany(r => r).FirstOrDefault();
+        if (damageResult is { Receiver.IsHittable: true })
+        {
+            await PowerCmd.Apply<WeakPower>(choiceContext, damageResult.Receiver, DynamicVars.Weak.IntValue,
+                Owner.Creature, this);
+        }
     }
 
     protected override void OnUpgrade()
     {
-        DynamicVars.Damage.UpgradeValueBy(3m);
-        DynamicVars.Cards.UpgradeValueBy(1);
+        DynamicVars.Damage.UpgradeValueBy(2m);
+        DynamicVars.Weak.UpgradeValueBy(1);
     }
 }

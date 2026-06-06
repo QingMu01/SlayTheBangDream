@@ -1,5 +1,4 @@
 using BangDreamLib.Scripts.Extensions;
-using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
@@ -29,7 +28,7 @@ public class DrawKill() : AbstractSakikoCard(CustomCost, CustomType, CustomRarit
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
 
-        var attackCards = BangDreamConst.PileExtraDraw.GetPile(Owner).Cards
+        var attackCards = PileType.Draw.GetPile(Owner).Cards
             .Where(card => card.Type == CardType.Attack)
             .ToList();
         if (attackCards.Count > 0)

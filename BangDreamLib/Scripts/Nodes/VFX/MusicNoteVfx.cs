@@ -4,16 +4,16 @@ using MegaCrit.Sts2.Core.Random;
 
 namespace BangDreamLib.Scripts.Nodes.VFX;
 
-[Tool]
 public partial class MusicNoteVfx : NBangDreamVfx
 {
     [Export] public float Speed = 800.0f;
-    
+
     private int _floatFrequency = 2;
     private float _floatAmplitude = 20.0f;
     private float _floatDirection = -1.0f;
 
     private Sprite2D? _sprites;
+    private Tween? _tween;
 
     private Vector2 _startPos;
     private Vector2 _endPos;
@@ -47,18 +47,15 @@ public partial class MusicNoteVfx : NBangDreamVfx
 
     public override void _Ready()
     {
-        if (Engine.IsEditorHint())
-            return;
-
         _sprites = GetNode<Sprite2D>("Notes");
         _sprites.Frame = Rng.Chaotic.NextInt(0, _sprites.Hframes * _sprites.Vframes - 1);
 
-        _ = TriggerSpawn();
+        EmitSpawnSignal();
     }
 
     public override void _Process(double delta)
     {
-        if (Engine.IsEditorHint() || !_isMoving || !CombatManager.Instance.IsInProgress)
+        if (!_isMoving || !CombatManager.Instance.IsInProgress)
             return;
 
         var step = Speed * (float)delta;
@@ -79,10 +76,12 @@ public partial class MusicNoteVfx : NBangDreamVfx
         GlobalPosition = linearPos + floatOffset;
         Rotation = _direction.Angle();
 
-        // 到达终点后触发命中与结束流程
         if (!_isHit && _traveledDistance >= _totalDistance)
         {
             _isHit = true;
+            _tween = CreateTween();
+            _tween.TweenProperty(_sprites, "modulate:a", 0f, 0.25f);
+            _tween.TweenProperty(_sprites, "scale", Vector2.Zero, 0.25f);
             _ = OnReachedEndAsync();
         }
     }
@@ -91,13 +90,14 @@ public partial class MusicNoteVfx : NBangDreamVfx
     {
         try
         {
-            var tween = CreateTween();
-            tween.TweenProperty(_sprites, "modulate:a", 0f, 0.2f);
-            tween.TweenProperty(_sprites, "scale", Vector2.Zero, 0.2f);
+            EmitBeforeHitSignal();
 
-            await TriggerHit();
+            EmitHitSignal();
 
-            await ToSignal(tween, Tween.SignalName.Finished);
+            EmitAfterHitSignal();
+
+            if (_tween != null)
+                await ToSignal(_tween, Tween.SignalName.Finished);
         }
         catch (Exception ex)
         {
@@ -105,7 +105,7 @@ public partial class MusicNoteVfx : NBangDreamVfx
         }
         finally
         {
-            await TriggerFinish();
+            EmitFinishSignal();
         }
     }
 }

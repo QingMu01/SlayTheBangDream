@@ -1,11 +1,9 @@
 using BangDreamLib.Scripts.Commands;
-using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using STS2RitsuLib.Keywords;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
@@ -18,14 +16,14 @@ public class BandPractice() : AbstractSakikoCard(CustomCost, CustomType, CustomR
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.KeywordMusic.GetModCardKeyword()
+        BangDreamConst.Music
     ];
 
     protected override IEnumerable<DynamicVar> CardVars => [];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        while (BangDreamConst.PileExtraDraw.GetPile(Owner).Cards.Count > 0)
+        while (BangDreamTools.GetPile(BangDreamConst.ExtraDraw, Owner).Cards.Count > 0)
         {
             var drawnCardsTask = await ExtraPileCmd.Draw(choiceContext, 1, Owner);
             var drawnCards = drawnCardsTask.ToList();

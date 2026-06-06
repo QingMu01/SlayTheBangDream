@@ -1,5 +1,3 @@
-﻿// See https://aka.ms/new-console-template for more information
-
 using System.Reflection;
 using BangDreamLib.Scripts.Character;
 using BangDreamLib.Scripts.Extensions;
@@ -12,7 +10,6 @@ using BangDreamLib.Scripts.Saved;
 using BangDreamLib.Scripts.Utils;
 using BangDreamLib.Scripts.Utils.Infos;
 using Godot;
-using ItsCrychic.Scripts.Patches;
 using MegaCrit.Sts2.Core.Modding;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Runs;
@@ -48,13 +45,13 @@ public class BangDreamLibCore
         preload.RegisterPatches<PreloadPatches>();
         preload.PatchAll();
 
-        var hiddenRelicSupport = RitsuLibFramework.CreatePatcher(BangDreamConst.ModId, "hidden_relic_patches");
-        hiddenRelicSupport.RegisterPatches<HiddenRelicPatchSet>();
-        hiddenRelicSupport.PatchAll();
-
         var playerData = RitsuLibFramework.CreatePatcher(BangDreamConst.ModId, "attache_player_data_patches");
         playerData.RegisterPatches<AttachePlayerExtraContentPatches>();
         playerData.PatchAll();
+
+        var vfxManager = RitsuLibFramework.CreatePatcher(BangDreamConst.ModId, "vfx_manager_patches");
+        vfxManager.RegisterPatches<VfxManagerPatches>();
+        vfxManager.PatchAll();
 
         var aggregationCharacter =
             RitsuLibFramework.CreatePatcher(BangDreamConst.ModId, "aggregation_selector_patches");
@@ -84,23 +81,24 @@ public class BangDreamLibCore
 
         // 注册关键字
         var keywords = RitsuLibFramework.GetKeywordRegistry(BangDreamConst.ModId);
-        keywords.RegisterCardKeywordOwnedByLocNamespace("Music");
-        keywords.RegisterCardKeywordOwnedByLocNamespace("MusicNote");
-        keywords.RegisterCardKeywordOwnedByLocNamespace("Performance");
-        keywords.RegisterCardKeywordOwnedByLocNamespace("PerformanceArea");
-        keywords.RegisterCardKeywordOwnedByLocNamespace("Linger");
+        BangDreamConst.Music = keywords.RegisterCardKeywordOwnedByLocNamespace("Music").CardKeywordValue;
+        BangDreamConst.MusicNote = keywords.RegisterCardKeywordOwnedByLocNamespace("MusicNote").CardKeywordValue;
+        BangDreamConst.Performance = keywords.RegisterCardKeywordOwnedByLocNamespace("Performance").CardKeywordValue;
+        BangDreamConst.PerformanceArea =
+            keywords.RegisterCardKeywordOwnedByLocNamespace("PerformanceArea").CardKeywordValue;
+        BangDreamConst.Linger = keywords.RegisterCardKeywordOwnedByLocNamespace("Linger").CardKeywordValue;
 
         // 注册自定义奖励
         var customReward = ModRewardRegistry.For(BangDreamConst.ModId);
-        customReward.RegisterOwned("RewardMusic",
+        BangDreamConst.RewardMusic = customReward.RegisterOwned("RewardMusic",
             (save, player, _) =>
-                new MusicCardReward(
-                    new CardCreationOptions(save.CardPoolIds.Select(ModelDb.GetById<CardPoolModel>), save.Source,
-                        save.RarityOdds), save.OptionCount, player));
+                new MusicCardReward(new CardCreationOptions(save.CardPoolIds.Select(ModelDb.GetById<CardPoolModel>),
+                    save.Source, save.RarityOdds), save.OptionCount, player)
+        ).RewardType;
 
         // 注册自定义牌堆
         var customPile = ModCardPileRegistry.For(BangDreamConst.ModId);
-        customPile.RegisterOwned("ExtraDeck", new ModCardPileSpec
+        BangDreamConst.ExtraDeck = customPile.RegisterOwned("ExtraDeck", new ModCardPileSpec
         {
             Scope = ModCardPileScope.RunPersistent,
             Style = ModCardPileUiStyle.TopBarDeck,
@@ -109,8 +107,8 @@ public class BangDreamLibCore
             {
                 ShouldAlwaysShowExtraDeckAndPile: true
             }
-        });
-        customPile.RegisterOwned("ExtraDraw", new ModCardPileSpec
+        }).PileType;
+        BangDreamConst.ExtraDraw = customPile.RegisterOwned("ExtraDraw", new ModCardPileSpec
         {
             Scope = ModCardPileScope.CombatOnly,
             Style = ModCardPileUiStyle.BottomLeft,
@@ -120,15 +118,18 @@ public class BangDreamLibCore
             {
                 ShouldAlwaysShowExtraDeckAndPile: true
             }
-        });
-        customPile.RegisterOwned("Performance", new ModCardPileSpec
+        }).PileType;
+        BangDreamConst.PerformanceTable = customPile.RegisterOwned("Performance", new ModCardPileSpec
         {
             Scope = ModCardPileScope.CombatOnly,
             Style = ModCardPileUiStyle.Headless,
+            FlightStartPositionResolver = context =>
+                context.CardModel?.Owner.AttachedData().PerformanceManager.PerformanceArea
+                    ?.GetPilePost(context.CardModel),
             FlightTargetPositionResolver = context =>
-                context.CardModel?.Owner.AttachedData().PerformanceManager.PerformanceArea?.GetSlotPosWithAutoFlip() ??
-                Vector2.Zero
-        });
+                context.CardModel?.Owner.AttachedData().PerformanceManager.PerformanceArea
+                    ?.GetPilePost(context.CardModel)
+        }).PileType;
 
         // 注册公共内容
         var commonContent = RitsuLibFramework.GetContentRegistry(BangDreamConst.ModId);

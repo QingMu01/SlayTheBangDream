@@ -1,4 +1,3 @@
-using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -34,7 +33,7 @@ public class PathDependence() : AbstractSakikoCard(CustomCost, CustomType, Custo
 
             foreach (var selectedCard in selectedCards)
             {
-                await CardPileCmd.Add(selectedCard, BangDreamConst.PileExtraDraw.GetPileType());
+                await CardPileCmd.Add(selectedCard, BangDreamConst.ExtraDraw, CardPilePosition.Top);
             }
         }
     }

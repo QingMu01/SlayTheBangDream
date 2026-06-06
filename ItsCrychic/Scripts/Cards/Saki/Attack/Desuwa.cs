@@ -17,13 +17,13 @@ public class Desuwa() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity,
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Damage.Create(1),
-        QuickVar.Block.Create(1)
+        QuickVar.Damage.Create(3),
+        QuickVar.Cards.Create(1)
     ];
 
     public override async Task AfterCardPlayedLate(PlayerChoiceContext choiceContext, CardPlay cardPlay)
     {
-        if (!cardPlay.Card.Id.Equals(Id) && Pile == PileType.Discard.GetPile(Owner))
+        if (!cardPlay.Card.Id.Equals(Id) && Pile?.Type == PileType.Discard)
         {
             var cardPileAddResult = await CardPileCmd.Add(this, PileType.Hand);
             if (cardPileAddResult.success)
@@ -45,9 +45,11 @@ public class Desuwa() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity,
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
 
-        if (IsUpgraded)
-        {
-            await CreatureCmd.GainBlock(Owner.Creature, DynamicVars.Block.BaseValue, DynamicVars.Block.Props, play);
-        }
+        await CardPileCmd.Draw(choiceContext, DynamicVars.Cards.IntValue, Owner);
+    }
+
+    protected override void OnUpgrade()
+    {
+        DynamicVars.Damage.UpgradeValueBy(2m);
     }
 }

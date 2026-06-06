@@ -1,4 +1,5 @@
 using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Utils;
 using ItsCrychic.Scripts.Cards.Token;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -17,12 +18,7 @@ public class InspirationBurst() : AbstractSakikoCard(CustomCost, CustomType, Cus
 
     protected override IEnumerable<IHoverTip> CardHoverTips =>
     [
-        HoverTipFactory.FromCard<MelodyFragments>()
-    ];
-
-    protected override IEnumerable<CardKeyword> CardKeywords =>
-    [
-        CardKeyword.Exhaust
+        HoverTipFactory.FromCard<MelodyFragments>(IsUpgraded)
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
@@ -33,15 +29,20 @@ public class InspirationBurst() : AbstractSakikoCard(CustomCost, CustomType, Cus
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
         ArgumentNullException.ThrowIfNull(CombatState);
+        var performanceCards = BangDreamTools.GetPile(BangDreamConst.PerformanceTable, Owner).Cards.ToList();
+        foreach (var cardModel in performanceCards)
+        {
+            if (cardModel is MelodyFragments otherCard && cardModel != this)
+            {
+                await otherCard.OnStartPerformance(choiceContext);
+            }
+        }
+
         for (var i = 0; i < DynamicVars.Cards.IntValue; i++)
         {
-            await CardPileCmd.AddGeneratedCardToCombat(CombatState.CreateCard<MelodyFragments>(Owner), PileType.Hand,
-                Owner);
+            var melodyCard = CombatState.CreateCard<MelodyFragments>(Owner);
+            if (IsUpgraded) CardCmd.Upgrade(melodyCard);
+            await CardPileCmd.AddGeneratedCardToCombat(melodyCard, PileType.Hand, Owner);
         }
-    }
-
-    protected override void OnUpgrade()
-    {
-        DynamicVars.Cards.UpgradeValueBy(1m);
     }
 }

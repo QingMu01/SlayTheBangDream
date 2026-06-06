@@ -1,8 +1,6 @@
-﻿using BangDreamLib.Scripts.Extensions;
-using BangDreamLib.Scripts.Relics.GameRules;
+﻿using BangDreamLib.Scripts.Relics.GameRules;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Entities.Players;
-using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Runs;
 using STS2RitsuLib.Patching.Core;
 using STS2RitsuLib.Patching.Models;
@@ -31,7 +29,7 @@ internal class InitStartingExtraDeckPatch : IPatchMethod
     {
         foreach (var player in __result.Players)
         {
-            var cardPile = BangDreamConst.PileExtraDeck.GetPile(player);
+            var cardPile = BangDreamTools.GetPile(BangDreamConst.ExtraDeck, player);
             foreach (var card in cardPile.Cards)
             {
                 __result.AddCard(card, player);
@@ -54,7 +52,7 @@ internal class LoadExtraDeckPatch : IPatchMethod
         var extraDeckHelper = __instance.GetRelic<ExtraDeckSaveHelper>();
         if (extraDeckHelper != null)
         {
-            var extraDeck = BangDreamConst.PileExtraDeck.GetPile(__instance);
+            var extraDeck = BangDreamTools.GetPile(BangDreamConst.ExtraDeck, __instance);
             extraDeck.Clear(true);
             foreach (var card in extraDeckHelper.GetSavedCards())
             {

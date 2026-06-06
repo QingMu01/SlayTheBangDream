@@ -15,6 +15,7 @@ public static class CrychicConst
     
     public static readonly Func<RelicModel, RelicAssetProfile> DefaultRelicAssetProfile = cardModel => new RelicAssetProfile(
         IconPath: cardModel.GetType().Name.GetRelicImg(ModId),
-        BigIconPath: cardModel.GetType().Name.GetBigRelicImg(ModId)
+        BigIconPath: cardModel.GetType().Name.GetBigRelicImg(ModId),
+        IconOutlinePath: cardModel.GetType().Name.GetBigRelicImg(ModId)
     );
 }

@@ -48,12 +48,15 @@ public class StressReaction() : AbstractSakikoCard(CustomCost, CustomType, Custo
     }
 
     public override async Task AfterDamageReceived(PlayerChoiceContext choiceContext, Creature target,
-        DamageResult result, ValueProp props,
-        Creature? dealer, CardModel? cardSource)
+        DamageResult result, ValueProp props, Creature? dealer, CardModel? cardSource)
     {
-        if (Pile?.Type != PileType.Discard && result.Receiver == Owner.Creature)
+        if (CombatState != null && Pile != null && result.Receiver == Owner.Creature)
         {
-            await CardCmd.AutoPlay(choiceContext, this, null);
+            if (Pile is { Type: not PileType.Discard and not PileType.Play })
+            {
+                await Cmd.Wait(0.2f);
+                await CardCmd.AutoPlay(choiceContext, this, null);
+            }
         }
     }
 

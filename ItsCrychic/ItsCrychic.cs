@@ -12,9 +12,11 @@ using ItsCrychic.Scripts.Relics.Sakiko;
 using ItsCrychic.Scripts.Utils;
 using MegaCrit.Sts2.Core.Modding;
 using MegaCrit.Sts2.Core.Models.RelicPools;
+using MegaCrit.Sts2.Core.Models.Relics;
 using STS2RitsuLib;
 using STS2RitsuLib.Patching.Builders;
 using STS2RitsuLib.Patching.Core;
+using STS2RitsuLib.Scaffolding.Content;
 using Logger = MegaCrit.Sts2.Core.Logging.Logger;
 
 namespace ItsCrychic;
@@ -64,6 +66,12 @@ public class ItsCrychic
             return false;
         });
         sakikoContent.RegisterCharacterStarterRelic<TogawaSakiko, Synthesizer>();
+        sakikoContent.RegisterCharacterOwnedRelicVisualOverride<TogawaSakiko, YummyCookie>(new RelicAssetProfile
+        {
+            BigIconPath = "res://ItsCrychic/images/relics/big/CookieSakiko.png",
+            IconPath = "res://ItsCrychic/images/relics/CookieSakiko.png",
+            IconOutlinePath = "res://ItsCrychic/images/relics/big/CookieSakiko.png"
+        });
 
         // 注册睦相关内容
         var mutsumiContent = RitsuLibFramework.GetContentRegistry(CrychicConst.ModId);

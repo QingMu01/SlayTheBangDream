@@ -1,4 +1,4 @@
-﻿using BangDreamLib.Scripts.Attributes;
+using BangDreamLib.Scripts.Attributes;
 using BangDreamLib.Scripts.Cards;
 using BangDreamLib.Scripts.Commands;
 using BangDreamLib.Scripts.Extensions;
@@ -10,7 +10,6 @@ using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.CardPools;
-using STS2RitsuLib.Keywords;
 using STS2RitsuLib.Scaffolding.Content;
 
 namespace ItsCrychic.Scripts.Cards.Token;
@@ -29,30 +28,24 @@ public class MelodyFragments() : MusicCardModel(CustomCost, CustomRarity, Custom
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
         CardKeyword.Exhaust,
-        BangDreamConst.KeywordMusicNote.GetModCardKeyword(),
-        BangDreamConst.KeywordPerformance.GetModCardKeyword(),
-        BangDreamConst.KeywordPerformanceArea.GetModCardKeyword()
+        BangDreamConst.MusicNote,
+        BangDreamConst.Performance,
+        BangDreamConst.PerformanceArea
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Repeat.Create(3)
+        QuickVar.Repeat.Create(4)
     ];
 
-    protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay cardPlay)
+    protected override Task OnPlay(PlayerChoiceContext choiceContext, CardPlay cardPlay)
     {
-        foreach (var cardModel in BangDreamConst.PilePerformance.GetPile(Owner).Cards)
-        {
-            if (cardModel is MelodyFragments otherCard && cardModel != this)
-            {
-                await otherCard.OnStartPerformance(choiceContext);
-            }
-        }
+        return Task.CompletedTask;
     }
 
     public override async Task OnStartPerformance(PlayerChoiceContext choiceContext)
     {
-        await MusicNoteCmd.FromCard(choiceContext, this, baseCount: DynamicVars.Repeat.IntValue);
+        await MusicNoteCmd.FromCard(this, DynamicVars.Repeat.IntValue);
     }
 
     protected override void OnUpgrade()

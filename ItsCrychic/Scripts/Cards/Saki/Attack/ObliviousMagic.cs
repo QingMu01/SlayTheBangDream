@@ -47,6 +47,6 @@ public class ObliviousMagic()
 
     protected override void OnUpgrade()
     {
-        RemoveKeyword(CardKeyword.Ethereal);
+        DynamicVars.Damage.UpgradeValueBy(7m);
     }
 }

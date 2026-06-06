@@ -5,7 +5,6 @@ using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models;
-using STS2RitsuLib.Keywords;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
@@ -16,8 +15,8 @@ public class SymbolI() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.KeywordPerformance.GetModCardKeyword(),
-        BangDreamConst.KeywordPerformanceArea.GetModCardKeyword()
+        BangDreamConst.Performance,
+        BangDreamConst.PerformanceArea
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>

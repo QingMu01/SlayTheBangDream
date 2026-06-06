@@ -1,12 +1,10 @@
-﻿using BangDreamLib.Scripts.Extensions;
-using BangDreamLib.Scripts.Interfaces.CardAugment;
+﻿using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Nodes.SubNode;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using STS2RitsuLib.Keywords;
 using STS2RitsuLib.Scaffolding.Content;
 
 namespace BangDreamLib.Scripts.Cards;
@@ -31,7 +29,7 @@ public abstract class MusicCardModel(
     public sealed override IEnumerable<CardKeyword> CanonicalKeywords => CardKeywords;
 
     protected sealed override IEnumerable<IHoverTip> AdditionalHoverTips =>
-        new List<IHoverTip>(BangDreamConst.KeywordMusic.GetModKeywordHoverTips()).Concat(CardHoverTips);
+        new[] { HoverTipFactory.FromKeyword(BangDreamConst.Music) }.Concat(CardHoverTips);
 
     protected sealed override IEnumerable<DynamicVar> CanonicalVars => CardVars;
 
@@ -47,17 +45,17 @@ public abstract class MusicCardModel(
         return Task.CompletedTask;
     }
 
-    public virtual PileType WhenStopMoveToPile
+    public virtual PileType StopPerformanceNextPile
     {
         get
         {
             var moveTo = base.GetResultPileTypeForCardPlay();
-            return moveTo == PileType.Discard ? BangDreamConst.PileExtraDraw.GetPileType() : moveTo;
+            return moveTo == PileType.Discard ? BangDreamConst.ExtraDraw : moveTo;
         }
     }
 
     protected sealed override PileType GetResultPileTypeForCardPlay()
     {
-        return BangDreamConst.PilePerformance.GetPileType();
+        return BangDreamConst.PerformanceTable;
     }
 }

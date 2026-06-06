@@ -1,4 +1,4 @@
-﻿using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
 using ItsCrychic.Scripts.Power.Temporary;
 using MegaCrit.Sts2.Core.Commands;
@@ -8,7 +8,6 @@ using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Powers;
-using STS2RitsuLib.Keywords;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
@@ -21,7 +20,7 @@ public class Distance() : AbstractSakikoCard(CustomCost, CustomType, CustomRarit
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.KeywordLinger.GetModCardKeyword()
+        BangDreamConst.Linger
     ];
 
     protected override IEnumerable<IHoverTip> CardHoverTips =>

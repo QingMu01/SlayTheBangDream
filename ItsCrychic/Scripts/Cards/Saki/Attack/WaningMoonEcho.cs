@@ -8,7 +8,6 @@ using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using STS2RitsuLib.Cards.DynamicVars;
-using STS2RitsuLib.Keywords;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
@@ -24,7 +23,7 @@ public class WaningMoonEcho()
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.KeywordMusicNote.GetModCardKeyword()
+        BangDreamConst.MusicNote
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
@@ -44,7 +43,7 @@ public class WaningMoonEcho()
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
 
-        await MusicNoteCmd.FromCard(choiceContext, this, DynamicVars.Repeat.IntValue);
+        await MusicNoteCmd.FromCard(this, DynamicVars.Repeat.IntValue);
     }
 
     public async Task OnSubside(PlayerChoiceContext choiceContext, CardPlay play)

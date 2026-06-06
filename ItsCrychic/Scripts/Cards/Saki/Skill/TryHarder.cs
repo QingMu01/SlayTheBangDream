@@ -1,4 +1,3 @@
-using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
 using ItsCrychic.Scripts.Cards.Token;
 using MegaCrit.Sts2.Core.Commands;
@@ -33,7 +32,7 @@ public class TryHarder() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
     {
         ArgumentNullException.ThrowIfNull(CombatState);
 
-        var extraDraw = BangDreamConst.PileExtraDraw.GetPile(Owner);
+        var extraDraw = BangDreamTools.GetPile(BangDreamConst.ExtraDraw, Owner);
         var cards = extraDraw.Cards.ToList();
 
         foreach (var card in cards)
