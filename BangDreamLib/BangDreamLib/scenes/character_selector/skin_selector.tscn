@@ -32,12 +32,12 @@ grow_vertical = 0
 pivot_offset = Vector2(190, 0)
 script = ExtResource("1_meeur")
 
-[node name="VSplitContainer" type="VSplitContainer" parent="."]
+[node name="VSplitContainer" type="HSplitContainer" parent="."]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_right = 380.0
-offset_bottom = 76.0
+offset_right = 412.0
+offset_bottom = 276.0
 grow_horizontal = 2
 collapsed = true
 dragging_enabled = false
@@ -49,22 +49,31 @@ custom_minimum_size = Vector2(280, 200)
 layout_mode = 2
 size_flags_horizontal = 4
 
-[node name="HBoxContainer" type="HBoxContainer" parent="VSplitContainer"]
+[node name="HBoxContainer" type="VBoxContainer" parent="VSplitContainer"]
 layout_mode = 2
+size_flags_horizontal = 0
+theme_override_constants/separation = 84
 alignment = 1
 
 [node name="LeftArrowContainer" type="Control" parent="VSplitContainer/HBoxContainer"]
-custom_minimum_size = Vector2(80, 64)
 layout_mode = 2
 mouse_filter = 2
 
 [node name="LeftArrow" type="Control" parent="VSplitContainer/HBoxContainer/LeftArrowContainer"]
 layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -42.0
+offset_top = -42.0
+offset_right = 42.0
+offset_bottom = 42.0
 grow_horizontal = 2
 grow_vertical = 2
+rotation = 1.5707964
+pivot_offset = Vector2(42, 42)
 script = ExtResource("1_g0ugm")
 
 [node name="TextureRect" type="TextureRect" parent="VSplitContainer/HBoxContainer/LeftArrowContainer/LeftArrow"]
@@ -77,34 +86,36 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -16.0
-offset_top = -60.0
+offset_top = -16.0
 offset_right = 16.0
-offset_bottom = 60.0
+offset_bottom = 16.0
 grow_horizontal = 2
 grow_vertical = 2
-pivot_offset = Vector2(16, 60)
+pivot_offset = Vector2(16, 16)
 mouse_filter = 2
 texture = ExtResource("3_4rpgq")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="Space" type="Control" parent="VSplitContainer/HBoxContainer"]
-custom_minimum_size = Vector2(120, 40)
-layout_mode = 2
-mouse_filter = 2
-
 [node name="RightArrowContainer" type="Control" parent="VSplitContainer/HBoxContainer"]
-custom_minimum_size = Vector2(80, 64)
 layout_mode = 2
 mouse_filter = 2
 
 [node name="RightArrow" type="Control" parent="VSplitContainer/HBoxContainer/RightArrowContainer"]
 layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -42.0
+offset_top = -42.0
+offset_right = 42.0
+offset_bottom = 42.0
 grow_horizontal = 2
 grow_vertical = 2
+rotation = 1.5707964
+pivot_offset = Vector2(42, 42)
 script = ExtResource("1_g0ugm")
 
 [node name="TextureRect" type="TextureRect" parent="VSplitContainer/HBoxContainer/RightArrowContainer/RightArrow"]
@@ -117,12 +128,12 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -16.0
-offset_top = -60.0
+offset_top = -16.0
 offset_right = 16.0
-offset_bottom = 60.0
+offset_bottom = 16.0
 grow_horizontal = 2
 grow_vertical = 2
-pivot_offset = Vector2(16, 60)
+pivot_offset = Vector2(16, 16)
 mouse_filter = 2
 texture = ExtResource("5_jmns7")
 expand_mode = 1

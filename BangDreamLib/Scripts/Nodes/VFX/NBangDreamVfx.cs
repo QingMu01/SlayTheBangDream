@@ -29,6 +29,8 @@ public abstract partial class NBangDreamVfx : Node2D
         get { return _context ??= new VfxContext(this); }
     }
 
+    public virtual bool UpdateCombatTracker { get; set; } = false;
+
     protected void EmitSpawnSignal()
     {
         EmitSignal(SignalName.VfxSpawned, Context);

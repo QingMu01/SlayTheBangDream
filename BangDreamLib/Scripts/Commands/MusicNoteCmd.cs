@@ -155,6 +155,13 @@ internal class MusicNoteEffectHandler(
             await BangDreamHook.OnMusicNotePlayed(card.CombatState, card.Owner);
         }
 
+        var index = context.Get<int?>("index");
+        var total = context.Get<int?>("total");
+        if (index.HasValue && total.HasValue && index.Value == total.Value - 1)
+        {
+            if (context.VfxNode != null) context.VfxNode.UpdateCombatTracker = true;
+        }
+
         if (CombatManager.Instance.IsInProgress)
         {
             await CombatManager.Instance.CheckWinCondition();

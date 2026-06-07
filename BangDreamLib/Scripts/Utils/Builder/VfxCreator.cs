@@ -21,6 +21,7 @@ public class VfxCreator<T>(string scene)
         for (var i = 0; i < count; i++)
         {
             var vfx = Scene.Instantiate<T>();
+            vfx.Context.Set("total", count);
             vfx.Context.Set("index", i);
             configure?.Invoke(vfx, i);
             yield return vfx;

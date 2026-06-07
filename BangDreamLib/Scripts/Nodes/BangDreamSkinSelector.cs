@@ -2,6 +2,7 @@ using BangDreamLib.Scripts.Features;
 using BangDreamLib.Scripts.Nodes.MegeScript;
 using BangDreamLib.Scripts.Utils.Infos;
 using Godot;
+using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
@@ -19,6 +20,8 @@ public partial class BangDreamSkinSelector : Control
     private int _currentSkinIndex;
     private List<SkinInfo> _skinInfos = [];
 
+    private static readonly Dictionary<string, NCreatureVisuals> VisualsCache = [];
+
     public override void _Ready()
     {
         _leftArrow = GetNode<BangDreamGoldArrowButton>("VSplitContainer/HBoxContainer/LeftArrowContainer/LeftArrow");
@@ -30,6 +33,16 @@ public partial class BangDreamSkinSelector : Control
             Callable.From<NButton>(delegate { DecrementSkinIndex(); }));
         _rightArrow.Connect(NClickableControl.SignalName.Released,
             Callable.From<NButton>(delegate { IncrementSkinIndex(); }));
+    }
+
+    public override void _ExitTree()
+    {
+        foreach (var visualsCacheValue in VisualsCache.Values)
+        {
+            visualsCacheValue.QueueFreeSafely();
+        }
+
+        VisualsCache.Clear();
     }
 
     public void Init(CharacterModel character)
@@ -83,10 +96,21 @@ public partial class BangDreamSkinSelector : Control
                     _skinContainer.Visible = true;
                     foreach (var child in _skinContainer.GetChildren())
                     {
-                        child.QueueFree();
+                        _skinContainer.RemoveChild(child);
                     }
 
-                    var visuals = RitsuGodotNodeFactories.CreateFromScenePath<NCreatureVisuals>(visualScene);
+                    NCreatureVisuals visuals;
+                    if (VisualsCache.TryGetValue(visualScene, out var cache))
+                    {
+                        visuals = cache;
+                    }
+                    else
+                    {
+                        visuals = RitsuGodotNodeFactories.CreateFromScenePath<NCreatureVisuals>(visualScene);
+                        VisualsCache.Add(visualScene, visuals);
+                    }
+
+                    visuals.Scale = new Vector2(0.7f, 0.7f);
                     _skinContainer.AddChild(visuals);
                     CallDeferred(nameof(SetAnim), visuals, "Idle");
                 }
