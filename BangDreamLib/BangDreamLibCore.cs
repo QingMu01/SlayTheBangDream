@@ -84,6 +84,7 @@ public class BangDreamLibCore
         BangDreamConst.Music = keywords.RegisterCardKeywordOwnedByLocNamespace("Music").CardKeywordValue;
         BangDreamConst.MusicNote = keywords.RegisterCardKeywordOwnedByLocNamespace("MusicNote").CardKeywordValue;
         BangDreamConst.Performance = keywords.RegisterCardKeywordOwnedByLocNamespace("Performance").CardKeywordValue;
+        BangDreamConst.Instant = keywords.RegisterCardKeywordOwnedByLocNamespace("Instant").CardKeywordValue;
         BangDreamConst.PerformanceArea =
             keywords.RegisterCardKeywordOwnedByLocNamespace("PerformanceArea").CardKeywordValue;
         BangDreamConst.Linger = keywords.RegisterCardKeywordOwnedByLocNamespace("Linger").CardKeywordValue;
@@ -91,10 +92,9 @@ public class BangDreamLibCore
         // 注册自定义奖励
         var customReward = ModRewardRegistry.For(BangDreamConst.ModId);
         BangDreamConst.RewardMusic = customReward.RegisterOwned("RewardMusic",
-            (save, player, _) =>
-                new MusicCardReward(new CardCreationOptions(save.CardPoolIds.Select(ModelDb.GetById<CardPoolModel>),
-                    save.Source, save.RarityOdds), save.OptionCount, player)
-        ).RewardType;
+            (save, player, _) => new MusicCardReward(new CardCreationOptions(
+                save.CardPoolIds.Select(ModelDb.GetById<CardPoolModel>),
+                save.Source, save.RarityOdds), save.OptionCount, player)).RewardType;
 
         // 注册自定义牌堆
         var customPile = ModCardPileRegistry.For(BangDreamConst.ModId);

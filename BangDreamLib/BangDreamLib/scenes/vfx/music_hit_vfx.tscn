@@ -1,0 +1,73 @@
+[gd_scene load_steps=12 format=3 uid="uid://bm7n2gu8dcgqi"]
+
+[ext_resource type="Script" uid="uid://cdq8qetgjx7ii" path="res://Scripts/Nodes/VFX/MusicHitVfx.cs" id="1_6e3tl"]
+[ext_resource type="Material" uid="uid://cla2wesmc11oy" path="res://images/vfx/vfx_confetti/spark.tres" id="2_cuci8"]
+[ext_resource type="Texture2D" uid="uid://cr6n2r7isj78o" path="res://BangDreamLib/images/vfx/fx_yuisum1_tex_009.png" id="3_5patc"]
+[ext_resource type="Texture2D" uid="uid://cuaw8f1xw0rsa" path="res://BangDreamLib/images/vfx/whiteRing.png" id="4_uj7xv"]
+[ext_resource type="Texture2D" uid="uid://ckhwn8gg4t80x" path="res://BangDreamLib/images/vfx/Tex_parSet_3.png" id="5_0spmb"]
+
+[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_tt4hy"]
+blend_mode = 1
+particles_animation = true
+particles_anim_h_frames = 4
+particles_anim_v_frames = 4
+particles_anim_loop = false
+
+[sub_resource type="Curve" id="Curve_kj6xr"]
+_data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="CurveTexture" id="CurveTexture_1c42e"]
+curve = SubResource("Curve_kj6xr")
+
+[sub_resource type="Curve" id="Curve_d8rfi"]
+_data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="CurveTexture" id="CurveTexture_i54m5"]
+curve = SubResource("Curve_d8rfi")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_rcgcb"]
+particle_flag_disable_z = true
+angle_min = -179.99998
+angle_max = 180.00002
+direction = Vector3(0, -1, 0)
+spread = 15.0
+flatness = 1.0
+initial_velocity_min = 400.0
+initial_velocity_max = 600.0
+radial_velocity_min = -2.2351742e-05
+radial_velocity_max = 299.99997
+gravity = Vector3(0, 980, 0)
+scale_min = 0.099999994
+scale_max = 0.19999999
+scale_curve = SubResource("CurveTexture_i54m5")
+alpha_curve = SubResource("CurveTexture_1c42e")
+hue_variation_min = -0.11000002
+hue_variation_max = 0.09999997
+anim_offset_max = 1.0
+
+[node name="MusicHitVfx" type="Node2D"]
+script = ExtResource("1_6e3tl")
+
+[node name="RingGroup" type="Node2D" parent="."]
+scale = Vector2(1, 0.5)
+
+[node name="Ring1" type="Sprite2D" parent="RingGroup"]
+material = ExtResource("2_cuci8")
+texture = ExtResource("3_5patc")
+
+[node name="Ring2" type="Sprite2D" parent="RingGroup"]
+material = ExtResource("2_cuci8")
+texture = ExtResource("4_uj7xv")
+
+[node name="StarParticles" type="GPUParticles2D" parent="."]
+material = SubResource("CanvasItemMaterial_tt4hy")
+emitting = false
+amount = 32
+texture = ExtResource("5_0spmb")
+lifetime = 1.2
+one_shot = true
+explosiveness = 0.95
+randomness = 0.05
+process_material = SubResource("ParticleProcessMaterial_rcgcb")

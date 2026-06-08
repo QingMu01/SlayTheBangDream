@@ -4,7 +4,7 @@ using MegaCrit.Sts2.Core.Helpers;
 
 namespace BangDreamLib.Scripts.Nodes.VFX;
 
-public abstract partial class NBangDreamVfx : Node2D
+public abstract partial class NBangDreamFlyingVfx : Node2D
 {
     [Signal]
     public delegate void VfxSpawnedEventHandler(VfxContext vfxContext);

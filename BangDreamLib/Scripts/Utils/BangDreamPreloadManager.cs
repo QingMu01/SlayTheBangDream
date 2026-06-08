@@ -20,8 +20,17 @@ public static class BangDreamPreloadManager
         { PreloadKey.CharacterSelector, "res://BangDreamLib/scenes/character_selector/character_selector.tscn" },
         { PreloadKey.CharacterButton, "res://BangDreamLib/scenes/character_selector/character_button.tscn" },
         { PreloadKey.AscensionPanel, "res://BangDreamLib/scenes/character_selector/ascension_panel.tscn" },
-        { PreloadKey.SkinSelector, "res://BangDreamLib/scenes/character_selector/skin_selector.tscn" },
+        { PreloadKey.SkinSelector, "res://BangDreamLib/scenes/character_selector/skin_selector.tscn" }
     };
+
+    internal static readonly HashSet<string> VfxAssets =
+    [
+        "res://BangDreamLib/scenes/vfx/staff_ring_vfx.tscn",
+        "res://BangDreamLib/scenes/vfx/music_wave.tscn",
+        "res://BangDreamLib/scenes/vfx/music_hit_vfx.tscn",
+        "res://BangDreamLib/scenes/vfx/music_flash_vfx.tscn",
+        "res://BangDreamLib/scenes/vfx/music_equalizer_vfx.tscn"
+    ];
 
     public static async Task LoadCommonAssets()
     {
@@ -41,7 +50,7 @@ public static class BangDreamPreloadManager
 
     public static async Task LoadRunAssets(IEnumerable<Player> players)
     {
-        var allAssets = new HashSet<string>();
+        var allAssets = new HashSet<string>(VfxAssets);
         allAssets.UnionWith(CustomRunAssets.Values);
         foreach (var player in players)
         {

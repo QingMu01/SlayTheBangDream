@@ -4,7 +4,7 @@ using MegaCrit.Sts2.Core.Random;
 
 namespace BangDreamLib.Scripts.Nodes.VFX;
 
-public partial class MusicNoteVfx : NBangDreamVfx
+public partial class MusicNoteFlyingVfx : NBangDreamFlyingVfx
 {
     [Export] public float Speed = 800.0f;
 
@@ -41,7 +41,7 @@ public partial class MusicNoteVfx : NBangDreamVfx
         {
             _isMoving = false;
             IsFinished = true;
-            _ = OnReachedEndAsync();
+            OnReachedEndAsync();
         }
     }
 
@@ -82,11 +82,11 @@ public partial class MusicNoteVfx : NBangDreamVfx
             _tween = CreateTween();
             _tween.TweenProperty(_sprites, "modulate:a", 0f, 0.25f);
             _tween.TweenProperty(_sprites, "scale", Vector2.Zero, 0.25f);
-            _ = OnReachedEndAsync();
+            CallDeferred(nameof(OnReachedEndAsync));
         }
     }
 
-    private async Task OnReachedEndAsync()
+    private async void OnReachedEndAsync()
     {
         try
         {

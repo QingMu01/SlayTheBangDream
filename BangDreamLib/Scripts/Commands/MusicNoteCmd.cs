@@ -25,7 +25,7 @@ public static class MusicNoteCmd
     private const float NoteGroupDelay = 0.25f;
 
     public static async Task FromCard(CardModel card, int baseCount,
-        decimal baseDamage = 1m, Creature? target = null, Action<MusicNoteVfx>? beforeInstance = null)
+        decimal baseDamage = 1m, Creature? target = null, Action<MusicNoteFlyingVfx>? beforeInstance = null)
     {
         ArgumentNullException.ThrowIfNull(card.RunState);
         ArgumentNullException.ThrowIfNull(card.CombatState);
@@ -35,7 +35,7 @@ public static class MusicNoteCmd
 
         var finalCount = BangDreamHook.ModifyMusicNoteShotCount(card.CombatState, card.Owner.Creature, baseCount, card);
 
-        var noteVfxes = new VfxCreator<MusicNoteVfx>(vfxPath).CreateBatch((int)finalCount);
+        var noteVfxes = new VfxCreator<MusicNoteFlyingVfx>(vfxPath).CreateBatch((int)finalCount);
 
         var vfxHandlerPairs = noteVfxes.Select(vfx =>
         {
@@ -46,9 +46,9 @@ public static class MusicNoteCmd
         await SubmitNote(vfxHandlerPairs, NoteSpawnInterval, NoteGroupSize, NoteGroupDelay, beforeInstance);
     }
 
-    private static async Task SubmitNote(IEnumerable<(MusicNoteVfx vfx, MusicNoteEffectHandler handler)> pairs,
+    private static async Task SubmitNote(IEnumerable<(MusicNoteFlyingVfx vfx, MusicNoteEffectHandler handler)> pairs,
         float eachDelay = 0.0f, int groupCount = 0, float groupDelay = 0.0f,
-        Action<MusicNoteVfx>? beforeInstance = null)
+        Action<MusicNoteFlyingVfx>? beforeInstance = null)
     {
         if (groupCount < 0)
         {
@@ -102,7 +102,7 @@ internal class MusicNoteEffectHandler(
         if (creatureTarget != null && creatureSrc != null)
         {
             context.Set("Target", attackTarget);
-            ((MusicNoteVfx)context.VfxNode!).SetPath(creatureSrc.VfxSpawnPosition, creatureTarget.VfxSpawnPosition);
+            ((MusicNoteFlyingVfx)context.VfxNode!).SetPath(creatureSrc.VfxSpawnPosition, creatureTarget.VfxSpawnPosition);
         }
         else
         {

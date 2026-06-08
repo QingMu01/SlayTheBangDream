@@ -1,0 +1,91 @@
+[gd_scene load_steps=14 format=3 uid="uid://dcwkw48cmjc0x"]
+
+[ext_resource type="Texture2D" uid="uid://rk21dggx1q6f" path="res://BangDreamLib/images/vfx/fx_chikagi1_tex_006.png" id="1_apxvr"]
+[ext_resource type="Script" uid="uid://cicyjd3c8f7hm" path="res://Scripts/Nodes/VFX/MusicWaveVfx.cs" id="1_iijmf"]
+[ext_resource type="Texture2D" uid="uid://rrqtfiknw4si" path="res://images/vfx/dot2.png" id="2_vh6gs"]
+[ext_resource type="Texture2D" uid="uid://ddg1bga84moge" path="res://BangDreamLib/images/vfx/icon_music_note.png" id="3_cvdsj"]
+[ext_resource type="PackedScene" uid="uid://booxwfb802bgv" path="res://BangDreamLib/scenes/vfx/staff_ring_vfx.tscn" id="5_io1t1"]
+
+[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_cvdsj"]
+blend_mode = 1
+
+[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_epidy"]
+blend_mode = 1
+
+[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_iijmf"]
+blend_mode = 1
+particles_animation = true
+particles_anim_h_frames = 3
+particles_anim_v_frames = 3
+particles_anim_loop = true
+
+[sub_resource type="Curve" id="Curve_l4e1u"]
+_data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="CurveTexture" id="CurveTexture_tiw5i"]
+curve = SubResource("Curve_l4e1u")
+
+[sub_resource type="Curve" id="Curve_d3nsj"]
+_data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="CurveTexture" id="CurveTexture_8lci7"]
+curve = SubResource("Curve_d3nsj")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_dft4c"]
+particle_flag_disable_z = true
+emission_shape = 6
+emission_ring_axis = Vector3(0, 0, 1)
+emission_ring_height = 0.0
+emission_ring_radius = 180.0
+emission_ring_inner_radius = 450.0
+emission_ring_cone_angle = 90.0
+angle_min = -179.99998
+angle_max = 180.00002
+angular_velocity_min = -180.00002
+angular_velocity_max = 179.99998
+radial_velocity_min = 97.99998
+radial_velocity_max = 979.99994
+gravity = Vector3(0, 0, 0)
+scale_curve = SubResource("CurveTexture_8lci7")
+color = Color(0.46666667, 0.6, 0.8, 1)
+alpha_curve = SubResource("CurveTexture_tiw5i")
+hue_variation_min = -0.26000002
+hue_variation_max = 0.059999976
+anim_offset_max = 1.0
+
+[node name="MusicWave" type="Node2D"]
+script = ExtResource("1_iijmf")
+
+[node name="MainNote" type="Sprite2D" parent="."]
+unique_name_in_owner = true
+modulate = Color(0.46666667, 0.6, 0.8, 1)
+material = SubResource("CanvasItemMaterial_cvdsj")
+texture = ExtResource("1_apxvr")
+hframes = 4
+vframes = 2
+region_enabled = true
+region_rect = Rect2(0, 0, 512, 256)
+
+[node name="Sprite2D" type="Sprite2D" parent="MainNote"]
+material = SubResource("CanvasItemMaterial_epidy")
+texture = ExtResource("2_vh6gs")
+
+[node name="Sprite2D2" type="Sprite2D" parent="MainNote"]
+material = SubResource("CanvasItemMaterial_epidy")
+texture = ExtResource("2_vh6gs")
+
+[node name="MusicNoteParticles" type="GPUParticles2D" parent="."]
+material = SubResource("CanvasItemMaterial_iijmf")
+emitting = false
+amount = 64
+texture = ExtResource("3_cvdsj")
+lifetime = 0.8
+one_shot = true
+explosiveness = 0.9
+fract_delta = false
+process_material = SubResource("ParticleProcessMaterial_dft4c")
+
+[node name="Staff" parent="." instance=ExtResource("5_io1t1")]
+unique_name_in_owner = true

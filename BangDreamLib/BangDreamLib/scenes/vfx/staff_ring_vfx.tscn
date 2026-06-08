@@ -1,0 +1,156 @@
+[gd_scene load_steps=11 format=3 uid="uid://booxwfb802bgv"]
+
+[ext_resource type="Texture2D" uid="uid://btfi5nnnifyjq" path="res://BangDreamLib/images/vfx/fx_chikagi1_tex_018.png" id="1_kqoia"]
+[ext_resource type="Shader" uid="uid://cqqi4syilpi0j" path="res://BangDreamLib/shaders/canvas_group_mix.gdshader" id="2_xpsfy"]
+[ext_resource type="Texture2D" uid="uid://832r18mwkqqe" path="res://BangDreamLib/images/vfx/fx_chikagi1_tex_019.png" id="3_3ckba"]
+[ext_resource type="Shader" uid="uid://cfjkygviy5kmd" path="res://BangDreamLib/shaders/music_wave.gdshader" id="4_m2hk1"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_grwcb"]
+shader = ExtResource("2_xpsfy")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_l8d7d"]
+shader = ExtResource("2_xpsfy")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_0wpvo"]
+shader = ExtResource("2_xpsfy")
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_kqoia"]
+viewport_path = NodePath("SubViewport")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_jskfr"]
+resource_local_to_scene = true
+shader = ExtResource("4_m2hk1")
+shader_parameter/viewport_texture = SubResource("ViewportTexture_kqoia")
+shader_parameter/speed = 0.10000000149012
+shader_parameter/intensity = 0.0
+shader_parameter/wobble_freq = 5.00000021375
+shader_parameter/twist_amount = 0.10000000475
+shader_parameter/breathe_amount = 1.0
+shader_parameter/hue_shift = 0.0
+shader_parameter/saturation = 1.0
+shader_parameter/brightness = 1.0
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_wj1gt"]
+viewport_path = NodePath("SubViewport")
+
+[node name="StaffVfx" type="Node2D"]
+
+[node name="SubViewport" type="SubViewport" parent="."]
+transparent_bg = true
+size = Vector2i(1024, 1024)
+
+[node name="Line1" type="CanvasGroup" parent="SubViewport"]
+position = Vector2(512, 512)
+
+[node name="Ring1" type="Sprite2D" parent="SubViewport/Line1"]
+texture = ExtResource("1_kqoia")
+offset = Vector2(-256, -256)
+
+[node name="Ring2" type="Sprite2D" parent="SubViewport/Line1"]
+texture = ExtResource("1_kqoia")
+offset = Vector2(256, -256)
+flip_h = true
+
+[node name="Ring3" type="Sprite2D" parent="SubViewport/Line1"]
+texture = ExtResource("1_kqoia")
+offset = Vector2(-256, 256)
+flip_v = true
+
+[node name="Ring4" type="Sprite2D" parent="SubViewport/Line1"]
+texture = ExtResource("1_kqoia")
+offset = Vector2(256, 256)
+flip_h = true
+flip_v = true
+
+[node name="Line2" type="CanvasGroup" parent="SubViewport"]
+material = SubResource("ShaderMaterial_grwcb")
+position = Vector2(512, 512)
+scale = Vector2(0.95, 0.95)
+
+[node name="Ring1" type="Sprite2D" parent="SubViewport/Line2"]
+texture = ExtResource("3_3ckba")
+offset = Vector2(-256, -256)
+
+[node name="Ring2" type="Sprite2D" parent="SubViewport/Line2"]
+texture = ExtResource("3_3ckba")
+offset = Vector2(256, -256)
+flip_h = true
+
+[node name="Ring3" type="Sprite2D" parent="SubViewport/Line2"]
+texture = ExtResource("3_3ckba")
+offset = Vector2(-256, 256)
+flip_v = true
+
+[node name="Ring4" type="Sprite2D" parent="SubViewport/Line2"]
+texture = ExtResource("3_3ckba")
+offset = Vector2(256, 256)
+flip_h = true
+flip_v = true
+
+[node name="Line3" type="CanvasGroup" parent="SubViewport"]
+material = SubResource("ShaderMaterial_l8d7d")
+position = Vector2(512, 512)
+scale = Vector2(0.9, 0.9)
+
+[node name="Ring1" type="Sprite2D" parent="SubViewport/Line3"]
+texture = ExtResource("1_kqoia")
+offset = Vector2(-256, -256)
+
+[node name="Ring2" type="Sprite2D" parent="SubViewport/Line3"]
+texture = ExtResource("1_kqoia")
+offset = Vector2(256, -256)
+flip_h = true
+
+[node name="Ring3" type="Sprite2D" parent="SubViewport/Line3"]
+texture = ExtResource("1_kqoia")
+offset = Vector2(-256, 256)
+flip_v = true
+
+[node name="Ring4" type="Sprite2D" parent="SubViewport/Line3"]
+texture = ExtResource("1_kqoia")
+offset = Vector2(256, 256)
+flip_h = true
+flip_v = true
+
+[node name="Line4" type="CanvasGroup" parent="SubViewport"]
+material = SubResource("ShaderMaterial_0wpvo")
+position = Vector2(512, 512)
+scale = Vector2(0.85, 0.85)
+
+[node name="Ring1" type="Sprite2D" parent="SubViewport/Line4"]
+texture = ExtResource("3_3ckba")
+offset = Vector2(-256, -256)
+
+[node name="Ring2" type="Sprite2D" parent="SubViewport/Line4"]
+texture = ExtResource("3_3ckba")
+offset = Vector2(256, -256)
+flip_h = true
+
+[node name="Ring3" type="Sprite2D" parent="SubViewport/Line4"]
+texture = ExtResource("3_3ckba")
+offset = Vector2(-256, 256)
+flip_v = true
+
+[node name="Ring4" type="Sprite2D" parent="SubViewport/Line4"]
+texture = ExtResource("3_3ckba")
+offset = Vector2(256, 256)
+flip_h = true
+flip_v = true
+
+[node name="StaffRing" type="TextureRect" parent="."]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_jskfr")
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -256.0
+offset_top = -256.0
+offset_right = 256.0
+offset_bottom = 256.0
+grow_horizontal = 2
+grow_vertical = 2
+pivot_offset = Vector2(512, 512)
+mouse_filter = 2
+texture = SubResource("ViewportTexture_wj1gt")

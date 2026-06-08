@@ -1,0 +1,77 @@
+[gd_scene load_steps=13 format=3 uid="uid://ccul0jxyd6ymx"]
+
+[ext_resource type="Material" uid="uid://cla2wesmc11oy" path="res://images/vfx/vfx_confetti/spark.tres" id="1_ensiv"]
+[ext_resource type="Script" uid="uid://djce5mddfp42m" path="res://Scripts/Nodes/VFX/MusicFlashVfx.cs" id="1_t87bh"]
+[ext_resource type="Texture2D" uid="uid://xwa36wm5bccw" path="res://BangDreamLib/images/vfx/304400_tx_010.png" id="2_0fjmh"]
+[ext_resource type="Texture2D" uid="uid://ddg1bga84moge" path="res://BangDreamLib/images/vfx/icon_music_note.png" id="3_ensiv"]
+
+[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_t87bh"]
+blend_mode = 1
+particles_animation = true
+particles_anim_h_frames = 3
+particles_anim_v_frames = 3
+particles_anim_loop = true
+
+[sub_resource type="Curve" id="Curve_dtdk1"]
+_data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(0.71428573, 0.8156029), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
+point_count = 3
+
+[sub_resource type="CurveTexture" id="CurveTexture_tiw5i"]
+curve = SubResource("Curve_dtdk1")
+
+[sub_resource type="Gradient" id="Gradient_cmnqu"]
+colors = PackedColorArray(0.23529412, 0.6, 1, 1, 1, 1, 1, 1)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_y5beb"]
+gradient = SubResource("Gradient_cmnqu")
+
+[sub_resource type="Curve" id="Curve_d2uw3"]
+_data = [Vector2(0, 0.69825923), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="CurveTexture" id="CurveTexture_8lci7"]
+curve = SubResource("Curve_d2uw3")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_338gx"]
+particle_flag_disable_z = true
+angle_min = -179.99998
+angle_max = 180.00002
+spread = 0.0
+angular_velocity_min = -180.00002
+angular_velocity_max = 179.99998
+radial_velocity_min = -2.2351742e-05
+radial_velocity_max = 197.99997
+gravity = Vector3(0, 0, 0)
+radial_accel_min = 31.759996
+radial_accel_max = 31.759996
+tangential_accel_min = -100.0
+tangential_accel_max = 99.99999
+scale_curve = SubResource("CurveTexture_8lci7")
+color_ramp = SubResource("GradientTexture1D_y5beb")
+alpha_curve = SubResource("CurveTexture_tiw5i")
+anim_offset_max = 1.0
+
+[node name="MusicFlashVfx" type="Node2D"]
+script = ExtResource("1_t87bh")
+
+[node name="RingGroup" type="Node2D" parent="."]
+
+[node name="OuterRing" type="Sprite2D" parent="RingGroup"]
+material = ExtResource("1_ensiv")
+texture = ExtResource("2_0fjmh")
+
+[node name="InnerRing" type="Sprite2D" parent="RingGroup"]
+material = ExtResource("1_ensiv")
+rotation = 1.5707964
+scale = Vector2(0.7, 0.7)
+texture = ExtResource("2_0fjmh")
+
+[node name="MusicNoteParticles" type="GPUParticles2D" parent="."]
+material = SubResource("CanvasItemMaterial_t87bh")
+emitting = false
+amount = 32
+texture = ExtResource("3_ensiv")
+one_shot = true
+explosiveness = 0.9
+fract_delta = false
+process_material = SubResource("ParticleProcessMaterial_338gx")

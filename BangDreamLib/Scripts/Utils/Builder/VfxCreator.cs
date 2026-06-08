@@ -5,7 +5,7 @@ using MegaCrit.Sts2.Core.Assets;
 namespace BangDreamLib.Scripts.Utils.Builder;
 
 public class VfxCreator<T>(string scene)
-    where T : NBangDreamVfx
+    where T : NBangDreamFlyingVfx
 {
     private PackedScene Scene { get; } = PreloadManager.Cache.GetScene(scene);
 

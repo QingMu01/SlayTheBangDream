@@ -15,12 +15,12 @@ public partial class BangDreamVfxManager : Control
 
     public static BangDreamVfxManager? Instance { get; private set; }
 
-    private readonly Dictionary<NBangDreamVfx, Action> _treeExitedActions = new();
+    private readonly Dictionary<NBangDreamFlyingVfx, Action> _treeExitedActions = new();
 
-    private readonly Dictionary<NBangDreamVfx, List<(StringName signal, Callable callable)>>
+    private readonly Dictionary<NBangDreamFlyingVfx, List<(StringName signal, Callable callable)>>
         _connectedCallables = new();
 
-    private readonly HashSet<NBangDreamVfx> _activeVfx = [];
+    private readonly HashSet<NBangDreamFlyingVfx> _activeVfx = [];
 
     private Control? _parent;
 
@@ -47,34 +47,34 @@ public partial class BangDreamVfxManager : Control
         _parent = GetParent<Control>();
     }
 
-    public void SubmitVfx(NBangDreamVfx vfx, IVfxEffectHandler handler)
+    public void SubmitVfx(NBangDreamFlyingVfx flyingVfx, IVfxEffectHandler handler)
     {
-        if (!_activeVfx.Add(vfx)) return;
+        if (!_activeVfx.Add(flyingVfx)) return;
 
         var connections = new List<(StringName, Callable)>
         {
-            (NBangDreamVfx.SignalName.VfxSpawned, ToCallable(handler.OnSpawn)),
-            (NBangDreamVfx.SignalName.BeforeHit, ToCallable(handler.OnBeforeHit)),
-            (NBangDreamVfx.SignalName.HitTriggered, ToCallable(handler.OnHit)),
-            (NBangDreamVfx.SignalName.AfterHit, ToCallable(handler.OnAfterHit)),
-            (NBangDreamVfx.SignalName.VfxFinished, ToCallable(handler.OnFinish)),
+            (NBangDreamFlyingVfx.SignalName.VfxSpawned, ToCallable(handler.OnSpawn)),
+            (NBangDreamFlyingVfx.SignalName.BeforeHit, ToCallable(handler.OnBeforeHit)),
+            (NBangDreamFlyingVfx.SignalName.HitTriggered, ToCallable(handler.OnHit)),
+            (NBangDreamFlyingVfx.SignalName.AfterHit, ToCallable(handler.OnAfterHit)),
+            (NBangDreamFlyingVfx.SignalName.VfxFinished, ToCallable(handler.OnFinish)),
         };
 
         foreach (var (signal, callable) in connections)
-            vfx.Connect(signal, callable);
+            flyingVfx.Connect(signal, callable);
 
-        _connectedCallables[vfx] = connections;
+        _connectedCallables[flyingVfx] = connections;
 
-        var onTreeExited = () => UnregisterVfx(vfx);
-        _treeExitedActions[vfx] = onTreeExited;
-        vfx.TreeExited += onTreeExited;
+        var onTreeExited = () => UnregisterVfx(flyingVfx);
+        _treeExitedActions[flyingVfx] = onTreeExited;
+        flyingVfx.TreeExited += onTreeExited;
 
         var container = _parent ?? this;
-        container.AddChildSafely(vfx);
+        container.AddChildSafely(flyingVfx);
     }
 
 
-    public void UnregisterVfx(NBangDreamVfx? vfx)
+    public void UnregisterVfx(NBangDreamFlyingVfx? vfx)
     {
         if (!IsInstanceValid(vfx) || !_activeVfx.Contains(vfx)) return;
 

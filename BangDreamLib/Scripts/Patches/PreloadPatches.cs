@@ -1,5 +1,4 @@
 ﻿using BangDreamLib.Scripts.Utils;
-using HarmonyLib;
 using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.Nodes;
 using MegaCrit.Sts2.Core.Runs;
@@ -26,12 +25,11 @@ internal class PreloadCommonPatch : IPatchMethod
     {
         return
         [
-            new ModPatchTarget(typeof(PreloadManager), nameof(PreloadManager.LoadCommonAndMainMenuAssets),
-                MethodType.Async)
+            new ModPatchTarget(typeof(PreloadManager), nameof(PreloadManager.LoadCommonAndMainMenuAssets))
         ];
     }
 
-    public static void Postfix()
+    public static void Prefix()
     {
         _ = BangDreamPreloadManager.LoadCommonAssets();
     }
@@ -51,7 +49,7 @@ internal class PreloadRunPatch : IPatchMethod
         ];
     }
 
-    public static void Postfix(RunState runState)
+    public static void Prefix(RunState runState)
     {
         _ = BangDreamPreloadManager.LoadRunAssets(runState.Players);
     }

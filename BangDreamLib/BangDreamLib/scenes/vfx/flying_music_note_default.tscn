@@ -1,6 +1,6 @@
 [gd_scene load_steps=17 format=3 uid="uid://ctq16ouqb6ph1"]
 
-[ext_resource type="Script" uid="uid://bhqlpsqaqqjn0" path="res://Scripts/Nodes/VFX/MusicNoteVfx.cs" id="1_taqy4"]
+[ext_resource type="Script" uid="uid://c4gjl6tn645ld" path="res://Scripts/Nodes/VFX/MusicNoteFlyingVfx.cs" id="1_taqy4"]
 [ext_resource type="Texture2D" uid="uid://dtgv5vokmg1c1" path="res://BangDreamLib/images/vfx/star_269.png" id="2_taqy4"]
 [ext_resource type="Script" uid="uid://cj4l6wy07qqqo" path="res://Scripts/Nodes/MegeScript/CardTrail.cs" id="3_4wu5m"]
 [ext_resource type="Texture2D" uid="uid://dlh7cfjsrcb6t" path="res://images/packed/vfx/trail3.png" id="3_taqy4"]
