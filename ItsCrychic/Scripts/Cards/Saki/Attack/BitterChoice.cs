@@ -9,7 +9,7 @@ using MegaCrit.Sts2.Core.Localization.DynamicVars;
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
 public class BitterChoice()
-    : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget), ISubsideCardFlag
+    : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget), ISubsideCard
 {
     private const int CustomCost = 2;
     private const CardType CustomType = CardType.Attack;
@@ -32,7 +32,6 @@ public class BitterChoice()
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
         ArgumentNullException.ThrowIfNull(play.Target);
-        ArgumentNullException.ThrowIfNull(Owner.PlayerCombatState);
 
         await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
             .FromCard(this)
@@ -40,9 +39,9 @@ public class BitterChoice()
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
 
-        if (!((ISubsideCardFlag)this).CanSubside)
+        if (!((ISubsideCard)this).CanSubside)
         {
-            var discardPileCards = Owner.PlayerCombatState.DiscardPile.Cards;
+            var discardPileCards = PileType.Discard.GetPile(Owner).Cards.ToList();
             for (var i = 0; i < DynamicVars.Cards.IntValue; i++)
             {
                 var cardModel = Owner.RunState.Rng.CombatCardSelection.NextItem(discardPileCards);
@@ -60,8 +59,11 @@ public class BitterChoice()
 
     public async Task OnSubside(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        var selectedCards = await CardSelectCmd.FromSimpleGrid(choiceContext, PileType.Discard.GetPile(Owner).Cards.ToList(),
-            Owner, CardSelectorPrompt.ToExtraDraw.GetLimitedPrefs(DynamicVars.Cards.IntValue, true, true));
+        var selectedCards = await CardSelectCmd.FromCombatPile(choiceContext,
+            PileType.Discard.GetPile(Owner),
+            Owner,
+            CardSelectorPrompt.ToExtraDraw.GetLimitedPrefs(DynamicVars.Cards.IntValue, true, true)
+        );
         foreach (var selectedCard in selectedCards)
         {
             await CardPileCmd.Add(selectedCard, BangDreamConst.ExtraDraw);

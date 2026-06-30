@@ -24,17 +24,13 @@ public class PathDependence() : AbstractSakikoCard(CustomCost, CustomType, Custo
     {
         ArgumentNullException.ThrowIfNull(CombatState);
 
-        var drawPileCards = Owner.PlayerCombatState!.DrawPile.Cards;
-        if (drawPileCards.Count > 0)
-        {
-            var selectedCards = await CardSelectCmd.FromHand(choiceContext, Owner,
-                CardSelectorPrompt.ToExtraDraw.GetUnlimitedPrefs(),
-                _ => true, this);
+        var selectedCards = await CardSelectCmd.FromHand(choiceContext, Owner,
+            CardSelectorPrompt.ToExtraDraw.GetUnlimitedPrefs(),
+            _ => true, this);
 
-            foreach (var selectedCard in selectedCards)
-            {
-                await CardPileCmd.Add(selectedCard, BangDreamConst.ExtraDraw, CardPilePosition.Top);
-            }
+        foreach (var selectedCard in selectedCards)
+        {
+            await CardPileCmd.Add(selectedCard, BangDreamConst.ExtraDraw, CardPilePosition.Top);
         }
     }
 

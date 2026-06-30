@@ -1,7 +1,7 @@
 ﻿using BangDreamLib.Scripts.Character;
 using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
-using BangDreamLib.Scripts.Utils.Infos;
+using BangDreamLib.Scripts.Utils.Enums;
 using ItsCrychic.Scripts.Character.CardPools;
 using ItsCrychic.Scripts.Character.PotionPools;
 using ItsCrychic.Scripts.Character.RelicPools;
@@ -20,13 +20,12 @@ public sealed class TogawaSakiko() : BandMemberModel<SakikoStandardCardPool, Sak
 
     public override int GetDefaultCapacity => 3;
 
-    public override BangDreamBand Band => BangDreamBand.Crychic;
+    public override CharacterGroup Group => CharacterGroup.Crychic;
     public override string MemberNameRoman => CrychicMemberEnum.Sakiko.GetMemberNameRoman();
     public override string MemberClass => BangDreamClass.Keyboard.GetBandClass();
 
-    public override string SelectPoster => "res://ItsCrychic/images/charui/img_sakiko-togawa_2.webp";
-
-    public bool ShouldAlwaysShowExtraDeckAndPile => true;
+    public bool ShouldAlwaysShowExtraDeck => true;
+    public bool ShouldAlwaysShowExtraPile => true;
     public CardPoolModel ExtraCardPool => ModelDb.CardPool<SakikoMusicalCardPool>();
 
     public override List<string> CharacterSkinList =>
@@ -34,6 +33,18 @@ public sealed class TogawaSakiko() : BandMemberModel<SakikoStandardCardPool, Sak
         "res://ItsCrychic/skins/sakiko/sakiko_default.json",
         "res://ItsCrychic/skins/sakiko/sakiko_melody.json"
     ];
+
+    public override string SelectPoster =>
+        "res://ItsCrychic/images/charui/img_sakiko-togawa_2.webp";
+
+    public override string CustomIconPath =>
+        "res://ItsCrychic/scenes/char_icon/sakiko_icon.tscn";
+
+    public override string CustomIconTexturePath =>
+        "res://ItsCrychic/images/charui/sakiko/character_icon_saki.png";
+
+    public override string CustomIconOutlineTexturePath =>
+        "res://ItsCrychic/images/charui/sakiko/character_icon_saki_outline.png";
 
     public override CreatureAnimator GenerateAnimator(MegaSprite controller)
     {

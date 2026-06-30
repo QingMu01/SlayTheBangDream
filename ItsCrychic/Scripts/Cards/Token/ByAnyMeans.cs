@@ -34,19 +34,16 @@ public class ByAnyMeans() : BandCardModel(CustomCost, CustomType, CustomRarity, 
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        ArgumentNullException.ThrowIfNull(Owner.PlayerCombatState);
+        var selectedCards = await CardSelectCmd.FromCombatPile(choiceContext,
+            PileType.Draw.GetPile(Owner),
+            Owner,
+            CardSelectorPrompt.ToPlay.GetFixedPrefs(DynamicVars.Cards.IntValue)
+        );
 
-        var drawPileCards = Owner.PlayerCombatState.DrawPile.Cards;
-        if (drawPileCards.Count > 0)
+        foreach (var selectedCard in selectedCards)
         {
-            var selectedCards = await CardSelectCmd.FromSimpleGrid(choiceContext, drawPileCards, Owner,
-                CardSelectorPrompt.ToPlay.GetFixedPrefs(DynamicVars.Cards.IntValue));
-
-            foreach (var selectedCard in selectedCards)
-            {
-                selectedCard.ExhaustOnNextPlay = true;
-                await CardCmd.AutoPlay(choiceContext, selectedCard, null);
-            }
+            selectedCard.ExhaustOnNextPlay = true;
+            await CardCmd.AutoPlay(choiceContext, selectedCard, null);
         }
     }
 

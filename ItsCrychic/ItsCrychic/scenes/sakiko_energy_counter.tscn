@@ -20,6 +20,7 @@ layout_mode = 3
 anchors_preset = 0
 offset_right = 200.0
 offset_bottom = 170.0
+mouse_filter = 2
 metadata/_edit_lock_ = true
 
 [node name="EnergyVfxBack" type="Node2D" parent="."]
@@ -34,6 +35,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+script = ExtResource("1_hmhqd")
 
 [node name="Layer1" type="TextureRect" parent="Layers"]
 layout_mode = 1
@@ -79,99 +81,90 @@ offset_bottom = 40.0
 pivot_offset = Vector2(71, 91)
 texture = ExtResource("12_qoqw7")
 
-[node name="LingeredEnergyCounter" type="Control" parent="."]
+[node name="LingeredEnergyCounter" type="Control" parent="Layers"]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -3.0
-offset_top = 1.0
-offset_right = -3.0
-offset_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("1_hmhqd")
 
-[node name="CounterImg" type="Control" parent="LingeredEnergyCounter"]
+[node name="CounterImg" type="Control" parent="Layers/LingeredEnergyCounter"]
 unique_name_in_owner = true
 anchors_preset = 0
 offset_right = 40.0
 offset_bottom = 40.0
 
-[node name="Count1" type="TextureRect" parent="LingeredEnergyCounter/CounterImg"]
+[node name="Count1" type="TextureRect" parent="Layers/LingeredEnergyCounter/CounterImg"]
 visible = false
 layout_mode = 0
 offset_right = 200.0
 offset_bottom = 170.0
 texture = ExtResource("2_yvdb1")
 
-[node name="Count2" type="TextureRect" parent="LingeredEnergyCounter/CounterImg"]
+[node name="Count2" type="TextureRect" parent="Layers/LingeredEnergyCounter/CounterImg"]
 visible = false
 layout_mode = 0
 offset_right = 200.0
 offset_bottom = 170.0
 texture = ExtResource("3_fqs08")
 
-[node name="Count3" type="TextureRect" parent="LingeredEnergyCounter/CounterImg"]
+[node name="Count3" type="TextureRect" parent="Layers/LingeredEnergyCounter/CounterImg"]
 visible = false
 layout_mode = 0
 offset_right = 200.0
 offset_bottom = 170.0
 texture = ExtResource("4_yxjpi")
 
-[node name="Count4" type="TextureRect" parent="LingeredEnergyCounter/CounterImg"]
+[node name="Count4" type="TextureRect" parent="Layers/LingeredEnergyCounter/CounterImg"]
 visible = false
 layout_mode = 0
 offset_right = 200.0
 offset_bottom = 170.0
 texture = ExtResource("5_fj3o8")
 
-[node name="Count5" type="TextureRect" parent="LingeredEnergyCounter/CounterImg"]
+[node name="Count5" type="TextureRect" parent="Layers/LingeredEnergyCounter/CounterImg"]
 visible = false
 layout_mode = 0
 offset_right = 200.0
 offset_bottom = 170.0
 texture = ExtResource("6_hmhqd")
 
-[node name="Count6" type="TextureRect" parent="LingeredEnergyCounter/CounterImg"]
+[node name="Count6" type="TextureRect" parent="Layers/LingeredEnergyCounter/CounterImg"]
 visible = false
 layout_mode = 0
 offset_right = 200.0
 offset_bottom = 170.0
 texture = ExtResource("7_7at46")
 
-[node name="Count7" type="TextureRect" parent="LingeredEnergyCounter/CounterImg"]
+[node name="Count7" type="TextureRect" parent="Layers/LingeredEnergyCounter/CounterImg"]
 visible = false
 layout_mode = 0
 offset_right = 200.0
 offset_bottom = 170.0
 texture = ExtResource("8_qoqw7")
 
-[node name="Layer2" type="TextureRect" parent="LingeredEnergyCounter"]
+[node name="Layer2" type="TextureRect" parent="Layers/LingeredEnergyCounter"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 3.0
-offset_top = -1.0
-offset_right = 3.0
-offset_bottom = -1.0
 grow_horizontal = 2
 grow_vertical = 2
 texture = ExtResource("9_efkrr")
 expand_mode = 1
 
-[node name="CounterText" type="Label" parent="LingeredEnergyCounter"]
+[node name="CounterText" type="Label" parent="Layers/LingeredEnergyCounter"]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 43.0
-offset_top = 24.0
-offset_right = 11.0
-offset_bottom = 82.0
+offset_left = 39.0
+offset_top = 25.0
+offset_right = 7.0
+offset_bottom = 83.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_colors/font_color = Color(1, 0.9647059, 0.8862745, 1)

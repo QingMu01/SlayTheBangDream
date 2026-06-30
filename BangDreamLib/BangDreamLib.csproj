@@ -29,14 +29,4 @@
         <EmbeddedResource Remove="shaders/**"/>
         <EmbeddedResource Remove="themes/**"/>
     </ItemGroup>
-    
-    <Target Name="Copy Dependencies" AfterTargets="PostBuildEvent">
-        <Message Text="Copying RitsuLib to mods folder." Importance="high"/>
-        <ItemGroup>
-            <RitsuLibDll Include="$(NuGetPackageRoot)/sts2.ritsulib/**/lib/**/STS2-RitsuLib.dll"/>
-            <RitsuLibJson Include="$(NuGetPackageRoot)/sts2.ritsulib/**/contentFiles/**/mod_manifest.json"/>
-        </ItemGroup>
-        <Copy SourceFiles="@(RitsuLibDll)" DestinationFolder="$(Sts2Dir)/mods/STS2-RitsuLib/"/>
-        <Copy SourceFiles="@(RitsuLibJson)" DestinationFolder="$(Sts2Dir)/mods/STS2-RitsuLib/"/>
-    </Target>
 </Project>

@@ -3,17 +3,12 @@ using BangDreamLib.Scripts.Attributes;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;
-using MegaCrit.Sts2.Core.Runs;
 using STS2RitsuLib.Utils;
 
 namespace BangDreamLib.Scripts.Utils;
 
 public static class BangDreamTools
 {
-    public static RunState? RunState { get; set; }
-
-    public static Player? LocalPlayer { get; set; }
-
     public static CardPile GetPile(PileType type, Player player)
     {
         return CardPile.Get(type, player) ?? throw new NullReferenceException("card pile is not ready.");

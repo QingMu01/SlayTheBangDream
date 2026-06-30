@@ -14,4 +14,8 @@
         <Compile Remove="ItsCrychic/**"/>
         <EmbeddedResource Remove="ItsCrychic/**"/>
     </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="ItsCrychic\images\special_ui\" />
+    </ItemGroup>
 </Project>

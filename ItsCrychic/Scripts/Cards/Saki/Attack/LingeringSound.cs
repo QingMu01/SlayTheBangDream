@@ -8,7 +8,7 @@ using MegaCrit.Sts2.Core.Localization.DynamicVars;
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
 public class LingeringSound()
-    : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget), ISubsideCardFlag
+    : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget), ISubsideCard
 {
     private const int CustomCost = 0;
     private const CardType CustomType = CardType.Attack;
@@ -44,6 +44,6 @@ public class LingeringSound()
 
     protected override PileType GetResultPileTypeForCardPlay()
     {
-        return ((ISubsideCardFlag)this).CanSubside ? PileType.Hand : base.GetResultPileTypeForCardPlay();
+        return ((ISubsideCard)this).CanSubside ? PileType.Hand : base.GetResultPileTypeForCardPlay();
     }
 }

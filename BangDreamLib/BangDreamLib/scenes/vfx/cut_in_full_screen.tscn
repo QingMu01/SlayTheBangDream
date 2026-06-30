@@ -1,0 +1,57 @@
+[gd_scene load_steps=8 format=3 uid="uid://bf0ojd4x3edag"]
+
+[ext_resource type="Texture2D" uid="uid://2d3vyqtct4cj" path="res://BangDreamLib/images/sceneui/img_sakiko-togawa_2.webp" id="1_blxsy"]
+[ext_resource type="Shader" uid="uid://cqt6wed0e5uw8" path="res://BangDreamLib/shaders/gradient_color_split_line.gdshader" id="1_o3xw2"]
+
+[sub_resource type="Gradient" id="Gradient_o3xw2"]
+offsets = PackedFloat32Array(0)
+colors = PackedColorArray(0, 0, 0, 1)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_acoja"]
+gradient = SubResource("Gradient_o3xw2")
+width = 2560
+height = 1200
+
+[sub_resource type="Gradient" id="Gradient_acoja"]
+interpolation_mode = 2
+offsets = PackedFloat32Array(0, 0.6333333, 1)
+colors = PackedColorArray(0.827451, 0.64705884, 0.76862746, 1, 0.32941177, 0.32941177, 0.49803922, 1, 0.24705882, 0.2784314, 0.45882353, 1)
+metadata/_snap_enabled = true
+metadata/_snap_count = 30
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_q2rkm"]
+gradient = SubResource("Gradient_acoja")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_jd5ya"]
+shader = ExtResource("1_o3xw2")
+shader_parameter/gradient_color = SubResource("GradientTexture1D_q2rkm")
+shader_parameter/character_texture = ExtResource("1_blxsy")
+shader_parameter/line_count = 5
+shader_parameter/line_color = Color(1, 1, 1, 1)
+shader_parameter/line_width = 0.005
+shader_parameter/line_angle = -0.2
+shader_parameter/line_spacing = 0.1499999966472
+shader_parameter/line_offset = 0.5999999642368001
+shader_parameter/line_smoothing = 0.003
+
+[node name="CutInFullScreen" type="Node2D"]
+
+[node name="Bg" type="Sprite2D" parent="."]
+position = Vector2(960, 540)
+texture = SubResource("GradientTexture2D_acoja")
+
+[node name="Character" type="Node2D" parent="."]
+
+[node name="Shadow" type="Sprite2D" parent="Character"]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_jd5ya")
+position = Vector2(946.99994, 529)
+scale = Vector2(0.35, 0.35)
+texture = ExtResource("1_blxsy")
+
+[node name="Body" type="Sprite2D" parent="Character"]
+unique_name_in_owner = true
+visible = false
+position = Vector2(960, 540)
+scale = Vector2(0.35, 0.35)
+texture = ExtResource("1_blxsy")

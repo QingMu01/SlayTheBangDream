@@ -42,7 +42,7 @@ public class StressBeat()
     {
         ArgumentNullException.ThrowIfNull(play.Target);
 
-        await DamageCmd.Attack(DynamicVars.ComputeVar("CalcDamage").Calculate(play.Target))
+        await DamageCmd.Attack(DynamicVars.ComputedValue("CalcDamage", play.Target))
             .FromCard(this)
             .Targeting(play.Target)
             .WithHitFx("vfx/vfx_attack_slash")

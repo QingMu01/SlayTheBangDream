@@ -136,7 +136,7 @@ public class PerformanceManager : SingletonModel
         if (isInstant)
         {
             await Cmd.Wait(0.8f);
-            await HandleCardRemovedInternal(cardModel);
+            await MoveCardInternal(cardModel);
         }
         else
         {
@@ -210,13 +210,21 @@ public class PerformanceManager : SingletonModel
         return base.ModifyCardPlayResultPileTypeAndPosition(card, isAutoPlay, resources, pileType, position);
     }
 
+    public override async Task AfterCardPlayed(PlayerChoiceContext choiceContext, CardPlay cardPlay)
+    {
+        if (cardPlay.Card is IPerformanceCard)
+        {
+            await Cmd.CustomScaledWait(0.35f, 0.5f);
+        }
+    }
+
     public override Task BeforeCombatStart()
     {
         if (!_isSubscribed)
         {
             _isSubscribed = true;
             PerformancePile = BangDreamTools.GetPile(BangDreamConst.PerformanceTable, Player);
-            if (Player.Character is IPerformanceCharacter character)
+            if (Player.Character is IPerformableCharacter character)
                 Capacity = character.GetDefaultCapacity;
             else
                 Capacity = 0;

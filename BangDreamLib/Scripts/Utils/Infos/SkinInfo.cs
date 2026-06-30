@@ -29,14 +29,6 @@ public class SkinInfo
             MerchantAnimName: skinTemplate.MultiplayerVisual.MerchantAnimName?.EmptyStringFilter()
         );
 
-        var localVisual = new LocalVisual(
-            EnergyCounterScene: skinTemplate.LocalVisual.EnergyCounterScene?.EmptyStringFilter(),
-            IconScene: skinTemplate.LocalVisual.IconScene?.EmptyStringFilter(),
-            IconTexture: skinTemplate.LocalVisual.IconTexture?.EmptyStringFilter(),
-            IconTextureOutline: skinTemplate.LocalVisual.IconTextureOutline?.EmptyStringFilter(),
-            MapMarker: skinTemplate.LocalVisual.MapMarker?.EmptyStringFilter()
-        );
-
         var multiplayerVfx = new MultiplayerVfx(
             MusicNote: skinTemplate.MultiplayerVfx.MusicNote?.EmptyStringFilter()
         );
@@ -45,16 +37,34 @@ public class SkinInfo
             CardTrail: skinTemplate.LocalVfx.CardTrail?.EmptyStringFilter()
         );
 
-        SkinTemplate =
-            new SkinTemplate(multiplayerVisual, localVisual, multiplayerVfx, localVfx, skinTemplate.Starting);
+        var ui = new Ui(
+            EnergyCounterScene: skinTemplate.Ui.EnergyCounterScene?.EmptyStringFilter(),
+            MapMarker: skinTemplate.Ui.MapMarker?.EmptyStringFilter(),
+            MusicCardBg: skinTemplate.Ui.MusicCardBg?.EmptyStringFilter(),
+            TopBarGoldIcon: skinTemplate.Ui.TopBarGoldIcon?.EmptyStringFilter(),
+            TopBarHpIcon: skinTemplate.Ui.TopBarHpIcon?.EmptyStringFilter(),
+            TopBarFloorIcon: skinTemplate.Ui.TopBarFloorIcon?.EmptyStringFilter(),
+            TopBarAscensionIcon: skinTemplate.Ui.TopBarAscensionIcon?.EmptyStringFilter(),
+            TopBarMapIcon: skinTemplate.Ui.TopBarMapIcon?.EmptyStringFilter(),
+            TopBarDeckIcon: skinTemplate.Ui.TopBarDeckIcon?.EmptyStringFilter(),
+            TopBarExtraDeckIcon: skinTemplate.Ui.TopBarExtraDeckIcon?.EmptyStringFilter(),
+            TopBarSettingIcon: skinTemplate.Ui.TopBarSettingIcon?.EmptyStringFilter(),
+            CombatDrawIcon: skinTemplate.Ui.CombatDrawIcon?.EmptyStringFilter(),
+            CombatDiscardIcon: skinTemplate.Ui.CombatDiscardIcon?.EmptyStringFilter(),
+            RewardCommonCardIcon: skinTemplate.Ui.RewardCommonCardIcon?.EmptyStringFilter(),
+            RewardUncommonCardIcon: skinTemplate.Ui.RewardUncommonCardIcon?.EmptyStringFilter(),
+            RewardRareCardIcon: skinTemplate.Ui.RewardRareCardIcon?.EmptyStringFilter()
+        );
+
+        SkinTemplate = new SkinTemplate(multiplayerVisual, multiplayerVfx, localVfx, ui, skinTemplate.Starting);
     }
 
     public IEnumerable<string> GetAllVisualResourcePaths()
     {
         foreach (var s in GetNonEmptyStrings(SkinTemplate.MultiplayerVisual)) yield return s;
         foreach (var s in GetNonEmptyStrings(SkinTemplate.MultiplayerVfx)) yield return s;
-        foreach (var s in GetNonEmptyStrings(SkinTemplate.LocalVisual)) yield return s;
         foreach (var s in GetNonEmptyStrings(SkinTemplate.LocalVfx)) yield return s;
+        foreach (var s in GetNonEmptyStrings(SkinTemplate.Ui)) yield return s;
     }
 
     public IEnumerable<CardModel> GetStartingDeck()
@@ -127,13 +137,13 @@ public class SkinInfo
 // Json模板
 public record SkinTemplate(
     MultiplayerVisual MultiplayerVisual,
-    LocalVisual LocalVisual,
     MultiplayerVfx MultiplayerVfx,
     LocalVfx LocalVfx,
+    Ui Ui,
     StartingInfo Starting
 );
 
-// 可配置项 多人模式下所有人可见且可替换的视觉资源
+// 可配置项 所有人可见的视觉资源
 public record MultiplayerVisual(
     string? VisualScene = null,
     string? RestSiteScene = null,
@@ -146,22 +156,34 @@ public record MultiplayerVisual(
     string? MerchantAnimName = null
 );
 
-// 可配置项 多人模式下所有人可见且可替换的特效资源
+// 可配置项 所有人可见的特效资源
 public record MultiplayerVfx(
     string? MusicNote = null
 );
 
-// 可配置项 单人模式下可替换的视觉资源
-public record LocalVisual(
-    string? EnergyCounterScene = null,
-    string? IconScene = null,
-    string? IconTexture = null,
-    string? IconTextureOutline = null,
-    string? MapMarker = null);
-
-// 可配置项 单人模式下可替换的特效资源
+// 可配置项 仅本地可见且的特效资源
 public record LocalVfx(
     string? CardTrail = null
+);
+
+// 可配置项 仅本地可见的局内Ui资源
+public record Ui(
+    string? EnergyCounterScene = null,
+    string? MusicCardBg = null,
+    string? MapMarker = null,
+    string? TopBarGoldIcon = null,
+    string? TopBarHpIcon = null,
+    string? TopBarFloorIcon = null,
+    string? TopBarAscensionIcon = null,
+    string? TopBarMapIcon = null,
+    string? TopBarDeckIcon = null,
+    string? TopBarExtraDeckIcon = null,
+    string? TopBarSettingIcon = null,
+    string? CombatDrawIcon = null,
+    string? CombatDiscardIcon = null,
+    string? RewardCommonCardIcon = null,
+    string? RewardUncommonCardIcon = null,
+    string? RewardRareCardIcon = null
 );
 
 // 可配置项 初始卡组、遗物、药水、额外牌组

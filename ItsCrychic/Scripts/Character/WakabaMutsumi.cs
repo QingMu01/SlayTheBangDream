@@ -1,7 +1,7 @@
 ﻿using BangDreamLib.Scripts.Character;
 using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
-using BangDreamLib.Scripts.Utils.Infos;
+using BangDreamLib.Scripts.Utils.Enums;
 using ItsCrychic.Scripts.Character.CardPools;
 using ItsCrychic.Scripts.Character.PotionPools;
 using ItsCrychic.Scripts.Character.RelicPools;
@@ -21,14 +21,15 @@ public sealed class WakabaMutsumi()
 
     public override int GetDefaultCapacity => 1;
 
-    public override BangDreamBand Band => BangDreamBand.Crychic;
+    public override CharacterGroup Group => CharacterGroup.Crychic;
     public override string MemberNameRoman => CrychicMemberEnum.Mutsumi.GetMemberNameRoman();
     public override string MemberClass => BangDreamClass.Guitar.GetBandClass();
 
     public override bool AllowSelect => false;
 
     public override string SelectPoster => "res://ItsCrychic/images/charui/img_mutsumi-wakaba_2.webp";
-    public bool ShouldAlwaysShowExtraDeckAndPile => true;
+    public bool ShouldAlwaysShowExtraDeck => true;
+    public bool ShouldAlwaysShowExtraPile => true;
     public CardPoolModel ExtraCardPool => ModelDb.CardPool<MutsumiMusicalCardPool>();
 
     public override List<string> CharacterSkinList =>

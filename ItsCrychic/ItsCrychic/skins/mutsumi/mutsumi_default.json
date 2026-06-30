@@ -3,25 +3,35 @@
     "VisualScene": "res://ItsCrychic/scenes/creature/mutsumi_skin_default.tscn",
     "RestSiteScene": "res://ItsCrychic/scenes/rest_site/mutsumi_rest_default.tscn",
     "MerchantScene": "res://ItsCrychic/scenes/merchant/mutsumi_merchant_default.tscn",
-    "ArmPointingTexture": null,
-    "ArmRockTexture": null,
-    "ArmPaperTexture": null,
-    "ArmScissorsTexture": null,
+    "ArmPointingTexture": "res://ItsCrychic/images/charui/sakiko/multiplayer_hand_saki_point.png",
+    "ArmRockTexture": "res://ItsCrychic/images/charui/sakiko/multiplayer_hand_saki_rock.png",
+    "ArmPaperTexture": "res://ItsCrychic/images/charui/sakiko/multiplayer_hand_saki_paper.png",
+    "ArmScissorsTexture": "res://ItsCrychic/images/charui/sakiko/multiplayer_hand_saki_scissors.png",
     "RestSiteAnimName": "Sit",
     "MerchantAnimName": "Relax"
-  },
-  "LocalVisual": {
-    "EnergyCounterScene": "res://ItsCrychic/scenes/sakiko_energy_counter.tscn",
-    "IconScene": "",
-    "IconTexture": "",
-    "IconTextureOutline": "",
-    "MapMarker": ""
   },
   "MultiplayerVfx": {
     "MusicNote": "res://BangDreamLib/scenes/vfx/flying_music_note_default.tscn"
   },
   "LocalVfx": {
     "CardTrail": "res://BangDreamLib/scenes/vfx/card_trail_sakiko.tscn"
+  },
+  "Ui": {
+    "EnergyCounterScene": "res://ItsCrychic/scenes/sakiko_energy_counter.tscn",
+    "MusicCardBg": "res://ItsCrychic/images/charui/sakiko/default_music_bg_sakiko.png",
+    "TopBarGoldIcon": "",
+    "TopBarHpIcon": "",
+    "TopBarFloorIcon": "",
+    "TopBarAscensionIcon": "",
+    "TopBarMapIcon": "",
+    "TopBarDeckIcon": "",
+    "TopBarExtraDeckIcon": "",
+    "TopBarSettingIcon": "",
+    "CombatDrawIcon": "",
+    "CombatDiscardIcon": "",
+    "RewardCommonCardIcon": "",
+    "RewardUncommonCardIcon": "",
+    "RewardRareCardIcon": ""
   },
   "Starting": {
     "StartingDeck": [

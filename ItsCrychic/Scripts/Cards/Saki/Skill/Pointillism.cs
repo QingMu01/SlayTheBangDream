@@ -24,25 +24,23 @@ public class Pointillism() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
         var performanceCards = BangDreamTools.GetPile(BangDreamConst.PerformanceTable, Owner).Cards.ToList();
-        var count = performanceCards.Count;
-
-        foreach (var card in performanceCards)
+        var performanceItemCount = performanceCards.Count;
+        if (performanceItemCount > 0)
         {
-            await CardPileCmd.Add(card, BangDreamConst.ExtraDraw);
-        }
-
-        if (count > 0)
-        {
-            var extraDrawCards = BangDreamTools.GetPile(BangDreamConst.ExtraDraw, Owner).Cards.ToList();
-            if (extraDrawCards.Count > 0)
+            foreach (var card in performanceCards)
             {
-                var selectedCards = await CardSelectCmd.FromSimpleGrid(choiceContext, extraDrawCards,
-                    Owner, CardSelectorPrompt.ToHand.GetLimitedPrefs(count, true, true));
+                await CardPileCmd.Add(card, BangDreamConst.ExtraDraw);
+            }
 
-                foreach (var selectedCard in selectedCards)
-                {
-                    await CardPileCmd.Add(selectedCard, PileType.Hand);
-                }
+            var selectedCards = await CardSelectCmd.FromCombatPile(choiceContext,
+                BangDreamTools.GetPile(BangDreamConst.ExtraDraw, Owner),
+                Owner,
+                CardSelectorPrompt.ToHand.GetLimitedPrefs(performanceItemCount, true, true)
+            );
+
+            foreach (var selectedCard in selectedCards)
+            {
+                await CardPileCmd.Add(selectedCard, PileType.Hand);
             }
         }
     }

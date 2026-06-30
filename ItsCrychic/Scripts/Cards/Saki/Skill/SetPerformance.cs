@@ -29,16 +29,13 @@ public class SetPerformance() : AbstractSakikoCard(CustomCost, CustomType, Custo
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        var extraDrawCards = BangDreamTools.GetPile(BangDreamConst.ExtraDraw, Owner).Cards.ToList();
-        if (extraDrawCards.Count == 0) return;
+        var selectedCards = await CardSelectCmd.FromCombatPile(choiceContext,
+            BangDreamTools.GetPile(BangDreamConst.ExtraDraw, Owner),
+            Owner,
+            CardSelectorPrompt.ToExtraDraw.GetLimitedPrefs(DynamicVars.Cards.IntValue)
+        );
 
-        var selectedCards = await CardSelectCmd.FromSimpleGrid(choiceContext, extraDrawCards,
-            Owner, CardSelectorPrompt.ToExtraDraw.GetLimitedPrefs(DynamicVars.Cards.IntValue));
-
-        var cardsList = selectedCards.ToList();
-        if (cardsList.Count == 0) return;
-
-        foreach (var card in cardsList)
+        foreach (var card in selectedCards)
         {
             await CardPileCmd.RemoveFromCombat(card);
             var power = (NextTurnPerformPower)ModelDb.Power<NextTurnPerformPower>().ToMutable();

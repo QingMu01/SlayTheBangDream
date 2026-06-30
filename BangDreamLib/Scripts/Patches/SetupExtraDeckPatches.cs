@@ -11,8 +11,8 @@ public class SetupExtraDeckPatches : IModPatches
 {
     public static void AddTo(ModPatcher patcher)
     {
-        patcher.RegisterPatch<InitStartingExtraDeckPatch>();
-        patcher.RegisterPatch<LoadExtraDeckPatch>();
+        // patcher.RegisterPatch<InitStartingExtraDeckPatch>();
+        // patcher.RegisterPatch<LoadExtraDeckPatch>();
     }
 }
 

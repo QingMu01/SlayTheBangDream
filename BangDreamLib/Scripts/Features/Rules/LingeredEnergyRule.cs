@@ -16,7 +16,7 @@ public class LingeredEnergyRule : SingletonModel
     public override async Task AfterCardPlayed(PlayerChoiceContext context, CardPlay cardPlay)
     {
         var playedCard = cardPlay.Card;
-        if (playedCard is ISubsideCardFlag { CanSubside: true } subsideCard)
+        if (playedCard is ISubsideCard { CanSubside: true } subsideCard)
         {
             await subsideCard.OnSubside(context, cardPlay);
             await Cmd.CustomScaledWait(0.1f, 0.2f);

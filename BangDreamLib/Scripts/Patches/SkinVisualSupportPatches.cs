@@ -3,6 +3,7 @@ using System.Reflection.Emit;
 using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
 using BangDreamLib.Scripts.Nodes.MegeScript;
+using BangDreamLib.Scripts.Utils;
 using Godot;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Assets;
@@ -13,7 +14,6 @@ using MegaCrit.Sts2.Core.Nodes.RestSite;
 using MegaCrit.Sts2.Core.Nodes.Screens.TreasureRoomRelic;
 using STS2RitsuLib.Patching.Core;
 using STS2RitsuLib.Patching.Models;
-using STS2RitsuLib.Scaffolding.Characters.Patches;
 using STS2RitsuLib.Scaffolding.Characters.Visuals;
 using STS2RitsuLib.Scaffolding.Godot;
 using STS2RitsuLib.Utils.HarmonyIl;
@@ -46,13 +46,12 @@ internal class VisualPatch : IPatchMethod
     {
         if (__result?.Entity.Player?.Character is ISkinSupportCharacter)
         {
-            var path = __result.Entity.Player.AttachedData().SkinManager.CurrentSkin?.SkinTemplate.MultiplayerVisual
+            var path = BangDreamConst.PlayerSkin.Get(__result.Entity.Player).GetSkin()?.SkinTemplate.MultiplayerVisual
                 .VisualScene;
             if (path != null)
             {
-                var nCreatureVisuals =
-                    RitsuGodotNodeFactories.CreateFromScenePath<NCreatureVisuals>(path);
-                Traverse.Create(__result).Property("Visuals").SetValue(nCreatureVisuals);
+                var visuals = RitsuGodotNodeFactories.CreateFromScenePath<NCreatureVisuals>(path);
+                Traverse.Create(__result).Property("Visuals").SetValue(visuals);
             }
         }
     }
@@ -74,14 +73,14 @@ internal class RestSiteScenePatch : IPatchMethod
     {
         if (player.Character is ISkinSupportCharacter)
         {
-            var path = player.AttachedData().SkinManager.CurrentSkin?.SkinTemplate.MultiplayerVisual.RestSiteScene;
+            var path = BangDreamConst.PlayerSkin.Get(player).GetSkin()?.SkinTemplate.MultiplayerVisual.RestSiteScene;
             if (path != null)
             {
-                var nRestSiteCharacter = RitsuGodotNodeFactories.CreateFromScenePath<NRestSiteCharacter>(path);
+                var restSiteCharacter = RitsuGodotNodeFactories.CreateFromScenePath<NRestSiteCharacter>(path);
 
-                CachePlayer.SetValue(nRestSiteCharacter, player);
-                CacheIndex.SetValue(nRestSiteCharacter, characterIndex);
-                __result = nRestSiteCharacter;
+                CachePlayer.SetValue(restSiteCharacter, player);
+                CacheIndex.SetValue(restSiteCharacter, characterIndex);
+                __result = restSiteCharacter;
             }
         }
     }
@@ -123,7 +122,7 @@ internal class RestSiteAnimPatch : IPatchMethod
     {
         if (player.Character is ISkinSupportCharacter)
         {
-            return player.AttachedData().SkinManager.CurrentSkin?.SkinTemplate.MultiplayerVisual.RestSiteAnimName ??
+            return BangDreamConst.PlayerSkin.Get(player).GetSkin()?.SkinTemplate.MultiplayerVisual.RestSiteAnimName ??
                    originalName;
         }
 
@@ -135,12 +134,22 @@ internal class MerchantScenePatch : IPatchMethod
 {
     public static string PatchId => "on_create_merchant_replace_by_skin_info";
 
+    private static Type MerchantPatcher =>
+        Type.GetType(
+            "STS2RitsuLib.Scaffolding.Characters.Patches.NMerchantRoomProceduralCharacterInstantiationPatch,STS2-RitsuLib") ??
+        throw new TypeLoadException("Ritsu-Lib Patcher Not Found!");
+
+    private static Type FakeMerchantPatcher =>
+        Type.GetType(
+            "STS2RitsuLib.Scaffolding.Characters.Patches.NFakeMerchantProceduralCharacterInstantiationPatch,STS2-RitsuLib") ??
+        throw new TypeLoadException("Ritsu-Lib Patcher Not Found!");
+
     public static ModPatchTarget[] GetTargets()
     {
         return
         [
-            new ModPatchTarget(typeof(NMerchantRoomProceduralCharacterInstantiationPatch), "RunAfterRoomIsLoaded"),
-            new ModPatchTarget(typeof(NFakeMerchantProceduralCharacterInstantiationPatch), "RunAfterRoomIsLoaded")
+            new ModPatchTarget(MerchantPatcher, "RunAfterRoomIsLoaded"),
+            new ModPatchTarget(FakeMerchantPatcher, "RunAfterRoomIsLoaded")
         ];
     }
 
@@ -187,7 +196,7 @@ internal class MerchantScenePatch : IPatchMethod
                 BangDreamLibCore.Logger.Error("transpiler failed");
             }
         }
-        
+
         return rewriter.InstructionsChecked();
     }
 }
@@ -205,7 +214,7 @@ internal class ArmPointingTexturePatch : IPatchMethod
     {
         if (__instance.Player.Character is ISkinSupportCharacter)
         {
-            var path = __instance.Player.AttachedData().SkinManager.CurrentSkin?.SkinTemplate.MultiplayerVisual
+            var path = BangDreamConst.PlayerSkin.Get(__instance.Player).GetSkin()?.SkinTemplate.MultiplayerVisual
                 .ArmPointingTexture;
             if (path != null)
             {
@@ -228,7 +237,7 @@ internal class ArmFightTexturePatch : IPatchMethod
     {
         if (__instance.Player.Character is ISkinSupportCharacter)
         {
-            var armTextureSet = __instance.Player.AttachedData().SkinManager.CurrentSkin?.SkinTemplate
+            var armTextureSet = BangDreamConst.PlayerSkin.Get(__instance.Player).GetSkin()?.SkinTemplate
                 .MultiplayerVisual;
             var path = move switch
             {

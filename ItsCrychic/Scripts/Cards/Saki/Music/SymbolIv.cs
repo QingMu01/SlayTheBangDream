@@ -21,8 +21,7 @@ public class SymbolIv() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Energy.Create(2),
-        QuickVar.Cards.Create(1)
+        QuickVar.Energy.Create(2)
     ];
 
     public override async Task OnStartPerformance(PlayerChoiceContext choiceContext)
@@ -32,19 +31,22 @@ public class SymbolIv() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
 
     public override async Task OnStopPerformance(PlayerChoiceContext choiceContext)
     {
-        var extraDraw = BangDreamTools.GetPile(BangDreamConst.ExtraDraw, Owner);
-        if (extraDraw.Cards.Count > 0)
+        var extraDrawPile = BangDreamConst.ExtraDraw.GetPile(Owner);
+        if (extraDrawPile.Cards.Count > 0)
         {
             CardModel? selectedCard;
             if (IsUpgraded)
             {
-                var simpleGridSelected = await CardSelectCmd.FromSimpleGrid(choiceContext,
-                    extraDraw.Cards, Owner, CardSelectorPrompt.ToHand.GetFixedPrefs(DynamicVars.Cards.IntValue));
-                selectedCard = simpleGridSelected.FirstOrDefault();
+                var selectedCards = await CardSelectCmd.FromCombatPile(choiceContext,
+                    extraDrawPile,
+                    Owner,
+                    CardSelectorPrompt.ToHand.GetFixedPrefs(1)
+                );
+                selectedCard = selectedCards.FirstOrDefault();
             }
             else
             {
-                selectedCard = Owner.RunState.Rng.CombatCardSelection.NextItem(extraDraw.Cards);
+                selectedCard = Owner.RunState.Rng.CombatCardSelection.NextItem(extraDrawPile.Cards);
             }
 
             if (selectedCard != null)

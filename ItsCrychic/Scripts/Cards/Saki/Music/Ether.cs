@@ -1,4 +1,4 @@
-using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
@@ -15,39 +15,27 @@ public class Ether() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
     [
         CardKeyword.Exhaust,
         BangDreamConst.Performance,
-        BangDreamConst.PerformanceArea
+        BangDreamConst.PerformanceArea,
+        BangDreamConst.Instant
     ];
 
     protected override IEnumerable<DynamicVar> CardVars => [];
 
-    private int _addedCapacity;
 
-    public override Task OnStartPerformance(PlayerChoiceContext choiceContext)
+    public override async Task OnStartPerformance(PlayerChoiceContext choiceContext)
     {
-        var performanceManager = Owner.AttachedData().PerformanceManager;
-        _addedCapacity = 7 - performanceManager.Capacity;
-        if (_addedCapacity > 0)
+        var cardPile = BangDreamConst.PerformanceTable.GetPile(Owner);
+        foreach (var card in cardPile.Cards)
         {
-            performanceManager.AddCapacity(_addedCapacity);
+            if (card.Tags.Contains(BangDreamConst.SymbolCard) && card is IPerformanceCard performanceCard)
+            {
+                await performanceCard.OnStopPerformance(choiceContext);
+            }
         }
-        else
-        {
-            _addedCapacity = 0;
-        }
-
-        return Task.CompletedTask;
     }
 
     public override Task OnStopPerformance(PlayerChoiceContext choiceContext)
     {
-        var performanceManager = Owner.AttachedData().PerformanceManager;
-        if (_addedCapacity > 0)
-        {
-            ItsCrychic.Logger.Info($"Ether: Reduce capacity{_addedCapacity}");
-            performanceManager.ReduceCapacity(_addedCapacity);
-            _addedCapacity = 0;
-        }
-
         return Task.CompletedTask;
     }
 

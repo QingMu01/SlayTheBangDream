@@ -12,7 +12,7 @@ using STS2RitsuLib.Cards.DynamicVars;
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
 public class WaningMoonEcho()
-    : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget), ISubsideCardFlag
+    : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget), ISubsideCard
 {
     private const int CustomCost = 1;
     private const CardType CustomType = CardType.Attack;

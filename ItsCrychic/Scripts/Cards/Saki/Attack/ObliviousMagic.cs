@@ -8,7 +8,7 @@ using MegaCrit.Sts2.Core.Localization.DynamicVars;
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
 public class ObliviousMagic()
-    : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget), ISubsideCardFlag
+    : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget), ISubsideCard
 {
     private const int CustomCost = 3;
     private const CardType CustomType = CardType.Attack;

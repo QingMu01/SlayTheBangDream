@@ -39,7 +39,7 @@ public class AveMujica() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
         {
             if (card.Rarity == CardRarity.Basic && card is not IPerformanceCard)
             {
-                card.BaseReplayCount += QuickVar.Repeat.Get(DynamicVars).IntValue;
+                card.BaseReplayCount += DynamicVars.Repeat.IntValue;
                 _effectCards.Add(card);
             }
         }
@@ -53,7 +53,7 @@ public class AveMujica() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
         {
             foreach (var effectCard in _effectCards)
             {
-                effectCard.BaseReplayCount -= QuickVar.Repeat.Get(DynamicVars).IntValue;
+                effectCard.BaseReplayCount -= DynamicVars.Repeat.IntValue;
                 if (effectCard.BaseReplayCount <= 0)
                 {
                     effectCard.BaseReplayCount = 0;
@@ -68,7 +68,7 @@ public class AveMujica() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
     {
         if (IsUpgraded && _effectCards.Contains(cardPlay.Card) && Handle == null)
         {
-            cardPlay.Card.BaseReplayCount -= QuickVar.Repeat.Get(DynamicVars).IntValue;
+            cardPlay.Card.BaseReplayCount -= DynamicVars.Repeat.IntValue;
             if (cardPlay.Card.BaseReplayCount <= 0)
             {
                 cardPlay.Card.BaseReplayCount = 0;

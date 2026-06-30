@@ -1,5 +1,7 @@
+using BangDreamLib.Scripts.Commands;
+using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Utils;
 using ItsCrychic.Scripts.Cards.Token;
-using ItsCrychic.Scripts.Power.Buff;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
@@ -25,16 +27,29 @@ public class AttendantServant() : AbstractSakikoCard(CustomCost, CustomType, Cus
         HoverTipFactory.FromCard<SakikoShield>()
     ];
 
-    protected override IEnumerable<DynamicVar> CardVars => [];
-
+    protected override IEnumerable<DynamicVar> CardVars =>
+    [
+        QuickVar.Cards.Create(2),
+        QuickVar.Cards.Create("Draw", 1)
+    ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        await PowerCmd.Apply<AttendantServantPower>(choiceContext, Owner.Creature, 1, Owner.Creature, this);
+        var selectedCards = await CardSelectCmd.FromCombatPile(choiceContext,
+            BangDreamConst.ExtraDraw.GetPile(Owner),
+            Owner,
+            CardSelectorPrompt.ToTransform.GetFixedPrefs(DynamicVars.Cards.IntValue)
+        );
+        foreach (var selectedCard in selectedCards)
+        {
+            await CardCmd.TransformTo<SakikoShield>(selectedCard);
+        }
+
+        await ExtraPileCmd.Draw(choiceContext, DynamicVars["Draw"].IntValue, Owner);
     }
 
     protected override void OnUpgrade()
     {
-        EnergyCost.UpgradeBy(-1);
+        DynamicVars["Draw"].UpgradeValueBy(1m);
     }
 }

@@ -26,7 +26,7 @@ public partial class NCharacterButton : Button
         get => _isSelected;
         private set
         {
-            if (Character is IAggregationCharacter aggregationCharacter)
+            if (Character is IGroupableCharacter aggregationCharacter)
             {
                 _isSelected = value && aggregationCharacter.AllowSelect;
                 return;
@@ -71,7 +71,7 @@ public partial class NCharacterButton : Button
 
     private void OnMouseEntered()
     {
-        if (Character is IAggregationCharacter { AllowSelect: false })
+        if (Character is IGroupableCharacter { AllowSelect: false })
             return;
         _hoverTween?.Kill();
         _hoverTween = CreateTween();
@@ -90,7 +90,7 @@ public partial class NCharacterButton : Button
 
     private void OnPressed()
     {
-        if (Character is IAggregationCharacter { AllowSelect: false })
+        if (Character is IGroupableCharacter { AllowSelect: false })
         {
             var randomTips = Rng.Chaotic.NextInt(0, 3);
             var locString = new LocString("gameplay_ui", $"{MessagePrefixKey}{randomTips}.message");

@@ -31,7 +31,7 @@ public class FinishTimes() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
     {
         ArgumentNullException.ThrowIfNull(play.Target);
 
-        await DamageCmd.Attack(DynamicVars.ComputeVar("BaseDamage").Calculate())
+        await DamageCmd.Attack(DynamicVars.ComputedValue("BaseDamage"))
             .FromCard(this)
             .WithHitCount(DynamicVars.Repeat.IntValue)
             .Targeting(play.Target)

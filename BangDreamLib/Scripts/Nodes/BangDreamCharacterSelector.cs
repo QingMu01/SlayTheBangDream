@@ -2,6 +2,7 @@ using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
 using BangDreamLib.Scripts.Nodes.MegeScript;
 using BangDreamLib.Scripts.Nodes.SubNode;
+using BangDreamLib.Scripts.Utils.Enums;
 using Godot;
 using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.Helpers;
@@ -44,7 +45,7 @@ public partial class BangDreamCharacterSelector : Control
 
     private Tween? _posterTween;
 
-    private IAggregationGroup? _pageGroup;
+    private CharacterGroup? _buttonGroup;
 
     private NCharacterSelectButton? _sourceButton;
     private ICharacterSelectButtonDelegate? _delegate;
@@ -99,76 +100,77 @@ public partial class BangDreamCharacterSelector : Control
             }
         }
 
-        if (_delegate != null && _sourceButton != null)
+        if (_infoStyleBox != null)
         {
-            _delegate.SelectCharacter(_sourceButton, character);
-            _skinSelector?.Init(character);
+            _infoStyleBox.BorderColor = _buttonGroup?.GetGroupInfo().Color ?? Colors.White;
         }
 
-        if (character is IAggregationCharacter aggregationCharacter)
+        if (_bigIntro != null)
         {
-            if (_infoStyleBox != null)
-            {
-                _infoStyleBox.BorderColor = _pageGroup?.Band.GetBandColor() ?? Colors.White;
-            }
+            _bigIntro.Text = new LocString("characters", character.CharacterSelectTitle)
+                .GetFormattedText();
+        }
 
-            var selectPoster = aggregationCharacter.SelectPoster;
+        if (_description != null)
+            _description.Text = new LocString("characters", character.CharacterSelectDesc)
+                .GetFormattedText();
+
+        if (_healthLabel != null)
+        {
+            _healthLabel.Text = character.StartingHp.ToString();
+        }
+
+        if (_goldLabel != null)
+        {
+            _goldLabel.Text = character.StartingGold.ToString();
+        }
+
+        if (character is IBangDreamMateData mateData)
+        {
+            var poster = mateData.SelectPoster;
             if (_characterPoster != null)
             {
-                _characterPoster.Texture =
-                    selectPoster != null ? PreloadManager.Cache.GetTexture2D(selectPoster) : null;
-
+                _characterPoster.Texture = poster != null ? PreloadManager.Cache.GetTexture2D(poster) : null;
                 _characterPoster.Modulate = new Color(1, 1, 1, 0);
                 _characterPoster.Scale = new Vector2(1.25f, 1.25f);
             }
 
             if (_smallIntro != null)
             {
-                _smallIntro.Text = $"{aggregationCharacter.MemberClass} {aggregationCharacter.MemberNameRoman}";
+                _smallIntro.Text = $"{mateData.MemberClass} {mateData.MemberNameRoman}";
                 _smallIntro.Modulate = character.NameColor;
             }
 
             if (_classLabel != null)
             {
-                _classLabel.Text = aggregationCharacter.MemberClass;
+                _classLabel.Text = mateData.MemberClass;
+            }
+        }
+
+        if (character.StartingRelics.Count > 0)
+        {
+            var relic = character.StartingRelics[0];
+            if (_relicIcon != null)
+            {
+                _relicIcon.Texture = relic.Icon;
             }
 
-            if (_bigIntro != null)
+            _relicDescription?.SetTextAutoSize(
+                $"[b]{relic.Title.GetFormattedText()}[/b]\n{relic.DynamicDescription.GetFormattedText()}");
+        }
+
+        // 设置背景着色器颜色
+        if (_showBg?.Material is ShaderMaterial shader)
+        {
+            shader.Set("shader_parameter/bg_color", character.NameColor);
+        }
+
+        if (_delegate != null && _sourceButton != null)
+        {
+            _delegate.SelectCharacter(_sourceButton, character);
+            if (character is ISkinSupportCharacter skinSupportCharacter)
             {
-                _bigIntro.Text = new LocString("characters", character.CharacterSelectTitle)
-                    .GetFormattedText();
-            }
-
-            if (_description != null)
-                _description.Text = new LocString("characters", character.CharacterSelectDesc)
-                    .GetFormattedText();
-
-            if (_healthLabel != null)
-            {
-                _healthLabel.Text = character.StartingHp.ToString();
-            }
-
-            if (_goldLabel != null)
-            {
-                _goldLabel.Text = character.StartingGold.ToString();
-            }
-
-            if (character.StartingRelics.Count > 0)
-            {
-                var relic = character.StartingRelics[0];
-                if (_relicIcon != null)
-                {
-                    _relicIcon.Texture = relic.Icon;
-                }
-
-                _relicDescription?.SetTextAutoSize(
-                    $"[b]{relic.Title.GetFormattedText()}[/b]\n{relic.DynamicDescription.GetFormattedText()}");
-            }
-
-            // 设置背景着色器颜色
-            if (_showBg?.Material is ShaderMaterial shader)
-            {
-                shader.Set("shader_parameter/bg_color", character.NameColor);
+                _skinSelector?.Init(skinSupportCharacter, Lobby);
             }
         }
 
@@ -191,20 +193,18 @@ public partial class BangDreamCharacterSelector : Control
         _posterTween.TweenProperty(_characterPoster, "scale", Vector2.One, 0.25f);
     }
 
-    public void Init(IAggregationGroup pageGroup,
-        NCharacterSelectButton sourceButton, ICharacterSelectButtonDelegate buttonDelegate)
+    public void Init(CharacterGroup group, NCharacterSelectButton button, ICharacterSelectButtonDelegate delegateButton)
     {
-        _pageGroup = pageGroup;
-        _sourceButton = sourceButton;
-        _delegate = buttonDelegate;
+        _buttonGroup = group;
+        _sourceButton = button;
+        _delegate = delegateButton;
 
-        _characters = ModelDb.AllCharacters
-            .Where(c => c is IAggregationCharacter ac && ac.Band == pageGroup.Band).ToList();
+        _characters = ModelDb.AllCharacters.Where(c => c is IGroupableCharacter ac && ac.Group == group).ToList();
         _buttons = [];
 
         if (_characters.Count == 0)
         {
-            throw new InvalidOperationException($"Group {pageGroup.Band.GetBandName()} doesn't have any members!");
+            throw new InvalidOperationException($"Group {group} doesn't have any members!");
         }
 
         if (_characterButtons != null)
@@ -214,31 +214,27 @@ public partial class BangDreamCharacterSelector : Control
                 child.QueueFreeSafely();
             }
 
-            var autoSelectedFirst = false;
             foreach (var character in _characters)
             {
-                var button = NCharacterButton.Create(this, character);
+                var child = NCharacterButton.Create(this, character);
                 var control = new Control();
-                control.AddChildSafely(button);
+                control.AddChildSafely(child);
                 _characterButtons.AddChildSafely(control);
 
-                _buttons.Add(button);
+                _buttons.Add(child);
 
-                if (character is IAggregationCharacter aggregationCharacter)
+                if (character is IGroupableCharacter groupableCharacter)
                 {
-                    button.Visible = !aggregationCharacter.IsHidden;
+                    child.Visible = !groupableCharacter.IsHidden;
                 }
 
-                if (!autoSelectedFirst && character is IAggregationCharacter { AllowSelect: true })
+                if (child.Visible && character is IGroupableCharacter { AllowSelect: true })
                 {
-                    button.Select();
                     SelectCharacter(character);
-                    autoSelectedFirst = true;
+                    return;
                 }
-                else
-                {
-                    button.Deselect();
-                }
+
+                child.Deselect();
             }
         }
     }

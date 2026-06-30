@@ -5,9 +5,14 @@ namespace BangDreamLib.Scripts.Interfaces.CharacterAugment;
 public interface IExtraDeckSupportCharacter
 {
     /// <summary>
-    /// 是否总是显示额外卡组和牌组
+    /// 是否总是显示额外卡组
     /// </summary>
-    bool ShouldAlwaysShowExtraDeckAndPile { get; }
+    bool ShouldAlwaysShowExtraDeck { get; }
+    
+    /// <summary>
+    /// 是否总是显示额外抽牌堆
+    /// </summary>
+    bool ShouldAlwaysShowExtraPile { get; }
 
     /// <summary>
     /// 额外卡池

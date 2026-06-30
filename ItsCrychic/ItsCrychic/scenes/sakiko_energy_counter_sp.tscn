@@ -1,0 +1,207 @@
+[gd_scene load_steps=18 format=3 uid="uid://dta3eiu5e5os5"]
+
+[ext_resource type="Script" uid="uid://dyikp0yve6sfi" path="res://Scripts/Nodes/SakikoLingeredCounterSpecial.cs" id="1_ef0f1"]
+[ext_resource type="Texture2D" uid="uid://bfpdkjglsdc" path="res://ItsCrychic/images/charui/sakiko/special_orb/sakiko_energy_counter_0002s_0003_layer0.png" id="1_pequc"]
+[ext_resource type="Texture2D" uid="uid://cwsohq5tlu8iq" path="res://ItsCrychic/images/charui/sakiko/special_orb/sakiko_energy_counter_0001s_0003_layer0d.png" id="2_ef0f1"]
+[ext_resource type="Texture2D" uid="uid://dw04mxb8k40ff" path="res://ItsCrychic/images/charui/sakiko/special_orb/sakiko_energy_counter_0002s_0002_layer1.png" id="3_bys14"]
+[ext_resource type="Texture2D" uid="uid://cm8oo78830am5" path="res://ItsCrychic/images/charui/sakiko/special_orb/sakiko_energy_counter_0002s_0001_layer2.png" id="4_md8h5"]
+[ext_resource type="Texture2D" uid="uid://cjpjd5w5erckf" path="res://ItsCrychic/images/charui/sakiko/special_orb/sakiko_energy_counter_0002s_0000_layer3.png" id="5_0sg0h"]
+[ext_resource type="Texture2D" uid="uid://v7tt1jscubai" path="res://ItsCrychic/images/charui/sakiko/special_orb/sakiko_energy_counter_0001s_0002_layer1d.png" id="6_kumjs"]
+[ext_resource type="Texture2D" uid="uid://hkpitwqjlldt" path="res://ItsCrychic/images/charui/sakiko/special_orb/sakiko_energy_counter_0001s_0001_layer2d.png" id="7_kjuge"]
+[ext_resource type="Texture2D" uid="uid://lcbc7on2feld" path="res://ItsCrychic/images/charui/sakiko/special_orb/sakiko_energy_counter_0001s_0000_layer3d.png" id="8_8huon"]
+[ext_resource type="Texture2D" uid="uid://dll7mb8nquxxr" path="res://ItsCrychic/images/charui/sakiko/special_orb/sakiko_energy_counter_0000s_0007_00.png" id="10_ogjfs"]
+[ext_resource type="Texture2D" uid="uid://ds8kaby0qar5b" path="res://ItsCrychic/images/charui/sakiko/special_orb/sakiko_energy_counter_0000s_0006_01.png" id="11_0dm6b"]
+[ext_resource type="Texture2D" uid="uid://bwfaisvoxai7c" path="res://ItsCrychic/images/charui/sakiko/special_orb/sakiko_energy_counter_0000s_0005_02.png" id="12_dkkp5"]
+[ext_resource type="Texture2D" uid="uid://jkwruyqtij8y" path="res://ItsCrychic/images/charui/sakiko/special_orb/sakiko_energy_counter_0000s_0004_03.png" id="13_uk5gw"]
+[ext_resource type="Texture2D" uid="uid://c0gpgcgoslgbo" path="res://ItsCrychic/images/charui/sakiko/special_orb/sakiko_energy_counter_0000s_0003_04.png" id="14_cqs5v"]
+[ext_resource type="Texture2D" uid="uid://polhgk8yk1pf" path="res://ItsCrychic/images/charui/sakiko/special_orb/sakiko_energy_counter_0000s_0002_05.png" id="15_oxbar"]
+[ext_resource type="Texture2D" uid="uid://j5srt0v8txef" path="res://ItsCrychic/images/charui/sakiko/special_orb/sakiko_energy_counter_0000s_0001_06.png" id="16_1hvdj"]
+[ext_resource type="Texture2D" uid="uid://eb4rmdgt0012" path="res://ItsCrychic/images/charui/sakiko/special_orb/sakiko_energy_counter_0000s_0000_07.png" id="17_4imju"]
+
+[node name="SakikoEnergyCounterSpecial" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 200.0
+offset_bottom = 170.0
+mouse_filter = 2
+metadata/_edit_lock_ = true
+
+[node name="EnergyVfxBack" type="Node2D" parent="."]
+unique_name_in_owner = true
+position = Vector2(84, 83)
+
+[node name="Layers" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_ef0f1")
+
+[node name="Layer1" type="TextureRect" parent="Layers" groups=["LightMode"]]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("1_pequc")
+expand_mode = 1
+
+[node name="Layer1d" type="TextureRect" parent="Layers" groups=["DarkMode"]]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_ef0f1")
+expand_mode = 1
+
+[node name="RotationLayers" type="Control" parent="Layers"]
+unique_name_in_owner = true
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Layer1" type="TextureRect" parent="Layers/RotationLayers" groups=["LightMode"]]
+visible = false
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+texture = ExtResource("3_bys14")
+
+[node name="Layer2" type="TextureRect" parent="Layers/RotationLayers" groups=["LightMode"]]
+visible = false
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+texture = ExtResource("4_md8h5")
+
+[node name="Layer3" type="TextureRect" parent="Layers/RotationLayers" groups=["LightMode"]]
+visible = false
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+texture = ExtResource("5_0sg0h")
+
+[node name="Layer1d" type="TextureRect" parent="Layers/RotationLayers" groups=["DarkMode"]]
+visible = false
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+texture = ExtResource("6_kumjs")
+
+[node name="Layer2d" type="TextureRect" parent="Layers/RotationLayers" groups=["DarkMode"]]
+visible = false
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+texture = ExtResource("7_kjuge")
+
+[node name="Layer3d" type="TextureRect" parent="Layers/RotationLayers" groups=["DarkMode"]]
+visible = false
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+texture = ExtResource("8_8huon")
+
+[node name="LingeredEnergyCounter" type="Control" parent="Layers"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="CounterImg" type="Control" parent="Layers/LingeredEnergyCounter"]
+unique_name_in_owner = true
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Linger0" type="TextureRect" parent="Layers/LingeredEnergyCounter/CounterImg"]
+visible = false
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+texture = ExtResource("10_ogjfs")
+
+[node name="Linger1" type="TextureRect" parent="Layers/LingeredEnergyCounter/CounterImg"]
+visible = false
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+texture = ExtResource("11_0dm6b")
+
+[node name="Linger2" type="TextureRect" parent="Layers/LingeredEnergyCounter/CounterImg"]
+visible = false
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+texture = ExtResource("12_dkkp5")
+
+[node name="Linger3" type="TextureRect" parent="Layers/LingeredEnergyCounter/CounterImg"]
+visible = false
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+texture = ExtResource("13_uk5gw")
+
+[node name="Linger4" type="TextureRect" parent="Layers/LingeredEnergyCounter/CounterImg"]
+visible = false
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+texture = ExtResource("14_cqs5v")
+
+[node name="Linger5" type="TextureRect" parent="Layers/LingeredEnergyCounter/CounterImg"]
+visible = false
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+texture = ExtResource("15_oxbar")
+
+[node name="Linger6" type="TextureRect" parent="Layers/LingeredEnergyCounter/CounterImg"]
+visible = false
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+texture = ExtResource("16_1hvdj")
+
+[node name="Linger7" type="TextureRect" parent="Layers/LingeredEnergyCounter/CounterImg"]
+visible = false
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+texture = ExtResource("17_4imju")
+
+[node name="EnergyVfxFront" type="Node2D" parent="."]
+unique_name_in_owner = true
+position = Vector2(85, 85)
+
+[node name="Label" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -30.0
+offset_right = -32.0
+offset_bottom = 28.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(1, 0.9647059, 0.8862745, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.1882353)
+theme_override_colors/font_outline_color = Color(0.46666667, 0.6, 0.8, 1)
+theme_override_constants/shadow_offset_x = 3
+theme_override_constants/shadow_offset_y = 2
+theme_override_constants/outline_size = 16
+theme_override_constants/shadow_outline_size = 16
+theme_override_font_sizes/font_size = 36
+text = "3/3"
+horizontal_alignment = 1
+vertical_alignment = 1

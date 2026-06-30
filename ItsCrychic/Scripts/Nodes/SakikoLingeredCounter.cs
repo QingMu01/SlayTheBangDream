@@ -1,14 +1,12 @@
-using BangDreamLib.Scripts.Features;
 using Godot;
 
 namespace ItsCrychic.Scripts.Nodes;
 
-public partial class SakikoLingeredCounter : Control
+public partial class SakikoLingeredCounter : LingeredCounter
 {
     private Control? _counterImg;
     private Label? _counterText;
 
-    private LingeredEnergyCounter? _counter;
 
     public override void _Ready()
     {
@@ -16,29 +14,9 @@ public partial class SakikoLingeredCounter : Control
         _counterText = GetNode<Label>("%CounterText");
     }
 
-    public override void _ExitTree()
-    {
-        if (_counter != null)
-        {
-            _counter.OnEnergyChanged -= OnEnergyChanged;
-        }
-    }
 
-    public void SetContext(LingeredEnergyCounter lingeredEnergyCounter)
-    {
-        if (_counter == null)
-        {
-            _counter = lingeredEnergyCounter;
-            _counter.OnEnergyChanged += OnEnergyChanged;
-            OnEnergyChanged();
-        }
-        else
-        {
-            throw new InvalidOperationException("lingered counter already set");
-        }
-    }
 
-    private void OnEnergyChanged()
+    protected override void OnEnergyChanged()
     {
         if (_counterText != null)
         {

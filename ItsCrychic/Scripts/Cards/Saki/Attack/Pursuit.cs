@@ -10,7 +10,7 @@ using MegaCrit.Sts2.Core.Localization.DynamicVars;
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
 public class Pursuit() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget),
-    ICopySelfAndPlayFlag, ISubsideCardFlag
+    ICopySelfAndPlayFlag, ISubsideCard
 {
     private const int CustomCost = 2;
     private const CardType CustomType = CardType.Attack;
@@ -66,7 +66,7 @@ public class Pursuit() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity
 
         if (attackCommand.Results.SelectMany(r => r).Any(result => result.WasTargetKilled))
         {
-            await LingeredCmd.AddLeByCard(this, QuickVar.LingeredEnergy.Get(DynamicVars).IntValue);
+            await LingeredCmd.AddLeByCard(this, DynamicVars["LingeredEnergy"].IntValue);
         }
     }
 

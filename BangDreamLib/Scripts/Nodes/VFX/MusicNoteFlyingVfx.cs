@@ -6,7 +6,7 @@ namespace BangDreamLib.Scripts.Nodes.VFX;
 
 public partial class MusicNoteFlyingVfx : NBangDreamFlyingVfx
 {
-    [Export] public float Speed = 800.0f;
+    [Export] public double Speed = 800.0f;
 
     private int _floatFrequency = 2;
     private float _floatAmplitude = 20.0f;
@@ -58,8 +58,8 @@ public partial class MusicNoteFlyingVfx : NBangDreamFlyingVfx
         if (!_isMoving || !CombatManager.Instance.IsInProgress)
             return;
 
-        var step = Speed * (float)delta;
-        _traveledDistance += step;
+        var step = Speed * delta;
+        _traveledDistance += (float)step;
 
         if (_traveledDistance >= _totalDistance)
         {

@@ -1,4 +1,4 @@
-using BangDreamLib.Scripts.Utils.Infos;
+using BangDreamLib.Scripts.Utils.Enums;
 
 namespace BangDreamLib.Scripts.Extensions;
 

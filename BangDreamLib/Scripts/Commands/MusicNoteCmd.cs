@@ -78,7 +78,8 @@ public static class MusicNoteCmd
 
     private static string GetMusicNoteVfxPath(CardModel card)
     {
-        return card.Owner.AttachedData().SkinManager.CurrentSkin?.SkinTemplate.MultiplayerVfx.MusicNote ?? DefaultPath;
+        return BangDreamConst.PlayerSkin.Get(card.Owner).GetSkin()?.SkinTemplate.MultiplayerVfx.MusicNote ??
+               DefaultPath;
     }
 }
 
@@ -102,7 +103,8 @@ internal class MusicNoteEffectHandler(
         if (creatureTarget != null && creatureSrc != null)
         {
             context.Set("Target", attackTarget);
-            ((MusicNoteFlyingVfx)context.VfxNode!).SetPath(creatureSrc.VfxSpawnPosition, creatureTarget.VfxSpawnPosition);
+            ((MusicNoteFlyingVfx)context.VfxNode!).SetPath(creatureSrc.VfxSpawnPosition,
+                creatureTarget.VfxSpawnPosition);
         }
         else
         {

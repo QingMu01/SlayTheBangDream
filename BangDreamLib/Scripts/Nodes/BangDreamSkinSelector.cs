@@ -1,9 +1,10 @@
-using BangDreamLib.Scripts.Features;
+using BangDreamLib.Scripts.Interfaces.CharacterAugment;
 using BangDreamLib.Scripts.Nodes.MegeScript;
+using BangDreamLib.Scripts.Utils;
 using BangDreamLib.Scripts.Utils.Infos;
 using Godot;
 using MegaCrit.Sts2.Core.Helpers;
-using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Multiplayer.Game.Lobby;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 using STS2RitsuLib.Scaffolding.Godot;
@@ -12,15 +13,18 @@ namespace BangDreamLib.Scripts.Nodes;
 
 public partial class BangDreamSkinSelector : Control
 {
+    private static readonly Dictionary<string, NCreatureVisuals> VisualsCache = [];
+
     private BangDreamGoldArrowButton? _leftArrow;
     private BangDreamGoldArrowButton? _rightArrow;
 
     private Control? _skinContainer;
 
     private int _currentSkinIndex;
-    private List<SkinInfo> _skinInfos = [];
 
-    private static readonly Dictionary<string, NCreatureVisuals> VisualsCache = [];
+    private StartRunLobby? _lobby;
+
+    private readonly List<(string, SkinInfo)> _skinInfos = [];
 
     public override void _Ready()
     {
@@ -45,30 +49,38 @@ public partial class BangDreamSkinSelector : Control
         VisualsCache.Clear();
     }
 
-    public void Init(CharacterModel character)
+    public void Init(ISkinSupportCharacter skinSupportCharacter, StartRunLobby? lobby)
     {
-        var (currentIndex, skinInfos) = SkinManager.GetCharacterSkins(character.GetType());
-        if (currentIndex >= 0)
+        _lobby = lobby;
+        _skinInfos.Clear();
+        foreach (var skinPath in skinSupportCharacter.CharacterSkinList)
         {
-            _currentSkinIndex = currentIndex;
-            _skinInfos = skinInfos;
-            RefreshVisibility();
+            var skinInfo = SkinManager.GetSkinInfo(skinPath);
+            if (skinInfo != null)
+            {
+                _skinInfos.Add((skinPath, skinInfo));
+            }
         }
-        else
+
+        if (_skinInfos.Count == 0)
         {
-            BangDreamLibCore.Logger.Error($"{character.GetType()} has no skin");
+            BangDreamLibCore.Logger.Error($"{skinSupportCharacter} has no skin");
+            return;
         }
+
+        _currentSkinIndex = 0;
+        RefreshState();
     }
 
     public void SetSkinIndex(int index)
     {
         _currentSkinIndex = index;
-        RefreshVisibility();
+        RefreshState();
     }
 
     private void IncrementSkinIndex()
     {
-        if (_currentSkinIndex < _skinInfos.Count && _currentSkinIndex < _skinInfos.Count)
+        if (_currentSkinIndex < _skinInfos.Count)
         {
             SetSkinIndex(_currentSkinIndex + 1);
         }
@@ -76,21 +88,37 @@ public partial class BangDreamSkinSelector : Control
 
     private void DecrementSkinIndex()
     {
-        if (_currentSkinIndex > 0 && _currentSkinIndex < _skinInfos.Count)
+        if (_currentSkinIndex > 0)
         {
             SetSkinIndex(_currentSkinIndex - 1);
         }
     }
 
-    private void RefreshVisibility()
+    private void RefreshState()
     {
         if (_skinInfos.Count > 0)
         {
-            if (_leftArrow != null) _leftArrow.Visible = _currentSkinIndex != 0;
-            if (_rightArrow != null) _rightArrow.Visible = _currentSkinIndex != _skinInfos.Count - 1;
+            if (_currentSkinIndex == 0)
+            {
+                _leftArrow?.Disable();
+            }
+            else
+            {
+                _leftArrow?.Enable();
+            }
+
+            if (_currentSkinIndex == _skinInfos.Count - 1)
+            {
+                _rightArrow?.Disable();
+            }
+            else
+            {
+                _rightArrow?.Enable();
+            }
+
             if (_skinContainer != null)
             {
-                var visualScene = _skinInfos[_currentSkinIndex].SkinTemplate.MultiplayerVisual.VisualScene;
+                var visualScene = _skinInfos[_currentSkinIndex].Item2.SkinTemplate.MultiplayerVisual.VisualScene;
                 if (!string.IsNullOrEmpty(visualScene))
                 {
                     _skinContainer.Visible = true;
@@ -114,6 +142,16 @@ public partial class BangDreamSkinSelector : Control
                     _skinContainer.AddChild(visuals);
                     CallDeferred(nameof(SetAnim), visuals, "Idle");
                 }
+            }
+
+            if (_lobby != null)
+            {
+                BangDreamConst.PlayerSkin.Lobby.Modify(_lobby, _lobby.NetService.NetId,
+                    mutate =>
+                    {
+                        mutate.SkinPath = _skinInfos[_currentSkinIndex].Item1;
+                        BangDreamLibCore.Logger.Info($"Player NetId: {_lobby.NetService.NetId} Set skin: {_skinInfos[_currentSkinIndex].Item1}.");
+                    });
             }
         }
         else

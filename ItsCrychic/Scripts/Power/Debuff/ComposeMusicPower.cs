@@ -27,8 +27,8 @@ public class ComposeMusicPower : BandPowerModel
         bool isAutoPlay,
         ResourceInfo resources, PileType pileType, CardPilePosition position)
     {
-        return pileType == PileType.Discard && card is { Type: CardType.Attack or CardType.Skill }
+        return card.Owner.Creature == Owner && pileType == PileType.Discard
             ? (BangDreamConst.ExtraDraw, CardPilePosition.Bottom)
-            : (pileType, position);
+            : base.ModifyCardPlayResultPileTypeAndPosition(card, isAutoPlay, resources, pileType, position);
     }
 }

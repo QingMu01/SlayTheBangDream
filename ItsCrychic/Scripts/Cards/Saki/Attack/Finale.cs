@@ -32,7 +32,7 @@ public class Finale() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity,
     {
         ArgumentNullException.ThrowIfNull(CombatState);
 
-        await DamageCmd.Attack(DynamicVars.ComputeVar("CalcDamage").Calculate())
+        await DamageCmd.Attack(DynamicVars.ComputedValue("CalcDamage"))
             .FromCard(this)
             .TargetingAllOpponents(CombatState)
             .WithHitFx("vfx/vfx_attack_slash")

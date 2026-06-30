@@ -1,32 +1,43 @@
 {
   "MultiplayerVisual": {
-	"VisualScene": "",
-	"RestSiteScene": "",
-	"MerchantScene": "",
-	"ArmPointingTexture": "",
-	"ArmRockTexture": "",
-	"ArmPaperTexture": "",
-	"ArmScissorsTexture": "",
-	"RestSiteAnimName": "Sit",
-	"MerchantAnimName": "relax"
-  },
-  "LocalVisual": {
-	"EnergyCounterScene": "",
-	"IconScene": "",
-	"IconTexture": "",
-	"IconTextureOutline": "",
-	"MapMarker": ""
+    "VisualScene": "",
+    "RestSiteScene": "",
+    "MerchantScene": "",
+    "ArmPointingTexture": "",
+    "ArmRockTexture": "",
+    "ArmPaperTexture": "",
+    "ArmScissorsTexture": "",
+    "RestSiteAnimName": "Sit",
+    "MerchantAnimName": "relax"
   },
   "MultiplayerVfx": {
-	"MusicNote": ""
+    "MusicNote": ""
   },
   "LocalVfx": {
-	"CardTrail": ""
+    "CardTrail": ""
+  },
+  "Ui": {
+    "EnergyCounterScene": "",
+    "MapMarker": "",
+    "MusicCardBg": "",
+    "TopBarGoldIcon": "",
+    "TopBarHpIcon": "",
+    "TopBarFloorIcon": "",
+    "TopBarAscensionIcon": "",
+    "TopBarMapIcon": "",
+    "TopBarDeckIcon": "",
+    "TopBarExtraDeckIcon": "",
+    "TopBarSettingIcon": "",
+    "CombatDrawIcon": "",
+    "CombatDiscardIcon": "",
+    "RewardCommonCardIcon": "",
+    "RewardUncommonCardIcon": "",
+    "RewardRareCardIcon": ""
   },
   "Starting": {
-	"StartingDeck": [],
-	"StartingExtraDeck": [],
-	"StartingRelics": [],
-	"StartingPotions": []
+    "StartingDeck": [],
+    "StartingExtraDeck": [],
+    "StartingRelics": [],
+    "StartingPotions": []
   }
 }

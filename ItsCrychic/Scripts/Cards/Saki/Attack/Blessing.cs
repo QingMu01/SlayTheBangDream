@@ -12,7 +12,7 @@ using STS2RitsuLib.Cards.DynamicVars;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
-public class Blessing() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget), ISubsideCardFlag
+public class Blessing() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget), ISubsideCard
 {
     private const int CustomCost = 1;
     private const CardType CustomType = CardType.Attack;
@@ -35,19 +35,19 @@ public class Blessing() : AbstractSakikoCard(CustomCost, CustomType, CustomRarit
     {
         ArgumentNullException.ThrowIfNull(play.Target);
 
-        await DamageCmd.Attack(DynamicVars.ComputeVar("BaseDamage").Calculate(play.Target))
+        await DamageCmd.Attack(DynamicVars.ComputedValue("BaseDamage", play.Target))
             .FromCard(this)
             .Targeting(play.Target)
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
 
         await CreatureCmd.GainBlock(Owner.Creature,
-            new BlockVar(DynamicVars.ComputeVar("BaseBlock").Calculate(), ValueProp.Move), play);
+            new BlockVar(DynamicVars.ComputedValue("BaseBlock"), ValueProp.Move), play);
     }
 
     public Task OnSubside(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        QuickVar.Repeat.Get(DynamicVars).BaseValue += DynamicVars["IncreaseStep"].BaseValue;
+        DynamicVars.Repeat.BaseValue += DynamicVars["IncreaseStep"].BaseValue;
         return Task.CompletedTask;
     }
 

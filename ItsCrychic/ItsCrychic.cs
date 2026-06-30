@@ -1,12 +1,12 @@
 using System.Reflection;
-using BangDreamLib.Scripts.Interfaces.CardAugment;
+using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Relics;
 using BangDreamLib.Scripts.Utils;
+using BangDreamLib.Scripts.Utils.Enums;
 using ItsCrychic.Scripts.Cards.Mutsumi;
 using ItsCrychic.Scripts.Cards.Saki;
 using ItsCrychic.Scripts.Character;
 using ItsCrychic.Scripts.Patches;
-using ItsCrychic.Scripts.Patches.Runtime;
 using ItsCrychic.Scripts.Relics.Mutsumi;
 using ItsCrychic.Scripts.Relics.Sakiko;
 using ItsCrychic.Scripts.Utils;
@@ -14,7 +14,6 @@ using MegaCrit.Sts2.Core.Modding;
 using MegaCrit.Sts2.Core.Models.RelicPools;
 using MegaCrit.Sts2.Core.Models.Relics;
 using STS2RitsuLib;
-using STS2RitsuLib.Patching.Builders;
 using STS2RitsuLib.Patching.Core;
 using STS2RitsuLib.Scaffolding.Content;
 using Logger = MegaCrit.Sts2.Core.Logging.Logger;
@@ -107,31 +106,6 @@ public class ItsCrychic
             BangDreamRegisterHelper.GetRegisterType(type).RegisterContent(type, commonContent);
         }
 
-        RitsuLibFramework.SubscribeLifecycle<ModelIdsInitializedEvent>(_ =>
-        {
-            var dynamicPatcher = RitsuLibFramework.CreatePatcher(CrychicConst.ModId, "crychic_dynamic_patches");
-            var autoSetSubsideVar = new DynamicPatchBuilder("auto_set_subside_var");
-
-            foreach (var type in allCrychicModelsOrigin)
-            {
-                if (typeof(ISubsideCardFlag).IsAssignableFrom(type))
-                {
-                    var property = type.GetProperty("CardVars",
-                        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-
-                    if (property != null && property.DeclaringType == type)
-                    {
-                        autoSetSubsideVar.AddPropertyGetter(
-                            targetType: type,
-                            propertyName: "CardVars",
-                            postfix: DynamicPatchBuilder.FromMethod(typeof(AutoSetSubsideVarPatch),
-                                nameof(AutoSetSubsideVarPatch.Postfix)),
-                            isCritical: true);
-                    }
-                }
-            }
-
-            dynamicPatcher.ApplyDynamicPatches(autoSetSubsideVar.Patches);
-        });
+        CharacterGroup.Crychic.SetBandSelectIcon("res://ItsCrychic/images/charui/char_select_saki.png");
     }
 }

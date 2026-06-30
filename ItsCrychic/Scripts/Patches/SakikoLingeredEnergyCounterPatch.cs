@@ -17,7 +17,7 @@ public class SakikoLingeredEnergyCounterPatch : IPatchMethod
 
     public static void Postfix(NEnergyCounter __instance, Player ____player)
     {
-        var sakikoLingeredCounter = __instance.GetNodeOrNull<SakikoLingeredCounter>("%LingeredEnergyCounter");
+        var sakikoLingeredCounter = __instance.GetNodeOrNull<LingeredCounter>("%Layers");
         sakikoLingeredCounter?.SetContext(____player.AttachedData().LingeredEnergy);
     }
 }

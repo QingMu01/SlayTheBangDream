@@ -8,7 +8,7 @@ using MegaCrit.Sts2.Core.Localization.DynamicVars;
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
 public class DejaVu() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget),
-    ISubsideCardFlag
+    ISubsideCard
 {
     private const int CustomCost = 0;
     private const CardType CustomType = CardType.Attack;

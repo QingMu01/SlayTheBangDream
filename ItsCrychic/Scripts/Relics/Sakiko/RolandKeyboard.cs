@@ -26,7 +26,7 @@ public class RolandKeyboard : AbstractSakikoRelic, IModifyLingeredHook
 
     public override Task AfterCardPlayedLate(PlayerChoiceContext choiceContext, CardPlay cardPlay)
     {
-        if (cardPlay.Card is ISubsideCardFlag { LingeredEnergyCost: > 0 })
+        if (cardPlay.Card is ISubsideCard { LingeredEnergyCost: > 0 })
         {
             Flash();
             _canEffective = false;

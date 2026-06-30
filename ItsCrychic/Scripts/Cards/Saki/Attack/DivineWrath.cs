@@ -50,7 +50,7 @@ public class DivineWrath() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
 
-        await LingeredCmd.AddLeByCard(this, QuickVar.LingeredEnergy.Get(DynamicVars).IntValue);
+        await LingeredCmd.AddLeByCard(this, DynamicVars["LingeredEnergy"].IntValue);
 
         if (Owner.RunState.Rng.CombatTargets.NextBool())
         {

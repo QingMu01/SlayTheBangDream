@@ -1,18 +1,15 @@
 using BangDreamLib.Scripts.Commands;
 using BangDreamLib.Scripts.Extensions;
-using BangDreamLib.Scripts.Interfaces.GameHook;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
-using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models;
-using STS2RitsuLib.Cards.DynamicVars;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
-public class SymbolIi() : AbstractSakikoMusicCard(CustomRarity, CustomTarget), IMusicNoteModifyHook
+public class SymbolIi() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
 {
     private const CardRarity CustomRarity = CardRarity.Uncommon;
     private const TargetType CustomTarget = TargetType.None;
@@ -25,9 +22,7 @@ public class SymbolIi() : AbstractSakikoMusicCard(CustomRarity, CustomTarget), I
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Repeat.Create(5),
-        QuickVar.Cards.Create(1),
-        ModCardVars.Int("AddedDamage", 2)
+        QuickVar.Cards.Create("Draw", 3)
     ];
 
     public override async Task OnStartPerformance(PlayerChoiceContext choiceContext)
@@ -37,19 +32,22 @@ public class SymbolIi() : AbstractSakikoMusicCard(CustomRarity, CustomTarget), I
 
     public override async Task OnStopPerformance(PlayerChoiceContext choiceContext)
     {
-        var drawPile = Owner.PlayerCombatState!.DrawPile;
-        if (drawPile.Cards.Count > 0)
+        var exhaustPile = PileType.Exhaust.GetPile(Owner);
+        if (exhaustPile.Cards.Count > 0)
         {
             CardModel? selectedCard;
             if (IsUpgraded)
             {
-                var simpleGridSelected = await CardSelectCmd.FromSimpleGrid(choiceContext,
-                    drawPile.Cards, Owner, CardSelectorPrompt.ToHand.GetFixedPrefs(DynamicVars.Cards.IntValue));
-                selectedCard = simpleGridSelected.FirstOrDefault();
+                var selectedCards = await CardSelectCmd.FromCombatPile(choiceContext,
+                    exhaustPile,
+                    Owner,
+                    CardSelectorPrompt.ToHand.GetFixedPrefs(1)
+                );
+                selectedCard = selectedCards.FirstOrDefault();
             }
             else
             {
-                selectedCard = Owner.RunState.Rng.CombatCardSelection.NextItem(drawPile.Cards);
+                selectedCard = Owner.RunState.Rng.CombatCardSelection.NextItem(exhaustPile.Cards);
             }
 
             if (selectedCard != null)
@@ -57,16 +55,5 @@ public class SymbolIi() : AbstractSakikoMusicCard(CustomRarity, CustomTarget), I
                 await CardPileCmd.Add(selectedCard, PileType.Hand);
             }
         }
-    }
-
-    public decimal ModifyMusicNoteDamageAdditive(Creature? target, decimal amount, Creature? dealer,
-        AbstractModel? source)
-    {
-        if (Pile?.Type == BangDreamConst.PerformanceTable && dealer == Owner.Creature)
-        {
-            return DynamicVars["AddedDamage"].IntValue;
-        }
-
-        return 0m;
     }
 }

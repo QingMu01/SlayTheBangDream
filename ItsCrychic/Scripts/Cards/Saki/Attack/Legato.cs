@@ -32,7 +32,7 @@ public class Legato() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity,
     {
         ArgumentNullException.ThrowIfNull(play.Target);
 
-        await DamageCmd.Attack(DynamicVars.ComputeVar("BaseDamage").Calculate())
+        await DamageCmd.Attack(DynamicVars.ComputedValue("BaseDamage"))
             .FromCard(this)
             .Targeting(play.Target)
             .WithHitFx("vfx/vfx_attack_slash")

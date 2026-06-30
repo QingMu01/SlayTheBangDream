@@ -36,7 +36,7 @@ public class Distance() : AbstractSakikoCard(CustomCost, CustomType, CustomRarit
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        var strengthPower = DynamicVars.ComputeVar(nameof(StrengthPower)).Calculate();
+        var strengthPower = DynamicVars.ComputedValue(nameof(StrengthPower));
         if (strengthPower > 0)
         {
             var allCreatures = play.Card.CombatState?.Creatures.Where(item =>

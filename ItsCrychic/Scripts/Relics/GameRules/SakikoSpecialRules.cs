@@ -23,7 +23,7 @@ public class SakikoSpecialRules : HiddenRelic, ILingeredChangedHook
 
     public override async Task AfterEnergySpent(CardModel card, int amount)
     {
-        if (card is not ISubsideCardFlag or ISubsideCardFlag { ShouldIncreaseLingeredEnergy: true })
+        if (card is not ISubsideCard or ISubsideCard { ShouldIncreaseLingeredEnergy: true })
             await LingeredCmd.AddLeByCard(card, amount);
     }
 

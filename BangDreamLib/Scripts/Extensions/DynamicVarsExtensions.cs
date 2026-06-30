@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.ValueProps;
 using STS2RitsuLib.Cards.DynamicVars;
@@ -35,21 +36,7 @@ public static class DynamicVarsExtensions
         [QuickVar.Stars] = (name, baseValue) => new StarsVar(name, baseValue)
     };
 
-    private static readonly Dictionary<QuickVar, string> QuickVarNameMap = new()
-    {
-        [QuickVar.Cards] = nameof(DynamicVarSet.Cards),
-        [QuickVar.Damage] = nameof(DynamicVarSet.Damage),
-        [QuickVar.Block] = nameof(DynamicVarSet.Block),
-        [QuickVar.Energy] = nameof(DynamicVarSet.Energy),
-        [QuickVar.LingeredEnergy] = "LingeredEnergy",
-        [QuickVar.Gold] = nameof(DynamicVarSet.Gold),
-        [QuickVar.Heal] = nameof(DynamicVarSet.Heal),
-        [QuickVar.HpLoss] = nameof(DynamicVarSet.HpLoss),
-        [QuickVar.Repeat] = nameof(DynamicVarSet.Repeat),
-        [QuickVar.Stars] = nameof(DynamicVarSet.Stars)
-    };
-
-    private static bool Var<T>(DynamicVarSet varSet, string name, [MaybeNullWhen(false)] out T var)
+    public static bool Var<T>(DynamicVarSet varSet, string name, [MaybeNullWhen(false)] out T var)
         where T : DynamicVar
     {
         var = null;
@@ -67,10 +54,15 @@ public static class DynamicVarsExtensions
         return false;
     }
 
-    public static ComputedDynamicVar ComputeVar(this DynamicVarSet varSet, string name)
+    public static decimal ComputedValue(this DynamicVarSet varSet, string name)
+    {
+        return varSet.ComputedValue(name, null);
+    }
+
+    public static decimal ComputedValue(this DynamicVarSet varSet, string name, Creature? target)
     {
         return Var<ComputedDynamicVar>(varSet, name, out var computedVar)
-            ? computedVar
+            ? computedVar.Calculate(target)
             : throw new KeyNotFoundException($"Compute dynamic var {name} not found");
     }
 
@@ -82,18 +74,6 @@ public static class DynamicVarsExtensions
     public static DynamicVar Create(this QuickVar quickVar, int baseValue)
     {
         return QuickVarTypeMap[quickVar].Invoke(baseValue);
-    }
-
-    public static DynamicVar Get(this QuickVar quickVar, DynamicVarSet varSet, string name)
-    {
-        return Var<DynamicVar>(varSet, name, out var dynamicVar)
-            ? dynamicVar
-            : throw new KeyNotFoundException($"QuickVar {quickVar} not found");
-    }
-
-    public static DynamicVar Get(this QuickVar quickVar, DynamicVarSet varSet)
-    {
-        return quickVar.Get(varSet, QuickVarNameMap[quickVar]);
     }
 }
 

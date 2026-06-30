@@ -27,18 +27,16 @@ public class HaneokaIndifference() : AbstractSakikoCard(CustomCost, CustomType, 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
         ArgumentNullException.ThrowIfNull(CombatState);
-        ArgumentNullException.ThrowIfNull(Owner.PlayerCombatState);
 
-        var drawPileCards = Owner.PlayerCombatState.DrawPile.Cards;
-        if (drawPileCards.Count > 0)
+        var selectedCards = await CardSelectCmd.FromCombatPile(choiceContext,
+            PileType.Draw.GetPile(Owner),
+            Owner,
+            CardSelectorPrompt.ToExtraDraw.GetLimitedPrefs(DynamicVars.Cards.IntValue)
+        );
+
+        foreach (var selectedCard in selectedCards)
         {
-            var selectedCards = await CardSelectCmd.FromSimpleGrid(choiceContext, drawPileCards, Owner,
-                CardSelectorPrompt.ToExtraDraw.GetLimitedPrefs(DynamicVars.Cards.IntValue));
-
-            foreach (var selectedCard in selectedCards)
-            {
-                await CardPileCmd.Add(selectedCard, BangDreamConst.ExtraDraw);
-            }
+            await CardPileCmd.Add(selectedCard, BangDreamConst.ExtraDraw);
         }
     }
 

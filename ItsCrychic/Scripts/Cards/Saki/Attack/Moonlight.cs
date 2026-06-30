@@ -27,7 +27,7 @@ public class Moonlight() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
     {
         ArgumentNullException.ThrowIfNull(play.Target);
 
-        await DamageCmd.Attack(DynamicVars.ComputeVar("CalcDamage").Calculate())
+        await DamageCmd.Attack(DynamicVars.ComputedValue("CalcDamage"))
             .FromCard(this)
             .Targeting(play.Target)
             .WithHitFx("vfx/vfx_attack_slash")

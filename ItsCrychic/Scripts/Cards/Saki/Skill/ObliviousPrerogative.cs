@@ -9,7 +9,7 @@ using MegaCrit.Sts2.Core.Localization.DynamicVars;
 namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
 public class ObliviousPrerogative()
-    : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget), ISubsideCardFlag
+    : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget), ISubsideCard
 {
     private const int CustomCost = 1;
     private const CardType CustomType = CardType.Skill;
@@ -28,11 +28,13 @@ public class ObliviousPrerogative()
     {
         ArgumentNullException.ThrowIfNull(CombatState);
 
-        var handCards = PileType.Hand.GetPile(Owner).Cards.ToList();
-        if (handCards.Count > 0 && !((ISubsideCardFlag)this).CanSubside)
+        if (!((ISubsideCard)this).CanSubside)
         {
-            var selectedCards = await CardSelectCmd.FromSimpleGrid(choiceContext, handCards,
-                Owner, CardSelectorPrompt.ToPlay.GetFixedPrefs(DynamicVars.Cards.IntValue));
+            var selectedCards = await CardSelectCmd.FromCombatPile(choiceContext,
+                PileType.Hand.GetPile(Owner),
+                Owner,
+                CardSelectorPrompt.ToPlay.GetFixedPrefs(DynamicVars.Cards.IntValue)
+            );
 
             foreach (var selectedCard in selectedCards)
             {
@@ -48,8 +50,11 @@ public class ObliviousPrerogative()
         var handCards = PileType.Hand.GetPile(Owner).Cards.ToList();
         if (handCards.Count > 0)
         {
-            var selectedCards = await CardSelectCmd.FromSimpleGrid(choiceContext, handCards,
-                Owner, CardSelectorPrompt.ToPlay.GetFixedPrefs(DynamicVars.Cards.IntValue));
+            var selectedCards = await CardSelectCmd.FromCombatPile(choiceContext,
+                PileType.Hand.GetPile(Owner),
+                Owner,
+                CardSelectorPrompt.ToPlay.GetFixedPrefs(DynamicVars.Cards.IntValue)
+            );
 
             foreach (var selectedCard in selectedCards)
             {

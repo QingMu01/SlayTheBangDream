@@ -29,16 +29,15 @@ public class Command() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity
     {
         ArgumentNullException.ThrowIfNull(CombatState);
 
-        var extraDrawCards = BangDreamTools.GetPile(BangDreamConst.ExtraDraw, Owner).Cards.ToList();
-        if (extraDrawCards.Count > 0)
-        {
-            var selectedCards = await CardSelectCmd.FromSimpleGrid(choiceContext, extraDrawCards,
-                Owner, CardSelectorPrompt.ToHand.GetFixedPrefs(DynamicVars.Cards.IntValue));
+        var selectedCards = await CardSelectCmd.FromCombatPile(choiceContext,
+            BangDreamTools.GetPile(BangDreamConst.ExtraDraw, Owner),
+            Owner,
+            CardSelectorPrompt.ToHand.GetFixedPrefs(DynamicVars.Cards.IntValue)
+        );
 
-            foreach (var selectedCard in selectedCards)
-            {
-                await CardPileCmd.Add(selectedCard, PileType.Hand);
-            }
+        foreach (var selectedCard in selectedCards)
+        {
+            await CardPileCmd.Add(selectedCard, PileType.Hand);
         }
     }
 

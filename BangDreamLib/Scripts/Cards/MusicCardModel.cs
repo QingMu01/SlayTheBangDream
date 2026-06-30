@@ -3,9 +3,6 @@ using BangDreamLib.Scripts.Nodes.SubNode;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using MegaCrit.Sts2.Core.HoverTips;
-using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using STS2RitsuLib.Scaffolding.Content;
 
 namespace BangDreamLib.Scripts.Cards;
 
@@ -13,25 +10,10 @@ public abstract class MusicCardModel(
     int baseCost,
     CardRarity rarity,
     TargetType target,
-    bool showInCardLibrary = true) : ModCardTemplate(baseCost, CardType.Quest, rarity, target, showInCardLibrary),
+    bool showInCardLibrary = true) : BandCardModel(baseCost, CardType.Quest, rarity, target, showInCardLibrary),
     IPerformanceCard
 {
     public NPerformanceItem? Handle { get; set; }
-
-    protected abstract CardAssetProfile CardAssetProfile { get; }
-
-    protected virtual IEnumerable<CardKeyword> CardKeywords => [];
-    protected virtual IEnumerable<IHoverTip> CardHoverTips => [];
-    protected abstract IEnumerable<DynamicVar> CardVars { get; }
-
-    public sealed override CardAssetProfile AssetProfile => CardAssetProfile;
-
-    public sealed override IEnumerable<CardKeyword> CanonicalKeywords => CardKeywords;
-
-    protected sealed override IEnumerable<IHoverTip> AdditionalHoverTips =>
-        new[] { HoverTipFactory.FromKeyword(BangDreamConst.Music) }.Concat(CardHoverTips);
-
-    protected sealed override IEnumerable<DynamicVar> CanonicalVars => CardVars;
 
     public virtual bool IsInstant { get; set; } = false;
 

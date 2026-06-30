@@ -16,29 +16,38 @@ public class OperationStrategyPower : BandPowerModel
     public override PowerStackType StackType => PowerStackType.Counter;
 
 
-    public override async Task AfterAutoPrePlayPhaseEntered(PlayerChoiceContext choiceContext, Player player)
+    public override async Task BeforeHandDraw(Player player, PlayerChoiceContext choiceContext,
+        ICombatState combatState)
     {
-        if (player != Owner.Player && !CombatManager.Instance.History.CardPlaysFinished.Any()) return;
-        var waitAddCards = new List<CardModel>();
-        while (waitAddCards.Count < Amount)
-        {
-            var randomCard = player.RunState.Rng.CombatCardSelection
-                .NextItem(CombatManager.Instance.History.CardPlaysFinished)?.CardPlay.Card;
-            if (randomCard != null)
-            {
-                var cloneCard = randomCard.CreateClone();
-                cloneCard.SetToFreeThisTurn();
-                waitAddCards.Add(cloneCard);
-            }
-            else
-            {
-                break;
-            }
-        }
+        if (player != Owner.Player) return;
 
-        if (waitAddCards.Count > 0)
+        var cardPool = CombatManager.Instance.History.CardPlaysFinished
+            .Select(item => item.CardPlay.Card.Type == CardType.Skill)
+            .ToList();
+        if (cardPool.Count > 0)
         {
-            await CardPileCmd.Add(waitAddCards, PileType.Hand);
+            var waitAddCards = new List<CardModel>();
+            while (waitAddCards.Count < Amount)
+            {
+                var randomCard = player.RunState.Rng.CombatCardSelection
+                    .NextItem(CombatManager.Instance.History.CardPlaysFinished)?.CardPlay.Card;
+                if (randomCard != null)
+                {
+                    var cloneCard = randomCard.CreateClone();
+                    cloneCard.SetToFreeThisTurn();
+                    waitAddCards.Add(cloneCard);
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            if (waitAddCards.Count > 0)
+            {
+                Flash();
+                await CardPileCmd.Add(waitAddCards, PileType.Hand);
+            }
         }
     }
 }

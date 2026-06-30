@@ -1,8 +1,10 @@
+using BangDreamLib.Scripts.Commands;
 using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
-using ItsCrychic.Scripts.Power.Buff;
+using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
@@ -18,7 +20,6 @@ public class GrittedTeeth() : AbstractSakikoCard(CustomCost, CustomType, CustomR
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        CardKeyword.Exhaust,
         BangDreamConst.Linger
     ];
 
@@ -29,20 +30,31 @@ public class GrittedTeeth() : AbstractSakikoCard(CustomCost, CustomType, CustomR
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Energy.Create(1),
         QuickVar.Block.Create(7),
-        QuickVar.LingeredEnergy.Create(3),
-        new PowerVar<GrittedTeethPower>(3)
+        QuickVar.LingeredEnergy.Create(2)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        await PowerCmd.Apply<GrittedTeethPower>(choiceContext, Owner.Creature,
-            DynamicVars["GrittedTeethPower"].IntValue, Owner.Creature, this);
+        await CreatureCmd.GainBlock(Owner.Creature, DynamicVars.Block, play);
+        await LingeredCmd.AddLeByCard(this, DynamicVars["LingeredEnergy"].IntValue);
+    }
+
+    public override async Task BeforeHandDraw(
+        Player player,
+        PlayerChoiceContext choiceContext,
+        ICombatState combatState)
+    {
+        if (player != Owner || CombatManager.Instance.History.CardPlaysFinished.All(item => item.CardPlay.Card != this))
+            return;
+        if (Pile is { Type: PileType.Hand })
+            return;
+        await CardPileCmd.Add(this, PileType.Hand);
     }
 
     protected override void OnUpgrade()
     {
-        RemoveKeyword(CardKeyword.Exhaust);
+        DynamicVars.Block.UpgradeValueBy(2m);
+        DynamicVars["LingeredEnergy"].UpgradeValueBy(1m);
     }
 }

@@ -21,31 +21,32 @@ public class SymbolIii() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Cards.Create(3),
-        QuickVar.Cards.Create("SelectCard", 1)
+        QuickVar.Block.Create(15)
     ];
 
     public override async Task OnStartPerformance(PlayerChoiceContext choiceContext)
     {
-        await CardPileCmd.Draw(choiceContext, DynamicVars.Cards.IntValue, Owner);
+        await CreatureCmd.GainBlock(Owner.Creature, DynamicVars.Block, null);
     }
 
     public override async Task OnStopPerformance(PlayerChoiceContext choiceContext)
     {
-        var exhaustPile = Owner.PlayerCombatState!.ExhaustPile;
-        if (exhaustPile.Cards.Count > 0)
+        var discardPile = PileType.Discard.GetPile(Owner);
+        if (discardPile.Cards.Count > 0)
         {
             CardModel? selectedCard;
             if (IsUpgraded)
             {
-                var simpleGridSelected = await CardSelectCmd.FromSimpleGrid(choiceContext,
-                    exhaustPile.Cards, Owner,
-                    CardSelectorPrompt.ToHand.GetFixedPrefs(DynamicVars["SelectCard"].IntValue));
-                selectedCard = simpleGridSelected.FirstOrDefault();
+                var selectedCards = await CardSelectCmd.FromCombatPile(choiceContext,
+                    discardPile,
+                    Owner,
+                    CardSelectorPrompt.ToHand.GetFixedPrefs(1)
+                );
+                selectedCard = selectedCards.FirstOrDefault();
             }
             else
             {
-                selectedCard = Owner.RunState.Rng.CombatCardSelection.NextItem(exhaustPile.Cards);
+                selectedCard = Owner.RunState.Rng.CombatCardSelection.NextItem(discardPile.Cards);
             }
 
             if (selectedCard != null)

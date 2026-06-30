@@ -1,0 +1,19 @@
+[gd_resource type="ShaderMaterial" load_steps=2 format=3 uid="uid://37ussjvsbgy2"]
+
+[sub_resource type="Shader" id="Shader_faneo"]
+code = "shader_type canvas_item;
+
+uniform sampler2D transition_texture;
+uniform float threshold : hint_range(0.0, 1.0) = 0.;
+
+void fragment() {
+    float falloff = texture(transition_texture, UV).r;
+    float remap  = mix(-0.1, 1.1, threshold);
+    falloff = step(falloff, remap);
+    COLOR.a = falloff;
+}
+"
+
+[resource]
+shader = SubResource("Shader_faneo")
+shader_parameter/threshold = 1.0

@@ -37,7 +37,7 @@ public static class BangDreamPreloadManager
         var hashSet = new HashSet<string>();
         hashSet.UnionWith(SceneAssets.Values);
         hashSet.UnionWith(CustomCommonAssets.Values);
-        foreach (var character in ModelDb.AllCharacters.OfType<IAggregationCharacter>().ToList())
+        foreach (var character in ModelDb.AllCharacters.OfType<IBangDreamMateData>().ToList())
         {
             if (!string.IsNullOrEmpty(character.SelectPoster))
             {
@@ -54,7 +54,7 @@ public static class BangDreamPreloadManager
         allAssets.UnionWith(CustomRunAssets.Values);
         foreach (var player in players)
         {
-            var skinManagerCurrentSkin = player.AttachedData().SkinManager.CurrentSkin;
+            var skinManagerCurrentSkin = BangDreamConst.PlayerSkin.Get(player).GetSkin();
             if (skinManagerCurrentSkin != null)
             {
                 allAssets.UnionWith(skinManagerCurrentSkin.GetAllVisualResourcePaths());
