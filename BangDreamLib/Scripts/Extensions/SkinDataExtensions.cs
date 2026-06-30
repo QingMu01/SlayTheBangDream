@@ -8,11 +8,6 @@ public static class SkinDataExtensions
 {
     public static SkinInfo? GetSkin(this PlayerSkinData skinData)
     {
-        if (skinData.SkinPath != null)
-        {
-            SkinManager.GetSkinInfo(skinData.SkinPath);
-        }
-
-        return null;
+        return skinData.SkinPath != null ? SkinManager.GetSkinInfo(skinData.SkinPath) : null;
     }
 }
