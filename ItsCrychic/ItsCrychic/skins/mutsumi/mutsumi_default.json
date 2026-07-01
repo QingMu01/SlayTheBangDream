@@ -13,12 +13,9 @@
   "MultiplayerVfx": {
     "MusicNote": "res://BangDreamLib/scenes/vfx/flying_music_note_default.tscn"
   },
-  "LocalVfx": {
-    "CardTrail": "res://BangDreamLib/scenes/vfx/card_trail_sakiko.tscn"
-  },
   "Ui": {
     "EnergyCounterScene": "res://ItsCrychic/scenes/sakiko_energy_counter.tscn",
-    "MusicCardBg": "res://ItsCrychic/images/charui/sakiko/default_music_bg_sakiko.png",
+    "MusicCardFrame": "res://ItsCrychic/images/charui/sakiko/default_music_bg_sakiko.png",
     "TopBarGoldIcon": "",
     "TopBarHpIcon": "",
     "TopBarFloorIcon": "",

@@ -27,7 +27,6 @@ public sealed class WakabaMutsumi()
 
     public override bool AllowSelect => false;
 
-    public override string SelectPoster => "res://ItsCrychic/images/charui/img_mutsumi-wakaba_2.webp";
     public bool ShouldAlwaysShowExtraDeck => true;
     public bool ShouldAlwaysShowExtraPile => true;
     public CardPoolModel ExtraCardPool => ModelDb.CardPool<MutsumiMusicalCardPool>();
@@ -37,6 +36,21 @@ public sealed class WakabaMutsumi()
         "res://ItsCrychic/skins/mutsumi/mutsumi_default.json",
         "res://ItsCrychic/skins/mutsumi/mutsumi_puppeteer.json"
     ];
+
+    public override string CustomTrailPath =>
+        "res://BangDreamLib/scenes/vfx/card_trail_sakiko.tscn";
+
+    public override string SelectPoster =>
+        "res://ItsCrychic/images/charui/img_mutsumi-wakaba_2.webp";
+
+    public override string CustomIconPath =>
+        "res://ItsCrychic/scenes/char_icon/sakiko_icon.tscn";
+
+    public override string CustomIconTexturePath =>
+        "res://ItsCrychic/images/charui/sakiko/character_icon_saki.png";
+
+    public override string CustomIconOutlineTexturePath =>
+        "res://ItsCrychic/images/charui/sakiko/character_icon_saki_outline.png";
 
     public override CreatureAnimator GenerateAnimator(MegaSprite controller)
     {

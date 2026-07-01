@@ -13,13 +13,10 @@
   "MultiplayerVfx": {
     "MusicNote": ""
   },
-  "LocalVfx": {
-    "CardTrail": ""
-  },
   "Ui": {
     "EnergyCounterScene": "",
     "MapMarker": "",
-    "MusicCardBg": "",
+    "MusicCardFrame": "",
     "TopBarGoldIcon": "",
     "TopBarHpIcon": "",
     "TopBarFloorIcon": "",

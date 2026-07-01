@@ -34,6 +34,9 @@ public sealed class TogawaSakiko() : BandMemberModel<SakikoStandardCardPool, Sak
         "res://ItsCrychic/skins/sakiko/sakiko_melody.json"
     ];
 
+    public override string CustomTrailPath =>
+        "res://BangDreamLib/scenes/vfx/card_trail_sakiko.tscn";
+
     public override string SelectPoster =>
         "res://ItsCrychic/images/charui/img_sakiko-togawa_2.webp";
 

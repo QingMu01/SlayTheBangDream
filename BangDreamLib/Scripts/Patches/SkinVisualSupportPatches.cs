@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using System.Reflection.Emit;
+using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
 using BangDreamLib.Scripts.Nodes.MegeScript;
 using BangDreamLib.Scripts.Utils;
@@ -8,6 +9,7 @@ using HarmonyLib;
 using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Entities.TreasureRelicPicking;
+using MegaCrit.Sts2.Core.Nodes.Cards;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.RestSite;
 using MegaCrit.Sts2.Core.Nodes.Screens.TreasureRoomRelic;
@@ -30,6 +32,7 @@ public class SkinVisualSupportPatches : IModPatches
         patcher.RegisterPatch<MerchantScenePatch>();
         patcher.RegisterPatch<ArmPointingTexturePatch>();
         patcher.RegisterPatch<ArmFightTexturePatch>();
+        patcher.RegisterPatch<MusicCardFramePatch>();
     }
 }
 
@@ -84,7 +87,7 @@ internal class EnergyCounterPatch : IPatchMethod
 
 internal class RestSiteScenePatch : IPatchMethod
 {
-    public static string PatchId => "on_create_rest_site_replace_by_skin_info";
+    public static string PatchId => "create_rest_site_by_skin_info";
 
     private static readonly PropertyInfo CachePlayer = AccessTools.Property(typeof(NRestSiteCharacter), "Player");
     private static readonly FieldInfo CacheIndex = AccessTools.Field(typeof(NRestSiteCharacter), "_characterIndex");
@@ -113,7 +116,7 @@ internal class RestSiteScenePatch : IPatchMethod
 
 internal class RestSiteAnimPatch : IPatchMethod
 {
-    public static string PatchId => "on_create_rest_site_anim_replace_by_skin_info";
+    public static string PatchId => "create_rest_site_anim_by_skin_info";
 
     public static ModPatchTarget[] GetTargets()
     {
@@ -157,7 +160,7 @@ internal class RestSiteAnimPatch : IPatchMethod
 
 internal class MerchantScenePatch : IPatchMethod
 {
-    public static string PatchId => "on_create_merchant_replace_by_skin_info";
+    public static string PatchId => "create_merchant_by_skin_info";
 
     private static Type MerchantPatcher =>
         Type.GetType(
@@ -228,7 +231,7 @@ internal class MerchantScenePatch : IPatchMethod
 
 internal class ArmPointingTexturePatch : IPatchMethod
 {
-    public static string PatchId => "on_create_arm_pointing_replace_by_skin_info";
+    public static string PatchId => "create_arm_pointing_by_skin_info";
 
     public static ModPatchTarget[] GetTargets()
     {
@@ -251,7 +254,7 @@ internal class ArmPointingTexturePatch : IPatchMethod
 
 internal class ArmFightTexturePatch : IPatchMethod
 {
-    public static string PatchId => "on_create_fight_arm_replace_by_skin_info";
+    public static string PatchId => "create_fight_arm_by_skin_info";
 
     public static ModPatchTarget[] GetTargets()
     {
@@ -274,6 +277,31 @@ internal class ArmFightTexturePatch : IPatchMethod
             if (path != null)
             {
                 ____textureRect.Texture = PreloadManager.Cache.GetTexture2D(path);
+            }
+        }
+    }
+}
+
+internal class MusicCardFramePatch : IPatchMethod
+{
+    public static string PatchId => "create_music_card_frame_by_skin_info";
+
+    public static ModPatchTarget[] GetTargets()
+    {
+        return [new ModPatchTarget(typeof(NCard), "Reload")];
+    }
+
+    public static void Postfix(NCard __instance, ref TextureRect? ____frame)
+    {
+        if (__instance.Model is IPerformanceCard && __instance.Model is
+                { IsMutable: true, Owner.Character: ISkinSupportCharacter })
+        {
+            var path = BangDreamConst.PlayerSkin.Get(__instance.Model.Owner).GetSkin()?.SkinTemplate.Ui.MusicCardFrame;
+            if (path != null)
+            {
+                ____frame ??= new TextureRect();
+                ____frame.Texture = PreloadManager.Cache.GetTexture2D(path);
+                ____frame.Material = null;
             }
         }
     }

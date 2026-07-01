@@ -33,14 +33,10 @@ public class SkinInfo
             MusicNote: skinTemplate.MultiplayerVfx.MusicNote?.EmptyStringFilter()
         );
 
-        var localVfx = new LocalVfx(
-            CardTrail: skinTemplate.LocalVfx.CardTrail?.EmptyStringFilter()
-        );
-
         var ui = new Ui(
             EnergyCounterScene: skinTemplate.Ui.EnergyCounterScene?.EmptyStringFilter(),
             MapMarker: skinTemplate.Ui.MapMarker?.EmptyStringFilter(),
-            MusicCardBg: skinTemplate.Ui.MusicCardBg?.EmptyStringFilter(),
+            MusicCardFrame: skinTemplate.Ui.MusicCardFrame?.EmptyStringFilter(),
             TopBarGoldIcon: skinTemplate.Ui.TopBarGoldIcon?.EmptyStringFilter(),
             TopBarHpIcon: skinTemplate.Ui.TopBarHpIcon?.EmptyStringFilter(),
             TopBarFloorIcon: skinTemplate.Ui.TopBarFloorIcon?.EmptyStringFilter(),
@@ -56,14 +52,13 @@ public class SkinInfo
             RewardRareCardIcon: skinTemplate.Ui.RewardRareCardIcon?.EmptyStringFilter()
         );
 
-        SkinTemplate = new SkinTemplate(multiplayerVisual, multiplayerVfx, localVfx, ui, skinTemplate.Starting);
+        SkinTemplate = new SkinTemplate(multiplayerVisual, multiplayerVfx, ui, skinTemplate.Starting);
     }
 
     public IEnumerable<string> GetAllVisualResourcePaths()
     {
         foreach (var s in GetNonEmptyStrings(SkinTemplate.MultiplayerVisual)) yield return s;
         foreach (var s in GetNonEmptyStrings(SkinTemplate.MultiplayerVfx)) yield return s;
-        foreach (var s in GetNonEmptyStrings(SkinTemplate.LocalVfx)) yield return s;
         foreach (var s in GetNonEmptyStrings(SkinTemplate.Ui)) yield return s;
     }
 
@@ -138,7 +133,6 @@ public class SkinInfo
 public record SkinTemplate(
     MultiplayerVisual MultiplayerVisual,
     MultiplayerVfx MultiplayerVfx,
-    LocalVfx LocalVfx,
     Ui Ui,
     StartingInfo Starting
 );
@@ -161,15 +155,10 @@ public record MultiplayerVfx(
     string? MusicNote = null
 );
 
-// 可配置项 仅本地可见且的特效资源
-public record LocalVfx(
-    string? CardTrail = null
-);
-
 // 可配置项 仅本地可见的局内Ui资源
 public record Ui(
     string? EnergyCounterScene = null,
-    string? MusicCardBg = null,
+    string? MusicCardFrame = null,
     string? MapMarker = null,
     string? TopBarGoldIcon = null,
     string? TopBarHpIcon = null,

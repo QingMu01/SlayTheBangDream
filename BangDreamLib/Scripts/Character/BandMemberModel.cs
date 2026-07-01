@@ -32,6 +32,11 @@ public abstract class BandMemberModel<TCardPoolModel, TRelicPoolModel, TPotionPo
     public abstract string MemberClass { get; }
     public abstract string? SelectPoster { get; }
 
+    public abstract override string CustomTrailPath { get; }
+    public abstract override string CustomIconPath { get; }
+    public abstract override string CustomIconTexturePath { get; }
+    public abstract override string CustomIconOutlineTexturePath { get; }
+
     public override bool RequiresEpochAndTimeline => false;
 
     public abstract List<string> CharacterSkinList { get; }
