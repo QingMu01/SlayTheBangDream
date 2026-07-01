@@ -163,7 +163,7 @@ public record Ui(
     string? TopBarGoldIcon = null,
     string? TopBarHpIcon = null,
     string? TopBarFloorIcon = null,
-    string? TopBarAscensionIcon = null,
+    string? TopBarAscensionIcon = null, // 可用性待定
     string? TopBarMapIcon = null,
     string? TopBarDeckIcon = null,
     string? TopBarExtraDeckIcon = null,

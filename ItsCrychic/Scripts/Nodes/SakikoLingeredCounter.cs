@@ -15,7 +15,6 @@ public partial class SakikoLingeredCounter : LingeredCounter
     }
 
 
-
     protected override void OnEnergyChanged()
     {
         if (_counterText != null)
@@ -25,21 +24,19 @@ public partial class SakikoLingeredCounter : LingeredCounter
 
         if (_counterImg != null)
         {
-            var textureRects = (from textureRect in _counterImg.GetChildren()
-                where textureRect is TextureRect
-                select textureRect).ToList();
+            var textureRects = _counterImg.GetChildren().OfType<TextureRect>().ToList();
             foreach (var textureRect in textureRects)
             {
-                ((TextureRect)textureRect).Visible = false;
+                textureRect.Visible = false;
             }
 
             switch (_counter?.Counter)
             {
                 case >= 7:
-                    ((TextureRect)textureRects[6]).Visible = true;
+                    textureRects[6].Visible = true;
                     break;
-                case > 0:
-                    ((TextureRect)textureRects[_counter.Counter - 1]).Visible = true;
+                case >= 0:
+                    textureRects[_counter.Counter].Visible = true;
                     break;
             }
         }

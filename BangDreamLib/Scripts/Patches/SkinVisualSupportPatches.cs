@@ -7,12 +7,20 @@ using BangDreamLib.Scripts.Utils;
 using Godot;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Assets;
+using MegaCrit.Sts2.Core.Context;
+using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Entities.TreasureRelicPicking;
 using MegaCrit.Sts2.Core.Nodes.Cards;
 using MegaCrit.Sts2.Core.Nodes.Combat;
+using MegaCrit.Sts2.Core.Nodes.CommonUi;
 using MegaCrit.Sts2.Core.Nodes.RestSite;
+using MegaCrit.Sts2.Core.Nodes.Screens.Map;
 using MegaCrit.Sts2.Core.Nodes.Screens.TreasureRoomRelic;
+using MegaCrit.Sts2.Core.Rewards;
+using MegaCrit.Sts2.Core.Runs;
+using STS2RitsuLib.CardPiles;
+using STS2RitsuLib.CardPiles.Nodes;
 using STS2RitsuLib.Patching.Core;
 using STS2RitsuLib.Patching.Models;
 using STS2RitsuLib.Scaffolding.Characters.Visuals;
@@ -33,6 +41,11 @@ public class SkinVisualSupportPatches : IModPatches
         patcher.RegisterPatch<ArmPointingTexturePatch>();
         patcher.RegisterPatch<ArmFightTexturePatch>();
         patcher.RegisterPatch<MusicCardFramePatch>();
+        patcher.RegisterPatch<MapMarkerPatch>();
+        patcher.RegisterPatch<TopBarPatch>();
+        patcher.RegisterPatch<TopBarExtraDeckPatch>();
+        patcher.RegisterPatch<CombatCardPilePatch>();
+        patcher.RegisterPatch<CardRewardPatch>();
     }
 }
 
@@ -302,6 +315,186 @@ internal class MusicCardFramePatch : IPatchMethod
                 ____frame ??= new TextureRect();
                 ____frame.Texture = PreloadManager.Cache.GetTexture2D(path);
                 ____frame.Material = null;
+            }
+        }
+    }
+}
+
+internal class MapMarkerPatch : IPatchMethod
+{
+    public static string PatchId => "create_map_marker_by_skin_info";
+
+    public static ModPatchTarget[] GetTargets()
+    {
+        return [new ModPatchTarget(typeof(NMapMarker), nameof(NMapMarker.Initialize))];
+    }
+
+    public static void Postfix(NMapMarker __instance, Player player)
+    {
+        if (player.Character is ISkinSupportCharacter)
+        {
+            var path = BangDreamConst.PlayerSkin.Get(player).GetSkin()?.SkinTemplate.Ui.MapMarker;
+            if (path != null)
+            {
+                __instance.Texture = PreloadManager.Cache.GetTexture2D(path);
+            }
+        }
+    }
+}
+
+internal class TopBarPatch : IPatchMethod
+{
+    public static string PatchId => "create_top_bar_ui_by_skin_info";
+
+    public static ModPatchTarget[] GetTargets()
+    {
+        return [new ModPatchTarget(typeof(NTopBar), nameof(NTopBar.Initialize))];
+    }
+
+    public static void Postfix(NTopBar __instance, IRunState runState)
+    {
+        var player = LocalContext.GetMe(runState);
+        if (player?.Character is ISkinSupportCharacter)
+        {
+            var ui = BangDreamConst.PlayerSkin.Get(player).GetSkin()?.SkinTemplate.Ui;
+            if (ui != null)
+            {
+                var hpIconPath = ui.TopBarHpIcon;
+                var goldIconPath = ui.TopBarGoldIcon;
+                var floorIconPath = ui.TopBarFloorIcon;
+                var mapIconPath = ui.TopBarMapIcon;
+                var deckIconPath = ui.TopBarDeckIcon;
+                var settingIconPath = ui.TopBarSettingIcon;
+
+                if (hpIconPath != null)
+                {
+                    var textureRect = __instance.Hp.GetNodeOrNull<TextureRect>("HpIcon");
+                    if (textureRect != null)
+                        textureRect.Texture = PreloadManager.Cache.GetTexture2D(hpIconPath);
+                }
+
+                if (goldIconPath != null)
+                {
+                    var textureRect = __instance.Gold.GetNodeOrNull<TextureRect>("GoldIcon");
+                    if (textureRect != null)
+                        textureRect.Texture = PreloadManager.Cache.GetTexture2D(goldIconPath);
+                }
+
+                if (floorIconPath != null)
+                {
+                    var textureRect =
+                        __instance.FloorIcon.GetNodeOrNull<TextureRect>("FloorIconPositioner/FloorInfoIcon");
+                    if (textureRect != null)
+                        textureRect.Texture = PreloadManager.Cache.GetTexture2D(floorIconPath);
+                }
+
+                if (mapIconPath != null)
+                {
+                    var textureRect = __instance.Map.GetNodeOrNull<TextureRect>("Control/Icon");
+                    if (textureRect != null)
+                        textureRect.Texture = PreloadManager.Cache.GetTexture2D(mapIconPath);
+                }
+
+                if (deckIconPath != null)
+                {
+                    var textureRect = __instance.Deck.GetNodeOrNull<TextureRect>("Control/Icon");
+                    if (textureRect != null)
+                        textureRect.Texture = PreloadManager.Cache.GetTexture2D(deckIconPath);
+                }
+
+                if (settingIconPath != null)
+                {
+                    var textureRect = __instance.Pause.GetNodeOrNull<TextureRect>("Control/Icon");
+                    if (textureRect != null)
+                        textureRect.Texture = PreloadManager.Cache.GetTexture2D(settingIconPath);
+                }
+            }
+        }
+    }
+}
+
+internal class TopBarExtraDeckPatch : IPatchMethod
+{
+    public static string PatchId => "create_top_bar_extra_deck_ui_by_skin_info";
+
+    public static ModPatchTarget[] GetTargets()
+    {
+        return [new ModPatchTarget(typeof(NModCardPileButton), nameof(NModCardPileButton.Initialize))];
+    }
+
+    public static void Postfix(NModCardPileButton __instance, Player player, Control ____icon)
+    {
+        if (__instance.Definition is { Id: "BANG_DREAM_LIB_CARDPILE_EXTRA_DECK", Style: ModCardPileUiStyle.TopBarDeck }
+            && LocalContext.IsMe(player) && player.Character is ISkinSupportCharacter)
+        {
+            var path = BangDreamConst.PlayerSkin.Get(player).GetSkin()?.SkinTemplate.Ui.TopBarExtraDeckIcon;
+            if (path != null && ____icon is TextureRect textureRect)
+            {
+                textureRect.Texture = PreloadManager.Cache.GetTexture2D(path);
+            }
+        }
+    }
+}
+
+internal class CombatCardPilePatch : IPatchMethod
+{
+    public static string PatchId => "create_pile_button_by_skin_info";
+
+    public static ModPatchTarget[] GetTargets()
+    {
+        return [new ModPatchTarget(typeof(NCombatCardPile), nameof(NCombatCardPile.Initialize))];
+    }
+
+    public static void Postfix(NCombatCardPile __instance, Player player, Control ____icon)
+    {
+        if (player.Character is ISkinSupportCharacter)
+        {
+            if (__instance is NDrawPileButton)
+            {
+                var path = BangDreamConst.PlayerSkin.Get(player).GetSkin()?.SkinTemplate.Ui.CombatDrawIcon;
+                if (path != null && ____icon is TextureRect textureRect)
+                {
+                    textureRect.Texture = PreloadManager.Cache.GetTexture2D(path);
+                }
+            }
+            else if (__instance is NDiscardPileButton)
+            {
+                var path = BangDreamConst.PlayerSkin.Get(player).GetSkin()?.SkinTemplate.Ui.CombatDiscardIcon;
+                if (path != null && ____icon is TextureRect textureRect)
+                {
+                    textureRect.Texture = PreloadManager.Cache.GetTexture2D(path);
+                }
+            }
+        }
+    }
+}
+
+internal class CardRewardPatch : IPatchMethod
+{
+    public static string PatchId => "create_card_reward_icon_by_skin_info";
+
+    public static ModPatchTarget[] GetTargets()
+    {
+        return [new ModPatchTarget(typeof(CardReward), "IconPath", MethodType.Getter)];
+    }
+
+    public static void Postfix(CardReward __instance, List<CardCreationResult> ____cards, ref string __result)
+    {
+        if (LocalContext.IsMe(__instance.Player) && __instance.Player.Character is ISkinSupportCharacter)
+        {
+            var ui = BangDreamConst.PlayerSkin.Get(__instance.Player).GetSkin()?.SkinTemplate.Ui;
+            if (ui != null)
+            {
+                var newIconPath = ____cards[0].Card.Rarity switch
+                {
+                    CardRarity.Uncommon => ui.RewardUncommonCardIcon,
+                    CardRarity.Rare => ui.RewardRareCardIcon,
+                    _ => ui.RewardCommonCardIcon
+                };
+                if (newIconPath != null)
+                {
+                    __result = newIconPath;
+                }
             }
         }
     }

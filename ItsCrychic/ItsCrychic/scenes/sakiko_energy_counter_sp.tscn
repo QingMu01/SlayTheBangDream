@@ -28,7 +28,7 @@ metadata/_edit_lock_ = true
 
 [node name="EnergyVfxBack" type="Node2D" parent="."]
 unique_name_in_owner = true
-position = Vector2(84, 83)
+position = Vector2(85, 85)
 
 [node name="Layers" type="Control" parent="."]
 unique_name_in_owner = true
@@ -73,6 +73,7 @@ visible = false
 layout_mode = 0
 offset_right = 40.0
 offset_bottom = 40.0
+pivot_offset = Vector2(85, 82.5)
 texture = ExtResource("3_bys14")
 
 [node name="Layer2" type="TextureRect" parent="Layers/RotationLayers" groups=["LightMode"]]
@@ -80,6 +81,7 @@ visible = false
 layout_mode = 0
 offset_right = 40.0
 offset_bottom = 40.0
+pivot_offset = Vector2(85, 82.5)
 texture = ExtResource("4_md8h5")
 
 [node name="Layer3" type="TextureRect" parent="Layers/RotationLayers" groups=["LightMode"]]
@@ -87,6 +89,8 @@ visible = false
 layout_mode = 0
 offset_right = 40.0
 offset_bottom = 40.0
+rotation = 4.694936
+pivot_offset = Vector2(85, 82.5)
 texture = ExtResource("5_0sg0h")
 
 [node name="Layer1d" type="TextureRect" parent="Layers/RotationLayers" groups=["DarkMode"]]
@@ -94,6 +98,7 @@ visible = false
 layout_mode = 0
 offset_right = 40.0
 offset_bottom = 40.0
+pivot_offset = Vector2(85, 82.5)
 texture = ExtResource("6_kumjs")
 
 [node name="Layer2d" type="TextureRect" parent="Layers/RotationLayers" groups=["DarkMode"]]
@@ -101,6 +106,7 @@ visible = false
 layout_mode = 0
 offset_right = 40.0
 offset_bottom = 40.0
+pivot_offset = Vector2(85, 82.5)
 texture = ExtResource("7_kjuge")
 
 [node name="Layer3d" type="TextureRect" parent="Layers/RotationLayers" groups=["DarkMode"]]
@@ -108,6 +114,7 @@ visible = false
 layout_mode = 0
 offset_right = 40.0
 offset_bottom = 40.0
+pivot_offset = Vector2(85, 82.5)
 texture = ExtResource("8_8huon")
 
 [node name="LingeredEnergyCounter" type="Control" parent="Layers"]
