@@ -16,7 +16,5 @@ bin
 CLAUDE.md
 AGENTS.md
 *.sln.DotSettings.user
-*.uid
-*.import
 
 SpineGodotExtension4.5.1

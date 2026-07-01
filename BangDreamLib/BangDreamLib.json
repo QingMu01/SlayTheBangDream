@@ -3,15 +3,15 @@
   "name": "BangDreamLib",
   "author": "QingMu_",
   "description": "个人使用的BangDream角色Mod通用的前置库，提供通用组件、特效等。",
-  "version": "v0.0.1",
+  "version": "0.0.1",
   "has_pck": true,
   "has_dll": true,
   "dependencies": [
     {
       "id": "STS2-RitsuLib",
-      "min_version": "0.3.5"
+      "min_version": "0.4.45"
     }
   ],
   "affects_gameplay": true,
-  "min_game_version": "0.105.0"
+  "min_game_version": "0.107.0"
 }
