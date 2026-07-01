@@ -1,6 +1,5 @@
 ﻿using System.Reflection;
 using System.Reflection.Emit;
-using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
 using BangDreamLib.Scripts.Nodes.MegeScript;
 using BangDreamLib.Scripts.Utils;
@@ -25,6 +24,7 @@ public class SkinVisualSupportPatches : IModPatches
     public static void AddTo(ModPatcher patcher)
     {
         patcher.RegisterPatch<VisualPatch>();
+        patcher.RegisterPatch<EnergyCounterPatch>();
         patcher.RegisterPatch<RestSiteScenePatch>();
         patcher.RegisterPatch<RestSiteAnimPatch>();
         patcher.RegisterPatch<MerchantScenePatch>();
@@ -35,7 +35,7 @@ public class SkinVisualSupportPatches : IModPatches
 
 internal class VisualPatch : IPatchMethod
 {
-    public static string PatchId => "on_create_visual_replace_by_skin_info";
+    public static string PatchId => "create_visual_by_skin_info";
 
     public static ModPatchTarget[] GetTargets()
     {
@@ -52,6 +52,31 @@ internal class VisualPatch : IPatchMethod
             {
                 var visuals = RitsuGodotNodeFactories.CreateFromScenePath<NCreatureVisuals>(path);
                 Traverse.Create(__result).Property("Visuals").SetValue(visuals);
+            }
+        }
+    }
+}
+
+internal class EnergyCounterPatch : IPatchMethod
+{
+    public static string PatchId => "create_energy_counter_by_skin_info";
+
+    public static ModPatchTarget[] GetTargets()
+    {
+        return [new ModPatchTarget(typeof(NEnergyCounter), nameof(NEnergyCounter.Create))];
+    }
+
+    public static void Postfix(Player player, ref NEnergyCounter? __result)
+    {
+        if (player.Character is ISkinSupportCharacter)
+        {
+            var path = BangDreamConst.PlayerSkin.Get(player).GetSkin()?.SkinTemplate.Ui
+                .EnergyCounterScene;
+            if (path != null)
+            {
+                var energyCounter = RitsuGodotNodeFactories.CreateFromScenePath<NEnergyCounter>(path);
+                Traverse.Create(energyCounter).Field("_player").SetValue(player);
+                __result = energyCounter;
             }
         }
     }

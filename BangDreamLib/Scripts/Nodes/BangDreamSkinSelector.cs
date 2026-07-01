@@ -80,7 +80,7 @@ public partial class BangDreamSkinSelector : Control
 
     private void IncrementSkinIndex()
     {
-        if (_currentSkinIndex < _skinInfos.Count)
+        if (_currentSkinIndex < _skinInfos.Count - 1)
         {
             SetSkinIndex(_currentSkinIndex + 1);
         }

@@ -1,8 +1,8 @@
 [gd_scene load_steps=4 format=3 uid="uid://b1jkjpy1xjok2"]
 
-[ext_resource type="Script" uid="uid://cn8qxl5kvbfnm" path="res://Scripts/Nodes/MegeScript/CrychicRestSite.cs" id="1_q5eso"]
+[ext_resource type="Script" uid="uid://cn8qxl5kvbfnm" path="res://Scripts/Nodes/MegaScripts/CrychicRestSite.cs" id="1_q5eso"]
 [ext_resource type="SpineSkeletonDataResource" uid="uid://cb0xlj8u74pdh" path="res://ItsCrychic/images/charui/sakiko/build_default_sakiko.tres" id="2_aud26"]
-[ext_resource type="Script" uid="uid://danxipihvljdy" path="res://Scripts/Nodes/MegeScript/CrychicSelectionReticle.cs" id="3_v3lfo"]
+[ext_resource type="Script" uid="uid://danxipihvljdy" path="res://Scripts/Nodes/MegaScripts/CrychicSelectionReticle.cs" id="3_v3lfo"]
 
 [node name="SakikoRestSiteDefault" type="Node2D"]
 position = Vector2(-2, 42)

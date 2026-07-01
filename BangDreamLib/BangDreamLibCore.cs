@@ -44,7 +44,6 @@ public class BangDreamLibCore
         preload.PatchAll();
 
         var deckSupport = RitsuLibFramework.CreatePatcher(BangDreamConst.ModId, "extra_deck_support");
-        // deckSupport.RegisterPatches<SetupExtraDeckPatches>();
         deckSupport.RegisterPatches<MusicCardSupportPatches>();
         if (!deckSupport.PatchAll())
         {

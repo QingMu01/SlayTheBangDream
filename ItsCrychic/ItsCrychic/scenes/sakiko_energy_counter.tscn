@@ -145,7 +145,7 @@ offset_right = 200.0
 offset_bottom = 170.0
 texture = ExtResource("8_qoqw7")
 
-[node name="Layer2" type="TextureRect" parent="Layers/LingeredEnergyCounter"]
+[node name="Layer2" type="TextureRect" parent="Layers"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -155,7 +155,7 @@ grow_vertical = 2
 texture = ExtResource("9_efkrr")
 expand_mode = 1
 
-[node name="CounterText" type="Label" parent="Layers/LingeredEnergyCounter"]
+[node name="CounterText" type="Label" parent="Layers"]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15

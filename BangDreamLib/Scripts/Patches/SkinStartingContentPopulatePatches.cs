@@ -1,4 +1,3 @@
-using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Combat;
@@ -83,7 +82,8 @@ internal class PopulateStartingContentPatch : IPatchMethod
             if (player.Character is ISkinSupportCharacter)
             {
                 var playerSkinData = BangDreamConst.PlayerSkin.Get(player);
-                BangDreamLibCore.Logger.Info($"Player {player.NetId} populate starting content.");
+                BangDreamLibCore.Logger.Info(
+                    $"Player {player.NetId} / Character: {player.Character.Title.GetFormattedText()} use skin : {playerSkinData.SkinPath}.");
                 var skinInfo = playerSkinData.GetSkin();
                 if (skinInfo != null)
                 {
@@ -91,20 +91,18 @@ internal class PopulateStartingContentPatch : IPatchMethod
                     PopulateExtraDeck(player, runState, skinInfo.GetStartingExtraDeck());
                     PopulateRelics(player, skinInfo.GetStartingRelics());
                     PopulatePotions(player, skinInfo.GetStartingPotions());
-                    BangDreamLibCore.Logger.Info($"Player {player.Character} populate starting content done.");
                 }
             }
             else
             {
-                BangDreamLibCore.Logger.Info($"Player {player.Character} is don't support skin, skip populate.");
+                BangDreamLibCore.Logger.Info(
+                    $"Player {player.NetId} / Character: {player.Character.Title} is don't support skin, skip populate.");
             }
         }
     }
 
     private static void PopulateDeck(Player player, RunState runState, IEnumerable<CardModel> cards)
     {
-        if (player.Deck.Cards.Any())
-            throw new InvalidOperationException("Deck has already been populated.");
         var startingDeck = new List<CardModel>();
         foreach (var cardModel in cards)
         {
@@ -123,45 +121,38 @@ internal class PopulateStartingContentPatch : IPatchMethod
         }
         else
         {
-            BangDreamLibCore.Logger.Error($"ISkinSupportCharacter({player.Character}) has empty Deck.");
+            throw new InvalidOperationException($"ISkinSupportCharacter({player.Character}) has empty Deck.");
         }
     }
 
     private static void PopulateExtraDeck(Player player, RunState runState, IEnumerable<CardModel> cards)
     {
         var cardPile = BangDreamConst.ExtraDeck.GetPile(player);
-        if (cardPile.Cards.Any())
-            throw new InvalidOperationException("ExtraDeck has already been populated.");
         var startingExtraDeck = new List<CardModel>();
         foreach (var cardModel in cards)
         {
             var mutable = cardModel.ToMutable();
             mutable.FloorAddedToDeck = 1;
             startingExtraDeck.Add(mutable);
-            if (startingExtraDeck.Count > 0)
-            {
-                foreach (var card in startingExtraDeck)
-                {
-                    cardPile.AddInternal(card, silent: false);
-                    runState.AddCard(card, player);
-                }
+        }
 
-                // var extraDeckSaveHelper = ModelDb.Relic<ExtraDeckSaveHelper>().ToMutable();
-                // extraDeckSaveHelper.FloorAddedToDeck = 1;
-                // player.AddRelicInternal(extraDeckSaveHelper, silent: true);
-            }
-            else
+        if (startingExtraDeck.Count > 0)
+        {
+            foreach (var card in startingExtraDeck)
             {
-                BangDreamLibCore.Logger.Info(
-                    $"ISkinSupportCharacter({player.Character}) has empty ExtraDeck(optional).");
+                cardPile.AddInternal(card, silent: false);
+                runState.AddCard(card, player);
             }
+        }
+        else
+        {
+            BangDreamLibCore.Logger.Debug(
+                $"ISkinSupportCharacter({player.Character}) has empty ExtraDeck(optional).");
         }
     }
 
     private static void PopulateRelics(Player player, IEnumerable<RelicModel> relics)
     {
-        if (player.Relics.Any())
-            throw new InvalidOperationException("Relics has already been populated.");
         foreach (var relicModel in relics)
         {
             var mutable = relicModel.ToMutable();
@@ -172,8 +163,6 @@ internal class PopulateStartingContentPatch : IPatchMethod
 
     private static void PopulatePotions(Player player, IEnumerable<PotionModel> potions)
     {
-        if (player.Potions.Any())
-            throw new InvalidOperationException("Potions has already been populated.");
         foreach (var potionModel in potions)
         {
             player.AddPotionInternal(potionModel.ToMutable(), silent: false);

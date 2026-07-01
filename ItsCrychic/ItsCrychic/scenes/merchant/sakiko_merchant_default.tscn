@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://ci67ro3j2wvv5"]
 
 [ext_resource type="SpineSkeletonDataResource" uid="uid://cb0xlj8u74pdh" path="res://ItsCrychic/images/charui/sakiko/build_default_sakiko.tres" id="1_sc3on"]
-[ext_resource type="Script" uid="uid://dgxxnvpum284a" path="res://Scripts/Nodes/MegeScript/CrychicMerchant.cs" id="1_vmf1t"]
+[ext_resource type="Script" uid="uid://dgxxnvpum284a" path="res://Scripts/Nodes/MegaScripts/CrychicMerchant.cs" id="1_vmf1t"]
 
 [node name="SakikoMerchantDefault" type="Node2D"]
 script = ExtResource("1_vmf1t")
