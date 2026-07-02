@@ -228,13 +228,18 @@ public partial class BangDreamCharacterSelector : Control
                     child.Visible = !groupableCharacter.IsHidden;
                 }
 
-                if (child.Visible && character is IGroupableCharacter { AllowSelect: true })
-                {
-                    SelectCharacter(character);
-                    return;
-                }
-
                 child.Deselect();
+            }
+
+            var defaultButton = _buttons.FirstOrDefault(item => item is
+                { Visible: true, Character: IGroupableCharacter { AllowSelect: true } });
+            if (defaultButton is { Character: not null })
+            {
+                SelectCharacter(defaultButton.Character);
+            }
+            else
+            {
+                throw new InvalidOperationException("No character can be selected!");
             }
         }
     }

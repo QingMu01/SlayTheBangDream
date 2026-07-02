@@ -49,6 +49,9 @@ public sealed class TogawaSakiko() : BandMemberModel<SakikoStandardCardPool, Sak
     public override string CustomIconOutlineTexturePath =>
         "res://ItsCrychic/images/charui/sakiko/character_icon_saki_outline.png";
 
+    public override string CustomCharacterSelectTransitionPath => 
+        "res://ItsCrychic/images/charui/sakiko/sakiko_transition.tres";
+
     public override CreatureAnimator GenerateAnimator(MegaSprite controller)
     {
         var start = new AnimState("Start");
