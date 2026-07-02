@@ -41,6 +41,7 @@ public class GroupableCharacterSelectorPatches : IModPatches
         patcher.RegisterPatch<SetupGroupableCharacterSelectorPatch>();
         patcher.RegisterPatch<SetupGroupableCharacterSelectButtonPatch>();
         patcher.RegisterPatch<InitSelectorPatch>();
+        patcher.RegisterPatch<SelectGroupButtonIconPatch>();
         patcher.RegisterPatch<InterceptGroupButtonPatch>();
         patcher.RegisterPatch<AscensionPanelHostModePatch>();
         patcher.RegisterPatch<AscensionPanelMultiplayerModePatch>();
@@ -235,6 +236,43 @@ internal class InitSelectorPatch : IPatchMethod
             else
             {
                 throw new NullReferenceException($"Selected group button({__instance.Name}) not be init.");
+            }
+        }
+    }
+}
+
+internal class SelectGroupButtonIconPatch : IPatchMethod
+{
+    public static string PatchId => "select_group_button_icon";
+
+    public static ModPatchTarget[] GetTargets()
+    {
+        return
+        [
+            new ModPatchTarget(typeof(NCharacterSelectButton), nameof(NCharacterSelectButton.Init)),
+            new ModPatchTarget(typeof(NCharacterSelectButton), nameof(NCharacterSelectButton.LockForAnimation)),
+            new ModPatchTarget(typeof(NCharacterSelectButton), nameof(NCharacterSelectButton.AnimateUnlock)),
+            new ModPatchTarget(typeof(NCharacterSelectButton), nameof(NCharacterSelectButton.DebugUnlock)),
+            new ModPatchTarget(typeof(NCharacterSelectButton), nameof(NCharacterSelectButton.UnlockIfPossible))
+        ];
+    }
+
+    public static void Postfix(NCharacterSelectButton __instance,
+        TextureRect ____icon, TextureRect ____lock, TextureRect ____iconAdd)
+    {
+        if (__instance.Character is GroupCharacterPlaceholder)
+        {
+            var characterGroup = GroupableCharacterSelectorPatches.GroupState.GetOrCreate(__instance);
+            if (characterGroup.HasValue)
+            {
+                var groupSelectIcon = characterGroup.Value.GetGroupSelectIcon();
+                if (!string.IsNullOrEmpty(groupSelectIcon) && ResourceLoader.Exists(groupSelectIcon))
+                {
+                    var texture = PreloadManager.Cache.GetTexture2D(groupSelectIcon);
+                    ____icon.Texture = texture;
+                    ____lock.Texture = texture;
+                    ____iconAdd.Texture = texture;
+                }
             }
         }
     }
