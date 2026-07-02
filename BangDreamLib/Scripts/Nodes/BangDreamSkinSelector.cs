@@ -15,6 +15,9 @@ public partial class BangDreamSkinSelector : Control
 {
     private static readonly Dictionary<string, NCreatureVisuals> VisualsCache = [];
 
+    private static readonly Color DisabledColor = new(0.5f, 0.5f, 0.5f);
+    private static readonly Color EnabledColor = new(1f, 1f, 1f);
+
     private BangDreamGoldArrowButton? _leftArrow;
     private BangDreamGoldArrowButton? _rightArrow;
 
@@ -98,22 +101,32 @@ public partial class BangDreamSkinSelector : Control
     {
         if (_skinInfos.Count > 0)
         {
-            if (_currentSkinIndex == 0)
+            if (_leftArrow != null)
             {
-                _leftArrow?.Disable();
-            }
-            else
-            {
-                _leftArrow?.Enable();
+                if (_currentSkinIndex == 0)
+                {
+                    _leftArrow.Disable();
+                    _leftArrow.Modulate = DisabledColor;
+                }
+                else
+                {
+                    _leftArrow.Enable();
+                    _leftArrow.Modulate = EnabledColor;
+                }
             }
 
-            if (_currentSkinIndex == _skinInfos.Count - 1)
+            if (_rightArrow != null)
             {
-                _rightArrow?.Disable();
-            }
-            else
-            {
-                _rightArrow?.Enable();
+                if (_currentSkinIndex == _skinInfos.Count - 1)
+                {
+                    _rightArrow.Disable();
+                    _rightArrow.Modulate = DisabledColor;
+                }
+                else
+                {
+                    _rightArrow.Enable();
+                    _rightArrow.Modulate = EnabledColor;
+                }
             }
 
             if (_skinContainer != null)
@@ -150,7 +163,8 @@ public partial class BangDreamSkinSelector : Control
                     mutate =>
                     {
                         mutate.SkinPath = _skinInfos[_currentSkinIndex].Item1;
-                        BangDreamLibCore.Logger.Info($"Player NetId: {_lobby.NetService.NetId} Set skin: {_skinInfos[_currentSkinIndex].Item1}.");
+                        BangDreamLibCore.Logger.Info(
+                            $"Player NetId: {_lobby.NetService.NetId} Set skin: {_skinInfos[_currentSkinIndex].Item1}.");
                     });
             }
         }

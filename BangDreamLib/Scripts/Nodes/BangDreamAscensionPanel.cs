@@ -21,6 +21,10 @@ public partial class BangDreamAscensionPanel : Control
     private static readonly Color RedLabelOutline = new("593400");
     private static readonly Color BlueLabelOutline = new("004759");
 
+    private static readonly Color DisabledColor = new(0.5f, 0.5f, 0.5f);
+    private static readonly Color EnabledColor = new(1f, 1f, 1f);
+
+
     [Signal]
     public delegate void AscensionLevelChangedEventHandler();
 
@@ -169,8 +173,33 @@ public partial class BangDreamAscensionPanel : Control
 
     private void RefreshArrowVisibility()
     {
-        if (_leftArrow != null) _leftArrow.Visible = _arrowsVisible && Ascension != 0;
-        if (_rightArrow != null) _rightArrow.Visible = _arrowsVisible && Ascension != _maxAscension;
+        if (_leftArrow != null)
+        {
+            if (_arrowsVisible && Ascension != 0)
+            {
+                _leftArrow.Enable();
+                _leftArrow.Modulate = EnabledColor;
+            }
+            else
+            {
+                _leftArrow.Disable();
+                _leftArrow.Modulate = DisabledColor;
+            }
+        }
+
+        if (_rightArrow != null)
+        {
+            if (_arrowsVisible && Ascension != _maxAscension)
+            {
+                _rightArrow.Enable();
+                _rightArrow.Modulate = EnabledColor;
+            }
+            else
+            {
+                _rightArrow.Disable();
+                _rightArrow.Modulate = DisabledColor;
+            }
+        }
     }
 
     public void SetMaxAscension(int maxAscension)
