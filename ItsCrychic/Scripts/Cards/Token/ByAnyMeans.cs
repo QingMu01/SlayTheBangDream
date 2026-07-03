@@ -1,4 +1,3 @@
-using BangDreamLib.Scripts.Attributes;
 using BangDreamLib.Scripts.Cards;
 using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
@@ -8,11 +7,12 @@ using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models.CardPools;
+using STS2RitsuLib.Interop.AutoRegistration;
 using STS2RitsuLib.Scaffolding.Content;
 
 namespace ItsCrychic.Scripts.Cards.Token;
 
-[BangDreamPool(typeof(TokenCardPool))]
+[RegisterCard(typeof(TokenCardPool))]
 public class ByAnyMeans() : BandCardModel(CustomCost, CustomType, CustomRarity, CustomTarget)
 {
     private const int CustomCost = 1;

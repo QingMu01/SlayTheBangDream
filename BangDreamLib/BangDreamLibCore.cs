@@ -21,6 +21,7 @@ using STS2RitsuLib.CardPiles;
 using STS2RitsuLib.CardTags;
 using STS2RitsuLib.Combat.Rewards;
 using STS2RitsuLib.Combat.SecondaryResources;
+using STS2RitsuLib.Interop;
 using STS2RitsuLib.Keywords;
 using STS2RitsuLib.Patching.Core;
 using STS2RitsuLib.RunData;
@@ -37,6 +38,7 @@ public class BangDreamLibCore
     {
         var executingAssembly = Assembly.GetExecutingAssembly();
         RitsuLibFramework.EnsureGodotScriptsRegistered(executingAssembly, Logger);
+        ModTypeDiscoveryHub.RegisterModAssembly(BangDreamConst.ModId, executingAssembly);
 
         var preload = RitsuLibFramework.CreatePatcher(BangDreamConst.ModId, "preload_assets");
         preload.RegisterPatches<PreloadPatches>();
@@ -106,9 +108,9 @@ public class BangDreamLibCore
         var cardTagRegistry = ModCardTagRegistry.For(BangDreamConst.ModId);
         BangDreamConst.SymbolCard = RegisterCardTag(cardTagRegistry, "Symbol");
 
-        // 注册自定义奖励
+        //注册自定义奖励
         var customReward = ModRewardRegistry.For(BangDreamConst.ModId);
-        BangDreamConst.RewardMusic = customReward.RegisterOwned("RewardMusic",
+        BangDreamConst.RewardMusic = customReward.RegisterOwned("MusicCardReward",
             (save, player, _) => new MusicCardReward(
                 new CardCreationOptions(save.CardPoolIds.Select(ModelDb.GetById<CardPoolModel>),
                     save.Source, save.RarityOdds),

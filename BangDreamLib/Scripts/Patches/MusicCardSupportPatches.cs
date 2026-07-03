@@ -1,15 +1,11 @@
 using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
-using BangDreamLib.Scripts.Utils;
 using HarmonyLib;
 using MegaCrit.Sts2.addons.mega_text;
-using MegaCrit.Sts2.Core.Commands;
-using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Nodes.Cards;
 using MegaCrit.Sts2.Core.Nodes.Screens.CardLibrary;
-using MegaCrit.Sts2.Core.Nodes.Vfx;
 using STS2RitsuLib.Patching.Core;
 using STS2RitsuLib.Patching.Models;
 
@@ -22,8 +18,6 @@ public class MusicCardSupportPatches : IModPatches
         patcher.RegisterPatch<CardNodeSupportMusicTypePatch>();
         patcher.RegisterPatch<AddExtraCardPoolToModelDbPatch>();
         patcher.RegisterPatch<ExtraPoolConcatToStandardPoolInLibraryPatch>();
-        patcher.RegisterPatch<MusicCardRewardSupportPatch>();
-        patcher.RegisterPatch<MusicCardRewardVfxSupportPatch>();
     }
 }
 
@@ -102,52 +96,6 @@ internal class ExtraPoolConcatToStandardPoolInLibraryPatch : IPatchMethod
                 ____poolFilters[filter] = model =>
                     characterCardPool.AllCards.Contains(model) || characterExtraCardPool.AllCards.Contains(model);
             }
-        }
-    }
-}
-
-internal class MusicCardRewardSupportPatch : IPatchMethod
-{
-    public static string PatchId => "replace_card_reward_added_target_pile";
-
-    public static ModPatchTarget[] GetTargets()
-    {
-        return
-        [
-            new ModPatchTarget(typeof(CardPileCmd), nameof(CardPileCmd.Add),
-            [
-                typeof(CardModel),
-                typeof(PileType),
-                typeof(CardPilePosition),
-                typeof(AbstractModel),
-                typeof(bool)
-            ])
-        ];
-    }
-
-    public static void Prefix(CardModel card, ref PileType newPileType)
-    {
-        if (IPerformanceCard.CardEnterExtraDeck.GetOrCreate(card))
-        {
-            newPileType = BangDreamConst.ExtraDeck;
-        }
-    }
-}
-
-internal class MusicCardRewardVfxSupportPatch : IPatchMethod
-{
-    public static string PatchId => "replace_card_reward_added_vfx_target_pile";
-
-    public static ModPatchTarget[] GetTargets()
-    {
-        return [new ModPatchTarget(typeof(NCardFlyVfx), nameof(NCardFlyVfx.Create))];
-    }
-
-    public static void Prefix(NCard card, ref PileType pileType)
-    {
-        if (card.Model != null && IPerformanceCard.CardEnterExtraDeck.GetOrCreate(card.Model))
-        {
-            pileType = BangDreamConst.ExtraDeck;
         }
     }
 }

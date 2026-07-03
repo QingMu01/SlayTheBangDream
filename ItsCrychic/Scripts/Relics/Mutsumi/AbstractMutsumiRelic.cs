@@ -1,10 +1,10 @@
-﻿using BangDreamLib.Scripts.Attributes;
-using BangDreamLib.Scripts.Relics;
+﻿using BangDreamLib.Scripts.Relics;
 using ItsCrychic.Scripts.Character.RelicPools;
+using STS2RitsuLib.Interop.AutoRegistration;
 
 namespace ItsCrychic.Scripts.Relics.Mutsumi;
 
-[BangDreamPool(typeof(MutsumiRelicPool))]
+[RegisterRelic(typeof(MutsumiRelicPool), Inherit = true)]
 public abstract class AbstractMutsumiRelic : BandRelicModel
 {
 }

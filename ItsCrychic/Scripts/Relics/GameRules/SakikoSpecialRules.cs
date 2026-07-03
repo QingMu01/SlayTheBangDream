@@ -10,12 +10,15 @@ using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Models.RelicPools;
 using MegaCrit.Sts2.Core.Rewards;
 using MegaCrit.Sts2.Core.Rooms;
 using MegaCrit.Sts2.Core.Saves.Runs;
+using STS2RitsuLib.Interop.AutoRegistration;
 
 namespace ItsCrychic.Scripts.Relics.GameRules;
 
+[RegisterRelic(typeof(DeprecatedRelicPool))]
 public class SakikoSpecialRules : HiddenRelic, ILingeredChangedHook
 {
     private const int ChanceStep = 15;

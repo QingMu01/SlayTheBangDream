@@ -1,11 +1,9 @@
-﻿using BangDreamLib.Scripts.Attributes;
-using MegaCrit.Sts2.Core.Entities.Creatures;
+﻿using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Rooms;
 
 namespace BangDreamLib.Scripts.Features.Tracker;
 
-[BangDreamIgnore]
 public class MusicNoteDamageTracker : SingletonModel
 {
     public override bool ShouldReceiveCombatHooks => true;

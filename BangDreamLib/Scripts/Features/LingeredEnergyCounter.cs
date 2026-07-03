@@ -1,5 +1,4 @@
-﻿using BangDreamLib.Scripts.Attributes;
-using BangDreamLib.Scripts.Utils;
+﻿using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;
@@ -7,7 +6,6 @@ using MegaCrit.Sts2.Core.Rooms;
 
 namespace BangDreamLib.Scripts.Features;
 
-[BangDreamIgnore]
 public sealed class LingeredEnergyCounter : SingletonModel
 {
     public event Action? OnEnergyChanged;

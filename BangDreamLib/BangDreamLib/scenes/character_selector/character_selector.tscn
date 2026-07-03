@@ -9,7 +9,7 @@
 [ext_resource type="Texture2D" uid="uid://1efrtqal7gmo" path="res://BangDreamLib/images/sceneui/gold.png" id="6_uhkod"]
 [ext_resource type="FontVariation" uid="uid://c7kiei3ejbckl" path="res://themes/fonts/jpn/noto_sans_cjkjp_medium_shared.tres" id="7_rlwux"]
 [ext_resource type="Script" uid="uid://8fwyrla6d78v" path="res://Scripts/Nodes/MegeScript/BangDreamRichTextLabel.cs" id="8_syx62"]
-[ext_resource type="Texture2D" uid="uid://7rsapkx7gv6" path="res://BangDreamLib/images/sceneui/music_draw.png" id="10_dtmv1"]
+[ext_resource type="Texture2D" uid="uid://bctjbu1ke8sb3" path="res://BangDreamLib/images/sceneui/music_draw.png" id="10_dtmv1"]
 [ext_resource type="PackedScene" uid="uid://r3e6mea37phd" path="res://BangDreamLib/scenes/character_selector/ascension_panel.tscn" id="12_4y8i4"]
 [ext_resource type="FontVariation" uid="uid://b8ce4a71ref23" path="res://themes/spectral_bold_shared.tres" id="12_308mo"]
 [ext_resource type="FontVariation" uid="uid://b31wycusbsq8w" path="res://themes/fonts/jpn/noto_sans_cjkjp_bold_shared.tres" id="12_pbs0m"]

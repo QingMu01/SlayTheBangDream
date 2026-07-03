@@ -1,4 +1,3 @@
-using BangDreamLib.Scripts.Attributes;
 using BangDreamLib.Scripts.Commands;
 using BangDreamLib.Scripts.Interfaces.CardAugment;
 using MegaCrit.Sts2.Core.Commands;
@@ -8,7 +7,6 @@ using MegaCrit.Sts2.Core.Models;
 
 namespace BangDreamLib.Scripts.Features.Rules;
 
-[BangDreamIgnore]
 public class LingeredEnergyRule : SingletonModel
 {
     public override bool ShouldReceiveCombatHooks => true;

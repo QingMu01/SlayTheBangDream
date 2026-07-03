@@ -1,4 +1,3 @@
-using BangDreamLib.Scripts.Attributes;
 using BangDreamLib.Scripts.Interfaces.CardAugment;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -7,7 +6,6 @@ using MegaCrit.Sts2.Core.Models;
 
 namespace BangDreamLib.Scripts.Features.Rules;
 
-[BangDreamIgnore]
 public class CopySelfAndPlayCardRule : SingletonModel
 {
     public override bool ShouldReceiveCombatHooks => true;

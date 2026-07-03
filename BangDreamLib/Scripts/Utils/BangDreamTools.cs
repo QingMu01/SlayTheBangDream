@@ -1,8 +1,5 @@
-﻿using System.Reflection;
-using BangDreamLib.Scripts.Attributes;
-using MegaCrit.Sts2.Core.Entities.Cards;
+﻿using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Players;
-using MegaCrit.Sts2.Core.Models;
 using STS2RitsuLib.Utils;
 
 namespace BangDreamLib.Scripts.Utils;
@@ -24,19 +21,5 @@ public static class BangDreamTools
 
         BangDreamLibCore.Logger.Error($"file not found: {filePath}");
         return default;
-    }
-
-    public static List<Type> CollectAllModels(Assembly assembly)
-    {
-        return assembly.GetTypes()
-            .Where(type => type.GetCustomAttribute<BangDreamIgnoreAttribute>() == null)
-            .Where(type => !type.IsAbstract && type.IsSubclassOf(typeof(AbstractModel)))
-            .Where(type => !type.IsSubclassOf(typeof(CardPoolModel)))
-            .Where(type => !type.IsSubclassOf(typeof(RelicPoolModel)))
-            .Where(type => !type.IsSubclassOf(typeof(PotionPoolModel)))
-            .Where(type => !type.IsSubclassOf(typeof(CharacterModel)))
-            .Where(type => !type.IsSubclassOf(typeof(MonsterModel)))
-            .Where(type => !type.IsSubclassOf(typeof(EventModel)))
-            .ToList();
     }
 }

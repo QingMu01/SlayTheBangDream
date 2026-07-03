@@ -1,13 +1,13 @@
-﻿using BangDreamLib.Scripts.Attributes;
-using BangDreamLib.Scripts.Cards;
+﻿using BangDreamLib.Scripts.Cards;
 using ItsCrychic.Scripts.Character.CardPools;
 using ItsCrychic.Scripts.Utils;
 using MegaCrit.Sts2.Core.Entities.Cards;
+using STS2RitsuLib.Interop.AutoRegistration;
 using STS2RitsuLib.Scaffolding.Content;
 
 namespace ItsCrychic.Scripts.Cards.Saki;
 
-[BangDreamPool(typeof(SakikoStandardCardPool))]
+[RegisterCard(typeof(SakikoStandardCardPool), Inherit = true)]
 public abstract class AbstractSakikoCard(
     int baseCost,
     CardType type,
