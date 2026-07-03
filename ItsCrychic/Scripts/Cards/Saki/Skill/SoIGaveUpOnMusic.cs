@@ -20,7 +20,7 @@ public class SoIGaveUpOnMusic() : AbstractSakikoCard(CustomCost, CustomType, Cus
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
         CardKeyword.Exhaust,
-        BangDreamConst.PerformanceArea
+        BangDreamConst.PerformArea
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
@@ -44,9 +44,9 @@ public class SoIGaveUpOnMusic() : AbstractSakikoCard(CustomCost, CustomType, Cus
         }
     }
 
-    public override Task AfterCardPlayed(PlayerChoiceContext choiceContext, CardPlay cardPlay)
+    public override Task AfterCardPlayed(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        if (cardPlay.Card == this && cardPlay.PlayIndex == 0 && !IsDupe)
+        if (play.Card == this && play.PlayIndex == 0 && !IsDupe)
         {
             Owner.AttachedData().PerformanceManager.ReduceCapacity(DynamicVars["Cost"].IntValue);
         }

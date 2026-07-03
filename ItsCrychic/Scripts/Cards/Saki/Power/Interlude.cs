@@ -23,7 +23,7 @@ public class Interlude() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.PerformanceArea
+        BangDreamConst.PerformArea
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>

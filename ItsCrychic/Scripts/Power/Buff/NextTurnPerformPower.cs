@@ -30,7 +30,7 @@ public class NextTurnPerformPower : BandPowerModel
     {
         if (player == Owner.Player && _holdCard != null)
         {
-            await CardPileCmd.Add(_holdCard, BangDreamConst.PerformanceTable);
+            await CardPileCmd.Add(_holdCard, BangDreamConst.PerformPile);
             await PowerCmd.Remove(this);
         }
     }

@@ -17,7 +17,7 @@ public class CagedBird() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.PerformanceArea
+        BangDreamConst.PerformArea
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
@@ -39,12 +39,12 @@ public class CagedBird() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
         ArgumentNullException.ThrowIfNull(play.Target);
 
         await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
-            .FromCard(this)
+            .FromCard(this, play)
             .Targeting(play.Target)
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
 
-        if (BangDreamTools.GetPile(BangDreamConst.PerformanceTable, Owner).Cards.Count == 0)
+        if (BangDreamTools.GetPile(BangDreamConst.PerformPile, Owner).Cards.Count == 0)
         {
             await PlayerCmd.GainEnergy(DynamicVars.Energy.BaseValue, Owner);
         }

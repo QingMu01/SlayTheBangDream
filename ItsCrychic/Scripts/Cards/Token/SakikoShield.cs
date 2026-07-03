@@ -28,7 +28,7 @@ public class SakikoShield() : BandCardModel(CustomCost, CustomType, CustomRarity
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
         CardKeyword.Exhaust,
-        BangDreamConst.Linger
+        BangDreamConst.Lingered
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>

@@ -28,7 +28,7 @@ public class TogawaDarkness() : AbstractSakikoCard(CustomCost, CustomType, Custo
         ArgumentNullException.ThrowIfNull(play.Target);
 
         await DamageCmd.Attack(DynamicVars.ComputedValue("CalcDamage"))
-            .FromCard(this)
+            .FromCard(this, play)
             .Targeting(play.Target)
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);

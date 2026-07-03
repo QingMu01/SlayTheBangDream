@@ -12,7 +12,7 @@ namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
 public class ChoirSChoir() : AbstractSakikoMusicCard(CardRarity.Uncommon, TargetType.None)
 {
-    protected override IEnumerable<CardKeyword> CardKeywords => [BangDreamConst.Performance];
+    protected override IEnumerable<CardKeyword> CardKeywords => [BangDreamConst.Perform];
 
     protected override IEnumerable<DynamicVar> CardVars => [QuickVar.Gold.Create(7)];
 

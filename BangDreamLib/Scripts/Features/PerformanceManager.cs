@@ -162,22 +162,22 @@ public class PerformanceManager : SingletonModel
 
     private static async Task MoveCardInternal(CardModel cardModel)
     {
-        PileType nextPile;
+        (PileType, CardPilePosition) nextPile;
         if (cardModel is IPerformanceCard performanceCard)
         {
             nextPile = performanceCard.StopPerformanceNextPile;
         }
         else
         {
-            nextPile = PileType.Discard;
+            nextPile = (PileType.Discard, CardPilePosition.Bottom);
         }
 
         if (cardModel.IsDupe)
         {
-            nextPile = PileType.None;
+            nextPile = (PileType.None, CardPilePosition.Bottom);
         }
 
-        switch (nextPile)
+        switch (nextPile.Item1)
         {
             case PileType.Discard:
             {
@@ -191,7 +191,7 @@ public class PerformanceManager : SingletonModel
             }
             default:
             {
-                await CardPileCmd.Add(cardModel, nextPile);
+                await CardPileCmd.Add(cardModel, nextPile.Item1, nextPile.Item2);
                 break;
             }
         }
@@ -201,18 +201,18 @@ public class PerformanceManager : SingletonModel
         bool isAutoPlay, ResourceInfo resources, PileType pileType, CardPilePosition position)
     {
         if (card.Owner == Player &&
-            card is IPerformanceCard { StopPerformanceNextPile: not PileType.Discard } performanceCard &&
+            card is IPerformanceCard { StopPerformanceNextPile.Item1: not PileType.Discard } performanceCard &&
             pileType == PileType.Discard)
         {
-            return (performanceCard.StopPerformanceNextPile, position);
+            return (performanceCard.StopPerformanceNextPile.Item1, performanceCard.StopPerformanceNextPile.Item2);
         }
 
         return base.ModifyCardPlayResultPileTypeAndPosition(card, isAutoPlay, resources, pileType, position);
     }
 
-    public override async Task AfterCardPlayed(PlayerChoiceContext choiceContext, CardPlay cardPlay)
+    public override async Task AfterCardPlayed(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        if (cardPlay.Card is IPerformanceCard)
+        if (play.Card is IPerformanceCard)
         {
             await Cmd.CustomScaledWait(0.35f, 0.5f);
         }
@@ -223,7 +223,7 @@ public class PerformanceManager : SingletonModel
         if (!_isSubscribed)
         {
             _isSubscribed = true;
-            PerformancePile = BangDreamTools.GetPile(BangDreamConst.PerformanceTable, Player);
+            PerformancePile = BangDreamTools.GetPile(BangDreamConst.PerformPile, Player);
             if (Player.Character is IPerformableCharacter character)
                 Capacity = character.GetDefaultCapacity;
             else

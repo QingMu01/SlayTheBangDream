@@ -16,7 +16,7 @@ public class ParallelPerformance() : AbstractSakikoCard(CustomCost, CustomType, 
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.PerformanceArea
+        BangDreamConst.PerformArea
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>

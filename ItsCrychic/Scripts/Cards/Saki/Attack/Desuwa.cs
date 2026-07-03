@@ -21,15 +21,15 @@ public class Desuwa() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity,
         QuickVar.Cards.Create(1)
     ];
 
-    public override async Task AfterCardPlayedLate(PlayerChoiceContext choiceContext, CardPlay cardPlay)
+    public override async Task AfterCardPlayedLate(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        if (!cardPlay.Card.Id.Equals(Id) && Pile?.Type == PileType.Discard)
+        if (!play.Card.Id.Equals(Id) && Pile?.Type == PileType.Discard)
         {
             var cardPileAddResult = await CardPileCmd.Add(this, PileType.Hand);
             if (cardPileAddResult.success)
             {
                 var locString = new LocString("cards", "ITS_CRYCHIC_CARD_DESUWA.verbal_tic");
-                locString.Add("CardName", cardPlay.Card.Title);
+                locString.Add("CardName", play.Card.Title);
                 TalkCmd.Play(locString, Owner.Creature, VfxColor.White, VfxDuration.Short);
             }
         }
@@ -40,7 +40,7 @@ public class Desuwa() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity,
         ArgumentNullException.ThrowIfNull(play.Target);
 
         await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
-            .FromCard(this)
+            .FromCard(this, play)
             .Targeting(play.Target)
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);

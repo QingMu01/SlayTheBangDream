@@ -16,7 +16,7 @@ public class PuppetTheater() : AbstractSakikoCard(CustomCost, CustomType, Custom
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.Linger
+        BangDreamConst.Lingered
     ];
     protected override IEnumerable<DynamicVar> CardVars => [];
 

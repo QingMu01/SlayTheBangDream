@@ -22,7 +22,7 @@ public class StressBeat()
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.Linger
+        BangDreamConst.Lingered
     ];
 
     protected override IEnumerable<IHoverTip> CardHoverTips =>
@@ -43,7 +43,7 @@ public class StressBeat()
         ArgumentNullException.ThrowIfNull(play.Target);
 
         await DamageCmd.Attack(DynamicVars.ComputedValue("CalcDamage", play.Target))
-            .FromCard(this)
+            .FromCard(this, play)
             .Targeting(play.Target)
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);

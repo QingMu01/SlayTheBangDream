@@ -18,7 +18,7 @@ public class FinishTimes() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.PerformanceArea
+        BangDreamConst.PerformArea
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
@@ -32,7 +32,7 @@ public class FinishTimes() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
         ArgumentNullException.ThrowIfNull(play.Target);
 
         await DamageCmd.Attack(DynamicVars.ComputedValue("BaseDamage"))
-            .FromCard(this)
+            .FromCard(this, play)
             .WithHitCount(DynamicVars.Repeat.IntValue)
             .Targeting(play.Target)
             .WithHitFx("vfx/vfx_attack_slash")
@@ -43,7 +43,7 @@ public class FinishTimes() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
     {
         if (cardModel != null)
         {
-            var performanceCards = BangDreamTools.GetPile(BangDreamConst.PerformanceTable, cardModel.Owner).Cards.ToList();
+            var performanceCards = BangDreamTools.GetPile(BangDreamConst.PerformPile, cardModel.Owner).Cards.ToList();
             var card = performanceCards.FirstOrDefault();
             if (card != null)
             {

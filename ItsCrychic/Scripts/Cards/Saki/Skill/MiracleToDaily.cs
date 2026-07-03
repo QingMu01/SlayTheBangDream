@@ -21,7 +21,7 @@ public class MiracleToDaily() : AbstractSakikoCard(CustomCost, CustomType, Custo
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.PerformanceArea
+        BangDreamConst.PerformArea
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
@@ -33,7 +33,7 @@ public class MiracleToDaily() : AbstractSakikoCard(CustomCost, CustomType, Custo
     {
         await CreatureCmd.GainBlock(Owner.Creature, DynamicVars.Block, play);
 
-        var performanceCards = BangDreamTools.GetPile(BangDreamConst.PerformanceTable, Owner).Cards.ToList();
+        var performanceCards = BangDreamTools.GetPile(BangDreamConst.PerformPile, Owner).Cards.ToList();
         foreach (var performanceCard in performanceCards)
         {
             var card = CardFactory.GetDistinctForCombat(Owner,

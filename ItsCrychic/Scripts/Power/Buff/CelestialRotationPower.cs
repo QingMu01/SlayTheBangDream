@@ -32,7 +32,7 @@ public class CelestialRotationPower : BandPowerModel
 
                 foreach (var selectedCard in selectedCards)
                 {
-                    await CardPileCmd.Add(selectedCard, BangDreamConst.PerformanceTable);
+                    await CardPileCmd.Add(selectedCard, BangDreamConst.PerformPile);
                 }
             }
         }

@@ -23,9 +23,9 @@ public class Synthesizer : AbstractSakikoRelic, IModifyLingeredHook
         return _canEffective ? 0m : amount;
     }
 
-    public override Task AfterCardPlayedLate(PlayerChoiceContext choiceContext, CardPlay cardPlay)
+    public override Task AfterCardPlayedLate(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        if (!cardPlay.Card.IsDupe && _canEffective && cardPlay.Card is ISubsideCard { LingeredEnergyCost: > 0 })
+        if (!play.Card.IsDupe && _canEffective && play.Card is ISubsideCard { LingeredEnergyCost: > 0 })
         {
             Flash();
             _canEffective = false;

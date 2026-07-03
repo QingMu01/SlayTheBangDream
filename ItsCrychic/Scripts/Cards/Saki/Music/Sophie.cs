@@ -19,7 +19,7 @@ public class Sophie() : AbstractSakikoMusicCard(CardRarity.Uncommon, TargetType.
         HoverTipFactory.FromCard(ModelDb.Card<DefendSakiko>().ToMutable())
     ];
 
-    protected override IEnumerable<CardKeyword> CardKeywords => [BangDreamConst.Performance];
+    protected override IEnumerable<CardKeyword> CardKeywords => [BangDreamConst.Perform];
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
@@ -28,7 +28,7 @@ public class Sophie() : AbstractSakikoMusicCard(CardRarity.Uncommon, TargetType.
     ];
 
     public override decimal ModifyDamageAdditive(Creature? target, decimal amount, ValueProp props, Creature? dealer,
-        CardModel? cardSource)
+        CardModel? cardSource, CardPlay? cardPlay)
     {
         return Handle != null && dealer == Owner.Creature && cardSource?.Tags.Contains(CardTag.Strike) == true
             ? DynamicVars["StrikeDamage"].BaseValue

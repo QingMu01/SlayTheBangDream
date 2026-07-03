@@ -19,7 +19,7 @@ public class SetPerformance() : AbstractSakikoCard(CustomCost, CustomType, Custo
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
         CardKeyword.Exhaust,
-        BangDreamConst.PerformanceArea
+        BangDreamConst.PerformArea
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>

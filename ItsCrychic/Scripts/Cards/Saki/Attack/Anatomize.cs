@@ -21,13 +21,13 @@ public class Anatomize() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
         ComputedDynamicVarHelper.CreateDamageVar("BaseDamage", 18m, CalculateDamage),
     ];
 
-    protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay cardPlay)
+    protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        ArgumentNullException.ThrowIfNull(cardPlay.Target);
+        ArgumentNullException.ThrowIfNull(play.Target);
 
         await DamageCmd.Attack(DynamicVars.ComputedValue("BaseDamage"))
-            .FromCard(this)
-            .Targeting(cardPlay.Target)
+            .FromCard(this, play)
+            .Targeting(play.Target)
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
     }

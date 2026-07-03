@@ -17,7 +17,7 @@ public class CelestialRotation() : AbstractSakikoCard(CustomCost, CustomType, Cu
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.PerformanceArea
+        BangDreamConst.PerformArea
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>

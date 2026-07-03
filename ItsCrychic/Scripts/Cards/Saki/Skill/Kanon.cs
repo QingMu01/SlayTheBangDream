@@ -23,7 +23,7 @@ public class Kanon() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, 
     [
         CardKeyword.Innate,
         CardKeyword.Exhaust,
-        BangDreamConst.PerformanceArea,
+        BangDreamConst.PerformArea,
         BangDreamConst.Music
     ];
 
@@ -48,7 +48,7 @@ public class Kanon() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, 
                 .FirstOrDefault(item => item is IPerformanceCard);
             if (performanceCard != null)
             {
-                await CardPileCmd.Add(performanceCard, BangDreamConst.PerformanceTable);
+                await CardPileCmd.Add(performanceCard, BangDreamConst.PerformPile);
             }
             else
             {
@@ -67,7 +67,7 @@ public class Kanon() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, 
                 var selectedCard = randomCards.FirstOrDefault();
                 if (selectedCard != null)
                 {
-                    await CardPileCmd.Add(selectedCard, BangDreamConst.PerformanceTable);
+                    await CardPileCmd.Add(selectedCard, BangDreamConst.PerformPile);
                 }
             }
 

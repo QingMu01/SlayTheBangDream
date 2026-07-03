@@ -18,7 +18,7 @@ public class AveMujica() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.Performance
+        BangDreamConst.Perform
     ];
 
     protected override IEnumerable<IHoverTip> CardHoverTips =>
@@ -64,14 +64,14 @@ public class AveMujica() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
         return Task.CompletedTask;
     }
 
-    public override Task AfterCardPlayedLate(PlayerChoiceContext choiceContext, CardPlay cardPlay)
+    public override Task AfterCardPlayedLate(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        if (IsUpgraded && _effectCards.Contains(cardPlay.Card) && Handle == null)
+        if (IsUpgraded && _effectCards.Contains(play.Card) && Handle == null)
         {
-            cardPlay.Card.BaseReplayCount -= DynamicVars.Repeat.IntValue;
-            if (cardPlay.Card.BaseReplayCount <= 0)
+            play.Card.BaseReplayCount -= DynamicVars.Repeat.IntValue;
+            if (play.Card.BaseReplayCount <= 0)
             {
-                cardPlay.Card.BaseReplayCount = 0;
+                play.Card.BaseReplayCount = 0;
             }
         }
 

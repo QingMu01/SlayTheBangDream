@@ -20,7 +20,7 @@ public class BitterChoice()
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.Linger
+        BangDreamConst.Lingered
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
@@ -34,7 +34,7 @@ public class BitterChoice()
         ArgumentNullException.ThrowIfNull(play.Target);
 
         await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
-            .FromCard(this)
+            .FromCard(this, play)
             .Targeting(play.Target)
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);

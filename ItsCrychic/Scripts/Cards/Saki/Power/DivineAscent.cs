@@ -17,7 +17,7 @@ public class DivineAscent() : AbstractSakikoCard(CustomCost, CustomType, CustomR
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.Linger
+        BangDreamConst.Lingered
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>

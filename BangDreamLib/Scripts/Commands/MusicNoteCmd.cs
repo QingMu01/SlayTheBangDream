@@ -135,7 +135,8 @@ internal class MusicNoteEffectHandler(
                 new BlockingPlayerChoiceContext(),
                 attackTarget,
                 new DamageVar(damage, ValueProp.Unpowered | ValueProp.SkipHurtAnim),
-                card
+                card,
+                null
             );
 
             var damageTracker = card.Owner.AttachedData().MusicNoteDamageTracker;

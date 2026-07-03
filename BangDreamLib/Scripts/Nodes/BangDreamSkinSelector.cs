@@ -178,7 +178,7 @@ public partial class BangDreamSkinSelector : Control
 
     private void SetAnim(NCreatureVisuals visuals, string anim)
     {
-        _ = visuals.SpineAnimation.SetAnimation(anim);
+        visuals.SpineAnimation.SetAnimation(anim);
         visuals.Position = new Vector2(120, 200);
     }
 }

@@ -16,7 +16,7 @@ public class MelodyMaster() : AbstractSakikoCard(CustomCost, CustomType, CustomR
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.PerformanceArea,
+        BangDreamConst.PerformArea,
         BangDreamConst.Music
     ];
 

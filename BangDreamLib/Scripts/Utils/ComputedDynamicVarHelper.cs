@@ -53,7 +53,7 @@ public static class ComputedDynamicVarHelper
         {
             return isDamage
                 ? Hook.ModifyDamage(card.RunState, card.CombatState, target, card.Owner.Creature,
-                    baseValue, prop, card, ModifyDamageHookType.All, mode, out _)
+                    baseValue, prop, card, null, ModifyDamageHookType.All, mode, out _)
                 : Hook.ModifyBlock(card.CombatState, card.Owner.Creature, baseValue, prop, card, null, out _);
         }
 

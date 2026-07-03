@@ -23,8 +23,7 @@ public class PunishmentPower : BandPowerModel
             result.TotalDamage > 0)
         {
             await CreatureCmd.Damage(choiceContext, target,
-                new DamageVar(Amount, ValueProp.Unpowered | ValueProp.Unblockable | ValueProp.SkipHurtAnim), Owner,
-                null);
+                new DamageVar(Amount, ValueProp.Unpowered | ValueProp.Unblockable | ValueProp.SkipHurtAnim), Owner);
         }
     }
 }

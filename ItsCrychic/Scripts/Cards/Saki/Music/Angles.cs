@@ -15,7 +15,7 @@ public class Angles() : AbstractSakikoMusicCard(CardRarity.Rare, TargetType.None
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
         CardKeyword.Exhaust,
-        BangDreamConst.Performance,
+        BangDreamConst.Perform,
         BangDreamConst.Instant
     ];
 
@@ -43,7 +43,7 @@ public class Angles() : AbstractSakikoMusicCard(CardRarity.Rare, TargetType.None
 
             generatedCard.EnergyCost.SetUntilPlayed(0);
 
-            await CardPileCmd.AddGeneratedCardToCombat(generatedCard, BangDreamConst.PerformanceTable, Owner);
+            await CardPileCmd.AddGeneratedCardToCombat(generatedCard, BangDreamConst.PerformPile, Owner);
         }
     }
 }

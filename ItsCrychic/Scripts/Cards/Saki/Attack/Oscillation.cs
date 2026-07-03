@@ -18,7 +18,7 @@ public class Oscillation() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.Linger
+        BangDreamConst.Lingered
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
@@ -32,7 +32,7 @@ public class Oscillation() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
         ArgumentNullException.ThrowIfNull(CombatState);
         await LingeredCmd.AddLeByCard(this, CombatState.HittableEnemies.Count * DynamicVars["Oscillation"].IntValue);
         await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
-            .FromCard(this)
+            .FromCard(this, play)
             .TargetingAllOpponents(CombatState)
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);

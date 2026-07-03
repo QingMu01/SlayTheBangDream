@@ -12,7 +12,7 @@ namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
 public class Divine() : AbstractSakikoMusicCard(CardRarity.Uncommon, TargetType.None)
 {
-    protected override IEnumerable<CardKeyword> CardKeywords => [BangDreamConst.Performance];
+    protected override IEnumerable<CardKeyword> CardKeywords => [BangDreamConst.Perform];
 
     protected override IEnumerable<DynamicVar> CardVars => [ModCardVars.Int("Notes", 2)];
 

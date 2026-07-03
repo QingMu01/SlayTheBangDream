@@ -18,7 +18,7 @@ public class AutoSampler() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.Linger
+        BangDreamConst.Lingered
     ];
 
     protected override IEnumerable<IHoverTip> CardHoverTips =>

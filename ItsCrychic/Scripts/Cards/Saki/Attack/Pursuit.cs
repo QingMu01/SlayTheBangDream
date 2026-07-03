@@ -45,7 +45,7 @@ public class Pursuit() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.Linger
+        BangDreamConst.Lingered
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
@@ -59,7 +59,7 @@ public class Pursuit() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity
         ArgumentNullException.ThrowIfNull(play.Target);
 
         var attackCommand = await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
-            .FromCard(this)
+            .FromCard(this, play)
             .Targeting(play.Target)
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);

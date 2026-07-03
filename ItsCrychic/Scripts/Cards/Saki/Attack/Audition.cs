@@ -16,7 +16,7 @@ public class Audition() : AbstractSakikoCard(CustomCost, CustomType, CustomRarit
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.PerformanceArea
+        BangDreamConst.PerformArea
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
@@ -29,7 +29,7 @@ public class Audition() : AbstractSakikoCard(CustomCost, CustomType, CustomRarit
         ArgumentNullException.ThrowIfNull(play.Target);
 
         await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
-            .FromCard(this)
+            .FromCard(this, play)
             .Targeting(play.Target)
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
@@ -40,7 +40,7 @@ public class Audition() : AbstractSakikoCard(CustomCost, CustomType, CustomRarit
             var randomCard = Owner.RunState.Rng.CombatCardSelection.NextItem(extraDrawCards);
             if (randomCard != null)
             {
-                await CardPileCmd.Add(randomCard, BangDreamConst.PerformanceTable);
+                await CardPileCmd.Add(randomCard, BangDreamConst.PerformPile);
             }
         }
     }

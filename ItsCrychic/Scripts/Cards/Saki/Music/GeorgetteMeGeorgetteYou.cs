@@ -10,12 +10,12 @@ namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
 public class GeorgetteMeGeorgetteYou() : AbstractSakikoMusicCard(CardRarity.Uncommon, TargetType.None)
 {
-    protected override IEnumerable<CardKeyword> CardKeywords => [BangDreamConst.Performance];
+    protected override IEnumerable<CardKeyword> CardKeywords => [BangDreamConst.Perform];
 
     protected override IEnumerable<DynamicVar> CardVars => [ModCardVars.Int("DamagePerPower", 4)];
 
     public override decimal ModifyDamageAdditive(Creature? target, decimal amount, ValueProp props, Creature? dealer,
-        CardModel? cardSource)
+        CardModel? cardSource, CardPlay? cardPlay)
     {
         if (Handle == null || target == null || dealer != Owner.Creature || cardSource?.Owner != Owner ||
             props.HasFlag(ValueProp.Move))

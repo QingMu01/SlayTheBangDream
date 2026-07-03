@@ -20,7 +20,7 @@ public class SoundWave() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.PerformanceArea
+        BangDreamConst.PerformArea
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
@@ -33,7 +33,7 @@ public class SoundWave() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
         ArgumentNullException.ThrowIfNull(CombatState);
 
         await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
-            .FromCard(this)
+            .FromCard(this, play)
             .TargetingAllOpponents(CombatState)
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
@@ -73,7 +73,7 @@ public class SoundWave() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
     private void InitSet()
     {
         _performanceCards.Clear();
-        var performanceCards = BangDreamTools.GetPile(BangDreamConst.PerformanceTable, Owner).Cards.ToList();
+        var performanceCards = BangDreamTools.GetPile(BangDreamConst.PerformPile, Owner).Cards.ToList();
         foreach (var card in performanceCards)
         {
             _performanceCards.Add(card);

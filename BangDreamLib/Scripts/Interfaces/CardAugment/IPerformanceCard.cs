@@ -11,7 +11,7 @@ public interface IPerformanceCard
     public static readonly AttachedState<CardModel, bool> CardEnterExtraDeck = new(_ => false);
 
     bool IsInstant { get; set; }
-    PileType StopPerformanceNextPile { get; }
+    (PileType, CardPilePosition) StopPerformanceNextPile { get; }
     NPerformanceItem? Handle { get; set; }
 
     Task OnStartPerformance(PlayerChoiceContext choiceContext);

@@ -14,8 +14,8 @@ public class Ether() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
         CardKeyword.Exhaust,
-        BangDreamConst.Performance,
-        BangDreamConst.PerformanceArea,
+        BangDreamConst.Perform,
+        BangDreamConst.PerformArea,
         BangDreamConst.Instant
     ];
 
@@ -24,7 +24,7 @@ public class Ether() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
 
     public override async Task OnStartPerformance(PlayerChoiceContext choiceContext)
     {
-        var cardPile = BangDreamConst.PerformanceTable.GetPile(Owner);
+        var cardPile = BangDreamConst.PerformPile.GetPile(Owner);
         foreach (var card in cardPile.Cards)
         {
             if (card.Tags.Contains(BangDreamConst.SymbolCard) && card is IPerformanceCard performanceCard)

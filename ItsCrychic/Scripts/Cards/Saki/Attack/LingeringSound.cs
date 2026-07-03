@@ -26,7 +26,7 @@ public class LingeringSound()
     {
         ArgumentNullException.ThrowIfNull(CombatState);
         await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
-            .FromCard(this)
+            .FromCard(this, play)
             .TargetingAllOpponents(CombatState)
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
@@ -42,8 +42,10 @@ public class LingeringSound()
         return Task.CompletedTask;
     }
 
-    protected override PileType GetResultPileTypeForCardPlay()
+    protected override (PileType, CardPilePosition) GetResultPileTypeAndPositionForCardPlay()
     {
-        return ((ISubsideCard)this).CanSubside ? PileType.Hand : base.GetResultPileTypeForCardPlay();
+        return ((ISubsideCard)this).CanSubside
+            ? (PileType.Hand, CardPilePosition.Bottom)
+            : base.GetResultPileTypeAndPositionForCardPlay();
     }
 }

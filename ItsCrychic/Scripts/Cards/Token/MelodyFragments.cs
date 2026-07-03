@@ -29,8 +29,8 @@ public class MelodyFragments() : MusicCardModel(CustomCost, CustomRarity, Custom
     [
         CardKeyword.Exhaust,
         BangDreamConst.MusicNote,
-        BangDreamConst.Performance,
-        BangDreamConst.PerformanceArea
+        BangDreamConst.Perform,
+        BangDreamConst.PerformArea
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>

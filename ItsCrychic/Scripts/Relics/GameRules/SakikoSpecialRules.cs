@@ -38,7 +38,7 @@ public class SakikoSpecialRules : HiddenRelic, ILingeredChangedHook
                 var firstOrDefault = extraDraw.Cards.ToList().FirstOrDefault();
                 if (firstOrDefault != null)
                 {
-                    var result = await CardPileCmd.Add(firstOrDefault, BangDreamConst.PerformanceTable);
+                    var result = await CardPileCmd.Add(firstOrDefault, BangDreamConst.PerformPile);
                     if (result.success)
                     {
                         await LingeredCmd.JustReduce(Owner, LingeredEnergyCounter.MaxLingeredEnergy);

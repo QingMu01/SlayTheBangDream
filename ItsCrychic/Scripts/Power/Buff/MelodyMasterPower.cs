@@ -33,11 +33,11 @@ public class MelodyMasterPower : BandPowerModel, ICardPerformanceHook
         return Task.CompletedTask;
     }
 
-    public override Task AfterCardPlayedLate(PlayerChoiceContext choiceContext, CardPlay cardPlay)
+    public override Task AfterCardPlayedLate(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        if (_applySlyCards.Contains(cardPlay.Card))
+        if (_applySlyCards.Contains(play.Card))
         {
-            _applySlyCards.Remove(cardPlay.Card);
+            _applySlyCards.Remove(play.Card);
         }
 
         return Task.CompletedTask;

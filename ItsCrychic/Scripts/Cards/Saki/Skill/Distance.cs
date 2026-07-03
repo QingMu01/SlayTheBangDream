@@ -20,7 +20,7 @@ public class Distance() : AbstractSakikoCard(CustomCost, CustomType, CustomRarit
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.Linger
+        BangDreamConst.Lingered
     ];
 
     protected override IEnumerable<IHoverTip> CardHoverTips =>

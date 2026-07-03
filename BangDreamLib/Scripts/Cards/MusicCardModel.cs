@@ -27,17 +27,17 @@ public abstract class MusicCardModel(
         return Task.CompletedTask;
     }
 
-    public virtual PileType StopPerformanceNextPile
+    public virtual (PileType, CardPilePosition) StopPerformanceNextPile
     {
         get
         {
-            var moveTo = base.GetResultPileTypeForCardPlay();
-            return moveTo == PileType.Discard ? BangDreamConst.ExtraDraw : moveTo;
+            var (moveTo, position) = base.GetResultPileTypeAndPositionForCardPlay();
+            return (moveTo == PileType.Discard ? BangDreamConst.ExtraDraw : moveTo, position);
         }
     }
 
-    protected sealed override PileType GetResultPileTypeForCardPlay()
+    protected sealed override (PileType, CardPilePosition) GetResultPileTypeAndPositionForCardPlay()
     {
-        return BangDreamConst.PerformanceTable;
+        return (BangDreamConst.PerformPile, CardPilePosition.Bottom);
     }
 }

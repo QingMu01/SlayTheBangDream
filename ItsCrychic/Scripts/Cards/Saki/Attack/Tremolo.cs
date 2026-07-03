@@ -8,7 +8,7 @@ using MegaCrit.Sts2.Core.ValueProps;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
-public class ScriptArrangement() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget)
+public class Tremolo() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget)
 {
     private const int CustomCost = 0;
     private const CardType CustomType = CardType.Attack;
@@ -39,7 +39,7 @@ public class ScriptArrangement() : AbstractSakikoCard(CustomCost, CustomType, Cu
                 }
 
                 await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
-                    .FromCard(this)
+                    .FromCard(this, play)
                     .Targeting(enemy)
                     .WithHitFx("vfx/vfx_attack_slash")
                     .Execute(choiceContext);

@@ -18,7 +18,7 @@ public class Evacuation() : AbstractSakikoCard(CustomCost, CustomType, CustomRar
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.PerformanceArea
+        BangDreamConst.PerformArea
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
@@ -30,7 +30,7 @@ public class Evacuation() : AbstractSakikoCard(CustomCost, CustomType, CustomRar
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
         await CreatureCmd.GainBlock(Owner.Creature, DynamicVars.Block, play);
-        var performance = BangDreamTools.GetPile(BangDreamConst.PerformanceTable, Owner).Cards.ToList();
+        var performance = BangDreamTools.GetPile(BangDreamConst.PerformPile, Owner).Cards.ToList();
 
         foreach (var card in performance)
         {

@@ -16,7 +16,7 @@ public class PlanBSakiko() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.Linger
+        BangDreamConst.Lingered
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
@@ -34,10 +34,10 @@ public class PlanBSakiko() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
         AddKeyword(CardKeyword.Retain);
     }
 
-    protected override PileType GetResultPileTypeForCardPlay()
+    protected override (PileType, CardPilePosition) GetResultPileTypeAndPositionForCardPlay()
     {
         return Owner.AttachedData().LingeredEnergy.Counter == 0
-            ? base.GetResultPileTypeForCardPlay()
-            : PileType.Exhaust;
+            ? base.GetResultPileTypeAndPositionForCardPlay()
+            : (PileType.Exhaust, CardPilePosition.Bottom);
     }
 }

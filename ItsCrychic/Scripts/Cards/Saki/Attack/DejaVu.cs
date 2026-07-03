@@ -33,7 +33,7 @@ public class DejaVu() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity,
         ArgumentNullException.ThrowIfNull(play.Target);
 
         await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
-            .FromCard(this)
+            .FromCard(this, play)
             .WithHitCount(DynamicVars.Repeat.IntValue)
             .Targeting(play.Target)
             .WithHitFx("vfx/vfx_attack_slash")

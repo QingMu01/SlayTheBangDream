@@ -13,7 +13,7 @@ public class MasqueradeRhapsodyRequest() : AbstractSakikoMusicCard(CardRarity.Un
 {
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.Performance,
+        BangDreamConst.Perform,
         BangDreamConst.MusicNote
     ];
 

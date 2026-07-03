@@ -12,7 +12,7 @@ namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
 public class KamisamaBaka() : AbstractSakikoMusicCard(CardRarity.Uncommon, TargetType.None)
 {
-    protected override IEnumerable<CardKeyword> CardKeywords => [BangDreamConst.Performance];
+    protected override IEnumerable<CardKeyword> CardKeywords => [BangDreamConst.Perform];
 
     protected override IEnumerable<DynamicVar> CardVars => [QuickVar.Damage.Create(10)];
 
@@ -25,7 +25,7 @@ public class KamisamaBaka() : AbstractSakikoMusicCard(CardRarity.Uncommon, Targe
 
         await CreatureCmd.LoseBlock(target, target.Block);
         await CreatureCmd.Damage(new BlockingPlayerChoiceContext(), target,
-            new DamageVar(DynamicVars.Damage.BaseValue, ValueProp.Unpowered), this);
+            new DamageVar(DynamicVars.Damage.BaseValue, ValueProp.Unpowered), this, null);
     }
 
     protected override void OnUpgrade()

@@ -21,7 +21,7 @@ public class BeerCan() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.Linger
+        BangDreamConst.Lingered
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
@@ -42,7 +42,7 @@ public class BeerCan() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity
         }
 
         await DamageCmd.Attack(damage)
-            .FromCard(this)
+            .FromCard(this, play)
             .TargetingAllOpponents(CombatState)
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);

@@ -20,13 +20,13 @@ public class BlackeningPower : BandPowerModel
 
     public override PowerStackType StackType => PowerStackType.Single;
 
-    public override async Task AfterCardPlayed(PlayerChoiceContext choiceContext, CardPlay cardPlay)
+    public override async Task AfterCardPlayed(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        if (cardPlay.Card is IPerformanceCard && cardPlay.Card.Owner == Owner.Player)
+        if (play.Card is IPerformanceCard && play.Card.Owner == Owner.Player)
         {
             Flash();
 
-            cardPlay.Card.AddKeyword(CardKeyword.Exhaust);
+            play.Card.AddKeyword(CardKeyword.Exhaust);
 
             await CreatureCmd.Damage(choiceContext, Owner,
                 new DamageVar(HpLossAmount, ValueProp.Unpowered | ValueProp.Unblockable), Owner);

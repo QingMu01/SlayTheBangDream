@@ -14,8 +14,8 @@ public class InYourBlueEyes() : AbstractSakikoMusicCard(CardRarity.Uncommon, Tar
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.Performance,
-        BangDreamConst.Linger
+        BangDreamConst.Perform,
+        BangDreamConst.Lingered
     ];
 
     protected override IEnumerable<DynamicVar> CardVars => [QuickVar.Block.Create(5)];
@@ -31,12 +31,12 @@ public class InYourBlueEyes() : AbstractSakikoMusicCard(CardRarity.Uncommon, Tar
         return Task.CompletedTask;
     }
 
-    public override async Task AfterCardPlayedLate(PlayerChoiceContext choiceContext, CardPlay cardPlay)
+    public override async Task AfterCardPlayedLate(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        if (Handle != null && cardPlay.Card.Owner == Owner && cardPlay.Card is ISubsideCard &&
-            !_subsidePlays.Remove(cardPlay))
+        if (Handle != null && play.Card.Owner == Owner && play.Card is ISubsideCard &&
+            !_subsidePlays.Remove(play))
         {
-            await CreatureCmd.GainBlock(Owner.Creature, DynamicVars.Block, cardPlay);
+            await CreatureCmd.GainBlock(Owner.Creature, DynamicVars.Block, play);
         }
     }
 

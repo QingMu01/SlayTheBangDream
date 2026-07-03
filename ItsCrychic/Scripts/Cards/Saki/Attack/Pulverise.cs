@@ -34,7 +34,7 @@ public class Pulverise() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
             var energyToGain = IsUpgraded ? energyToCost : energyToCost - 1;
 
             var attackCommand = await DamageCmd.Attack(DynamicVars.Damage.BaseValue * ResolveEnergyXValue())
-                .FromCard(this)
+                .FromCard(this, play)
                 .Targeting(play.Target)
                 .WithHitFx("vfx/vfx_attack_slash")
                 .Execute(choiceContext);

@@ -34,12 +34,12 @@ public static class BangDreamConst
         internal set => Init(ref _extraDraw, value, nameof(ExtraDraw));
     }
 
-    private static PileType? _performanceTable;
+    private static PileType? _performPile;
 
-    public static PileType PerformanceTable
+    public static PileType PerformPile
     {
-        get => _performanceTable ?? throw new InvalidOperationException("PileType.PerformanceTable is not initialized.");
-        internal set => Init(ref _performanceTable, value, nameof(PerformanceTable));
+        get => _performPile ?? throw new InvalidOperationException("PileType.PerformanceTable is not initialized.");
+        internal set => Init(ref _performPile, value, nameof(PerformPile));
     }
 
     private static CardKeyword? _music;
@@ -58,12 +58,12 @@ public static class BangDreamConst
         internal set => Init(ref _musicNote, value, nameof(MusicNote));
     }
 
-    private static CardKeyword? _performance;
+    private static CardKeyword? _perform;
 
-    public static CardKeyword Performance
+    public static CardKeyword Perform
     {
-        get => _performance ?? throw new InvalidOperationException("CardKeyword.Performance is not initialized.");
-        internal set => Init(ref _performance, value, nameof(Performance));
+        get => _perform ?? throw new InvalidOperationException("CardKeyword.Performance is not initialized.");
+        internal set => Init(ref _perform, value, nameof(Perform));
     }
 
     private static CardKeyword? _instant;
@@ -74,20 +74,20 @@ public static class BangDreamConst
         internal set => Init(ref _instant, value, nameof(Instant));
     }
 
-    private static CardKeyword? _performanceArea;
+    private static CardKeyword? _performArea;
 
-    public static CardKeyword PerformanceArea
+    public static CardKeyword PerformArea
     {
-        get => _performanceArea ?? throw new InvalidOperationException("CardKeyword.PerformanceArea is not initialized.");
-        internal set => Init(ref _performanceArea, value, nameof(PerformanceArea));
+        get => _performArea ?? throw new InvalidOperationException("CardKeyword.PerformanceArea is not initialized.");
+        internal set => Init(ref _performArea, value, nameof(PerformArea));
     }
 
-    private static CardKeyword? _linger;
+    private static CardKeyword? _lingered;
 
-    public static CardKeyword Linger
+    public static CardKeyword Lingered
     {
-        get => _linger ?? throw new InvalidOperationException("CardKeyword.Linger is not initialized.");
-        internal set => Init(ref _linger, value, nameof(Linger));
+        get => _lingered ?? throw new InvalidOperationException("CardKeyword.Linger is not initialized.");
+        internal set => Init(ref _lingered, value, nameof(Lingered));
     }
 
     private static RewardType? _rewardMusic;
@@ -104,6 +104,14 @@ public static class BangDreamConst
     {
         get => _symbolCard ?? throw new InvalidOperationException("CardTag.SymbolCard is not initialized.");
         internal set => Init(ref _symbolCard, value, nameof(SymbolCard));
+    }
+
+    private static string? _lingeredResource;
+
+    public static string LingeredResource
+    {
+        get => _lingeredResource ?? throw new InvalidOperationException("LingeredResource is not initialized.");
+        internal set => Init(ref _lingeredResource, value, nameof(LingeredResource));
     }
 
     private static void Init<T>(ref T? storage, T value, string propertyName) where T : class

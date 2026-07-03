@@ -7,7 +7,6 @@ using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
 using BangDreamLib.Scripts.Multiplayer.RunData;
 using BangDreamLib.Scripts.Patches;
-using BangDreamLib.Scripts.Patches.Runtime;
 using BangDreamLib.Scripts.Rewards;
 using BangDreamLib.Scripts.Utils;
 using BangDreamLib.Scripts.Utils.Infos;
@@ -21,8 +20,8 @@ using STS2RitsuLib;
 using STS2RitsuLib.CardPiles;
 using STS2RitsuLib.CardTags;
 using STS2RitsuLib.Combat.Rewards;
+using STS2RitsuLib.Combat.SecondaryResources;
 using STS2RitsuLib.Keywords;
-using STS2RitsuLib.Patching.Builders;
 using STS2RitsuLib.Patching.Core;
 using STS2RitsuLib.RunData;
 using Logger = MegaCrit.Sts2.Core.Logging.Logger;
@@ -97,11 +96,11 @@ public class BangDreamLibCore
         // 注册关键字
         var keywords = RitsuLibFramework.GetKeywordRegistry(BangDreamConst.ModId);
         BangDreamConst.Music = RegisterKeyword(keywords, "Music");
-        BangDreamConst.Linger = RegisterKeyword(keywords, "Linger");
+        BangDreamConst.Lingered = RegisterKeyword(keywords, "Lingered");
         BangDreamConst.Instant = RegisterKeyword(keywords, "Instant");
         BangDreamConst.MusicNote = RegisterKeyword(keywords, "MusicNote");
-        BangDreamConst.Performance = RegisterKeyword(keywords, "Performance");
-        BangDreamConst.PerformanceArea = RegisterKeyword(keywords, "PerformanceArea");
+        BangDreamConst.Perform = RegisterKeyword(keywords, "Perform");
+        BangDreamConst.PerformArea = RegisterKeyword(keywords, "PerformArea");
 
         // 注册自定义标签
         var cardTagRegistry = ModCardTagRegistry.For(BangDreamConst.ModId);
@@ -150,7 +149,7 @@ public class BangDreamLibCore
             }
         }).PileType;
 
-        BangDreamConst.PerformanceTable = customPile.RegisterOwned("Performance", new ModCardPileSpec
+        BangDreamConst.PerformPile = customPile.RegisterOwned("Performance", new ModCardPileSpec
         {
             Scope = ModCardPileScope.CombatOnly,
             Style = ModCardPileUiStyle.Headless,
@@ -161,6 +160,18 @@ public class BangDreamLibCore
                 context.CardModel?.Owner.AttachedData().PerformanceManager.PerformanceArea
                     ?.GetPilePost(context.CardModel)
         }).PileType;
+
+        // 注册余音资源
+        var registry = RitsuLibFramework.GetSecondaryResourceRegistry(BangDreamConst.ModId);
+
+        BangDreamConst.LingeredResource = registry.Register("Lingered", new SecondaryResourceDefinition(
+            defaultAmount: 0,
+            baseMaxAmount: 7,
+            turnStartPolicy: SecondaryResourceTurnStartPolicy.None,
+            persistencePolicy: SecondaryResourcePersistencePolicy.None,
+            smallIconPath: "res://Test/images/resources/mana_small.png",
+            largeIconPath: "res://Test/images/resources/mana_large.png"
+        )).Id;
 
         // 注册公共内容
         var commonContent = RitsuLibFramework.GetContentRegistry(BangDreamConst.ModId);
@@ -188,31 +199,6 @@ public class BangDreamLibCore
                     }
                 }
             }
-        });
-
-        RitsuLibFramework.SubscribeLifecycle<ModelIdsInitializedEvent>(_ =>
-        {
-            var dynamicPatcher = RitsuLibFramework.CreatePatcher(BangDreamConst.ModId, "auto_set_dynamic_patches");
-            var autoSetSubsideVar = new DynamicPatchBuilder("auto_set_subside_var");
-
-            foreach (var card in ModelDb.AllCards.Where(card => card is ISubsideCard))
-            {
-                var type = card.GetType();
-                var property = type.GetProperty("CardVars",
-                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-
-                if (property != null)
-                {
-                    autoSetSubsideVar.AddPropertyGetter(
-                        targetType: type,
-                        propertyName: "CardVars",
-                        postfix: DynamicPatchBuilder.FromMethod(typeof(AutoSetSubsideVarPatch),
-                            nameof(AutoSetSubsideVarPatch.Postfix)),
-                        isCritical: true);
-                }
-            }
-
-            dynamicPatcher.ApplyDynamicPatches(autoSetSubsideVar.Patches);
         });
 
         ModHelper.SubscribeForCombatStateHooks("ExtraSubscribe", state =>

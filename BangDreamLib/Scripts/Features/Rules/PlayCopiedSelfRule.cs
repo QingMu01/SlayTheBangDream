@@ -12,10 +12,10 @@ public class CopySelfAndPlayCardRule : SingletonModel
 {
     public override bool ShouldReceiveCombatHooks => true;
 
-    public override async Task AfterCardPlayedLate(PlayerChoiceContext choiceContext, CardPlay cardPlay)
+    public override async Task AfterCardPlayedLate(PlayerChoiceContext choiceContext, CardPlay play)
     {
         var shouldCopySelfAndPlay = false;
-        if (cardPlay.Card is ICopySelfAndPlayFlag flag)
+        if (play.Card is ICopySelfAndPlayFlag flag)
         {
             if (flag.ShouldCopySelfAndPlayOnce)
             {
@@ -30,14 +30,14 @@ public class CopySelfAndPlayCardRule : SingletonModel
 
         if (shouldCopySelfAndPlay)
         {
-            var cardModel = cardPlay.Card.CreateDupe();
-            if (cardPlay.Target == null)
+            var cardModel = play.Card.CreateDupe();
+            if (play.Target == null)
             {
                 await CardCmd.AutoPlay(choiceContext, cardModel, null);
             }
             else
             {
-                await CardCmd.AutoPlay(choiceContext, cardModel, cardPlay.Target.IsHittable ? cardPlay.Target : null);
+                await CardCmd.AutoPlay(choiceContext, cardModel, play.Target.IsHittable ? play.Target : null);
             }
         }
     }

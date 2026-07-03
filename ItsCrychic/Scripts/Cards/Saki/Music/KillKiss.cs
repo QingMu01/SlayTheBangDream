@@ -16,7 +16,7 @@ public class KillKiss() : AbstractSakikoMusicCard(CardRarity.Rare, TargetType.Ra
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.Performance,
+        BangDreamConst.Perform,
         BangDreamConst.Instant
     ];
 
@@ -26,9 +26,9 @@ public class KillKiss() : AbstractSakikoMusicCard(CardRarity.Rare, TargetType.Ra
         ComputedDynamicVarHelper.CreateBaseVar("BaseDamage", 15, CalculateFixedDamage)
     ];
 
-    protected override Task OnPlay(PlayerChoiceContext choiceContext, CardPlay cardPlay)
+    protected override Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        ((BoolVar)DynamicVars["HandPlay"]).BoolVal = !cardPlay.IsAutoPlay;
+        ((BoolVar)DynamicVars["HandPlay"]).BoolVal = !play.IsAutoPlay;
         return Task.CompletedTask;
     }
 
@@ -40,7 +40,7 @@ public class KillKiss() : AbstractSakikoMusicCard(CardRarity.Rare, TargetType.Ra
         if (target != null)
         {
             await CreatureCmd.Damage(choiceContext, target, DynamicVars.ComputedValue("BaseDamage"),
-                ValueProp.Unpowered | ValueProp.Unblockable, Owner.Creature, this);
+                ValueProp.Unpowered | ValueProp.Unblockable, Owner.Creature, this, null);
         }
     }
 
@@ -54,7 +54,7 @@ public class KillKiss() : AbstractSakikoMusicCard(CardRarity.Rare, TargetType.Ra
                 ((BoolVar)card.DynamicVars["HandPlay"]).BoolVal = true;
             }
             else if (pileType == PileType.Discard || pileType == PileType.Draw || pileType == PileType.Exhaust ||
-                     pileType == BangDreamConst.ExtraDraw || pileType == BangDreamConst.PerformanceTable)
+                     pileType == BangDreamConst.ExtraDraw || pileType == BangDreamConst.PerformPile)
             {
                 ((BoolVar)card.DynamicVars["HandPlay"]).BoolVal = false;
             }

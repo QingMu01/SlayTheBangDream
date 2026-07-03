@@ -22,8 +22,8 @@ public class SymbolI() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.Performance,
-        BangDreamConst.PerformanceArea
+        BangDreamConst.Perform,
+        BangDreamConst.PerformArea
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>

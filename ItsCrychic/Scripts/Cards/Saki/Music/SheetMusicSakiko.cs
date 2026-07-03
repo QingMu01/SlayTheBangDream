@@ -15,7 +15,7 @@ public class SheetMusicSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTa
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.Performance,
+        BangDreamConst.Perform,
     ];
 
     protected override IEnumerable<IHoverTip> CardHoverTips =>

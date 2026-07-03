@@ -15,7 +15,7 @@ public class Revue() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, 
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.PerformanceArea
+        BangDreamConst.PerformArea
     ];
 
     protected override IEnumerable<DynamicVar> CardVars => [];
@@ -24,7 +24,7 @@ public class Revue() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, 
     {
         ArgumentNullException.ThrowIfNull(Owner.PlayerCombatState);
 
-        var performanceCards = BangDreamTools.GetPile(BangDreamConst.PerformanceTable, Owner).Cards.ToList();
+        var performanceCards = BangDreamTools.GetPile(BangDreamConst.PerformPile, Owner).Cards.ToList();
         foreach (var card in performanceCards)
         {
             if (Owner.PlayerCombatState.Hand.Cards.Count < CardPile.MaxCardsInHand)

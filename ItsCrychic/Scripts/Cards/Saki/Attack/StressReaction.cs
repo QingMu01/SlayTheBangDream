@@ -34,7 +34,7 @@ public class StressReaction() : AbstractSakikoCard(CustomCost, CustomType, Custo
         ArgumentNullException.ThrowIfNull(play.Target);
 
         var attackCommand = await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
-            .FromCard(this)
+            .FromCard(this, play)
             .Targeting(play.Target)
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);

@@ -20,7 +20,7 @@ public class Mask() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, C
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.Linger
+        BangDreamConst.Lingered
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>

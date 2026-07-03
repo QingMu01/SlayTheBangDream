@@ -30,7 +30,7 @@ public class Revenge() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity
         ArgumentNullException.ThrowIfNull(play.Target);
 
         await DamageCmd.Attack(DynamicVars.ComputedValue("CalcDamage", play.Target))
-            .FromCard(this)
+            .FromCard(this, play)
             .Targeting(play.Target)
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);

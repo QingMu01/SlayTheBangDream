@@ -36,7 +36,7 @@ public class Blessing() : AbstractSakikoCard(CustomCost, CustomType, CustomRarit
         ArgumentNullException.ThrowIfNull(play.Target);
 
         await DamageCmd.Attack(DynamicVars.ComputedValue("BaseDamage", play.Target))
-            .FromCard(this)
+            .FromCard(this, play)
             .Targeting(play.Target)
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
