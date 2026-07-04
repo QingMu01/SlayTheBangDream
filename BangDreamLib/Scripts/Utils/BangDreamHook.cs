@@ -11,17 +11,6 @@ namespace BangDreamLib.Scripts.Utils;
 
 public static class BangDreamHook
 {
-    public static decimal ModifyLingeredEnergyAdd(ICombatState combatState, decimal amount)
-    {
-        return combatState.IterateHookListeners().OfType<IModifyLingeredHook>()
-            .Aggregate(amount, (current, hook) => hook.ModifyLingeredEnergyAdd(current));
-    }
-
-    public static decimal ModifyLingeredEnergyReduce(ICombatState combatState, decimal amount)
-    {
-        return combatState.IterateHookListeners().OfType<IModifyLingeredHook>()
-            .Aggregate(amount, (current, hook) => hook.ModifyLingeredEnergyReduce(current));
-    }
 
     public static decimal ModifyMusicNoteDamage(
         ICombatState combatState,
@@ -58,39 +47,6 @@ public static class BangDreamHook
         return combatState.IterateHookListeners().OfType<IMusicNoteModifyHook>().Aggregate(amount,
             (current, model) => model.ModifyMusicNoteShotCount(current, dealer, source));
     }
-
-    public static async Task AfterLingeredEnergyAdded(ICombatState combatState, Player player, int amount)
-    {
-        foreach (var model in combatState.IterateHookListeners().OfType<ILingeredChangedHook>())
-        {
-            await model.AfterLingeredEnergyAdded(player, amount);
-        }
-    }
-
-    public static async Task AfterLingeredEnergyReduced(ICombatState combatState, Player player, int amount)
-    {
-        foreach (var model in combatState.IterateHookListeners().OfType<ILingeredChangedHook>())
-        {
-            await model.AfterLingeredEnergyReduced(player, amount);
-        }
-    }
-
-    public static async Task OnLingeredEnergyFilled(ICombatState combatState, Player player, int amount)
-    {
-        foreach (var model in combatState.IterateHookListeners().OfType<ILingeredChangedHook>())
-        {
-            await model.OnLingeredEnergyFilled(player, amount);
-        }
-    }
-
-    public static async Task FinalUnprocessedOverflow(ICombatState combatState, Player player, int amount)
-    {
-        foreach (var model in combatState.IterateHookListeners().OfType<ILingeredChangedHook>())
-        {
-            await model.FinalUnprocessedOverflow(player, amount);
-        }
-    }
-
 
     public static async Task OnCardEnterPerformanceArea(ICombatState combatState, CardModel cardModel)
     {

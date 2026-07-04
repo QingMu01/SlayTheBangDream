@@ -14,7 +14,7 @@ public class Pulverise() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
     private const CardRarity CustomRarity = CardRarity.Rare;
     private const TargetType CustomTarget = TargetType.AnyEnemy;
 
-    public int LingeredEnergyCost => 5;
+    public int LingeredResourceCost => 5;
 
     protected override bool HasEnergyCostX => true;
 

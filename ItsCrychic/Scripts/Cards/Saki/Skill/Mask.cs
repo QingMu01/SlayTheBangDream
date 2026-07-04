@@ -1,5 +1,4 @@
 using BangDreamLib.Scripts.Extensions;
-using BangDreamLib.Scripts.Interfaces.GameHook;
 using BangDreamLib.Scripts.Utils;
 using ItsCrychic.Scripts.Power.Buff;
 using MegaCrit.Sts2.Core.Commands;
@@ -9,7 +8,7 @@ using MegaCrit.Sts2.Core.Localization.DynamicVars;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
-public class Mask() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget), IModifyLingeredHook
+public class Mask() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget)
 {
     private const int CustomCost = 1;
     private const CardType CustomType = CardType.Skill;

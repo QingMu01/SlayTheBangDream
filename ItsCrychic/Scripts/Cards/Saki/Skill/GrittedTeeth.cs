@@ -1,4 +1,3 @@
-using BangDreamLib.Scripts.Commands;
 using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Combat;
@@ -8,6 +7,7 @@ using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
+using STS2RitsuLib.Combat.SecondaryResources;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
@@ -37,7 +37,8 @@ public class GrittedTeeth() : AbstractSakikoCard(CustomCost, CustomType, CustomR
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
         await CreatureCmd.GainBlock(Owner.Creature, DynamicVars.Block, play);
-        await LingeredCmd.AddLeByCard(this, DynamicVars["LingeredEnergy"].IntValue);
+        await SecondaryResourceCmd.Gain(Owner, BangDreamConst.LingeredResource, DynamicVars["LingeredEnergy"].IntValue,
+            this);
     }
 
     public override async Task BeforeHandDraw(

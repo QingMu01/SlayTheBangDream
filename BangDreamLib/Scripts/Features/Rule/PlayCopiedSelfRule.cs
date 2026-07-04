@@ -2,14 +2,14 @@ using BangDreamLib.Scripts.Interfaces.CardAugment;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using MegaCrit.Sts2.Core.Models;
+using STS2RitsuLib.Interop.AutoRegistration;
+using STS2RitsuLib.Models;
 
-namespace BangDreamLib.Scripts.Features.Rules;
+namespace BangDreamLib.Scripts.Features.Rule;
 
-public class CopySelfAndPlayCardRule : SingletonModel
+[RegisterSingleton]
+public class CopySelfAndPlayCardRule() : HookedSingletonModel(HookType.Combat)
 {
-    public override bool ShouldReceiveCombatHooks => true;
-
     public override async Task AfterCardPlayedLate(PlayerChoiceContext choiceContext, CardPlay play)
     {
         var shouldCopySelfAndPlay = false;

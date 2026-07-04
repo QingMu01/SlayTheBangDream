@@ -10,18 +10,15 @@ public class AttachePlayerData
 {
     public static readonly AttachedState<Player, AttachePlayerData> State = new(p => new AttachePlayerData(p));
 
-    public LingeredEnergyCounter LingeredEnergy { get; }
     public PerformanceManager PerformanceManager { get; }
     public MusicNoteDamageTracker MusicNoteDamageTracker { get; }
 
     private AttachePlayerData(Player player)
     {
-        LingeredEnergy = (LingeredEnergyCounter)ModelDb.Singleton<LingeredEnergyCounter>().MutableClone();
         PerformanceManager = (PerformanceManager)ModelDb.Singleton<PerformanceManager>().MutableClone();
 
         MusicNoteDamageTracker = (MusicNoteDamageTracker)ModelDb.Singleton<MusicNoteDamageTracker>().MutableClone();
 
-        LingeredEnergy.Owner = player;
         PerformanceManager.Player = player;
     }
 }

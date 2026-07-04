@@ -14,7 +14,7 @@ public class Glissando() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
     private const CardRarity CustomRarity = CardRarity.Uncommon;
     private const TargetType CustomTarget = TargetType.Self;
 
-    public int LingeredEnergyCost => 1;
+    public int LingeredResourceCost => 1;
 
     public override bool GainsBlock => true;
 

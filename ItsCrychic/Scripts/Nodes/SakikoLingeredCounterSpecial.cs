@@ -1,4 +1,5 @@
 using Godot;
+using STS2RitsuLib.Combat.SecondaryResources;
 
 namespace ItsCrychic.Scripts.Nodes;
 
@@ -19,7 +20,7 @@ public partial class SakikoLingeredCounterSpecial : LingeredCounter
         _counterImg = GetNode<Control>("%CounterImg");
         LoadCounterTextures();
 
-        var styleSeed = _counter?.Owner.RunState.Rng.Seed ?? 3257999;
+        var styleSeed = Player?.RunState.Rng.Seed ?? 3257999;
         var useDarkStyle = new Random((int)styleSeed).Next(99) < 50;
 
         foreach (var node in GetTree().GetNodesInGroup(useDarkStyle ? DarkStyle : LightStyle))
@@ -27,6 +28,14 @@ public partial class SakikoLingeredCounterSpecial : LingeredCounter
             if (node is TextureRect textureRect)
             {
                 textureRect.Visible = true;
+            }
+        }
+        
+        foreach (var node in GetTree().GetNodesInGroup(useDarkStyle ? LightStyle : DarkStyle))
+        {
+            if (node is TextureRect textureRect)
+            {
+                textureRect.Visible = false;
             }
         }
     }
@@ -37,11 +46,11 @@ public partial class SakikoLingeredCounterSpecial : LingeredCounter
         base._ExitTree();
     }
 
-    protected override void OnEnergyChanged()
+    protected override void OnEnergyChanged(SecondaryResourceChangedEvent changedEvent)
     {
-        if (_counter == null) return;
+        if (Player == null) return;
 
-        AnimateCounter(_counter.Counter);
+        AnimateCounter(changedEvent.NewAmount);
     }
 
     private void AnimateCounter(int targetCounter)

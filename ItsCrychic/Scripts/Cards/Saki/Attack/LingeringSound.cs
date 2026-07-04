@@ -1,4 +1,5 @@
 ﻿using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Features.Rule;
 using BangDreamLib.Scripts.Interfaces.CardAugment;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -15,7 +16,7 @@ public class LingeringSound()
     private const CardRarity CustomRarity = CardRarity.Uncommon;
     private const TargetType CustomTarget = TargetType.AllEnemies;
 
-    public int LingeredEnergyCost => 1;
+    public int LingeredResourceCost => 1;
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
@@ -44,7 +45,7 @@ public class LingeringSound()
 
     protected override (PileType, CardPilePosition) GetResultPileTypeAndPositionForCardPlay()
     {
-        return ((ISubsideCard)this).CanSubside
+        return LingeredResourcesRule.IsSufficient(this)
             ? (PileType.Hand, CardPilePosition.Bottom)
             : base.GetResultPileTypeAndPositionForCardPlay();
     }

@@ -1,13 +1,13 @@
-using BangDreamLib.Scripts.Commands;
-using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Powers;
+using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Powers;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.ValueProps;
+using STS2RitsuLib.Combat.SecondaryResources;
 
 namespace ItsCrychic.Scripts.Power.Buff;
 
@@ -31,10 +31,11 @@ public class BlackeningPower : BandPowerModel
             await CreatureCmd.Damage(choiceContext, Owner,
                 new DamageVar(HpLossAmount, ValueProp.Unpowered | ValueProp.Unblockable), Owner);
 
-            var currentLe = Owner.Player?.AttachedData().LingeredEnergy.Counter ?? 0;
-            if (currentLe < EchoFillTarget)
+            var currentLingeredResource = SecondaryResourceCmd.Get(Owner.Player, BangDreamConst.LingeredResource);
+            if (currentLingeredResource < EchoFillTarget)
             {
-                await LingeredCmd.JustAdd(Owner.Player!, EchoFillTarget - currentLe);
+                await SecondaryResourceCmd.Gain(Owner.Player, BangDreamConst.LingeredResource,
+                    EchoFillTarget - currentLingeredResource, this);
             }
         }
     }

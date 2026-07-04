@@ -9,6 +9,7 @@ using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Powers;
 using STS2RitsuLib.Cards.DynamicVars;
+using STS2RitsuLib.Combat.SecondaryResources;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
@@ -35,7 +36,7 @@ public class StressBeat()
         ModCardVars.Int("VulnerableDamage", 3),
         ComputedDynamicVarHelper.CreateDamageVar("CalcDamage", 14m, CalculateDamage),
         ComputedDynamicVarHelper.CreateBaseVar(nameof(VulnerablePower), 0m,
-            card => card?.Owner.AttachedData().LingeredEnergy.Counter ?? 0m)
+            card => card == null ? 0m : SecondaryResourceCmd.Get(card.Owner, BangDreamConst.LingeredResource))
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
@@ -48,11 +49,10 @@ public class StressBeat()
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
 
-        if (Owner.AttachedData().LingeredEnergy.Counter > 0)
+        var lingeredResource = SecondaryResourceCmd.Get(Owner, BangDreamConst.LingeredResource);
+        if (lingeredResource > 0)
         {
-            await PowerCmd.Apply<VulnerablePower>(choiceContext, play.Target,
-                Owner.AttachedData().LingeredEnergy.Counter,
-                Owner.Creature, this);
+            await PowerCmd.Apply<VulnerablePower>(choiceContext, play.Target, lingeredResource, Owner.Creature, this);
         }
     }
 

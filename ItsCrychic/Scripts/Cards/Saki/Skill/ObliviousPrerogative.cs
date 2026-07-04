@@ -1,4 +1,5 @@
 using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Features.Rule;
 using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
@@ -16,7 +17,7 @@ public class ObliviousPrerogative()
     private const CardRarity CustomRarity = CardRarity.Rare;
     private const TargetType CustomTarget = TargetType.None;
 
-    public int LingeredEnergyCost => 5;
+    public int LingeredResourceCost => 5;
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
@@ -28,7 +29,7 @@ public class ObliviousPrerogative()
     {
         ArgumentNullException.ThrowIfNull(CombatState);
 
-        if (!((ISubsideCard)this).CanSubside)
+        if (!LingeredResourcesRule.IsSufficient(this))
         {
             var selectedCards = await CardSelectCmd.FromCombatPile(choiceContext,
                 PileType.Hand.GetPile(Owner),

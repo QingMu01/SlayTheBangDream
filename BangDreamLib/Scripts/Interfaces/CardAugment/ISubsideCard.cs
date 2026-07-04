@@ -1,34 +1,22 @@
-﻿using BangDreamLib.Scripts.Extensions;
-using BangDreamLib.Scripts.Utils;
-using MegaCrit.Sts2.Core.Entities.Cards;
+﻿using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using MegaCrit.Sts2.Core.Models;
 
 namespace BangDreamLib.Scripts.Interfaces.CardAugment;
 
 public interface ISubsideCard
 {
-    int LingeredEnergyCost { get; }
+    /// <summary>
+    /// 是否允许这张牌在打出后生成余音资源
+    /// </summary>
+    bool ShouldGenerateResources => false;
 
-    bool ShouldIncreaseLingeredEnergy => false;
+    /// <summary>
+    /// 触发休止效果时所需的余音资源消耗
+    /// </summary>
+    int LingeredResourceCost { get; }
 
-    bool IgnoreSubsideCost => DefaultIgnoreCostCondition(this);
-
-    bool CanSubside => DefaultSubsideCondition(this);
-
+    /// <summary>
+    /// 休止效果
+    /// </summary>
     Task OnSubside(PlayerChoiceContext choiceContext, CardPlay play);
-
-    private static readonly Func<ISubsideCard, bool> DefaultSubsideCondition = subsideCard =>
-    {
-        if (subsideCard is CardModel { CombatState: not null } card)
-        {
-            var finalCost = BangDreamHook.ModifyLingeredEnergyReduce(card.CombatState, subsideCard.LingeredEnergyCost);
-            return card.Owner.AttachedData().LingeredEnergy.Counter >= finalCost;
-        }
-
-        return subsideCard.IgnoreSubsideCost;
-    };
-
-    private static readonly Func<ISubsideCard, bool> DefaultIgnoreCostCondition =
-        subsideCard => subsideCard is CardModel { IsDupe: true };
 }

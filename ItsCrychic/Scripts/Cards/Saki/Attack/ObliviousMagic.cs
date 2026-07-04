@@ -15,7 +15,7 @@ public class ObliviousMagic()
     private const CardRarity CustomRarity = CardRarity.Uncommon;
     private const TargetType CustomTarget = TargetType.AnyEnemy;
 
-    public int LingeredEnergyCost => 6;
+    public int LingeredResourceCost => 6;
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [

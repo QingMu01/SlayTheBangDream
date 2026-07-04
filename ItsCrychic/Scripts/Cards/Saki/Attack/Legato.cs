@@ -7,6 +7,7 @@ using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models;
 using STS2RitsuLib.Cards.DynamicVars;
+using STS2RitsuLib.Combat.SecondaryResources;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
@@ -51,8 +52,8 @@ public class Legato() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity,
             return 6m;
         }
 
-        var lingerCount = cardModel.Owner.AttachedData().LingeredEnergy.Counter;
-        var totalDamage = lingerCount * cardModel.DynamicVars["PerLingerDamage"].IntValue;
+        var lingeredCount = SecondaryResourceCmd.Get(cardModel.Owner, BangDreamConst.LingeredResource);
+        var totalDamage = lingeredCount * cardModel.DynamicVars["PerLingerDamage"].IntValue;
         return 6m + totalDamage;
     }
 }

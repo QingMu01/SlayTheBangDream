@@ -1,4 +1,3 @@
-using BangDreamLib.Scripts.Commands;
 using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Utils;
@@ -6,6 +5,7 @@ using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
+using STS2RitsuLib.Combat.SecondaryResources;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
@@ -19,7 +19,7 @@ public class Pursuit() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity
 
     private int _lingeredEnergy = 6;
 
-    public int LingeredEnergyCost
+    public int LingeredResourceCost
     {
         get => _lingeredEnergy;
         private set
@@ -66,7 +66,8 @@ public class Pursuit() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity
 
         if (attackCommand.Results.SelectMany(r => r).Any(result => result.WasTargetKilled))
         {
-            await LingeredCmd.AddLeByCard(this, DynamicVars["LingeredEnergy"].IntValue);
+            await SecondaryResourceCmd.Gain(Owner, BangDreamConst.LingeredResource,
+                DynamicVars["LingeredEnergy"].IntValue, this);
         }
     }
 
@@ -78,7 +79,7 @@ public class Pursuit() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity
 
     protected override void OnUpgrade()
     {
-        LingeredEnergyCost = 4;
+        LingeredResourceCost = 4;
         if (DynamicVars.TryGetValue("Subside", out var var))
         {
             var.UpgradeValueBy(-2m);

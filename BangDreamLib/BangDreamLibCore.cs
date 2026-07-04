@@ -1,8 +1,8 @@
 using System.Reflection;
+using BangDreamLib.Scripts.Capability;
 using BangDreamLib.Scripts.Character;
 using BangDreamLib.Scripts.Extensions;
-using BangDreamLib.Scripts.Features;
-using BangDreamLib.Scripts.Features.Rules;
+using BangDreamLib.Scripts.Features.Rule;
 using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
 using BangDreamLib.Scripts.Multiplayer.RunData;
@@ -23,6 +23,7 @@ using STS2RitsuLib.Combat.Rewards;
 using STS2RitsuLib.Combat.SecondaryResources;
 using STS2RitsuLib.Interop;
 using STS2RitsuLib.Keywords;
+using STS2RitsuLib.Models.Capabilities;
 using STS2RitsuLib.Patching.Core;
 using STS2RitsuLib.RunData;
 using Logger = MegaCrit.Sts2.Core.Logging.Logger;
@@ -171,16 +172,22 @@ public class BangDreamLibCore
             baseMaxAmount: 7,
             turnStartPolicy: SecondaryResourceTurnStartPolicy.None,
             persistencePolicy: SecondaryResourcePersistencePolicy.None,
+            locTable: "card_keywords",
+            titleKey: "BANG_DREAM_LIB_KEYWORD_LINGERED.title",
+            descriptionKey: "BANG_DREAM_LIB_KEYWORD_LINGERED.description",
             smallIconPath: "res://Test/images/resources/mana_small.png",
             largeIconPath: "res://Test/images/resources/mana_large.png"
-        )).Id;
+        )
+        {
+            DefaultInsufficientPayment = SecondaryResourceInsufficientPayment.AllowPlay(spendAvailable: false)
+        }).Id;
 
         // 注册公共内容
         var commonContent = RitsuLibFramework.GetContentRegistry(BangDreamConst.ModId);
         commonContent.RegisterCharacter<GroupCharacterPlaceholder>();
         commonContent.RegisterCharacterStarterRelic<GroupCharacterPlaceholder, Circlet>();
 
-        commonContent.RegisterSingleton<LingeredEnergyCounter>();
+        commonContent.RegisterSingleton<LingeredResourcesRule>();
         commonContent.RegisterSingleton<CopySelfAndPlayCardRule>();
 
         // 预加载皮肤资源
@@ -203,14 +210,24 @@ public class BangDreamLibCore
             }
         });
 
+        RitsuLibFramework.SubscribeLifecycle<ModelRegistryInitializedEvent>(_ =>
+        {
+            foreach (var cardModel in ModelDb.AllCards)
+            {
+                if (cardModel is ISubsideCard subsideCard)
+                {
+                    cardModel.SecondaryCosts().Set(BangDreamConst.LingeredResource, subsideCard.LingeredResourceCost);
+                    cardModel.GetOrCreateCapability<SubsideCapability>();
+                }
+            }
+        });
+
         ModHelper.SubscribeForCombatStateHooks("ExtraSubscribe", state =>
         {
             var subscribeModels = new List<AbstractModel>
             {
-                ModelDb.Singleton<LingeredEnergyRule>(),
                 ModelDb.Singleton<CopySelfAndPlayCardRule>()
             };
-            subscribeModels.AddRange(state.Players.Select(player => player.AttachedData().LingeredEnergy));
             subscribeModels.AddRange(state.Players.Select(player => player.AttachedData().PerformanceManager));
             subscribeModels.AddRange(state.Players.Select(player => player.AttachedData().MusicNoteDamageTracker));
             return subscribeModels;

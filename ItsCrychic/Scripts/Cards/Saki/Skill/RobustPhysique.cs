@@ -1,4 +1,3 @@
-using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
 using ItsCrychic.Scripts.Power.Buff;
 using MegaCrit.Sts2.Core.Commands;
@@ -7,6 +6,7 @@ using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models.Powers;
+using STS2RitsuLib.Combat.SecondaryResources;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
@@ -32,13 +32,13 @@ public class RobustPhysique()
     protected override IEnumerable<DynamicVar> CardVars =>
     [
         ComputedDynamicVarHelper.CreateBaseVar("Armor", 0m,
-            (card, _) => card?.Owner.AttachedData().LingeredEnergy.Counter ?? 0m)
+            (card, _) => card == null ? 0m : SecondaryResourceCmd.Get(card.Owner, BangDreamConst.LingeredResource))
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
         await PowerCmd.Apply<NextTurnPlatingPower>(choiceContext, Owner.Creature,
-            Owner.AttachedData().LingeredEnergy.Counter, Owner.Creature, this);
+            SecondaryResourceCmd.Get(Owner, BangDreamConst.LingeredResource), Owner.Creature, this);
     }
 
     protected override void OnUpgrade()

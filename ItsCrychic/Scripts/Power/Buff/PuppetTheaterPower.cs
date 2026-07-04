@@ -1,14 +1,14 @@
-using BangDreamLib.Scripts.Interfaces.GameHook;
 using BangDreamLib.Scripts.Powers;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Entities.Powers;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using STS2RitsuLib.Combat.SecondaryResources;
 
 namespace ItsCrychic.Scripts.Power.Buff;
 
-public class PuppetTheaterPower : BandPowerModel, ILingeredChangedHook
+public class PuppetTheaterPower : BandPowerModel, ISecondaryResourceHookListener
 {
     public override PowerType Type => PowerType.Buff;
 
@@ -16,21 +16,24 @@ public class PuppetTheaterPower : BandPowerModel, ILingeredChangedHook
 
     private int _count;
 
-    public async Task AfterLingeredEnergyReduced(Player player, int amount)
+    public async Task AfterSecondaryResourceChanged(SecondaryResourceChangeContext context)
     {
-        if (player == Owner.Player && _count < Amount)
+        if (context.Player == Owner.Player && context.Reason == SecondaryResourceChangeReason.Spend)
         {
-            _count++;
-
-            var discardPileCards = player.PlayerCombatState?.DiscardPile.Cards;
-            if (discardPileCards is { Count: > 0 })
+            if (_count < Amount)
             {
-                var randomCard = player.RunState.Rng.CombatCardSelection.NextItem(discardPileCards);
-                if (randomCard != null)
+                var discardPileCards = Owner.Player.PlayerCombatState?.DiscardPile.Cards;
+                if (discardPileCards is { Count: > 0 })
                 {
-                    Flash();
-                    await CardPileCmd.Add(randomCard, PileType.Hand);
+                    var randomCard = Owner.Player.RunState.Rng.CombatCardSelection.NextItem(discardPileCards);
+                    if (randomCard != null)
+                    {
+                        Flash();
+                        await CardPileCmd.Add(randomCard, PileType.Hand);
+                    }
                 }
+
+                _count++;
             }
         }
     }

@@ -14,7 +14,7 @@ public class ClosedSoul() : AbstractSakikoCard(CustomCost, CustomType, CustomRar
     private const CardRarity CustomRarity = CardRarity.Basic;
     private const TargetType CustomTarget = TargetType.Self;
 
-    public int LingeredEnergyCost => 3;
+    public int LingeredResourceCost => 3;
 
     public override bool GainsBlock => true;
 

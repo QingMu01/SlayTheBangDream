@@ -1,5 +1,4 @@
 using BangDreamLib.Scripts.Cards;
-using BangDreamLib.Scripts.Commands;
 using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
 using ItsCrychic.Scripts.Utils;
@@ -8,6 +7,7 @@ using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models.CardPools;
+using STS2RitsuLib.Combat.SecondaryResources;
 using STS2RitsuLib.Interop.AutoRegistration;
 using STS2RitsuLib.Scaffolding.Content;
 
@@ -42,7 +42,8 @@ public class SakikoShield() : BandCardModel(CustomCost, CustomType, CustomRarity
     {
         await CreatureCmd.GainBlock(Owner.Creature, DynamicVars.Block, play);
         await CardPileCmd.Draw(choiceContext, DynamicVars.Cards.IntValue, Owner);
-        await LingeredCmd.AddLeByCard(this, DynamicVars["LingeredEnergy"].IntValue);
+        await SecondaryResourceCmd.Gain(Owner, BangDreamConst.LingeredResource, DynamicVars["LingeredEnergy"].IntValue,
+            this);
     }
 
     protected override void OnUpgrade()

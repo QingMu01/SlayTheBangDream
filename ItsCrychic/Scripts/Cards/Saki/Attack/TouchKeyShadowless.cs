@@ -1,4 +1,3 @@
-using BangDreamLib.Scripts.Commands;
 using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
@@ -6,6 +5,7 @@ using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
+using STS2RitsuLib.Combat.SecondaryResources;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
@@ -36,9 +36,9 @@ public class TouchKeyShadowless() : AbstractSakikoCard(CustomCost, CustomType, C
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
         // 获得等同于伤害值的余音
-        await LingeredCmd.AddLeByCard(this,
+        await SecondaryResourceCmd.Gain(Owner, BangDreamConst.LingeredResource,
             attackCommand.Results.SelectMany(r => r)
-                .Sum((Func<DamageResult, int>)(r => r.TotalDamage + r.OverkillDamage)));
+                .Sum((Func<DamageResult, int>)(r => r.TotalDamage + r.OverkillDamage)), this);
     }
 
     protected override void OnUpgrade()

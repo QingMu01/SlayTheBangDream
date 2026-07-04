@@ -21,7 +21,7 @@ public class Blessing() : AbstractSakikoCard(CustomCost, CustomType, CustomRarit
 
     public override bool GainsBlock => true;
 
-    public int LingeredEnergyCost => 1;
+    public int LingeredResourceCost => 1;
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [

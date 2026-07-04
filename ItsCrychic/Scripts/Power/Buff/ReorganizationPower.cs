@@ -1,13 +1,12 @@
-using BangDreamLib.Scripts.Interfaces.GameHook;
 using BangDreamLib.Scripts.Powers;
 using MegaCrit.Sts2.Core.Commands;
-using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Entities.Powers;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using STS2RitsuLib.Combat.SecondaryResources;
 
 namespace ItsCrychic.Scripts.Power.Buff;
 
-public class ReorganizationPower : BandPowerModel, ILingeredChangedHook
+public class ReorganizationPower : BandPowerModel, ISecondaryResourceHookListener
 {
     private const int MaxAmount = 7;
 
@@ -17,16 +16,18 @@ public class ReorganizationPower : BandPowerModel, ILingeredChangedHook
 
     public override PowerStackType StackType => PowerStackType.Counter;
 
-    async Task ILingeredChangedHook.AfterLingeredEnergyReduced(Player player, int amount)
+    public async Task AfterSecondaryResourceChanged(SecondaryResourceChangeContext context)
     {
-        if (player != Owner.Player) return;
-
-        _lingeredEnergyUsed += amount;
-        while (_lingeredEnergyUsed >= MaxAmount)
+        if (context.Player != Owner.Player) return;
+        if (context.NewAmount < context.OldAmount)
         {
-            Flash();
-            _lingeredEnergyUsed -= MaxAmount;
-            await CardPileCmd.Draw(new BlockingPlayerChoiceContext(), Amount, Owner.Player);
+            _lingeredEnergyUsed += context.OldAmount - context.NewAmount;
+            while (_lingeredEnergyUsed >= MaxAmount)
+            {
+                Flash();
+                _lingeredEnergyUsed -= MaxAmount;
+                await CardPileCmd.Draw(new BlockingPlayerChoiceContext(), Amount, Owner.Player);
+            }
         }
     }
 }

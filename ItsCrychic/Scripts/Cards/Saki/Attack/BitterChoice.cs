@@ -1,4 +1,5 @@
 using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Features.Rule;
 using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
@@ -16,7 +17,7 @@ public class BitterChoice()
     private const CardRarity CustomRarity = CardRarity.Common;
     private const TargetType CustomTarget = TargetType.AnyEnemy;
 
-    public int LingeredEnergyCost => 2;
+    public int LingeredResourceCost => 2;
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
@@ -39,7 +40,7 @@ public class BitterChoice()
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
 
-        if (!((ISubsideCard)this).CanSubside)
+        if (!LingeredResourcesRule.IsSufficient(this))
         {
             var discardPileCards = PileType.Discard.GetPile(Owner).Cards.ToList();
             for (var i = 0; i < DynamicVars.Cards.IntValue; i++)

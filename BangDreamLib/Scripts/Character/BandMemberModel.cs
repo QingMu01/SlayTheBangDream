@@ -9,7 +9,8 @@ namespace BangDreamLib.Scripts.Character;
 
 public abstract class BandMemberModel<TCardPoolModel, TRelicPoolModel, TPotionPoolModel>(Color mainColor)
     : ModCharacterTemplate<TCardPoolModel, TRelicPoolModel, TPotionPoolModel>,
-        IPerformableCharacter, ISkinSupportCharacter, IGroupableCharacter, IBangDreamMateData
+        IPerformableCharacter, ILingeredResourceCharacter, ISkinSupportCharacter, IGroupableCharacter,
+        IBangDreamMateData
     where TCardPoolModel : CardPoolModel
     where TRelicPoolModel : RelicPoolModel
     where TPotionPoolModel : PotionPoolModel
@@ -24,6 +25,8 @@ public abstract class BandMemberModel<TCardPoolModel, TRelicPoolModel, TPotionPo
     public sealed override Color MapDrawingColor => mainColor;
 
     public abstract CharacterGroup Group { get; }
+
+    public virtual bool AutoGenerateSubsideResource => false;
 
     public virtual bool IsHidden => false;
     public virtual bool AllowSelect => true;

@@ -1,4 +1,5 @@
 using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Features.Rule;
 using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
@@ -22,8 +23,7 @@ public class InYourBlueEyes() : AbstractSakikoMusicCard(CardRarity.Uncommon, Tar
 
     public override Task BeforeCardPlayed(CardPlay cardPlay)
     {
-        if (Handle != null && cardPlay.Card.Owner == Owner &&
-            cardPlay.Card is ISubsideCard { CanSubside: true })
+        if (Handle != null && cardPlay.Card.Owner == Owner && LingeredResourcesRule.IsSufficient(this))
         {
             _subsidePlays.Add(cardPlay);
         }

@@ -15,7 +15,7 @@ public class DejaVu() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity,
     private const CardRarity CustomRarity = CardRarity.Common;
     private const TargetType CustomTarget = TargetType.AnyEnemy;
 
-    public int LingeredEnergyCost => 3;
+    public int LingeredResourceCost => 3;
     protected override IEnumerable<DynamicVar> CardVars =>
     [
         QuickVar.Damage.Create(3),

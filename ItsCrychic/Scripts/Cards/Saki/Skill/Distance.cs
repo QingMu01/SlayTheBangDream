@@ -8,6 +8,7 @@ using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Powers;
+using STS2RitsuLib.Combat.SecondaryResources;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
@@ -31,7 +32,7 @@ public class Distance() : AbstractSakikoCard(CustomCost, CustomType, CustomRarit
     protected override IEnumerable<DynamicVar> CardVars =>
     [
         ComputedDynamicVarHelper.CreateBaseVar(nameof(StrengthPower), 0m,
-            card => card?.Owner.AttachedData().LingeredEnergy.Counter ?? 0m)
+            card => card == null ? 0m : SecondaryResourceCmd.Get(card.Owner, BangDreamConst.LingeredResource))
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)

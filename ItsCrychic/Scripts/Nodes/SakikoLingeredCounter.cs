@@ -1,4 +1,5 @@
 using Godot;
+using STS2RitsuLib.Combat.SecondaryResources;
 
 namespace ItsCrychic.Scripts.Nodes;
 
@@ -26,11 +27,11 @@ public partial class SakikoLingeredCounter : LingeredCounter
         base._ExitTree();
     }
 
-    protected override void OnEnergyChanged()
+    protected override void OnEnergyChanged(SecondaryResourceChangedEvent changedEvent)
     {
-        if (_counter == null) return;
+        if (Player == null) return;
 
-        AnimateCounter(_counter.Counter);
+        AnimateCounter(changedEvent.NewAmount);
     }
 
     private void AnimateCounter(int targetCounter)

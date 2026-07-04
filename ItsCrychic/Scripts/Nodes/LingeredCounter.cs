@@ -1,27 +1,29 @@
-using BangDreamLib.Scripts.Features;
+using BangDreamLib.Scripts.Utils;
 using Godot;
+using MegaCrit.Sts2.Core.Entities.Players;
+using STS2RitsuLib.Combat.SecondaryResources;
 
 namespace ItsCrychic.Scripts.Nodes;
 
 public abstract partial class LingeredCounter : Control
 {
-    protected LingeredEnergyCounter? _counter;
+    protected Player? Player;
 
     public override void _ExitTree()
     {
-        if (_counter != null)
+        if (Player != null)
         {
-            _counter.OnEnergyChanged -= OnEnergyChanged;
+            SecondaryResourceStateStore.Get(Player).Changed -= OnEnergyChanged;
         }
     }
 
-    public void SetContext(LingeredEnergyCounter lingeredEnergyCounter)
+    public void SetPlayer(Player player)
     {
-        if (_counter == null)
+        if (Player == null)
         {
-            _counter = lingeredEnergyCounter;
-            _counter.OnEnergyChanged += OnEnergyChanged;
-            OnEnergyChanged();
+            Player = player;
+            SecondaryResourceStateStore.Get(Player).Changed += OnEnergyChanged;
+            _ = SecondaryResourceCmd.Reset(Player, BangDreamConst.LingeredResource);
         }
         else
         {
@@ -29,5 +31,5 @@ public abstract partial class LingeredCounter : Control
         }
     }
 
-    protected abstract void OnEnergyChanged();
+    protected abstract void OnEnergyChanged(SecondaryResourceChangedEvent changedEvent);
 }

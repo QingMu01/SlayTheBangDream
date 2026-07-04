@@ -4,6 +4,7 @@ using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
+using STS2RitsuLib.Combat.SecondaryResources;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
@@ -36,7 +37,7 @@ public class PlanBSakiko() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
 
     protected override (PileType, CardPilePosition) GetResultPileTypeAndPositionForCardPlay()
     {
-        return Owner.AttachedData().LingeredEnergy.Counter == 0
+        return SecondaryResourceCmd.Get(Owner, BangDreamConst.LingeredResource) == 0
             ? base.GetResultPileTypeAndPositionForCardPlay()
             : (PileType.Exhaust, CardPilePosition.Bottom);
     }

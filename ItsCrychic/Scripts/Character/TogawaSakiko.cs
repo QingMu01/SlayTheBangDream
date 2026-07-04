@@ -24,6 +24,8 @@ public sealed class TogawaSakiko() : BandMemberModel<SakikoStandardCardPool, Sak
     public override string MemberNameRoman => CrychicMemberEnum.Sakiko.GetMemberNameRoman();
     public override string MemberClass => BangDreamClass.Keyboard.GetBandClass();
 
+    public override bool AutoGenerateSubsideResource => true;
+    
     public bool ShouldAlwaysShowExtraDeck => true;
     public bool ShouldAlwaysShowExtraPile => true;
     public CardPoolModel ExtraCardPool => ModelDb.CardPool<SakikoMusicalCardPool>();
@@ -49,7 +51,7 @@ public sealed class TogawaSakiko() : BandMemberModel<SakikoStandardCardPool, Sak
     public override string CustomIconOutlineTexturePath =>
         "res://ItsCrychic/images/charui/sakiko/character_icon_saki_outline.png";
 
-    public override string CustomCharacterSelectTransitionPath => 
+    public override string CustomCharacterSelectTransitionPath =>
         "res://ItsCrychic/images/charui/sakiko/sakiko_transition.tres";
 
     public override CreatureAnimator GenerateAnimator(MegaSprite controller)

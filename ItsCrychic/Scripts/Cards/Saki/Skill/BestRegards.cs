@@ -14,7 +14,7 @@ public class BestRegards() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
     private const CardRarity CustomRarity = CardRarity.Common;
     private const TargetType CustomTarget = TargetType.Self;
 
-    public int LingeredEnergyCost => 2;
+    public int LingeredResourceCost => 2;
 
     public override bool GainsBlock => true;
 

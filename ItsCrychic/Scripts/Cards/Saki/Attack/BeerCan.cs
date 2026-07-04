@@ -15,7 +15,7 @@ public class BeerCan() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity
     private const CardRarity CustomRarity = CardRarity.Uncommon;
     private const TargetType CustomTarget = TargetType.AllEnemies;
 
-    public int LingeredEnergyCost => 4;
+    public int LingeredResourceCost => 4;
 
     public bool IgnoreSubsideCost => false;
 

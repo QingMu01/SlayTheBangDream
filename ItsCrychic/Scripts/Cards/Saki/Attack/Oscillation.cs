@@ -1,4 +1,3 @@
-using BangDreamLib.Scripts.Commands;
 using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
@@ -6,6 +5,7 @@ using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using STS2RitsuLib.Cards.DynamicVars;
+using STS2RitsuLib.Combat.SecondaryResources;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
@@ -30,7 +30,10 @@ public class Oscillation() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
         ArgumentNullException.ThrowIfNull(CombatState);
-        await LingeredCmd.AddLeByCard(this, CombatState.HittableEnemies.Count * DynamicVars["Oscillation"].IntValue);
+
+        await SecondaryResourceCmd.Gain(Owner, BangDreamConst.LingeredResource,
+            CombatState.HittableEnemies.Count * DynamicVars["Oscillation"].IntValue, this);
+
         await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
             .FromCard(this, play)
             .TargetingAllOpponents(CombatState)

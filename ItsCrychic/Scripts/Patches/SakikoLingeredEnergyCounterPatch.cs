@@ -1,5 +1,4 @@
-﻿using BangDreamLib.Scripts.Extensions;
-using ItsCrychic.Scripts.Nodes;
+﻿using ItsCrychic.Scripts.Nodes;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using STS2RitsuLib.Patching.Models;
@@ -18,6 +17,6 @@ public class SakikoLingeredEnergyCounterPatch : IPatchMethod
     public static void Postfix(NEnergyCounter __instance, Player ____player)
     {
         var sakikoLingeredCounter = __instance.GetNodeOrNull<LingeredCounter>("%Layers");
-        sakikoLingeredCounter?.SetContext(____player.AttachedData().LingeredEnergy);
+        sakikoLingeredCounter?.SetPlayer(____player);
     }
 }
