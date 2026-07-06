@@ -15,7 +15,7 @@ using MegaCrit.Sts2.Core.Rooms;
 
 namespace BangDreamLib.Scripts.Features;
 
-public class PerformanceManager : SingletonModel
+public class PerformManager : SingletonModel
 {
     private static readonly LocString EmptyThink = new("combat_messages", "BANG_DREAM_LIB_FILL_PERFORMANCE_PILE.empty");
 
@@ -62,9 +62,11 @@ public class PerformanceManager : SingletonModel
         }
     }
 
-    public NPerformanceArea? PerformanceArea { get; private set; }
+    public NPerformArea? PerformanceArea { get; private set; }
 
     public int Capacity { get; private set; }
+
+    public int Count => PerformancePile.Cards.Count;
 
     public void AddCapacity(int amount)
     {
@@ -113,7 +115,7 @@ public class PerformanceManager : SingletonModel
     private async Task HandleCardAddedInternal(CardModel cardModel)
     {
         if (!PerformancePile.Cards.Contains(cardModel)) return;
-        var isInstant = cardModel is IPerformanceCard { IsInstant: true };
+        var isInstant = cardModel is IPerformCard { IsInstant: true };
         if (!isInstant && Capacity == 0)
         {
             ThinkCmd.Play(EmptyThink, Player.Creature, 1.5f);
@@ -121,13 +123,13 @@ public class PerformanceManager : SingletonModel
             return;
         }
 
-        if (cardModel is IPerformanceCard performanceCard)
+        if (cardModel is IPerformCard performanceCard)
         {
-            await performanceCard.OnStartPerformance(new HookPlayerChoiceContext(cardModel, cardModel.Owner.NetId,
+            await performanceCard.OnStartPerform(new HookPlayerChoiceContext(cardModel, cardModel.Owner.NetId,
                 cardModel.CombatState!, GameActionType.Combat));
         }
 
-        await BangDreamHook.OnCardEnterPerformanceArea(cardModel.CombatState!, cardModel);
+        await BangDreamHook.OnCardEnterPerformArea(cardModel.CombatState!, cardModel);
         if (CardEnteredPerformance != null)
         {
             await CardEnteredPerformance.Invoke(cardModel);
@@ -151,19 +153,20 @@ public class PerformanceManager : SingletonModel
             await MoveCardInternal(card);
         }
 
-        if (card is IPerformanceCard performanceCard)
+        if (card is IPerformCard performanceCard)
         {
-            await performanceCard.OnStopPerformance(new HookPlayerChoiceContext(card, card.Owner.NetId,
+            await performanceCard.OnStopPerform(new HookPlayerChoiceContext(card, card.Owner.NetId,
                 card.CombatState!, GameActionType.Combat));
+            performanceCard.Handle = null;
         }
 
-        await BangDreamHook.OnCardLeavePerformanceArea(card.CombatState!, card);
+        await BangDreamHook.OnCardLeavePerformArea(card.CombatState!, card);
     }
 
     private static async Task MoveCardInternal(CardModel cardModel)
     {
         (PileType, CardPilePosition) nextPile;
-        if (cardModel is IPerformanceCard performanceCard)
+        if (cardModel is IPerformCard performanceCard)
         {
             nextPile = performanceCard.StopPerformanceNextPile;
         }
@@ -201,7 +204,7 @@ public class PerformanceManager : SingletonModel
         bool isAutoPlay, ResourceInfo resources, PileType pileType, CardPilePosition position)
     {
         if (card.Owner == Player &&
-            card is IPerformanceCard { StopPerformanceNextPile.Item1: not PileType.Discard } performanceCard &&
+            card is IPerformCard { StopPerformanceNextPile.Item1: not PileType.Discard } performanceCard &&
             pileType == PileType.Discard)
         {
             return (performanceCard.StopPerformanceNextPile.Item1, performanceCard.StopPerformanceNextPile.Item2);
@@ -212,7 +215,7 @@ public class PerformanceManager : SingletonModel
 
     public override async Task AfterCardPlayed(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        if (play.Card is IPerformanceCard)
+        if (play.Card is IPerformCard)
         {
             await Cmd.CustomScaledWait(0.35f, 0.5f);
         }
@@ -239,7 +242,7 @@ public class PerformanceManager : SingletonModel
                     ? new Vector2(creatureNode.Hitbox.Size.X / 2f + 48f, 48f)
                     : new Vector2(creatureNode.Hitbox.Size.X / 2f - 48f, -48f);
 
-                PerformanceArea = NPerformanceArea.Create(this, offset);
+                PerformanceArea = NPerformArea.Create(this, offset);
                 creatureNode.AddChildSafely(PerformanceArea);
             }
             else

@@ -8,7 +8,7 @@ using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 
 namespace BangDreamLib.Scripts.Nodes.SubNode;
 
-public partial class NPerformanceItem : NClickableControl
+public partial class NPerformItem : NClickableControl
 {
     private TextureRect? _cardPortrait;
 
@@ -32,9 +32,9 @@ public partial class NPerformanceItem : NClickableControl
                     StartRotateLoop();
                 }
 
-                if (value is IPerformanceCard performanceCard)
+                if (value is IPerformCard performCard)
                 {
-                    performanceCard.Handle = this;
+                    performCard.Handle = this;
                 }
             }
         }
@@ -45,9 +45,9 @@ public partial class NPerformanceItem : NClickableControl
     private Tween? _fadeInTween;
     private Tween? _fadeOutTween;
 
-    public static NPerformanceItem Create(bool isLocal, CardModel? model = null)
+    public static NPerformItem Create(bool isLocal, CardModel? model = null)
     {
-        var item = PreloadKey.PerformanceItem.GetScene().Instantiate<NPerformanceItem>();
+        var item = PreloadKey.PerformanceItem.GetScene().Instantiate<NPerformItem>();
         item._isLocal = isLocal;
         item.Model = model;
         return item;
@@ -70,6 +70,20 @@ public partial class NPerformanceItem : NClickableControl
         ConnectSignals();
     }
 
+    public override void _ExitTree()
+    {
+        _rotateTween?.Kill();
+        _fadeInTween?.Kill();
+        _fadeOutTween?.Kill();
+
+        if (Model is IPerformCard performCard)
+        {
+            performCard.Handle = null;
+        }
+
+        Model = null;
+    }
+
     private void StartRotateLoop()
     {
         RotationDegrees %= 360;
@@ -88,7 +102,12 @@ public partial class NPerformanceItem : NClickableControl
             if (cardNode != null)
             {
                 _card = cardNode;
-                GetParent().AddChild(_card);
+
+                // 检查节点是否已经有父节点,避免重复添加
+                if (_card.GetParent() == null)
+                {
+                    GetParent().AddChild(_card);
+                }
 
                 _card.UpdateVisuals(PileType.Hand, CardPreviewMode.Normal);
 

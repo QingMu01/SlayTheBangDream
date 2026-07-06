@@ -4,7 +4,7 @@ using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 
 namespace BangDreamLib.Scripts.Interfaces.CardAugment;
 
-public interface IPerformanceCard
+public interface IPerformCard
 {
     /// <summary>
     /// 即兴标记
@@ -20,9 +20,9 @@ public interface IPerformanceCard
     /// <summary>
     /// 演奏句柄
     /// </summary>
-    NPerformanceItem? Handle { get; set; }
+    NPerformItem? Handle { get; set; }
 
-    Task OnStartPerformance(PlayerChoiceContext choiceContext);
+    Task OnStartPerform(PlayerChoiceContext choiceContext);
 
-    Task OnStopPerformance(PlayerChoiceContext choiceContext);
+    Task OnStopPerform(PlayerChoiceContext choiceContext);
 }

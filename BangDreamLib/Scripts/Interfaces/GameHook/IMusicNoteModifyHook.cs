@@ -21,4 +21,9 @@ public interface IMusicNoteModifyHook
     {
         return amount;
     }
+
+    decimal ModifyMusicNoteBounceCount(decimal amount, Creature? dealer, AbstractModel? source)
+    {
+        return amount;
+    }
 }

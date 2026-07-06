@@ -1,3 +1,4 @@
+using BangDreamLib.Scripts.Utils.Enums;
 using BangDreamLib.Scripts.Utils.Infos;
 using Godot;
 using MegaCrit.Sts2.Core.Helpers;
@@ -33,21 +34,25 @@ public abstract partial class NBangDreamFlyingVfx : Node2D
 
     protected void EmitSpawnSignal()
     {
+        Context.Lifecycle = VfxLifecycle.Spawn;
         EmitSignal(SignalName.VfxSpawned, Context);
     }
 
     protected void EmitBeforeHitSignal()
     {
+        Context.Lifecycle = VfxLifecycle.BeforeHit;
         EmitSignal(SignalName.BeforeHit, Context);
     }
 
     protected void EmitHitSignal()
     {
+        Context.Lifecycle = VfxLifecycle.Hit;
         EmitSignal(SignalName.HitTriggered, Context);
     }
 
     protected void EmitAfterHitSignal()
     {
+        Context.Lifecycle = VfxLifecycle.AfterHit;
         EmitSignal(SignalName.AfterHit, Context);
     }
 
@@ -55,6 +60,7 @@ public abstract partial class NBangDreamFlyingVfx : Node2D
     {
         if (IsFinished) return;
         IsFinished = true;
+        Context.Lifecycle = VfxLifecycle.Finish;
         EmitSignal(SignalName.VfxFinished, Context);
 
         CallDeferred(nameof(Destroy));
@@ -62,6 +68,9 @@ public abstract partial class NBangDreamFlyingVfx : Node2D
 
     private void Destroy()
     {
-        this.QueueFreeSafely();
+        if (IsInstanceValid(this) && Context.Lifecycle == VfxLifecycle.Finish)
+        {
+            this.QueueFreeSafely();
+        }
     }
 }

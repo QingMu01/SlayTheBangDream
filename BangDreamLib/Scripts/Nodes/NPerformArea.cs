@@ -10,23 +10,23 @@ using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 
 namespace BangDreamLib.Scripts.Nodes;
 
-public partial class NPerformanceArea : Control
+public partial class NPerformArea : Control
 {
     private const float ItemStep = -96f;
 
     private bool _isLocal;
     private Control? _itemContainer;
-    private PerformanceManager? _manager;
+    private PerformManager? _manager;
 
-    private readonly List<NPerformanceItem> _items = [];
-    private readonly ConditionalWeakTable<NPerformanceItem, Tween> _itemAnims = new();
+    private readonly List<NPerformItem> _items = [];
+    private readonly ConditionalWeakTable<NPerformItem, Tween> _itemAnims = new();
 
     private TaskCompletionSource? _layoutCompletion;
     private Tween? _layoutTween;
 
-    public static NPerformanceArea Create(PerformanceManager manager, Vector2 offset)
+    public static NPerformArea Create(PerformManager manager, Vector2 offset)
     {
-        var area = PreloadKey.PerformanceArea.GetScene().Instantiate<NPerformanceArea>();
+        var area = PreloadKey.PerformanceArea.GetScene().Instantiate<NPerformArea>();
         area._manager = manager;
         area._isLocal = LocalContext.IsMe(manager.Player);
         area.Position -= offset;
@@ -93,7 +93,7 @@ public partial class NPerformanceArea : Control
         }
         else
         {
-            AddItem(NPerformanceItem.Create(_isLocal, card));
+            AddItem(NPerformItem.Create(_isLocal, card));
         }
 
         await AnimateLayout();
@@ -119,7 +119,7 @@ public partial class NPerformanceArea : Control
         {
             for (var i = 0; i < diff; i++)
             {
-                AddItem(NPerformanceItem.Create(_isLocal));
+                AddItem(NPerformItem.Create(_isLocal));
             }
         }
         else if (diff < 0)
@@ -184,7 +184,7 @@ public partial class NPerformanceArea : Control
         return completion.Task;
     }
 
-    private void AddItem(NPerformanceItem item)
+    private void AddItem(NPerformItem item)
     {
         if (item.IsValid())
         {
@@ -203,7 +203,7 @@ public partial class NPerformanceArea : Control
         }
     }
 
-    private void RemoveItem(NPerformanceItem item)
+    private void RemoveItem(NPerformItem item)
     {
         if (item.IsValid())
         {
@@ -233,7 +233,7 @@ public partial class NPerformanceArea : Control
         return _itemContainer?.GetGlobalTransform() * GetItemPosition(index);
     }
 
-    private void TrackTween(NPerformanceItem item, Tween tween)
+    private void TrackTween(NPerformItem item, Tween tween)
     {
         if (_itemAnims.TryGetValue(item, out var existingTween))
         {

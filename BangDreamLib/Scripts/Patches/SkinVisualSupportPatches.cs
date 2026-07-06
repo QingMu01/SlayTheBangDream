@@ -11,11 +11,13 @@ using MegaCrit.Sts2.Core.Context;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Entities.TreasureRelicPicking;
+using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Nodes.Cards;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.CommonUi;
 using MegaCrit.Sts2.Core.Nodes.RestSite;
 using MegaCrit.Sts2.Core.Nodes.Screens.Map;
+using MegaCrit.Sts2.Core.Nodes.Screens.Shops;
 using MegaCrit.Sts2.Core.Nodes.Screens.TreasureRoomRelic;
 using MegaCrit.Sts2.Core.Rewards;
 using MegaCrit.Sts2.Core.Runs;
@@ -23,9 +25,7 @@ using STS2RitsuLib.CardPiles;
 using STS2RitsuLib.CardPiles.Nodes;
 using STS2RitsuLib.Patching.Core;
 using STS2RitsuLib.Patching.Models;
-using STS2RitsuLib.Scaffolding.Characters.Visuals;
 using STS2RitsuLib.Scaffolding.Godot;
-using STS2RitsuLib.Utils.HarmonyIl;
 
 namespace BangDreamLib.Scripts.Patches;
 
@@ -41,6 +41,7 @@ public class SkinVisualSupportPatches : IModPatches
         patcher.RegisterPatch<ArmPointingTexturePatch>();
         patcher.RegisterPatch<ArmFightTexturePatch>();
         patcher.RegisterPatch<MusicCardFramePatch>();
+        patcher.RegisterPatch<MusicCardFrameMaterialPatch>();
         patcher.RegisterPatch<MapMarkerPatch>();
         patcher.RegisterPatch<TopBarPatch>();
         patcher.RegisterPatch<TopBarExtraDeckPatch>();
@@ -110,7 +111,7 @@ internal class RestSiteScenePatch : IPatchMethod
         return [new ModPatchTarget(typeof(NRestSiteCharacter), nameof(NRestSiteCharacter.Create))];
     }
 
-    public static void Postfix(ref NRestSiteCharacter? __result, Player player, int characterIndex)
+    public static void Postfix(Player player, int characterIndex, ref NRestSiteCharacter? __result)
     {
         if (player.Character is ISkinSupportCharacter)
         {
@@ -139,19 +140,18 @@ internal class RestSiteAnimPatch : IPatchMethod
     public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
     {
         var codes = new List<CodeInstruction>(instructions);
-        for (var i = 0; i < codes.Count - 1; i++)
+
+        for (var i = 0; i < codes.Count - 2; i++)
         {
-            if (codes[i].opcode == OpCodes.Ldloc_1 && codes[i + 1].opcode == OpCodes.Stloc_0)
+            if (codes[i].opcode == OpCodes.Ldloc_0 &&
+                codes[i + 1].opcode == OpCodes.Ldloc_1 &&
+                codes[i + 2].opcode == OpCodes.Stfld &&
+                codes[i + 2].operand is FieldInfo { Name: "animName" })
             {
-                var injected = new List<CodeInstruction>
-                {
-                    new(OpCodes.Ldloc_0),
-                    new(OpCodes.Ldarg_0),
-                    CodeInstruction.Call(typeof(NRestSiteCharacter), "get_Player"),
-                    CodeInstruction.Call(typeof(RestSiteAnimPatch), nameof(GetRestSiteAnimName)),
-                    new(OpCodes.Stloc_0)
-                };
-                codes.InsertRange(i + 2, injected);
+                codes.Insert(i + 2, new CodeInstruction(OpCodes.Ldarg_0));
+                codes.Insert(i + 3, CodeInstruction.Call(typeof(NRestSiteCharacter), "get_Player"));
+                codes.Insert(i + 4,
+                    CodeInstruction.Call(typeof(RestSiteAnimPatch), nameof(GetRestSiteAnimName)));
                 break;
             }
         }
@@ -178,67 +178,44 @@ internal class MerchantScenePatch : IPatchMethod
     private static Type MerchantPatcher =>
         Type.GetType(
             "STS2RitsuLib.Scaffolding.Characters.Patches.NMerchantRoomProceduralCharacterInstantiationPatch,STS2-RitsuLib") ??
-        throw new TypeLoadException("Ritsu-Lib Patcher Not Found!");
+        throw new TypeLoadException("RitsuLib Patcher Not Found!");
 
     private static Type FakeMerchantPatcher =>
         Type.GetType(
             "STS2RitsuLib.Scaffolding.Characters.Patches.NFakeMerchantProceduralCharacterInstantiationPatch,STS2-RitsuLib") ??
-        throw new TypeLoadException("Ritsu-Lib Patcher Not Found!");
+        throw new TypeLoadException("RitsuLib Patcher Not Found!");
 
     public static ModPatchTarget[] GetTargets()
     {
         return
         [
-            new ModPatchTarget(MerchantPatcher, "RunAfterRoomIsLoaded"),
-            new ModPatchTarget(FakeMerchantPatcher, "RunAfterRoomIsLoaded")
+            new ModPatchTarget(MerchantPatcher, "ApplyMerchantWorldVisuals"),
+            new ModPatchTarget(FakeMerchantPatcher, "ApplyMerchantWorldVisuals")
         ];
     }
 
-    public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+    public static bool Prefix(IReadOnlyList<Player> players, ref IReadOnlyList<NMerchantCharacter> visuals)
     {
-        var targetMethod = AccessTools.Method(typeof(ModWorldSceneVisualNodeFactory),
-            nameof(ModWorldSceneVisualNodeFactory.TryInstantiateMerchantCharacter));
-        var customMethod = AccessTools.Method(typeof(BangDreamMerchant), nameof(BangDreamMerchant.Create));
-
-        var rewriter = HarmonyIlRewriter.From(instructions);
-
-        var pattern = HarmonyIlPattern.Sequence(
-            HarmonyIl.IsLdloc(),
-            HarmonyIl.IsCall(AccessTools.PropertyGetter(typeof(Player), nameof(Player.Character))),
-            HarmonyIl.IsCall(targetMethod)
-        );
-
-        if (rewriter.TryFind(pattern, out var match))
+        var n = Math.Min(visuals.Count, players.Count);
+        for (var i = 0; i < n; i++)
         {
-            LocalBuilder? local = null;
-            foreach (var currentCode in rewriter.Code)
+            var currentPlayer = players[i];
+            var oldVisual = visuals[i];
+            if (currentPlayer.Character is ISkinSupportCharacter)
             {
-                if (currentCode.opcode == OpCodes.Ldloc_S)
-                {
-                    if (currentCode.IsLdloc() && currentCode.operand is LocalBuilder lb)
-                    {
-                        if (lb.LocalType == typeof(Player))
-                        {
-                            local = lb;
-                        }
-                    }
-                }
+                var newVisual = BangDreamMerchant.Create(currentPlayer);
+                var parent = oldVisual.GetParent();
+                var index = oldVisual.GetIndex();
+                parent.AddChild(newVisual);
+                parent.MoveChild(newVisual, index);
+                oldVisual.QueueFreeSafely();
+                continue;
             }
 
-            if (local != null)
-            {
-                rewriter.InsertAfter(match, [
-                    HarmonyIl.Ldloc(local.LocalIndex),
-                    HarmonyIl.Call(customMethod)
-                ]);
-            }
-            else
-            {
-                BangDreamLibCore.Logger.Error("transpiler failed");
-            }
+            oldVisual.PlayAnimation("relaxed_loop", true);
         }
 
-        return rewriter.InstructionsChecked();
+        return false;
     }
 }
 
@@ -301,12 +278,12 @@ internal class MusicCardFramePatch : IPatchMethod
 
     public static ModPatchTarget[] GetTargets()
     {
-        return [new ModPatchTarget(typeof(NCard), "Reload")];
+        return [new ModPatchTarget(typeof(NCard), "UpdatePortrait"),];
     }
 
     public static void Postfix(NCard __instance, ref TextureRect? ____frame)
     {
-        if (__instance.Model is IPerformanceCard && __instance.Model is
+        if (__instance.Model is IPerformCard && __instance.Model is
                 { IsMutable: true, Owner.Character: ISkinSupportCharacter })
         {
             var path = BangDreamConst.PlayerSkin.Get(__instance.Model.Owner).GetSkin()?.SkinTemplate.Ui.MusicCardFrame;
@@ -314,7 +291,29 @@ internal class MusicCardFramePatch : IPatchMethod
             {
                 ____frame ??= new TextureRect();
                 ____frame.Texture = PreloadManager.Cache.GetTexture2D(path);
-                ____frame.Material = null;
+            }
+        }
+    }
+}
+
+internal class MusicCardFrameMaterialPatch : IPatchMethod
+{
+    public static string PatchId => "clear_music_card_frame_material_by_skin_info";
+
+    public static ModPatchTarget[] GetTargets()
+    {
+        return [new ModPatchTarget(typeof(NCard), "Reload"),];
+    }
+
+    public static void Postfix(NCard __instance, ref TextureRect? ____frame)
+    {
+        if (__instance.Model is IPerformCard && __instance.Model is
+                { IsMutable: true, Owner.Character: ISkinSupportCharacter })
+        {
+            var path = BangDreamConst.PlayerSkin.Get(__instance.Model.Owner).GetSkin()?.SkinTemplate.Ui.MusicCardFrame;
+            if (path != null)
+            {
+                if (____frame != null) ____frame.Material = null;
             }
         }
     }

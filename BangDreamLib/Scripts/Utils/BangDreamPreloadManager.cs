@@ -1,5 +1,4 @@
-﻿using BangDreamLib.Scripts.Extensions;
-using BangDreamLib.Scripts.Interfaces.CharacterAugment;
+﻿using BangDreamLib.Scripts.Interfaces.CharacterAugment;
 using Godot;
 using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.Entities.Players;
@@ -10,6 +9,8 @@ namespace BangDreamLib.Scripts.Utils;
 
 public static class BangDreamPreloadManager
 {
+    private static readonly Lock AsyncLock = new();
+
     private static readonly Dictionary<string, string> CustomCommonAssets = new();
     private static readonly Dictionary<string, string> CustomRunAssets = new();
 
@@ -66,12 +67,18 @@ public static class BangDreamPreloadManager
 
     public static void AddCustomCommonAsset(string name, string path)
     {
-        CustomCommonAssets.Add(name, path);
+        lock (AsyncLock)
+        {
+            CustomCommonAssets.Add(name, path);
+        }
     }
 
     public static void AddCustomRunAsset(string name, string path)
     {
-        CustomRunAssets.Add(name, path);
+        lock (AsyncLock)
+        {
+            CustomRunAssets.Add(name, path);
+        }
     }
 
     private static async Task LoadAssetSets(string name, params IEnumerable<string>[] assetSets)

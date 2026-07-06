@@ -1,4 +1,3 @@
-using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Assets;
@@ -15,7 +14,7 @@ public partial class BangDreamMerchant : NMerchantCharacter
     {
         if (_animName != null)
         {
-            PlayAnimation(_animName);
+            PlayAnimation(_animName, true);
         }
         else
         {
@@ -23,7 +22,7 @@ public partial class BangDreamMerchant : NMerchantCharacter
         }
     }
 
-    public static NMerchantCharacter? Create(NMerchantCharacter? original, Player player)
+    public static NMerchantCharacter Create(Player player)
     {
         if (player.Character is ISkinSupportCharacter)
         {
@@ -42,6 +41,6 @@ public partial class BangDreamMerchant : NMerchantCharacter
             }
         }
 
-        return original;
+        throw new Exception("skin character merchant scene not found!");
     }
 }

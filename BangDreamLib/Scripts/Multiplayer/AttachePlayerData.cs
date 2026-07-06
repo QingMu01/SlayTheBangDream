@@ -10,15 +10,15 @@ public class AttachePlayerData
 {
     public static readonly AttachedState<Player, AttachePlayerData> State = new(p => new AttachePlayerData(p));
 
-    public PerformanceManager PerformanceManager { get; }
+    public PerformManager PerformManager { get; }
     public MusicNoteDamageTracker MusicNoteDamageTracker { get; }
 
     private AttachePlayerData(Player player)
     {
-        PerformanceManager = (PerformanceManager)ModelDb.Singleton<PerformanceManager>().MutableClone();
+        PerformManager = (PerformManager)ModelDb.Singleton<PerformManager>().MutableClone();
 
         MusicNoteDamageTracker = (MusicNoteDamageTracker)ModelDb.Singleton<MusicNoteDamageTracker>().MutableClone();
 
-        PerformanceManager.Player = player;
+        PerformManager.Player = player;
     }
 }

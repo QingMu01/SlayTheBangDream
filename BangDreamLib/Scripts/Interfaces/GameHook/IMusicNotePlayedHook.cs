@@ -1,8 +1,9 @@
-using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using BangDreamLib.Scripts.Utils.Infos;
+using MegaCrit.Sts2.Core.Entities.Players;
 
 namespace BangDreamLib.Scripts.Interfaces.GameHook;
 
 public interface IMusicNotePlayedHook
 {
-    Task OnMusicNotePlayed(PlayerChoiceContext choiceContext);
+    Task OnMusicNoteSpawn(VfxContext context, Player player);
 }

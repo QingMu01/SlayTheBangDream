@@ -11,18 +11,18 @@ public abstract class MusicCardModel(
     CardRarity rarity,
     TargetType target,
     bool showInCardLibrary = true) : BandCardModel(baseCost, CardType.Quest, rarity, target, showInCardLibrary),
-    IPerformanceCard
+    IPerformCard
 {
-    public NPerformanceItem? Handle { get; set; }
+    public NPerformItem? Handle { get; set; }
 
     public virtual bool IsInstant { get; set; } = false;
 
-    public virtual Task OnStartPerformance(PlayerChoiceContext choiceContext)
+    public virtual Task OnStartPerform(PlayerChoiceContext choiceContext)
     {
         return Task.CompletedTask;
     }
 
-    public virtual Task OnStopPerformance(PlayerChoiceContext choiceContext)
+    public virtual Task OnStopPerform(PlayerChoiceContext choiceContext)
     {
         return Task.CompletedTask;
     }
@@ -39,5 +39,13 @@ public abstract class MusicCardModel(
     protected sealed override (PileType, CardPilePosition) GetResultPileTypeAndPositionForCardPlay()
     {
         return (BangDreamConst.PerformPile, CardPilePosition.Bottom);
+    }
+
+    protected void FlashInArea()
+    {
+        if (Handle != null)
+        {
+            // TODO
+        }
     }
 }

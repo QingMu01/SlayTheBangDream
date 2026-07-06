@@ -1,4 +1,5 @@
 using BangDreamLib.Scripts.Nodes.VFX;
+using BangDreamLib.Scripts.Utils.Enums;
 using Godot;
 
 namespace BangDreamLib.Scripts.Utils.Infos;
@@ -9,6 +10,7 @@ public partial class VfxContext(NBangDreamFlyingVfx flyingVfx) : GodotObject
 
     private readonly WeakReference<NBangDreamFlyingVfx>? _vfx = new(flyingVfx);
 
+    public VfxLifecycle Lifecycle { get; set; } = VfxLifecycle.Spawn;
     public NBangDreamFlyingVfx? VfxNode => _vfx != null && _vfx.TryGetTarget(out var vfx) ? vfx : null;
 
     public void Set<T>(string key, T value) => _data[key] = value ?? throw new ArgumentNullException(nameof(value));

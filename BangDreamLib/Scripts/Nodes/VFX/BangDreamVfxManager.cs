@@ -17,8 +17,7 @@ public partial class BangDreamVfxManager : Control
 
     private readonly Dictionary<NBangDreamFlyingVfx, Action> _treeExitedActions = new();
 
-    private readonly Dictionary<NBangDreamFlyingVfx, List<(StringName signal, Callable callable)>>
-        _connectedCallables = new();
+    private readonly Dictionary<NBangDreamFlyingVfx, List<(StringName, Callable)>> _connectedCallables = new();
 
     private readonly HashSet<NBangDreamFlyingVfx> _activeVfx = [];
 

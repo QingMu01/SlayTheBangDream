@@ -15,6 +15,7 @@ using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Modding;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Relics;
+using MegaCrit.Sts2.Core.Nodes.Cards;
 using MegaCrit.Sts2.Core.Runs;
 using STS2RitsuLib;
 using STS2RitsuLib.CardPiles;
@@ -148,7 +149,7 @@ public class BangDreamLibCore
                     return true;
                 }
 
-                return context.Player?.PlayerCombatState?.AllCards.Any(card => card is IPerformanceCard) ?? false;
+                return context.Player?.PlayerCombatState?.AllCards.Any(card => card is IPerformCard) ?? false;
             }
         }).PileType;
 
@@ -157,17 +158,17 @@ public class BangDreamLibCore
             Scope = ModCardPileScope.CombatOnly,
             Style = ModCardPileUiStyle.Headless,
             FlightStartPositionResolver = context =>
-                context.CardModel?.Owner.AttachedData().PerformanceManager.PerformanceArea
+                context.CardModel?.Owner.AttachedData().PerformManager.PerformanceArea
                     ?.GetPilePost(context.CardModel),
             FlightTargetPositionResolver = context =>
-                context.CardModel?.Owner.AttachedData().PerformanceManager.PerformanceArea
+                context.CardModel?.Owner.AttachedData().PerformManager.PerformanceArea
                     ?.GetPilePost(context.CardModel)
         }).PileType;
 
         // 注册余音资源
-        var registry = RitsuLibFramework.GetSecondaryResourceRegistry(BangDreamConst.ModId);
+        var resourceContent = RitsuLibFramework.GetSecondaryResourceRegistry(BangDreamConst.ModId);
 
-        BangDreamConst.LingeredResource = registry.Register("Lingered", new SecondaryResourceDefinition(
+        BangDreamConst.LingeredResource = resourceContent.Register("Lingered", new SecondaryResourceDefinition(
             defaultAmount: 0,
             baseMaxAmount: 7,
             turnStartPolicy: SecondaryResourceTurnStartPolicy.None,
@@ -175,12 +176,28 @@ public class BangDreamLibCore
             locTable: "card_keywords",
             titleKey: "BANG_DREAM_LIB_KEYWORD_LINGERED.title",
             descriptionKey: "BANG_DREAM_LIB_KEYWORD_LINGERED.description",
-            smallIconPath: "res://Test/images/resources/mana_small.png",
-            largeIconPath: "res://Test/images/resources/mana_large.png"
+            smallIconPath: "res://BangDreamLib/images/sceneui/lingered_resource_small.png",
+            largeIconPath: "res://BangDreamLib/images/sceneui/lingered_resource_big.png"
         )
         {
             DefaultInsufficientPayment = SecondaryResourceInsufficientPayment.AllowPlay(spendAvailable: false)
         }).Id;
+        resourceContent.RegisterCardUi<NCard, NSecondaryResourceCardCostUi>("LingeredCardUi", nCard =>
+        {
+            var ui = NSecondaryResourceCardCostUi.Create(BangDreamConst.LingeredResource,
+                new SecondaryResourceCardCostUiStyle
+                {
+                    SlotSize = new Vector2(58f, 58f),
+                    IconSize = new Vector2(48f, 48f),
+                    FontSize = 24,
+                    OutlineSize = 10,
+                    ReserveVanillaStarCostSlot = true,
+                    AffordableOutlineColor = new Color("#664531")
+                });
+            var energyIcon = nCard.GetNode<TextureRect>("%StarIcon");
+            ui.Position = energyIcon.Position + new Vector2(5f, 5f);
+            return ui;
+        }, ctx => { ctx.Node.Refresh(ctx); });
 
         // 注册公共内容
         var commonContent = RitsuLibFramework.GetContentRegistry(BangDreamConst.ModId);
@@ -216,7 +233,17 @@ public class BangDreamLibCore
             {
                 if (cardModel is ISubsideCard subsideCard)
                 {
-                    cardModel.SecondaryCosts().Set(BangDreamConst.LingeredResource, subsideCard.LingeredResourceCost);
+                    if (subsideCard.LingeredResourceCost == -1)
+                    {
+                        cardModel.SecondaryCosts()
+                            .Set(BangDreamConst.LingeredResource, SecondaryResourceCost.X());
+                    }
+                    else
+                    {
+                        cardModel.SecondaryCosts()
+                            .Set(BangDreamConst.LingeredResource, subsideCard.LingeredResourceCost);
+                    }
+
                     cardModel.GetOrCreateCapability<SubsideCapability>();
                 }
             }
@@ -228,7 +255,7 @@ public class BangDreamLibCore
             {
                 ModelDb.Singleton<CopySelfAndPlayCardRule>()
             };
-            subscribeModels.AddRange(state.Players.Select(player => player.AttachedData().PerformanceManager));
+            subscribeModels.AddRange(state.Players.Select(player => player.AttachedData().PerformManager));
             subscribeModels.AddRange(state.Players.Select(player => player.AttachedData().MusicNoteDamageTracker));
             return subscribeModels;
         });

@@ -36,7 +36,7 @@ internal class CardNodeSupportMusicTypePatch : IPatchMethod
 
     public static void Postfix(NCard __instance, MegaLabel ____typeLabel)
     {
-        if (__instance.Model is IPerformanceCard)
+        if (__instance.Model is IPerformCard)
         {
             ____typeLabel.SetTextAutoSize(MusicType.GetFormattedText());
         }
