@@ -83,5 +83,14 @@
   "ITS_CRYCHIC_POWER_ENFEOFFMENT_POWER.smartDescription": "非[gold]音乐牌[/gold]进入[gold]额外牌堆[/gold]后，获得[blue]{Amount}[/blue]层[gold]重放[/gold]。",
   "ITS_CRYCHIC_POWER_NEXT_TURN_PERFORM_POWER.title": "下回合演奏",
   "ITS_CRYCHIC_POWER_NEXT_TURN_PERFORM_POWER.description": "回合开始时，将牌放入[gold]演奏区[/gold]。",
-  "ITS_CRYCHIC_POWER_NEXT_TURN_PERFORM_POWER.smartDescription": "回合开始时，将{CardName}放入[gold]演奏区[/gold]。"
+  "ITS_CRYCHIC_POWER_NEXT_TURN_PERFORM_POWER.smartDescription": "回合开始时，将{CardName}放入[gold]演奏区[/gold]。",
+  "ITS_CRYCHIC_POWER_OBLIVION_FORM_POWER.title": "遗忘形态",
+  "ITS_CRYCHIC_POWER_OBLIVION_FORM_POWER.description": "[gold]演奏区[/gold]为空时，攻击牌造成更多伤害。",
+  "ITS_CRYCHIC_POWER_OBLIVION_FORM_POWER.smartDescription": "[gold]演奏区[/gold]为空时，你打出的攻击牌造成[blue]{Amount}[/blue]倍伤害。",
+  "ITS_CRYCHIC_POWER_CRIMSON_NOTE_POWER.title": "血红音符",
+  "ITS_CRYCHIC_POWER_CRIMSON_NOTE_POWER.description": "受到攻击后弹奏[gold]音符[/gold]。",
+  "ITS_CRYCHIC_POWER_CRIMSON_NOTE_POWER.smartDescription": "受到攻击后，弹奏出[blue]{Amount}[/blue]个[gold]音符[/gold]。",
+  "ITS_CRYCHIC_POWER_WORLDVIEW_POWER.title": "世界观",
+  "ITS_CRYCHIC_POWER_WORLDVIEW_POWER.description": "回合开始时，在[gold]演奏区[/gold]加入随机[gold]音乐牌[/gold]。",
+  "ITS_CRYCHIC_POWER_WORLDVIEW_POWER.smartDescription": "回合开始时，在你的[gold]演奏区[/gold]内加入一张随机的[gold]音乐牌[/gold]，并将其设置为[gold]消耗[/gold]。"
 }

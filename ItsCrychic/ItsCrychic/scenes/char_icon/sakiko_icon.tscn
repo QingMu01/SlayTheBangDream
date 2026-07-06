@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://h1p5871h3q3r"]
 
-[ext_resource type="Texture2D" uid="uid://b8wa2pe4fum4b" path="res://ItsCrychic/images/charui/sakiko/character_icon_saki.png" id="1_paiki"]
+[ext_resource type="Texture2D" uid="uid://br51p6lym8gde" path="res://ItsCrychic/images/charui/sakiko/character_icon_saki.png" id="1_paiki"]
 
 [node name="SakikoIcon" type="TextureRect"]
 anchors_preset = 15

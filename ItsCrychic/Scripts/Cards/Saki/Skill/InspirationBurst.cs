@@ -34,7 +34,7 @@ public class InspirationBurst() : AbstractSakikoCard(CustomCost, CustomType, Cus
         {
             if (cardModel is MelodyFragments otherCard && cardModel != this)
             {
-                await otherCard.OnStartPerformance(choiceContext);
+                await otherCard.OnStartPerform(choiceContext);
             }
         }
 

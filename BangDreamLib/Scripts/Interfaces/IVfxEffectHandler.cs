@@ -9,5 +9,4 @@ public interface IVfxEffectHandler
     Task OnHit(VfxContext context) => Task.CompletedTask;
     Task OnAfterHit(VfxContext context) => Task.CompletedTask;
     Task OnFinish(VfxContext context) => Task.CompletedTask;
-    
 }

@@ -8,22 +8,17 @@ using MegaCrit.Sts2.Core.Models;
 
 namespace ItsCrychic.Scripts.Power.Buff;
 
-public class MelodyMasterPower : BandPowerModel, ICardPerformanceHook
+public class MelodyMasterPower : BandPowerModel, IPerformAreaHook
 {
     public override PowerType Type => PowerType.Buff;
 
     public override PowerStackType StackType => PowerStackType.Single;
 
-    private List<CardModel> _applySlyCards = [];
-
-    public async Task OnCardEnterPerformanceArea(CardModel cardModel)
+    private readonly List<CardModel> _applySlyCards = [];
+    
+    public Task OnCardLeavePerformArea(CardModel cardModel)
     {
-        await Task.CompletedTask;
-    }
-
-    public Task OnCardLeavePerformanceArea(CardModel cardModel)
-    {
-        if (cardModel is not IPerformanceCard && cardModel.Owner == Owner.Player)
+        if (cardModel is not IPerformCard && cardModel.Owner == Owner.Player)
         {
             Flash();
             cardModel.AddKeyword(CardKeyword.Sly);

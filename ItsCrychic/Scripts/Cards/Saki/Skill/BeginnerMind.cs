@@ -31,7 +31,7 @@ public class BeginnerMind() : AbstractSakikoCard(CustomCost, CustomType, CustomR
     {
         var drawnCards = await ExtraPileCmd.Draw(choiceContext, DynamicVars.Cards.BaseValue, Owner);
 
-        var musicCount = drawnCards.Count(card => card is IPerformanceCard);
+        var musicCount = drawnCards.Count(card => card is IPerformCard);
         if (musicCount > 0)
         {
             await PlayerCmd.GainEnergy(DynamicVars.Energy.BaseValue * musicCount, Owner);

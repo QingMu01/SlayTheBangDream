@@ -17,7 +17,7 @@ public class EnfeoffmentPower : BandPowerModel
     {
         if (card.Owner == Owner.Player &&
             card.Pile?.Type == BangDreamConst.ExtraDraw &&
-            card is not IPerformanceCard)
+            card is not IPerformCard)
         {
             Flash();
             card.BaseReplayCount += Amount;

@@ -44,13 +44,13 @@ public sealed class WakabaMutsumi()
         "res://ItsCrychic/images/charui/img_mutsumi-wakaba_2.webp";
 
     public override string CustomIconPath =>
-        "res://ItsCrychic/scenes/char_icon/sakiko_icon.tscn";
+        "res://ItsCrychic/scenes/char_icon/mutsumi_icon.tscn";
 
     public override string CustomIconTexturePath =>
-        "res://ItsCrychic/images/charui/sakiko/character_icon_saki.png";
+        "res://ItsCrychic/images/charui/mutsumi/character_icon_mutsumi.png";
 
     public override string CustomIconOutlineTexturePath =>
-        "res://ItsCrychic/images/charui/sakiko/character_icon_saki_outline.png";
+        "res://ItsCrychic/images/charui/mutsumi/character_icon_mutsumi_outline.png";
 
     public override CreatureAnimator GenerateAnimator(MegaSprite controller)
     {

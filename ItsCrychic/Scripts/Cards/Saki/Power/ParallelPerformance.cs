@@ -26,7 +26,7 @@ public class ParallelPerformance() : AbstractSakikoCard(CustomCost, CustomType, 
 
     protected override Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        Owner.AttachedData().PerformanceManager.AddCapacity(DynamicVars["CapacityIncrease"].IntValue);
+        Owner.AttachedData().PerformManager.AddCapacity(DynamicVars["CapacityIncrease"].IntValue);
         return Task.CompletedTask;
     }
 

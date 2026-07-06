@@ -31,13 +31,13 @@ public class AveMujica() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
         QuickVar.Repeat.Create(1)
     ];
 
-    public override Task OnStartPerformance(PlayerChoiceContext choiceContext)
+    public override Task OnStartPerform(PlayerChoiceContext choiceContext)
     {
         var combatState = Owner.PlayerCombatState!;
 
         foreach (var card in combatState.AllPiles.SelectMany(pile => pile.Cards))
         {
-            if (card.Rarity == CardRarity.Basic && card is not IPerformanceCard)
+            if (card.Rarity == CardRarity.Basic && card is not IPerformCard)
             {
                 card.BaseReplayCount += DynamicVars.Repeat.IntValue;
                 _effectCards.Add(card);
@@ -47,7 +47,7 @@ public class AveMujica() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
         return Task.CompletedTask;
     }
 
-    public override Task OnStopPerformance(PlayerChoiceContext choiceContext)
+    public override Task OnStopPerform(PlayerChoiceContext choiceContext)
     {
         if (!IsUpgraded)
         {
@@ -59,6 +59,8 @@ public class AveMujica() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
                     effectCard.BaseReplayCount = 0;
                 }
             }
+
+            _effectCards.Clear();
         }
 
         return Task.CompletedTask;
@@ -66,12 +68,22 @@ public class AveMujica() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
 
     public override Task AfterCardPlayedLate(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        if (IsUpgraded && _effectCards.Contains(play.Card) && Handle == null)
+        if (_effectCards.Contains(play.Card))
         {
-            play.Card.BaseReplayCount -= DynamicVars.Repeat.IntValue;
-            if (play.Card.BaseReplayCount <= 0)
+            if (Handle != null && play.PlayIndex == 0)
             {
-                play.Card.BaseReplayCount = 0;
+                FlashInArea();
+            }
+
+            if (IsUpgraded)
+            {
+                play.Card.BaseReplayCount -= DynamicVars.Repeat.IntValue;
+                if (play.Card.BaseReplayCount <= 0)
+                {
+                    play.Card.BaseReplayCount = 0;
+                }
+
+                _effectCards.Remove(play.Card);
             }
         }
 

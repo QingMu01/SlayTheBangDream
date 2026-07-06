@@ -2,7 +2,6 @@ using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
 using BangDreamLib.Scripts.Utils;
-using ItsCrychic.Scripts.Character.CardPools;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Factories;
@@ -33,9 +32,9 @@ public class Kanon() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, 
     {
         ArgumentNullException.ThrowIfNull(CombatState);
 
-        var manager = Owner.AttachedData().PerformanceManager;
+        var manager = Owner.AttachedData().PerformManager;
 
-        foreach (var card in manager.PerformancePile.Cards.Where(card => card is not IPerformanceCard).ToList())
+        foreach (var card in manager.PerformancePile.Cards.Where(card => card is not IPerformCard).ToList())
         {
             await CardCmd.Discard(choiceContext, card);
         }
@@ -45,24 +44,26 @@ public class Kanon() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, 
         while (needAddCardCount > 0)
         {
             var performanceCard = BangDreamTools.GetPile(BangDreamConst.ExtraDraw, Owner).Cards
-                .FirstOrDefault(item => item is IPerformanceCard);
+                .FirstOrDefault(item => item is IPerformCard);
             if (performanceCard != null)
             {
                 await CardPileCmd.Add(performanceCard, BangDreamConst.PerformPile);
             }
             else
             {
-                CardPoolModel poolModel;
-                if (Owner.Character is IExtraDeckSupportCharacter character)
+                var musicCards = new List<CardModel>();
+                if (Owner.Character is IExtraDeckSupportCharacter character && character.ExtraCardPool.AllCards.Any())
                 {
-                    poolModel = character.ExtraCardPool;
+                    musicCards.AddRange(character.ExtraCardPool.AllCards);
                 }
                 else
                 {
-                    poolModel = ModelDb.CardPool<SakikoMusicalCardPool>();
+                    musicCards.AddRange(ModelDb.AllCharacters
+                        .OfType<IExtraDeckSupportCharacter>()
+                        .SelectMany(item => item.ExtraCardPool.AllCards));
                 }
 
-                var randomCards = CardFactory.GetForCombat(Owner, poolModel.AllCards, 1,
+                var randomCards = CardFactory.GetForCombat(Owner, musicCards, 1,
                     Owner.RunState.Rng.CombatCardGeneration);
                 var selectedCard = randomCards.FirstOrDefault();
                 if (selectedCard != null)

@@ -28,13 +28,13 @@ public class SheetMusicSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTa
         new PowerVar<StrengthPower>(1m)
     ];
 
-    public override async Task OnStartPerformance(PlayerChoiceContext choiceContext)
+    public override async Task OnStartPerform(PlayerChoiceContext choiceContext)
     {
         await PowerCmd.Apply<StrengthPower>(choiceContext, Owner.Creature, DynamicVars.Strength.IntValue,
             Owner.Creature, this);
     }
 
-    public override async Task OnStopPerformance(PlayerChoiceContext choiceContext)
+    public override async Task OnStopPerform(PlayerChoiceContext choiceContext)
     {
         await PowerCmd.Apply<StrengthPower>(choiceContext, Owner.Creature, -DynamicVars.Strength.IntValue,
             Owner.Creature, this);

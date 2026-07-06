@@ -24,12 +24,12 @@ public class SymbolIv() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
         QuickVar.Energy.Create(2)
     ];
 
-    public override async Task OnStartPerformance(PlayerChoiceContext choiceContext)
+    public override async Task OnStartPerform(PlayerChoiceContext choiceContext)
     {
         await PlayerCmd.GainEnergy(DynamicVars.Energy.IntValue, Owner);
     }
 
-    public override async Task OnStopPerformance(PlayerChoiceContext choiceContext)
+    public override async Task OnStopPerform(PlayerChoiceContext choiceContext)
     {
         var extraDrawPile = BangDreamConst.ExtraDraw.GetPile(Owner);
         if (extraDrawPile.Cards.Count > 0)

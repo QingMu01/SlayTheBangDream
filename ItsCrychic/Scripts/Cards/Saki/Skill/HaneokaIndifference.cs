@@ -21,12 +21,15 @@ public class HaneokaIndifference() : AbstractSakikoCard(CustomCost, CustomType, 
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
+        QuickVar.Block.Create(6),
         QuickVar.Cards.Create(2)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
         ArgumentNullException.ThrowIfNull(CombatState);
+
+        await CreatureCmd.GainBlock(Owner.Creature, DynamicVars.Block, play);
 
         var selectedCards = await CardSelectCmd.FromCombatPile(choiceContext,
             PileType.Draw.GetPile(Owner),

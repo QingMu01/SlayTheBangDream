@@ -22,19 +22,19 @@ public class Ether() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
     protected override IEnumerable<DynamicVar> CardVars => [];
 
 
-    public override async Task OnStartPerformance(PlayerChoiceContext choiceContext)
+    public override async Task OnStartPerform(PlayerChoiceContext choiceContext)
     {
         var cardPile = BangDreamConst.PerformPile.GetPile(Owner);
         foreach (var card in cardPile.Cards)
         {
-            if (card.Tags.Contains(BangDreamConst.SymbolCard) && card is IPerformanceCard performanceCard)
+            if (card.Tags.Contains(BangDreamConst.SymbolCard) && card is IPerformCard performanceCard)
             {
-                await performanceCard.OnStopPerformance(choiceContext);
+                await performanceCard.OnStopPerform(choiceContext);
             }
         }
     }
 
-    public override Task OnStopPerformance(PlayerChoiceContext choiceContext)
+    public override Task OnStopPerform(PlayerChoiceContext choiceContext)
     {
         return Task.CompletedTask;
     }

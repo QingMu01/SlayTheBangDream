@@ -21,11 +21,11 @@ public class Angles() : AbstractSakikoMusicCard(CardRarity.Rare, TargetType.None
 
     protected override IEnumerable<DynamicVar> CardVars => [];
 
-    public override async Task OnStopPerformance(PlayerChoiceContext choiceContext)
+    public override async Task OnStopPerform(PlayerChoiceContext choiceContext)
     {
         ArgumentNullException.ThrowIfNull(CombatState);
 
-        var manager = Owner.AttachedData().PerformanceManager;
+        var manager = Owner.AttachedData().PerformManager;
         var candidates = CardFactory.FilterForCombat(Owner.Character.CardPool.AllCards)
             .Where(card => card is { Type: CardType.Attack, Rarity: CardRarity.Rare })
             .ToList();

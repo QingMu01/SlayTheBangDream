@@ -6,9 +6,11 @@ using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using STS2RitsuLib.Cards.DynamicVars;
 using STS2RitsuLib.Combat.SecondaryResources;
+using STS2RitsuLib.Interop.AutoRegistration;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
+[RegisterArchaicToothTranscendence(typeof(Surge))]
 public class Oscillation() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget)
 {
     private const int CustomCost = 1;

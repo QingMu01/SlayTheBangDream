@@ -22,7 +22,7 @@ public class BlackeningPower : BandPowerModel
 
     public override async Task AfterCardPlayed(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        if (play.Card is IPerformanceCard && play.Card.Owner == Owner.Player)
+        if (play.Card is IPerformCard && play.Card.Owner == Owner.Player)
         {
             Flash();
 

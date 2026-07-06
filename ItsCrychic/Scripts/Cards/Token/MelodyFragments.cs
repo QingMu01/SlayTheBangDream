@@ -38,7 +38,7 @@ public class MelodyFragments() : MusicCardModel(CustomCost, CustomRarity, Custom
         QuickVar.Repeat.Create(4)
     ];
 
-    public override async Task OnStartPerformance(PlayerChoiceContext choiceContext)
+    public override async Task OnStartPerform(PlayerChoiceContext choiceContext)
     {
         await MusicNoteCmd.FromCard(this, DynamicVars.Repeat.IntValue);
     }

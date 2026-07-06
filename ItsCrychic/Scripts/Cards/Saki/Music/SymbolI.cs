@@ -31,13 +31,13 @@ public class SymbolI() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
         new PowerVar<VigorPower>(5)
     ];
 
-    public override async Task OnStartPerformance(PlayerChoiceContext choiceContext)
+    public override async Task OnStartPerform(PlayerChoiceContext choiceContext)
     {
         await PowerCmd.Apply<VigorPower>(choiceContext, Owner.Creature, DynamicVars["VigorPower"].IntValue,
             Owner.Creature, this);
     }
 
-    public override async Task OnStopPerformance(PlayerChoiceContext choiceContext)
+    public override async Task OnStopPerform(PlayerChoiceContext choiceContext)
     {
         var drawPile = PileType.Draw.GetPile(Owner);
         if (drawPile.Cards.Count > 0)

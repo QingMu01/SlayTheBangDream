@@ -24,12 +24,12 @@ public class SymbolIii() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
         QuickVar.Block.Create(15)
     ];
 
-    public override async Task OnStartPerformance(PlayerChoiceContext choiceContext)
+    public override async Task OnStartPerform(PlayerChoiceContext choiceContext)
     {
         await CreatureCmd.GainBlock(Owner.Creature, DynamicVars.Block, null);
     }
 
-    public override async Task OnStopPerformance(PlayerChoiceContext choiceContext)
+    public override async Task OnStopPerform(PlayerChoiceContext choiceContext)
     {
         var discardPile = PileType.Discard.GetPile(Owner);
         if (discardPile.Cards.Count > 0)

@@ -8,19 +8,15 @@ using MegaCrit.Sts2.Core.ValueProps;
 
 namespace ItsCrychic.Scripts.Power.Buff;
 
-public class InterludePower : BandPowerModel, ICardPerformanceHook
+public class InterludePower : BandPowerModel, IPerformAreaHook
 {
     public override PowerType Type => PowerType.Buff;
 
     public override PowerStackType StackType => PowerStackType.Counter;
 
-    public async Task OnCardEnterPerformanceArea(CardModel cardModel)
+    public async Task OnCardEnterPerformArea(CardModel cardModel)
     {
         await CreatureCmd.GainBlock(Owner, new BlockVar(Amount, ValueProp.Unpowered), null);
     }
 
-    public Task OnCardLeavePerformanceArea(CardModel cardModel)
-    {
-        return Task.CompletedTask;
-    }
 }

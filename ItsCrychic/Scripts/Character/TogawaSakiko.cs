@@ -25,7 +25,7 @@ public sealed class TogawaSakiko() : BandMemberModel<SakikoStandardCardPool, Sak
     public override string MemberClass => BangDreamClass.Keyboard.GetBandClass();
 
     public override bool AutoGenerateSubsideResource => true;
-    
+
     public bool ShouldAlwaysShowExtraDeck => true;
     public bool ShouldAlwaysShowExtraPile => true;
     public CardPoolModel ExtraCardPool => ModelDb.CardPool<SakikoMusicalCardPool>();
@@ -61,6 +61,8 @@ public sealed class TogawaSakiko() : BandMemberModel<SakikoStandardCardPool, Sak
         var combat = new AnimState("Combat");
         var attack = new AnimState("Attack");
         var die = new AnimState("Die");
+        var relax = new AnimState("Relax");
+        var sit = new AnimState("Sit");
 
         start.NextState = idle;
         combat.NextState = idle;
@@ -71,6 +73,8 @@ public sealed class TogawaSakiko() : BandMemberModel<SakikoStandardCardPool, Sak
         animator.AddAnyState("Dead", die);
         animator.AddAnyState("Attack", attack);
         animator.AddAnyState("Cast", combat);
+        animator.AddAnyState("relaxed_loop", relax);
+        animator.AddAnyState("sit", sit);
         return animator;
     }
 }

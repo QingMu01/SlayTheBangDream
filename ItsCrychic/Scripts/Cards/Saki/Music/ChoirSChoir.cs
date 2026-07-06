@@ -21,6 +21,7 @@ public class ChoirSChoir() : AbstractSakikoMusicCard(CardRarity.Uncommon, Target
     {
         if (Handle != null && dealer == Owner.Creature && result.WasTargetKilled)
         {
+            FlashInArea();
             await PlayerCmd.GainGold(DynamicVars.Gold.BaseValue, Owner);
         }
     }

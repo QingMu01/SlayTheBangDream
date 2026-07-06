@@ -32,7 +32,7 @@ public class KillKiss() : AbstractSakikoMusicCard(CardRarity.Rare, TargetType.Ra
         return Task.CompletedTask;
     }
 
-    public override async Task OnStartPerformance(PlayerChoiceContext choiceContext)
+    public override async Task OnStartPerform(PlayerChoiceContext choiceContext)
     {
         ArgumentNullException.ThrowIfNull(CombatState);
 

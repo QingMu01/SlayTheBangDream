@@ -25,12 +25,12 @@ public class SymbolIi() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
         QuickVar.Cards.Create("Draw", 3)
     ];
 
-    public override async Task OnStartPerformance(PlayerChoiceContext choiceContext)
+    public override async Task OnStartPerform(PlayerChoiceContext choiceContext)
     {
         await MusicNoteCmd.FromCard(this, DynamicVars.Repeat.IntValue);
     }
 
-    public override async Task OnStopPerformance(PlayerChoiceContext choiceContext)
+    public override async Task OnStopPerform(PlayerChoiceContext choiceContext)
     {
         var exhaustPile = PileType.Exhaust.GetPile(Owner);
         if (exhaustPile.Cards.Count > 0)

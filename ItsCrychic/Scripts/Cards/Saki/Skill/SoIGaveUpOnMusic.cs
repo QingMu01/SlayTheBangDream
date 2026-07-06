@@ -15,7 +15,7 @@ public class SoIGaveUpOnMusic() : AbstractSakikoCard(CustomCost, CustomType, Cus
     private const CardRarity CustomRarity = CardRarity.Rare;
     private const TargetType CustomTarget = TargetType.None;
 
-    protected override bool IsPlayable => IsDupe || Owner.AttachedData().PerformanceManager.Capacity > 0;
+    protected override bool IsPlayable => IsDupe || Owner.AttachedData().PerformManager.Capacity > 0;
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
@@ -48,7 +48,7 @@ public class SoIGaveUpOnMusic() : AbstractSakikoCard(CustomCost, CustomType, Cus
     {
         if (play.Card == this && play.PlayIndex == 0 && !IsDupe)
         {
-            Owner.AttachedData().PerformanceManager.ReduceCapacity(DynamicVars["Cost"].IntValue);
+            Owner.AttachedData().PerformManager.ReduceCapacity(DynamicVars["Cost"].IntValue);
         }
 
         return Task.CompletedTask;

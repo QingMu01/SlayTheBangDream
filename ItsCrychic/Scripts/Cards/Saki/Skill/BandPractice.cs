@@ -30,7 +30,7 @@ public class BandPractice() : AbstractSakikoCard(CustomCost, CustomType, CustomR
             if (drawnCards.Count == 0)
                 break;
             var drawnCard = drawnCards.First();
-            if (drawnCard is IPerformanceCard)
+            if (drawnCard is IPerformCard)
             {
                 break;
             }

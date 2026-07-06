@@ -1,6 +1,5 @@
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
 using BangDreamLib.Scripts.Utils;
-using ItsCrychic.Scripts.Character.CardPools;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Factories;
@@ -36,8 +35,9 @@ public class Improvisation() : AbstractSakikoCard(CustomCost, CustomType, Custom
         }
         else
         {
-            musicCards.AddRange(ModelDb.CardPool<SakikoMusicalCardPool>().AllCards);
-            musicCards.AddRange(ModelDb.CardPool<MutsumiMusicalCardPool>().AllCards);
+            musicCards.AddRange(ModelDb.AllCharacters
+                .OfType<IExtraDeckSupportCharacter>()
+                .SelectMany(item => item.ExtraCardPool.AllCards));
         }
 
         var cardList = CardFactory.FilterForCombat(musicCards);

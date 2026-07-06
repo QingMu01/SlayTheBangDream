@@ -1,13 +1,13 @@
-[gd_scene load_steps=3 format=3 uid="uid://g0p1cn1gr0qy"]
+[gd_scene load_steps=3 format=3 uid="uid://d1111uejtpsu5"]
 
-[ext_resource type="Script" uid="uid://dgxxnvpum284a" path="res://Scripts/Nodes/MegaScripts/CrychicMerchant.cs" id="1_220ki"]
-[ext_resource type="SpineSkeletonDataResource" uid="uid://c7daf1n1148ap" path="res://ItsCrychic/images/charui/mutsumi/build_puppeteer_mutsumi.tres" id="2_220ki"]
+[ext_resource type="Script" uid="uid://dgxxnvpum284a" path="res://Scripts/Nodes/MegaScripts/CrychicMerchant.cs" id="1_q533n"]
+[ext_resource type="SpineSkeletonDataResource" uid="uid://ccuj4m23drikv" path="res://ItsCrychic/images/charui/mutsumi/build_default_mutsumi.tres" id="2_fb6tp"]
 
-[node name="MutsumiMerchantPuppeteer" type="Node2D"]
-script = ExtResource("1_220ki")
+[node name="MutsumiMerchantDefault" type="Node2D"]
+script = ExtResource("1_q533n")
 
 [node name="SpineSprite" type="SpineSprite" parent="."]
-skeleton_data_res = ExtResource("2_220ki")
+skeleton_data_res = ExtResource("2_fb6tp")
 preview_skin = "Default"
 preview_animation = "Relax"
 preview_frame = false
