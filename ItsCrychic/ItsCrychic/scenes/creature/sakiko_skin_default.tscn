@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://dhm4rtycsgs4n"]
 
-[ext_resource type="SpineSkeletonDataResource" uid="uid://d1t6tf48m5thy" path="res://ItsCrychic/images/charui/sakiko/default_sakiko.tres" id="1_xmwdq"]
+[ext_resource type="SpineSkeletonDataResource" uid="uid://58b1mcjh758u" path="res://ItsCrychic/themes/sakiko_default.tres" id="1_xmwdq"]
 
 [node name="Sakiko_Default" type="Node2D"]
 
@@ -30,6 +30,7 @@ grow_vertical = 0
 
 [node name="IntentPos" type="Marker2D" parent="."]
 unique_name_in_owner = true
+position = Vector2(0, -320)
 
 [node name="CenterPos" type="Marker2D" parent="."]
 unique_name_in_owner = true

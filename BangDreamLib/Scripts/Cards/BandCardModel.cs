@@ -23,5 +23,5 @@ public abstract class BandCardModel(
 
     protected virtual IEnumerable<CardKeyword> CardKeywords => [];
     protected virtual IEnumerable<IHoverTip> CardHoverTips => [];
-    protected abstract IEnumerable<DynamicVar> CardVars { get; }
+    protected virtual IEnumerable<DynamicVar> CardVars => [];
 }

@@ -1,4 +1,4 @@
-using BangDreamLib.Scripts.Utils.Enums;
+using BangDreamLib.Scripts.Enums;
 using BangDreamLib.Scripts.Utils.Infos;
 using Godot;
 using MegaCrit.Sts2.Core.Helpers;

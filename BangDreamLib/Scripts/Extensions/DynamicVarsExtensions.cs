@@ -1,25 +1,33 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
+using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.ValueProps;
 using STS2RitsuLib.Cards.DynamicVars;
+using STS2RitsuLib.Combat.SecondaryResources;
 
 namespace BangDreamLib.Scripts.Extensions;
 
 public static class DynamicVarsExtensions
 {
+    private const string BuffVarName = "Buff";
+
     private static readonly Dictionary<QuickVar, Func<int, DynamicVar>> QuickVarTypeMap = new()
     {
         [QuickVar.Cards] = baseValue => new CardsVar(baseValue),
         [QuickVar.Damage] = baseValue => new DamageVar(baseValue, ValueProp.Move),
         [QuickVar.Block] = baseValue => new BlockVar(baseValue, ValueProp.Move),
         [QuickVar.Energy] = baseValue => new EnergyVar(baseValue),
-        [QuickVar.LingeredEnergy] = baseValue => new IntVar("LingeredEnergy", baseValue),
         [QuickVar.Gold] = baseValue => new GoldVar(baseValue),
         [QuickVar.Heal] = baseValue => new HealVar(baseValue),
         [QuickVar.HpLoss] = baseValue => new HpLossVar(baseValue),
         [QuickVar.Repeat] = baseValue => new RepeatVar(baseValue),
-        [QuickVar.Stars] = baseValue => new StarsVar(baseValue)
+        [QuickVar.Buff] = baseValue => new IntVar(BuffVarName, baseValue),
+        [QuickVar.Stars] = baseValue => new StarsVar(baseValue),
+        [QuickVar.LingeredResource] = baseValue =>
+            SecondaryResourceVars.For(nameof(BangDreamConst.LingeredResource), BangDreamConst.LingeredResource,
+                baseValue)
     };
 
     private static readonly Dictionary<QuickVar, Func<string, int, DynamicVar>> QuickVarTypeWithNameMap = new()
@@ -28,12 +36,29 @@ public static class DynamicVarsExtensions
         [QuickVar.Damage] = (name, baseValue) => new DamageVar(name, baseValue, ValueProp.Move),
         [QuickVar.Block] = (name, baseValue) => new BlockVar(name, baseValue, ValueProp.Move),
         [QuickVar.Energy] = (name, baseValue) => new EnergyVar(name, baseValue),
-        [QuickVar.LingeredEnergy] = (name, baseValue) => new IntVar(name, baseValue),
         [QuickVar.Gold] = (name, baseValue) => new GoldVar(name, baseValue),
         [QuickVar.Heal] = (name, baseValue) => new HealVar(name, baseValue),
         [QuickVar.HpLoss] = (name, baseValue) => new HpLossVar(name, baseValue),
         [QuickVar.Repeat] = (name, baseValue) => new RepeatVar(name, baseValue),
-        [QuickVar.Stars] = (name, baseValue) => new StarsVar(name, baseValue)
+        [QuickVar.Buff] = (name, baseValue) => new IntVar(name, baseValue),
+        [QuickVar.Stars] = (name, baseValue) => new StarsVar(name, baseValue),
+        [QuickVar.LingeredResource] = (name, baseValue) =>
+            SecondaryResourceVars.For(name, BangDreamConst.LingeredResource, baseValue)
+    };
+
+    private static readonly Dictionary<QuickVar, string> QuickVarDefaultNameMap = new()
+    {
+        [QuickVar.Cards] = CardsVar.defaultName,
+        [QuickVar.Damage] = DamageVar.defaultName,
+        [QuickVar.Block] = BlockVar.defaultName,
+        [QuickVar.Energy] = EnergyVar.defaultName,
+        [QuickVar.Gold] = GoldVar.defaultName,
+        [QuickVar.Heal] = HealVar.defaultName,
+        [QuickVar.HpLoss] = HpLossVar.defaultName,
+        [QuickVar.Repeat] = RepeatVar.defaultName,
+        [QuickVar.Buff] = BuffVarName,
+        [QuickVar.Stars] = StarsVar.defaultName,
+        [QuickVar.LingeredResource] = nameof(BangDreamConst.LingeredResource)
     };
 
     public static bool Var<T>(DynamicVarSet varSet, string name, [MaybeNullWhen(false)] out T var)
@@ -75,6 +100,14 @@ public static class DynamicVarsExtensions
     {
         return QuickVarTypeMap[quickVar].Invoke(baseValue);
     }
+
+    public static DynamicVar GetVar(this QuickVar quickVar, CardModel cardModel, string? name = null)
+    {
+        var varName = name ?? QuickVarDefaultNameMap[quickVar];
+        return cardModel.DynamicVars.TryGetValue(varName, out var dynamicVar)
+            ? dynamicVar
+            : throw new KeyNotFoundException($"Quick dynamic var {varName} not found");
+    }
 }
 
 public enum QuickVar
@@ -83,10 +116,11 @@ public enum QuickVar
     Damage,
     Block,
     Energy,
-    LingeredEnergy,
     Gold,
     Heal,
     HpLoss,
     Repeat,
-    Stars
+    Buff,
+    Stars,
+    LingeredResource
 }

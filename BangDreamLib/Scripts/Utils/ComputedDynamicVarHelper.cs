@@ -34,8 +34,26 @@ public static class ComputedDynamicVarHelper
         );
     }
 
+    public static ComputedDynamicVar CreateDamageVar(string name, decimal baseValue,
+        Func<CardModel?, decimal> calc, ValueProp prop = ValueProp.Move)
+    {
+        return ModCardVars.Computed(name, baseValue,
+            calc,
+            (card, mode, target, runHooks) => ApplyHooks(card, mode, target, runHooks, prop, true, calc)
+        );
+    }
+
     public static ComputedDynamicVar CreateBlockVar(string name, decimal baseValue,
         Func<CardModel?, Creature?, decimal> calc, ValueProp prop = ValueProp.Move)
+    {
+        return ModCardVars.Computed(name, baseValue,
+            calc,
+            (card, mode, target, runHooks) => ApplyHooks(card, mode, target, runHooks, prop, false, calc)
+        );
+    }
+
+    public static ComputedDynamicVar CreateBlockVar(string name, decimal baseValue,
+        Func<CardModel?, decimal> calc, ValueProp prop = ValueProp.Move)
     {
         return ModCardVars.Computed(name, baseValue,
             calc,
@@ -48,6 +66,23 @@ public static class ComputedDynamicVarHelper
         ValueProp prop, bool isDamage, Func<CardModel?, Creature?, decimal> calc)
     {
         var baseValue = calc(card, target);
+
+        if (card is { RunState: not null, CombatState: not null } && runHooks)
+        {
+            return isDamage
+                ? Hook.ModifyDamage(card.RunState, card.CombatState, target, card.Owner.Creature,
+                    baseValue, prop, card, null, ModifyDamageHookType.All, mode, out _)
+                : Hook.ModifyBlock(card.CombatState, card.Owner.Creature, baseValue, prop, card, null, out _);
+        }
+
+        return baseValue;
+    }
+
+    private static decimal ApplyHooks(CardModel? card, CardPreviewMode mode, Creature? target,
+        bool runHooks,
+        ValueProp prop, bool isDamage, Func<CardModel?, decimal> calc)
+    {
+        var baseValue = calc(card);
 
         if (card is { RunState: not null, CombatState: not null } && runHooks)
         {

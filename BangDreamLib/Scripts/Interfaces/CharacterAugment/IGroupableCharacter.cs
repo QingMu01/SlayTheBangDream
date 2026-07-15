@@ -1,4 +1,4 @@
-﻿using BangDreamLib.Scripts.Utils.Enums;
+﻿using BangDreamLib.Scripts.Enums;
 
 namespace BangDreamLib.Scripts.Interfaces.CharacterAugment;
 

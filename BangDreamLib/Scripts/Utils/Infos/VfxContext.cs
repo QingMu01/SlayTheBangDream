@@ -1,5 +1,5 @@
+using BangDreamLib.Scripts.Enums;
 using BangDreamLib.Scripts.Nodes.VFX;
-using BangDreamLib.Scripts.Utils.Enums;
 using Godot;
 
 namespace BangDreamLib.Scripts.Utils.Infos;

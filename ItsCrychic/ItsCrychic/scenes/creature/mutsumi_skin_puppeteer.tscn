@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://bu0c0p4j1ljd4"]
 
-[ext_resource type="SpineSkeletonDataResource" uid="uid://bfqiem7wxwxn4" path="res://ItsCrychic/images/charui/mutsumi/puppeteer_mutsumi.tres" id="1_b5pvl"]
+[ext_resource type="SpineSkeletonDataResource" uid="uid://bfqiem7wxwxn4" path="res://ItsCrychic/themes/puppeteer_mutsumi.tres" id="1_b5pvl"]
 
 [node name="MutsumiPuppeteer" type="Node2D"]
 

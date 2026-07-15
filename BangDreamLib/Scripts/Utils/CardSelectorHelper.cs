@@ -30,7 +30,7 @@ public static class SelectorPrefsExtensions
 
     private static readonly LocString Empty = new(LocTable, "BANG_DREAM_LIB_PROMPT_EMPTY");
     private static readonly LocString ToHand = new(LocTable, "BANG_DREAM_LIB_PROMPT_TO_HAND");
-    private static readonly LocString ToPerformance = new(LocTable, "BANG_DREAM_LIB_PROMPT_TO_PERFORMANCE");
+    private static readonly LocString ToPerformance = new(LocTable, "BANG_DREAM_LIB_PROMPT_TO_PERFORM");
     private static readonly LocString ToDraw = new(LocTable, "BANG_DREAM_LIB_PROMPT_TO_DRAW");
     private static readonly LocString ToExtraDraw = new(LocTable, "BANG_DREAM_LIB_PROMPT_TO_EXTRA_DRAW");
     private static readonly LocString ToDiscard = new(LocTable, "BANG_DREAM_LIB_PROMPT_TO_DISCARD");

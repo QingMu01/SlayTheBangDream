@@ -1,4 +1,4 @@
-namespace BangDreamLib.Scripts.Utils.Enums;
+namespace BangDreamLib.Scripts.Enums;
 
 public enum CharacterGroup
 {

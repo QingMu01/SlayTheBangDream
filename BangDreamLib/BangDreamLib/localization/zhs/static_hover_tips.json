@@ -1,10 +1,10 @@
 {
   "BANG_DREAM_LIB_SUBSIDE.title": "休止",
   "BANG_DREAM_LIB_SUBSIDE.description": "这张牌不会为你提供[gold]余音[/gold]。\n使用[blue]{Amount}[/blue]点[gold]余音[/gold]来触发额外效果。",
-  "BANG_DREAM_LIB_CARDPILE_EXTRA_DECK.title": "额外牌组",
-  "BANG_DREAM_LIB_CARDPILE_EXTRA_DECK.description": "查看你[gold]额外牌组[/gold]中的所有牌。",
-  "BANG_DREAM_LIB_CARDPILE_EXTRA_DECK.empty": "我的[gold]额外牌组[/gold]是空的。",
-  "BANG_DREAM_LIB_CARDPILE_EXTRA_DRAW.title": "额外牌堆",
-  "BANG_DREAM_LIB_CARDPILE_EXTRA_DRAW.description": "查看你[gold]额外牌组[/gold]中的所有牌。",
-  "BANG_DREAM_LIB_CARDPILE_EXTRA_DRAW.empty": "我的[gold]额外牌堆[/gold]是空的。"
+  "BANG_DREAM_LIB_CARDPILE_EXTRA_DECK.title": "音乐集",
+  "BANG_DREAM_LIB_CARDPILE_EXTRA_DECK.description": "查看你[gold]音乐集[/gold]中的所有牌。",
+  "BANG_DREAM_LIB_CARDPILE_EXTRA_DECK.empty": "我的[gold]音乐集[/gold]是空的。",
+  "BANG_DREAM_LIB_CARDPILE_EXTRA_DRAW.title": "曲库",
+  "BANG_DREAM_LIB_CARDPILE_EXTRA_DRAW.description": "查看你[gold]曲库[/gold]中的所有牌。",
+  "BANG_DREAM_LIB_CARDPILE_EXTRA_DRAW.empty": "我的[gold]曲库[/gold]是空的。"
 }

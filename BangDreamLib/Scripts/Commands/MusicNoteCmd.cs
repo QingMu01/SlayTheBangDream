@@ -28,26 +28,26 @@ public static class MusicNoteCmd
     public static async Task FromCard(CardModel source, int baseCount, int bounceCount = 0, decimal baseDamage = 1m,
         Creature? target = null)
     {
-        await ShotInternal(source.Owner.Creature, baseCount, bounceCount, baseDamage, null, target);
+        await ShotInternal(source.Owner.Creature, baseCount, bounceCount, baseDamage, null, target, source);
     }
 
     public static async Task FromPower(PowerModel source, int baseCount, int bounceCount = 0, decimal baseDamage = 1m,
         Creature? target = null)
     {
-        await ShotInternal(source.Owner, baseCount, bounceCount, baseDamage, null, target);
+        await ShotInternal(source.Owner, baseCount, bounceCount, baseDamage, null, target, source);
     }
 
     public static async Task FromRelic(RelicModel source, int baseCount, int bounceCount = 0, decimal baseDamage = 1m,
         Creature? target = null)
     {
-        await ShotInternal(source.Owner.Creature, baseCount, bounceCount, baseDamage, null, target);
+        await ShotInternal(source.Owner.Creature, baseCount, bounceCount, baseDamage, null, target, source);
     }
 
     internal static async Task ShotInternal(Creature dealer, int count, int bounceCount = 0, decimal baseDamage = 1m,
-        Creature? visualDealer = null, Creature? target = null)
+        Creature? visualDealer = null, Creature? target = null, AbstractModel? source = null)
     {
         await SubmitNote(
-            GenerateNoteInternal(dealer, count, bounceCount, baseDamage, visualDealer, target),
+            GenerateNoteInternal(dealer, count, bounceCount, baseDamage, visualDealer, target, source),
             NoteSpawnInterval, NoteGroupSize, NoteGroupDelay
         );
     }
@@ -167,10 +167,12 @@ internal record MusicNoteEffectHandler(
             );
 
             var results = await CreatureCmd.Damage(
-                new BlockingPlayerChoiceContext(),
-                attackTarget,
-                new DamageVar(damage, ValueProp.Unpowered | ValueProp.SkipHurtAnim),
-                Dealer
+                choiceContext: new BlockingPlayerChoiceContext(),
+                target: attackTarget,
+                damageVar: new DamageVar(damage, ValueProp.Unpowered | ValueProp.SkipHurtAnim),
+                dealer: Dealer,
+                cardSource: Source as CardModel,
+                cardPlay: null
             );
 
             var damageTracker = Dealer.Player?.AttachedData().MusicNoteDamageTracker;

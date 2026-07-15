@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://d1111uejtpsu5"]
 
 [ext_resource type="Script" uid="uid://dgxxnvpum284a" path="res://Scripts/Nodes/MegaScripts/CrychicMerchant.cs" id="1_q533n"]
-[ext_resource type="SpineSkeletonDataResource" uid="uid://ccuj4m23drikv" path="res://ItsCrychic/images/charui/mutsumi/build_default_mutsumi.tres" id="2_fb6tp"]
+[ext_resource type="SpineSkeletonDataResource" uid="uid://ccuj4m23drikv" path="res://ItsCrychic/themes/build_default_mutsumi.tres" id="2_fb6tp"]
 
 [node name="MutsumiMerchantDefault" type="Node2D"]
 script = ExtResource("1_q533n")

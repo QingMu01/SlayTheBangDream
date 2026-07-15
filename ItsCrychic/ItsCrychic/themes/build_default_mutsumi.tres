@@ -1,0 +1,8 @@
+[gd_resource type="SpineSkeletonDataResource" load_steps=3 format=3 uid="uid://ccuj4m23drikv"]
+
+[ext_resource type="SpineAtlasResource" uid="uid://eucivxyl6jri" path="res://ItsCrychic/images/charui/mutsumi/spine/build_char_4183_mortis.atlas" id="1_t7o0v"]
+[ext_resource type="SpineSkeletonFileResource" uid="uid://dh2af4jht86kp" path="res://ItsCrychic/images/charui/mutsumi/spine/build_char_4183_mortis.skel" id="2_5pf3d"]
+
+[resource]
+atlas_res = ExtResource("1_t7o0v")
+skeleton_file_res = ExtResource("2_5pf3d")

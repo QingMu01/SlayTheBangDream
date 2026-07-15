@@ -1,0 +1,23 @@
+[gd_resource type="ShaderMaterial" load_steps=3 format=3 uid="uid://ch27x7ntrp77p"]
+
+[ext_resource type="Texture2D" uid="uid://qqwnfv2v2wxu" path="res://ItsCrychic/images/charui/sakiko/Keyborad_trans.png" id="1_juhi5"]
+
+[sub_resource type="Shader" id="Shader_cpoxx"]
+code = "shader_type canvas_item;
+
+uniform sampler2D transitionTex;
+uniform float threshold : hint_range(0,1);
+
+void fragment() {
+    float falloff = 1.0 - texture(transitionTex, UV).r;
+    
+    // helps with falloff artifacts issues towards the transition extremes
+    float remap  = mix(-0.1, 1.1, threshold);
+    falloff = step(falloff, remap);
+    COLOR.a = falloff;
+}"
+
+[resource]
+shader = SubResource("Shader_cpoxx")
+shader_parameter/transitionTex = ExtResource("1_juhi5")
+shader_parameter/threshold = 0.0

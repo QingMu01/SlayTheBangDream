@@ -1,4 +1,4 @@
 ﻿{
-  "BANG_DREAM_LIB_FILL_PERFORMANCE_PILE.empty": "我的演奏区容量为[blue]0[/blue]，因此不能进行[gold]演奏[/gold]。",
-  "BANG_DREAM_LIB_MAX_SIZE_PERFORMANCE_PILE.filled": "我的演奏区容量已达最大。"
+  "BANG_DREAM_LIB_PERFORM_MANAGER.zreo_capacity": "我的歌单容量为[blue]0[/blue]，因此不能将牌放入。",
+  "BANG_DREAM_LIB_PERFORM_MANAGER.full_capacity": "我的歌单容量已达最大。"
 }

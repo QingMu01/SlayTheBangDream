@@ -1,8 +1,9 @@
 ﻿{
   "BANG_DREAM_LIB_EMPTY_LOC_STRING": "",
   "BANG_DREAM_LIB_MUSIC_TYPE": "音乐",
-  "BANG_DREAM_LIB_INSTANT_KEYWORD_TEXT": "即兴",
-  "BANG_DREAM_LIB_SUBSIDE_PLAY_TEXT": "[gold]休止[/gold]：{desc}",
+  "BANG_DREAM_LIB_INSTANT_PLAY_TEXT": "[gold]即兴[/gold]：{Description}",
+  "BANG_DREAM_LIB_PERFORM_PLAY_TEXT": "[gold]奏响[/gold]：{Description}",
+  "BANG_DREAM_LIB_SUBSIDE_PLAY_TEXT": "[gold]休止[/gold]：{Description}",
   "BANG_DREAM_LIB_REWARD_MUSIC_CARD_REWARD": "将一张音乐牌添加到你的额外牌组。",
   "BANG_DREAM_LIB_CHARACTER_CANT_SELECT_0.message": "在做了，在做了！",
   "BANG_DREAM_LIB_CHARACTER_CANT_SELECT_1.message": "新建文件夹中！",
