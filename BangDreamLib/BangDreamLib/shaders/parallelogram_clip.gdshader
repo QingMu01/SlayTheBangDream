@@ -1,6 +1,7 @@
 shader_type canvas_item;
 
 instance uniform vec2 rect_size = vec2(1.0);
+instance uniform vec4 dot_color : source_color = vec4(1.0, 1.0, 1.0, 0.3);
 
 uniform float slant_ratio : hint_range(-0.49, 0.49, 0.005) = 0.15;
 uniform float edge_softness : hint_range(0.0, 0.1, 0.001) = 0.0;
@@ -8,7 +9,6 @@ uniform float edge_softness : hint_range(0.0, 0.1, 0.001) = 0.0;
 uniform sampler2D gradient_texture : source_color, repeat_disable, filter_linear;
 uniform float gradient_angle : hint_range(-180.0, 180.0, 1.0) = 0.0;
 
-uniform vec4 dot_color : source_color = vec4(1.0, 1.0, 1.0, 0.3);
 uniform float dot_radius : hint_range(0.0, 8.0, 0.1) = 1.0;
 uniform float dot_spacing : hint_range(1.0, 32.0, 0.5) = 6.0;
 uniform vec2 dot_offset = vec2(0.0);

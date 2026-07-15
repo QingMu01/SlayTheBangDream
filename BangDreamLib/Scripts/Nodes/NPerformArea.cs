@@ -1,3 +1,4 @@
+using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Nodes.SubNode;
 using BangDreamLib.Scripts.Utils;
 using BangDreamLib.Scripts.Utils.Infos;
@@ -15,9 +16,12 @@ public partial class NPerformArea : Control
     private const int MaxCapacity = 7;
     private const float ItemHeight = 64f;
     private const float ItemSpacing = 70f;
-    private const float ItemApproachSpacing = 22f;
+    private const float ItemApproachSpacing = 25f;
 
     private const float LayoutDuration = 0.25f;
+    private const float SlotEntranceDuration = 0.3f;
+    private const float SlotEntranceDelay = 0.04f;
+    private const float SlotEntranceHorizontalOffset = 56f;
     private const float HintFadeDuration = 0.12f;
     private const float HintVerticalOffset = 5f;
 
@@ -39,12 +43,18 @@ public partial class NPerformArea : Control
     private Player? _player;
 
     private readonly List<NPerformItem> _items = [];
+    private readonly List<NPerformItem> _pendingEntranceSlots = [];
+    private readonly List<SlotEntranceState> _enteringSlots = [];
+    private readonly Dictionary<CardModel, Vector2> _lastCardSlotCenters = [];
+    private readonly HashSet<CardModel> _pendingArrivalBounces = [];
 
     private RunningTween? _layoutTween;
+    private RunningTween? _slotEntranceTween;
     private RunningTween? _hintTween;
     private int _capacity;
     private int _displayedHintAmount;
     private int _targetHintAmount;
+    private NPerformItem? _hintHighlightedSlot;
     private float _hintPositionX;
     private bool _isHintInitialized;
     private bool _isHintAnimating;
@@ -52,6 +62,7 @@ public partial class NPerformArea : Control
     private bool _isExiting;
 
     private sealed record RunningTween(Tween Tween, TaskCompletionSource Completion);
+    private sealed record SlotEntranceState(NPerformItem Slot, Vector2 TargetPosition, float TargetAlpha);
 
     public static NPerformArea Create(Player? player)
     {
@@ -97,7 +108,11 @@ public partial class NPerformArea : Control
         }
 
         CancelLayoutTween();
+        CancelSlotEntranceTween(false);
         CancelHintTween();
+        SetHintHighlightedSlot(null, true);
+        _lastCardSlotCenters.Clear();
+        _pendingArrivalBounces.Clear();
     }
 
     public void SetCapacity(int capacity)
@@ -119,15 +134,37 @@ public partial class NPerformArea : Control
         var slot = _items[context.SlotIndex - 1];
         if (slot.Model != null) return;
 
+        slot.PrepareCardArrival();
         slot.Model = cardModel;
         slot.Context = context;
         context.Slot = slot;
+        _lastCardSlotCenters[cardModel] = slot.GetSlotGlobalCenter();
+        if (_pendingArrivalBounces.Remove(cardModel))
+        {
+            slot.PlayCardEnterBounce();
+        }
+    }
+
+    public void PlayCardArrivalBounce(CardModel cardModel)
+    {
+        var slot = _items.FirstOrDefault(item => item.Model == cardModel);
+        if (slot != null)
+        {
+            slot.PlayCardEnterBounce();
+        }
+        else if (cardModel.Pile?.Type == BangDreamConst.PerformPile)
+        {
+            _pendingArrivalBounces.Add(cardModel);
+        }
     }
 
     public void RemoveItem(CardModel cardModel)
     {
         var item = _items.FirstOrDefault(candidate => candidate.Model == cardModel);
+        _pendingArrivalBounces.Remove(cardModel);
         if (item == null) return;
+
+        _lastCardSlotCenters[cardModel] = item.GetSlotGlobalCenter();
 
         if (item.Context != null)
         {
@@ -136,6 +173,30 @@ public partial class NPerformArea : Control
 
         item.Context = null;
         item.Model = null;
+    }
+
+    public bool TryGetCardSlotCenter(CardModel cardModel, out Vector2 center)
+    {
+        var activeSlot = _items.FirstOrDefault(item => item.Model == cardModel);
+        if (activeSlot != null)
+        {
+            center = activeSlot.GetSlotGlobalCenter();
+            _lastCardSlotCenters[cardModel] = center;
+            return true;
+        }
+
+        if (_player == cardModel.Owner)
+        {
+            var slotIndex = _player.AttachedData().PerformManager.GetExpectedSlotIndex(cardModel);
+            if (slotIndex >= 1 && slotIndex <= _items.Count)
+            {
+                center = _items[slotIndex - 1].GetSlotGlobalCenter();
+                _lastCardSlotCenters[cardModel] = center;
+                return true;
+            }
+        }
+
+        return _lastCardSlotCenters.TryGetValue(cardModel, out center);
     }
 
     /// <summary>
@@ -155,18 +216,16 @@ public partial class NPerformArea : Control
         SetHintTarget(GetLingeredResourceAmount(), false, true);
     }
 
-    /// <summary>
-    /// 槽位节点已由 EnsureSlotCount 同步，暂不播放独立的容量变化动画。
-    /// </summary>
-    private static Task AnimateCapacityChanged(int previousCapacity, int capacity)
+    private Task AnimateCapacityChanged(int previousCapacity, int capacity)
     {
-        return Task.CompletedTask;
+        return capacity > previousCapacity ? AnimatePendingSlotEntrances() : Task.CompletedTask;
     }
 
     private Task AnimateLayout()
     {
         if (_itemContainer == null) return Task.CompletedTask;
 
+        CancelSlotEntranceTween(true);
         CancelLayoutTween();
         var orderedItems = GetOrderedItems();
         if (orderedItems.Count == 0) return Task.CompletedTask;
@@ -224,6 +283,7 @@ public partial class NPerformArea : Control
             slot.Scale = Vector2.One * _itemScale;
             _items.Add(slot);
             _itemContainer.AddChild(slot);
+            _pendingEntranceSlots.Add(slot);
         }
 
         while (_items.Count > _capacity)
@@ -235,9 +295,88 @@ public partial class NPerformArea : Control
             }
 
             _items.RemoveAt(_items.Count - 1);
+            _pendingEntranceSlots.Remove(slot);
             slot.Visible = false;
             slot.QueueFree();
         }
+    }
+
+    private Task AnimatePendingSlotEntrances()
+    {
+        if (_itemContainer == null || _pendingEntranceSlots.Count == 0 || _isExiting)
+        {
+            return Task.CompletedTask;
+        }
+
+        CancelSlotEntranceTween(true);
+        _enteringSlots.Clear();
+
+        foreach (var slot in _pendingEntranceSlots.ToList())
+        {
+            var index = _items.IndexOf(slot);
+            if (index < 0 || !slot.IsInsideTree()) continue;
+
+            var targetPosition = GetItemPosition(index);
+            var targetAlpha = slot.Modulate.A;
+            _enteringSlots.Add(new SlotEntranceState(slot, targetPosition, targetAlpha));
+            slot.Position = targetPosition + Vector2.Left * SlotEntranceHorizontalOffset;
+            SetItemAlpha(slot, 0f);
+        }
+
+        _pendingEntranceSlots.Clear();
+        if (_enteringSlots.Count == 0) return Task.CompletedTask;
+
+        var tween = CreateTween();
+        tween.SetParallel();
+        tween.SetPauseMode(Tween.TweenPauseMode.Process);
+
+        for (var index = 0; index < _enteringSlots.Count; index++)
+        {
+            var state = _enteringSlots[index];
+            var delay = index * SlotEntranceDelay;
+            tween.TweenProperty(state.Slot, "position", state.TargetPosition, SlotEntranceDuration)
+                .SetDelay(delay)
+                .SetTrans(Tween.TransitionType.Cubic)
+                .SetEase(Tween.EaseType.Out);
+            tween.TweenProperty(state.Slot, "modulate:a", state.TargetAlpha, SlotEntranceDuration * 0.8f)
+                .SetDelay(delay)
+                .SetTrans(Tween.TransitionType.Quad)
+                .SetEase(Tween.EaseType.Out);
+        }
+
+        var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var runningTween = new RunningTween(tween, completion);
+        _slotEntranceTween = runningTween;
+        tween.Finished += () =>
+        {
+            CompleteSlotEntrances();
+            completion.TrySetResult();
+            if (_slotEntranceTween == runningTween)
+            {
+                _slotEntranceTween = null;
+            }
+        };
+
+        return completion.Task;
+    }
+
+    private static void SetItemAlpha(NPerformItem item, float alpha)
+    {
+        var modulate = item.Modulate;
+        modulate.A = alpha;
+        item.Modulate = modulate;
+    }
+
+    private void CompleteSlotEntrances()
+    {
+        foreach (var state in _enteringSlots)
+        {
+            if (!IsInstanceValid(state.Slot)) continue;
+            state.Slot.Position = state.TargetPosition;
+            SetItemAlpha(state.Slot, state.TargetAlpha);
+        }
+
+        _enteringSlots.Clear();
     }
 
     private void ApplyItemScale()
@@ -311,6 +450,7 @@ public partial class NPerformArea : Control
 
         ApplyLayoutImmediately();
         SetHintTarget(GetLingeredResourceAmount(), true);
+        TaskHelper.RunSafely(AnimatePendingSlotEntrances());
     }
 
     private void OnSecondaryResourceChanged(SecondaryResourceChangedEvent changedEvent)
@@ -342,8 +482,11 @@ public partial class NPerformArea : Control
             _hintNeedsPositionRefresh = false;
             UpdateHintPosition();
             SetHintAlpha(IsHintAmountVisible(_displayedHintAmount) ? 1f : 0f);
+            UpdateHintSlotHighlight(true);
             return;
         }
+
+        UpdateHintSlotHighlight();
 
         if (!_isHintAnimating)
         {
@@ -361,6 +504,22 @@ public partial class NPerformArea : Control
             while (!_isExiting &&
                    (_displayedHintAmount != _targetHintAmount || _hintNeedsPositionRefresh))
             {
+                if (!IsHintAmountVisible(_targetHintAmount))
+                {
+                    if (IsHintAmountVisible(_displayedHintAmount))
+                    {
+                        await TweenHintAlpha(0f);
+                    }
+
+                    if (!IsHintAmountVisible(_targetHintAmount))
+                    {
+                        _displayedHintAmount = _targetHintAmount;
+                        _hintNeedsPositionRefresh = false;
+                        UpdateHintSlotHighlight();
+                        continue;
+                    }
+                }
+
                 if (IsHintAmountVisible(_displayedHintAmount))
                 {
                     await TweenHintAlpha(0f);
@@ -373,6 +532,7 @@ public partial class NPerformArea : Control
 
                 _hintNeedsPositionRefresh = false;
                 UpdateHintPosition();
+                UpdateHintSlotHighlight();
 
                 if (IsHintAmountVisible(_displayedHintAmount))
                 {
@@ -404,6 +564,37 @@ public partial class NPerformArea : Control
     private bool IsHintAmountVisible(int amount)
     {
         return amount >= 1 && amount <= _items.Count;
+    }
+
+    private void UpdateHintSlotHighlight(bool immediately = false)
+    {
+        NPerformItem? targetSlot = null;
+        if (_displayedHintAmount == _targetHintAmount && IsHintAmountVisible(_displayedHintAmount))
+        {
+            targetSlot = _items[_displayedHintAmount - 1];
+        }
+
+        SetHintHighlightedSlot(targetSlot, immediately);
+    }
+
+    private void SetHintHighlightedSlot(NPerformItem? slot, bool immediately = false)
+    {
+        if (_hintHighlightedSlot == slot)
+        {
+            if (slot != null && immediately)
+            {
+                slot.SetHintHighlighted(true, true);
+            }
+            return;
+        }
+
+        if (_hintHighlightedSlot != null && IsInstanceValid(_hintHighlightedSlot))
+        {
+            _hintHighlightedSlot.SetHintHighlighted(false, immediately);
+        }
+
+        _hintHighlightedSlot = slot;
+        _hintHighlightedSlot?.SetHintHighlighted(true, immediately);
     }
 
     private void SetHintAlpha(float alpha)
@@ -448,6 +639,26 @@ public partial class NPerformArea : Control
         _layoutTween.Tween.Kill();
         _layoutTween.Completion.TrySetResult();
         _layoutTween = null;
+    }
+
+    private void CancelSlotEntranceTween(bool complete)
+    {
+        if (_slotEntranceTween != null)
+        {
+            _slotEntranceTween.Tween.Kill();
+            _slotEntranceTween.Completion.TrySetResult();
+            _slotEntranceTween = null;
+        }
+
+        if (complete)
+        {
+            CompleteSlotEntrances();
+        }
+        else
+        {
+            _enteringSlots.Clear();
+            _pendingEntranceSlots.Clear();
+        }
     }
 
     private void CancelHintTween()

@@ -19,19 +19,33 @@ public partial class NPerformItem : NClickableControl
     private static readonly Color InstantColor = new("#63a5ff");
     private static readonly Color PerformColor = new("#d30150");
 
+    private const float HintHighlightExtension = 15f;
+    private const float HintHighlightDuration = 0.18f;
+    private const float CardEnterBounceDistance = 14f;
+    private const float CardEnterPushDuration = 0.06f;
+    private const float CardEnterReturnDuration = 0.14f;
+
     private NCard? _card;
     private NPerformArea? _parent;
     private CardModel? _cardModel;
 
     private ColorRect? _background;
+    private Control? _cardContainer;
     private TextureRect? _cardPortrait;
 
     private Vector2 _backgroundSize;
     private Vector2 _backgroundTopRight;
+    private float _backgroundBaseWidth;
     private bool _isAdjustingBackgroundRect;
+    private bool _isHintHighlighted;
+    private bool _isCardEnterBouncePending;
+    private bool _isCardVisualArrived = true;
+    private Vector2 _cardContainerBasePosition;
 
     private Tween? _fadeInTween;
     private Tween? _fadeOutTween;
+    private Tween? _hintHighlightTween;
+    private Tween? _cardEnterTween;
 
     public CardModel? Model
     {
@@ -47,6 +61,10 @@ public partial class NPerformItem : NClickableControl
             _fadeOutTween = null;
             _card?.QueueFreeSafely();
             _card = null;
+            if (value == null)
+            {
+                _isCardVisualArrived = true;
+            }
             RefreshVisuals();
         }
     }
@@ -67,17 +85,26 @@ public partial class NPerformItem : NClickableControl
     public override void _Ready()
     {
         _background = GetNode<ColorRect>("%Background");
+        _cardContainer = GetNode<Control>("MarginContainer");
         _cardPortrait = GetNode<TextureRect>("%Portrait");
 
         _backgroundSize = _background.Size;
         _backgroundTopRight = GetTopRight(_background);
+        _backgroundBaseWidth = _background.Size.X;
+        _cardContainerBasePosition = _cardContainer.Position;
         _background.ItemRectChanged += OnBackgroundRectChanged;
         _cardPortrait.Resized += UpdatePortraitShaderSize;
 
         UpdateBackgroundShaderSize();
         UpdatePortraitShaderSize();
         RefreshVisuals();
+        ApplyHintHighlightImmediately();
         ConnectSignals();
+
+        if (_isCardEnterBouncePending)
+        {
+            PlayCardEnterBounce();
+        }
     }
 
     public override void _ExitTree()
@@ -90,9 +117,94 @@ public partial class NPerformItem : NClickableControl
 
         _fadeInTween?.Kill();
         _fadeOutTween?.Kill();
+        _hintHighlightTween?.Kill();
+        _cardEnterTween?.Kill();
 
         _card?.QueueFreeSafely();
         _card = null;
+    }
+
+    public Vector2 GetSlotGlobalCenter()
+    {
+        if (_cardContainer == null) return GlobalPosition;
+
+        var localCenter = _cardContainerBasePosition + _cardContainer.Size / 2f;
+        return GetGlobalTransform() * localCenter;
+    }
+
+    public void PlayCardEnterBounce()
+    {
+        _isCardVisualArrived = true;
+        RefreshVisuals();
+        _isCardEnterBouncePending = _cardContainer == null;
+        if (_cardContainer == null) return;
+
+        _cardEnterTween?.Kill();
+        _cardContainer.Position = _cardContainerBasePosition;
+
+        _cardEnterTween = CreateTween();
+        _cardEnterTween.SetPauseMode(Tween.TweenPauseMode.Process);
+        _cardEnterTween.TweenProperty(_cardContainer, "position",
+                _cardContainerBasePosition + Vector2.Right * CardEnterBounceDistance, CardEnterPushDuration)
+            .SetTrans(Tween.TransitionType.Quad)
+            .SetEase(Tween.EaseType.Out);
+        _cardEnterTween.TweenProperty(_cardContainer, "position", _cardContainerBasePosition,
+                CardEnterReturnDuration)
+            .SetTrans(Tween.TransitionType.Back)
+            .SetEase(Tween.EaseType.Out);
+
+        var runningTween = _cardEnterTween;
+        _cardEnterTween.Finished += () =>
+        {
+            if (_cardEnterTween == runningTween)
+            {
+                _cardEnterTween = null;
+            }
+        };
+    }
+
+    public void PrepareCardArrival()
+    {
+        _isCardVisualArrived = false;
+        RefreshVisuals();
+    }
+
+    public void SetHintHighlighted(bool highlighted, bool immediately = false)
+    {
+        if (_isHintHighlighted == highlighted && !immediately) return;
+
+        _isHintHighlighted = highlighted;
+        _hintHighlightTween?.Kill();
+        _hintHighlightTween = null;
+        if (_background == null) return;
+
+        var targetWidth = _backgroundBaseWidth + (highlighted ? HintHighlightExtension : 0f);
+        if (immediately)
+        {
+            SetBackgroundWidth(targetWidth);
+            return;
+        }
+
+        _hintHighlightTween = CreateTween();
+        _hintHighlightTween.SetPauseMode(Tween.TweenPauseMode.Process);
+        _hintHighlightTween.TweenProperty(_background, "size:x", targetWidth, HintHighlightDuration)
+            .SetTrans(Tween.TransitionType.Quad)
+            .SetEase(highlighted ? Tween.EaseType.Out : Tween.EaseType.InOut);
+        _hintHighlightTween.Finished += () => _hintHighlightTween = null;
+    }
+
+    private void ApplyHintHighlightImmediately()
+    {
+        SetBackgroundWidth(_backgroundBaseWidth + (_isHintHighlighted ? HintHighlightExtension : 0f));
+    }
+
+    private void SetBackgroundWidth(float width)
+    {
+        if (_background == null) return;
+
+        var size = _background.Size;
+        size.X = width;
+        _background.Size = size;
     }
 
     private static Vector2 GetTopRight(Control control)
@@ -130,7 +242,7 @@ public partial class NPerformItem : NClickableControl
     {
         if (_cardPortrait != null)
         {
-            _cardPortrait.Texture = Model?.Portrait ??
+            _cardPortrait.Texture = (_isCardVisualArrived ? Model?.Portrait : null) ??
                                     PreloadManager.Cache.GetTexture2D(
                                         "res://BangDreamLib/images/sceneui/default_portrait.png");
         }
@@ -145,6 +257,8 @@ public partial class NPerformItem : NClickableControl
             {
                 _background.Modulate = DefaultColor;
             }
+
+            _cardPortrait?.SetInstanceShaderParameter("dot_color", _background.Modulate);
         }
     }
 

@@ -152,8 +152,8 @@ public class BangDreamLibCore
         {
             Scope = ModCardPileScope.CombatOnly,
             Style = ModCardPileUiStyle.Headless,
-            FlightStartPositionResolver = ctx => ctx.CardModel?.Owner.Creature.GetCreatureNode()!.VfxSpawnPosition,
-            FlightTargetPositionResolver = ctx => ctx.CardModel?.Owner.Creature.GetCreatureNode()!.VfxSpawnPosition
+            FlightStartPositionResolver = ctx => ResolvePerformPileFlightPosition(ctx.CardModel),
+            FlightTargetPositionResolver = ctx => ResolvePerformPileFlightPosition(ctx.CardModel)
         }).PileType;
 
         // 注册余音资源
@@ -199,7 +199,7 @@ public class BangDreamLibCore
                 {
                     area.Visible = creature.Entity.Player is
                         { Character: IPerformableCharacter { GetDefaultCapacity: > 0 } };
-                    area.GlobalPosition = creature.VfxSpawnPosition + Vector2.Left * creature.Hitbox.Size.X / 2;
+                    area.GlobalPosition = creature.VfxSpawnPosition + Vector2.Left * (creature.Hitbox.Size.X / 2 + 50f);
                 },
                 new NodeAttachmentOptions
                 {
@@ -274,6 +274,19 @@ public class BangDreamLibCore
             subscribeModels.AddRange(state.Players.Select(player => player.AttachedData().MusicNoteDamageTracker));
             return subscribeModels;
         });
+    }
+
+    private static Vector2? ResolvePerformPileFlightPosition(CardModel? cardModel)
+    {
+        if (cardModel == null) return null;
+
+        var performArea = cardModel.Owner.AttachedData().PerformManager.PerformArea;
+        if (GodotObject.IsInstanceValid(performArea) && performArea.TryGetCardSlotCenter(cardModel, out var slotCenter))
+        {
+            return slotCenter;
+        }
+
+        return cardModel.Owner.Creature.GetCreatureNode()?.VfxSpawnPosition;
     }
 
     private static CardKeyword RegisterKeyword(ModKeywordRegistry registry, string keyword)

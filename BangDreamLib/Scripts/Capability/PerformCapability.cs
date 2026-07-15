@@ -5,7 +5,6 @@ using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models;
 using STS2RitsuLib.Interop.AutoRegistration;
-using STS2RitsuLib.Keywords;
 using STS2RitsuLib.Models.Capabilities;
 
 namespace BangDreamLib.Scripts.Capability;
@@ -23,26 +22,31 @@ public class PerformCapability : CardCapability, ICardDescriptionContributor, IC
     {
         var isInstant = context.Card is IPerformCard { IsInstant: true };
 
-        var musicDescription = isInstant
-            ? new LocString("cards", context.Card.Id.Entry + InstantPostfix)
-            : new LocString("cards", context.Card.Id.Entry + PerformPostfix);
 
-        var finalDescription = isInstant ? Instant : Perform;
+        var musicDescription = LocString.GetIfExists("cards",
+            isInstant ? context.Card.Id.Entry + InstantPostfix : context.Card.Id.Entry + PerformPostfix);
+        if (musicDescription != null)
+        {
+            context.Card.DynamicVars.AddTo(musicDescription);
 
-        context.Card.DynamicVars.AddTo(musicDescription);
+            musicDescription.Add(new IfUpgradedVar(context.IsUpgradePreview ? UpgradeDisplay.UpgradePreview :
+                context.Card.IsUpgraded ? UpgradeDisplay.Upgraded : UpgradeDisplay.Normal));
 
-        musicDescription.Add(new IfUpgradedVar(context.IsUpgradePreview ? UpgradeDisplay.UpgradePreview :
-            context.Card.IsUpgraded ? UpgradeDisplay.Upgraded : UpgradeDisplay.Normal));
+            var keywordText = isInstant ? Instant : Perform;
+            keywordText.Add(new StringVar("Description", musicDescription.GetFormattedText()));
 
-        finalDescription.Add(new StringVar("Description", musicDescription.GetFormattedText()));
-
-        return [new CardDescriptionFragment(finalDescription)];
+            yield return new CardDescriptionFragment(keywordText, CardDescriptionFragmentPlacement.BeforeBase);
+        }
     }
 
     public IEnumerable<IHoverTip> GetHoverTips(CardModel card)
     {
-        return card is IPerformCard { IsInstant: true }
-            ? BangDreamConst.Instant.GetModKeywordHoverTips()
-            : BangDreamConst.Perform.GetModKeywordHoverTips();
+        if (card is IPerformCard performCard)
+        {
+            yield return HoverTipFactory.FromKeyword(BangDreamConst.Music);
+            yield return performCard.IsInstant
+                ? HoverTipFactory.FromKeyword(BangDreamConst.Instant)
+                : HoverTipFactory.FromKeyword(BangDreamConst.Perform);
+        }
     }
 }

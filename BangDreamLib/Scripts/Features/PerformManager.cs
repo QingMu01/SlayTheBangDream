@@ -38,6 +38,7 @@ public class PerformManager : SingletonModel, ISecondaryResourceHookListener
 
     private Player? _player;
     private CardPile? _pile;
+    private readonly Queue<CardModel> _cardsAwaitingArrival = [];
 
     public Player Player
     {
@@ -103,7 +104,17 @@ public class PerformManager : SingletonModel, ISecondaryResourceHookListener
 
     private void OnCardAdded(CardModel cardModel)
     {
+        _cardsAwaitingArrival.Enqueue(cardModel);
         RunPerformAreaChangedHook(cardModel, HandleCardAddedInternal);
+    }
+
+    private void OnCardAddFinished()
+    {
+        if (!_cardsAwaitingArrival.TryDequeue(out var cardModel)) return;
+        if (cardModel.Pile == PerformPile)
+        {
+            PerformArea.PlayCardArrivalBounce(cardModel);
+        }
     }
 
     private void OnCardRemoved(CardModel cardModel)
@@ -229,6 +240,26 @@ public class PerformManager : SingletonModel, ISecondaryResourceHookListener
             BangDreamLibCore.Logger.Info(
                 $"Player {Player.Character} ({Player.NetId}) Instant Perform : {cardModel.Title}");
         }
+    }
+
+    public int GetExpectedSlotIndex(CardModel cardModel)
+    {
+        if (Capacity <= 0) return -1;
+
+        var context = CardContexts.GetOrCreate(cardModel);
+        if (context.SlotIndex >= 1 && context.SlotIndex <= Capacity)
+        {
+            return context.SlotIndex;
+        }
+
+        if (context.Strategy == PerformEnqueueStrategy.Fixed &&
+            context.AspirationSlot >= 1 && context.AspirationSlot <= Capacity)
+        {
+            return context.AspirationSlot;
+        }
+
+        var availableSlot = FindAvailableSlot(cardModel, context);
+        return availableSlot >= 1 && availableSlot <= Capacity ? availableSlot : 1;
     }
 
     private async Task<bool> TryAssignSlot(CardModel cardModel, PerformContext performContext)
@@ -438,7 +469,9 @@ public class PerformManager : SingletonModel, ISecondaryResourceHookListener
             PerformArea.SubmitChanged();
 
             PerformPile.CardAdded += OnCardAdded;
+            PerformPile.CardAddFinished += OnCardAddFinished;
             PerformPile.CardRemoved += OnCardRemoved;
+            _cardsAwaitingArrival.Clear();
             CardContexts.Clear();
         }
 
@@ -451,7 +484,9 @@ public class PerformManager : SingletonModel, ISecondaryResourceHookListener
         {
             _isSubscribed = false;
             PerformPile.CardAdded -= OnCardAdded;
+            PerformPile.CardAddFinished -= OnCardAddFinished;
             PerformPile.CardRemoved -= OnCardRemoved;
+            _cardsAwaitingArrival.Clear();
             CardContexts.Clear();
         }
 
