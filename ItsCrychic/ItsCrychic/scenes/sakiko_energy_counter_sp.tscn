@@ -38,6 +38,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 script = ExtResource("1_ef0f1")
 
 [node name="Layer1" type="TextureRect" parent="Layers" groups=["LightMode"]]
@@ -67,6 +68,7 @@ unique_name_in_owner = true
 anchors_preset = 0
 offset_right = 40.0
 offset_bottom = 40.0
+mouse_filter = 2
 
 [node name="Layer1" type="TextureRect" parent="Layers/RotationLayers" groups=["LightMode"]]
 visible = false
@@ -124,12 +126,14 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 
 [node name="CounterImg" type="Control" parent="Layers/LingeredEnergyCounter"]
 unique_name_in_owner = true
 anchors_preset = 0
 offset_right = 40.0
 offset_bottom = 40.0
+mouse_filter = 2
 
 [node name="Linger0" type="TextureRect" parent="Layers/LingeredEnergyCounter/CounterImg"]
 visible = false

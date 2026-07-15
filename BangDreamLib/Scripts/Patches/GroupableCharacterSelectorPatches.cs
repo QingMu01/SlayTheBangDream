@@ -1,10 +1,10 @@
 ﻿using System.Reflection;
 using BangDreamLib.Scripts.Character;
+using BangDreamLib.Scripts.Enums;
 using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
 using BangDreamLib.Scripts.Nodes;
 using BangDreamLib.Scripts.Utils;
-using BangDreamLib.Scripts.Utils.Enums;
 using Godot;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Assets;

@@ -1,14 +1,14 @@
 {
   "BANG_DREAM_LIB_KEYWORD_MUSIC.title": "音乐",
-  "BANG_DREAM_LIB_KEYWORD_MUSIC.description": "在战斗开始时放入[gold]额外牌堆[/gold]。\n打出后进入[gold]演奏区[/gold]。",
-  "BANG_DREAM_LIB_KEYWORD_MUSIC_NOTE.title": "音符",
-  "BANG_DREAM_LIB_KEYWORD_MUSIC_NOTE.description": "对随机目标造成基础为[blue]1[/blue]的伤害。",
-  "BANG_DREAM_LIB_KEYWORD_PERFORM.title": "演奏",
-  "BANG_DREAM_LIB_KEYWORD_PERFORM.description": "这张牌进入[gold]演奏区[/gold]后，视为正在演奏，其演奏效果生效。",
+  "BANG_DREAM_LIB_KEYWORD_MUSIC.description": "在战斗开始时放入[gold]曲库[/gold]。\n打出后进入[gold]歌单[/gold]。",
+  "BANG_DREAM_LIB_KEYWORD_PERFORM.title": "奏响",
+  "BANG_DREAM_LIB_KEYWORD_PERFORM.description": "每次[gold]歌单[/gold]序号与[gold]余音[/gold]数对应时视为演奏，其效果生效。",
   "BANG_DREAM_LIB_KEYWORD_INSTANT.title": "即兴",
-  "BANG_DREAM_LIB_KEYWORD_INSTANT.description": "这张牌在开始[gold]演奏[/gold]后会立刻停止演奏，且不占用演奏区容量。",
-  "BANG_DREAM_LIB_KEYWORD_PERFORM_AREA.title": "演奏区",
-  "BANG_DREAM_LIB_KEYWORD_PERFORM_AREA.description": "演奏区是带有容量限制的特殊牌堆。",
+  "BANG_DREAM_LIB_KEYWORD_INSTANT.description": "进入[gold]歌单[/gold]后视为演奏，其效果立刻生效。之后不受[gold]余音[/gold]效果影响。",
+  "BANG_DREAM_LIB_KEYWORD_PERFORM_AREA.title": "歌单",
+  "BANG_DREAM_LIB_KEYWORD_PERFORM_AREA.description": "歌单是带有容量限制且存在顺序的特殊牌堆。[gold]音乐[/gold]牌只有在歌单中才能进行演奏。",
   "BANG_DREAM_LIB_KEYWORD_LINGERED.title": "余音",
-  "BANG_DREAM_LIB_KEYWORD_LINGERED.description": "失去费用时等量生成。\n每获得[blue]7[/blue]点，将[gold]额外牌堆[/gold]顶部的[blue]1[/blue]张牌放入[gold]演奏区[/gold]，然后清除所有余音。"
+  "BANG_DREAM_LIB_KEYWORD_LINGERED.description": "打出卡牌后，根据其耗能等量生成。\n获得[blue]7[/blue]点后，将[gold]曲库[/gold]顶部的[blue]1[/blue]张牌放入[gold]歌单[/gold]，然后失去所有余音。",
+  "BANG_DREAM_LIB_KEYWORD_MUSIC_NOTE.title": "音符",
+  "BANG_DREAM_LIB_KEYWORD_MUSIC_NOTE.description": "对随机目标造成基础为[blue]1[/blue]的伤害。"
 }

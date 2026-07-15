@@ -1,7 +1,7 @@
 [gd_scene load_steps=4 format=3 uid="uid://dei8jiqwkpiwv"]
 
 [ext_resource type="Script" uid="uid://cn8qxl5kvbfnm" path="res://Scripts/Nodes/MegaScripts/CrychicRestSite.cs" id="1_3xd5c"]
-[ext_resource type="SpineSkeletonDataResource" uid="uid://ccuj4m23drikv" path="res://ItsCrychic/images/charui/mutsumi/build_default_mutsumi.tres" id="2_3xd5c"]
+[ext_resource type="SpineSkeletonDataResource" uid="uid://ccuj4m23drikv" path="res://ItsCrychic/themes/build_default_mutsumi.tres" id="2_3xd5c"]
 [ext_resource type="Script" uid="uid://danxipihvljdy" path="res://Scripts/Nodes/MegaScripts/CrychicSelectionReticle.cs" id="3_2f5s6"]
 
 [node name="MutsumiRestSiteDefault" type="Node2D"]

@@ -16,8 +16,8 @@ public static class BangDreamPreloadManager
 
     internal static readonly Dictionary<PreloadKey, string> SceneAssets = new()
     {
-        { PreloadKey.PerformanceItem, "res://BangDreamLib/scenes/performance_item.tscn" },
-        { PreloadKey.PerformanceArea, "res://BangDreamLib/scenes/performance_area.tscn" },
+        { PreloadKey.PerformItem, "res://BangDreamLib/scenes/perform_item.tscn" },
+        { PreloadKey.PerformArea, "res://BangDreamLib/scenes/perform_area.tscn" },
         { PreloadKey.CharacterSelector, "res://BangDreamLib/scenes/character_selector/character_selector.tscn" },
         { PreloadKey.CharacterButton, "res://BangDreamLib/scenes/character_selector/character_button.tscn" },
         { PreloadKey.AscensionPanel, "res://BangDreamLib/scenes/character_selector/ascension_panel.tscn" },
@@ -43,6 +43,11 @@ public static class BangDreamPreloadManager
             if (!string.IsNullOrEmpty(character.SelectPoster))
             {
                 hashSet.Add(character.SelectPoster);
+            }
+
+            if (!string.IsNullOrEmpty(character.SelectLogo))
+            {
+                hashSet.Add(character.SelectLogo);
             }
         }
 
@@ -108,8 +113,8 @@ public static class BangDreamPreloadManager
 
 public enum PreloadKey
 {
-    PerformanceItem,
-    PerformanceArea,
+    PerformItem,
+    PerformArea,
     CharacterSelector,
     CharacterButton,
     AscensionPanel,

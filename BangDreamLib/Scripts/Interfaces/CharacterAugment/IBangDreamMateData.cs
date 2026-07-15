@@ -19,4 +19,9 @@ public interface IBangDreamMateData
     /// 角色海报路径
     /// </summary>
     string? SelectPoster { get; }
+
+    /// <summary>
+    /// 角色代表图标
+    /// </summary>
+    string? SelectLogo { get; }
 }

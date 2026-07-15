@@ -1,0 +1,35 @@
+[gd_scene load_steps=4 format=3 uid="uid://d2d6u0y3h7c2m"]
+
+[ext_resource type="Script" uid="uid://b8576qt422hi7" path="res://Scripts/Nodes/NPerformArea.cs" id="1_i3xyf"]
+[ext_resource type="Texture2D" uid="uid://6lq6g550om1r" path="res://BangDreamLib/images/sceneui/point_perform.png" id="2_u0m28"]
+[ext_resource type="PackedScene" uid="uid://txb6745aun8k" path="res://BangDreamLib/scenes/perform_item.tscn" id="2_u7htc"]
+
+[node name="PerformManage" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+mouse_filter = 1
+script = ExtResource("1_i3xyf")
+
+[node name="ItemContainer" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -15.0
+offset_right = -15.0
+grow_horizontal = 0
+grow_vertical = 2
+
+[node name="PerformItem" parent="ItemContainer" instance=ExtResource("2_u7htc")]
+layout_mode = 0
+
+[node name="Hint" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+offset_right = 45.0
+offset_bottom = 31.0
+mouse_filter = 2
+texture = ExtResource("2_u0m28")

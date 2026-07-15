@@ -1,5 +1,5 @@
-﻿using BangDreamLib.Scripts.Interfaces.CardAugment;
-using BangDreamLib.Scripts.Nodes.SubNode;
+﻿using BangDreamLib.Scripts.Enums;
+using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
@@ -13,39 +13,23 @@ public abstract class MusicCardModel(
     bool showInCardLibrary = true) : BandCardModel(baseCost, CardType.Quest, rarity, target, showInCardLibrary),
     IPerformCard
 {
-    public NPerformItem? Handle { get; set; }
+    public virtual bool IsInstant => false;
+    public virtual int AspirationSlot => 0;
+    public virtual PerformEnqueueStrategy Strategy => PerformEnqueueStrategy.Nearby;
 
-    public virtual bool IsInstant { get; set; } = false;
-
-    public virtual Task OnStartPerform(PlayerChoiceContext choiceContext)
+    public virtual Task OnPerform(PlayerChoiceContext choiceContext)
     {
         return Task.CompletedTask;
     }
 
-    public virtual Task OnStopPerform(PlayerChoiceContext choiceContext)
+    public virtual (PileType, CardPilePosition) StopPerformanceNextPile()
     {
-        return Task.CompletedTask;
-    }
-
-    public virtual (PileType, CardPilePosition) StopPerformanceNextPile
-    {
-        get
-        {
-            var (moveTo, position) = base.GetResultPileTypeAndPositionForCardPlay();
-            return (moveTo == PileType.Discard ? BangDreamConst.ExtraDraw : moveTo, position);
-        }
+        var (moveTo, position) = base.GetResultPileTypeAndPositionForCardPlay();
+        return (moveTo == PileType.Discard ? BangDreamConst.ExtraDraw : moveTo, position);
     }
 
     protected sealed override (PileType, CardPilePosition) GetResultPileTypeAndPositionForCardPlay()
     {
         return (BangDreamConst.PerformPile, CardPilePosition.Bottom);
-    }
-
-    protected void FlashInArea()
-    {
-        if (Handle != null)
-        {
-            // TODO
-        }
     }
 }

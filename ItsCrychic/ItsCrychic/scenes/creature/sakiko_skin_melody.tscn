@@ -1,13 +1,13 @@
 [gd_scene load_steps=2 format=3 uid="uid://dlttic0vo2iwl"]
 
-[ext_resource type="SpineSkeletonDataResource" uid="uid://dqw45my8yt2nl" path="res://ItsCrychic/images/charui/sakiko/melody_sakiko.tres" id="1_qfgws"]
+[ext_resource type="SpineSkeletonDataResource" uid="uid://bwu4lps2t4vyc" path="res://ItsCrychic/themes/sakiko_melody.tres" id="1_qfgws"]
 
 [node name="Sakiko_Melody" type="Node2D"]
 
 [node name="Visuals" type="SpineSprite" parent="."]
 skeleton_data_res = ExtResource("1_qfgws")
 preview_skin = "Default"
-preview_animation = "Start"
+preview_animation = "Idle"
 preview_frame = false
 preview_time = 0.0
 unique_name_in_owner = true
@@ -30,7 +30,7 @@ grow_vertical = 0
 
 [node name="IntentPos" type="Marker2D" parent="."]
 unique_name_in_owner = true
-position = Vector2(0, 350)
+position = Vector2(0, -320)
 
 [node name="CenterPos" type="Marker2D" parent="."]
 unique_name_in_owner = true

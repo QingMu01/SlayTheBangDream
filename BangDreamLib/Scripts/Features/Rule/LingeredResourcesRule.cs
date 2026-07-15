@@ -27,11 +27,13 @@ public sealed class LingeredResourcesRule() : HookedSingletonModel(HookType.Comb
                 .Sum(line => line.Value);
 
             var spend = await SecondaryResourceCmd.Spend(playedCard.Owner, BangDreamConst.LingeredResource,
-                sumCost, playedCard, this);
+                sumCost, playedCard, cardPlay.Card);
 
             if (spend)
             {
                 await subsideCard.OnSubside(context, cardPlay);
+
+                await BangDreamHook.AfterCardSubside(context, cardPlay);
             }
 
             await Cmd.CustomScaledWait(0.1f, 0.2f);
@@ -48,13 +50,13 @@ public sealed class LingeredResourcesRule() : HookedSingletonModel(HookType.Comb
             canGenerateRes = subsideCard.ShouldGenerateResources;
         }
 
-        if (canGenerateRes)
+        if (canGenerateRes && cardPlay.Resources.EnergySpent > 0)
         {
             await SecondaryResourceCmd.Gain(
                 cardPlay.Card.Owner,
                 BangDreamConst.LingeredResource,
                 cardPlay.Resources.EnergySpent,
-                this
+                cardPlay.Card
             );
         }
     }

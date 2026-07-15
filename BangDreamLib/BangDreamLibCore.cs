@@ -6,6 +6,7 @@ using BangDreamLib.Scripts.Features.Rule;
 using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
 using BangDreamLib.Scripts.Multiplayer.RunData;
+using BangDreamLib.Scripts.Nodes;
 using BangDreamLib.Scripts.Patches;
 using BangDreamLib.Scripts.Rewards;
 using BangDreamLib.Scripts.Utils;
@@ -15,7 +16,7 @@ using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Modding;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Relics;
-using MegaCrit.Sts2.Core.Nodes.Cards;
+using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Runs;
 using STS2RitsuLib;
 using STS2RitsuLib.CardPiles;
@@ -27,6 +28,7 @@ using STS2RitsuLib.Keywords;
 using STS2RitsuLib.Models.Capabilities;
 using STS2RitsuLib.Patching.Core;
 using STS2RitsuLib.RunData;
+using STS2RitsuLib.Scaffolding.Godot.NodeAttachments;
 using Logger = MegaCrit.Sts2.Core.Logging.Logger;
 
 namespace BangDreamLib;
@@ -65,13 +67,6 @@ public class BangDreamLibCore
         if (!submenuSupport.PatchAll())
         {
             throw new InvalidOperationException("character selector submenu patches failed.");
-        }
-
-        var vanillaKeyword = RitsuLibFramework.CreatePatcher(BangDreamConst.ModId, "keyword_vanilla_style");
-        vanillaKeyword.RegisterPatches<CardKeywordPatches>();
-        if (!vanillaKeyword.PatchAll())
-        {
-            throw new InvalidOperationException("mod keyword vanilla style patches failed.");
         }
 
         var skinSupport = RitsuLibFramework.CreatePatcher(BangDreamConst.ModId, "skin_support");
@@ -153,16 +148,12 @@ public class BangDreamLibCore
             }
         }).PileType;
 
-        BangDreamConst.PerformPile = customPile.RegisterOwned("Performance", new ModCardPileSpec
+        BangDreamConst.PerformPile = customPile.RegisterOwned("Perform", new ModCardPileSpec
         {
             Scope = ModCardPileScope.CombatOnly,
             Style = ModCardPileUiStyle.Headless,
-            FlightStartPositionResolver = context =>
-                context.CardModel?.Owner.AttachedData().PerformManager.PerformanceArea
-                    ?.GetPilePost(context.CardModel),
-            FlightTargetPositionResolver = context =>
-                context.CardModel?.Owner.AttachedData().PerformManager.PerformanceArea
-                    ?.GetPilePost(context.CardModel)
+            FlightStartPositionResolver = ctx => ctx.CardModel?.Owner.Creature.GetCreatureNode()!.VfxSpawnPosition,
+            FlightTargetPositionResolver = ctx => ctx.CardModel?.Owner.Creature.GetCreatureNode()!.VfxSpawnPosition
         }).PileType;
 
         // 注册余音资源
@@ -182,7 +173,7 @@ public class BangDreamLibCore
         {
             DefaultInsufficientPayment = SecondaryResourceInsufficientPayment.AllowPlay(spendAvailable: false)
         }).Id;
-        resourceContent.RegisterCardUi<NCard, NSecondaryResourceCardCostUi>("LingeredCardUi", nCard =>
+        resourceContent.RegisterCardUi<NSecondaryResourceCardCostUi>("LingeredCardUi", nCard =>
         {
             var ui = NSecondaryResourceCardCostUi.Create(BangDreamConst.LingeredResource,
                 new SecondaryResourceCardCostUiStyle
@@ -198,6 +189,25 @@ public class BangDreamLibCore
             ui.Position = energyIcon.Position + new Vector2(5f, 5f);
             return ui;
         }, ctx => { ctx.Node.Refresh(ctx); });
+
+        // 玩家Node附加节点
+        ModNodeAttachmentRegistry.For(BangDreamConst.ModId)
+            .RegisterReadyChild<NCreature, NPerformArea>(
+                "perform_area",
+                static creature => NPerformArea.Create(creature.Entity.Player),
+                static (creature, area) =>
+                {
+                    area.Visible = creature.Entity.Player is
+                        { Character: IPerformableCharacter { GetDefaultCapacity: > 0 } };
+                    area.GlobalPosition = creature.VfxSpawnPosition + Vector2.Left * creature.Hitbox.Size.X / 2;
+                },
+                new NodeAttachmentOptions
+                {
+                    Name = "PerformArea",
+                    Order = 10,
+                    DuplicatePolicy = NodeAttachmentDuplicatePolicy.ReplaceExistingByName,
+                    SetupTiming = NodeAttachmentSetupTiming.AfterAdd,
+                });
 
         // 注册公共内容
         var commonContent = RitsuLibFramework.GetContentRegistry(BangDreamConst.ModId);
@@ -227,6 +237,7 @@ public class BangDreamLibCore
             }
         });
 
+        // 设置初始组件
         RitsuLibFramework.SubscribeLifecycle<ModelRegistryInitializedEvent>(_ =>
         {
             foreach (var cardModel in ModelDb.AllCards)
@@ -245,6 +256,10 @@ public class BangDreamLibCore
                     }
 
                     cardModel.GetOrCreateCapability<SubsideCapability>();
+                }
+                else if (cardModel is IPerformCard)
+                {
+                    cardModel.GetOrCreateCapability<PerformCapability>();
                 }
             }
         });

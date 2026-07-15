@@ -1,7 +1,10 @@
 using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Utils;
+using BangDreamLib.Scripts.Utils.Infos;
 using Godot;
+using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Nodes.Cards;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
@@ -10,129 +13,170 @@ namespace BangDreamLib.Scripts.Nodes.SubNode;
 
 public partial class NPerformItem : NClickableControl
 {
-    private TextureRect? _cardPortrait;
+    private static readonly StringName RectSizeShaderParameter = "rect_size";
 
-    private bool _isLocal;
-
-    private CardModel? _model;
+    private static readonly Color DefaultColor = new("#9d9d9d");
+    private static readonly Color InstantColor = new("#63a5ff");
+    private static readonly Color PerformColor = new("#d30150");
 
     private NCard? _card;
+    private NPerformArea? _parent;
+    private CardModel? _cardModel;
 
-    public CardModel? Model
-    {
-        get => _model;
-        set
-        {
-            _model = value;
-            if (value != null)
-            {
-                if (_cardPortrait != null)
-                {
-                    _cardPortrait.Texture = value.Portrait;
-                    StartRotateLoop();
-                }
+    private ColorRect? _background;
+    private TextureRect? _cardPortrait;
 
-                if (value is IPerformCard performCard)
-                {
-                    performCard.Handle = this;
-                }
-            }
-        }
-    }
-
-    private Tween? _rotateTween;
+    private Vector2 _backgroundSize;
+    private Vector2 _backgroundTopRight;
+    private bool _isAdjustingBackgroundRect;
 
     private Tween? _fadeInTween;
     private Tween? _fadeOutTween;
 
-    public static NPerformItem Create(bool isLocal, CardModel? model = null)
+    public CardModel? Model
     {
-        var item = PreloadKey.PerformanceItem.GetScene().Instantiate<NPerformItem>();
-        item._isLocal = isLocal;
+        get => _cardModel;
+        set
+        {
+            if (_cardModel == value) return;
+
+            _cardModel = value;
+            _fadeInTween?.Kill();
+            _fadeOutTween?.Kill();
+            _fadeInTween = null;
+            _fadeOutTween = null;
+            _card?.QueueFreeSafely();
+            _card = null;
+            RefreshVisuals();
+        }
+    }
+
+    public PerformContext? Context { get; set; }
+
+    public static NPerformItem Create(NPerformArea parent, CardModel? model = null)
+    {
+        var item = PreloadKey.PerformItem.GetScene().Instantiate<NPerformItem>();
+        item._parent = parent;
+
         item.Model = model;
+        item.Modulate = parent.Modulate;
+
         return item;
     }
 
     public override void _Ready()
     {
-        _cardPortrait = GetNode<TextureRect>("%CardPortrait");
-        _cardPortrait.Texture = Model?.Portrait;
-        if (Model != null)
-        {
-            StartRotateLoop();
-        }
+        _background = GetNode<ColorRect>("%Background");
+        _cardPortrait = GetNode<TextureRect>("%Portrait");
 
-        if (!_isLocal)
-        {
-            Modulate = new Color(0.5f, 0.5f, 0.5f);
-        }
+        _backgroundSize = _background.Size;
+        _backgroundTopRight = GetTopRight(_background);
+        _background.ItemRectChanged += OnBackgroundRectChanged;
+        _cardPortrait.Resized += UpdatePortraitShaderSize;
 
+        UpdateBackgroundShaderSize();
+        UpdatePortraitShaderSize();
+        RefreshVisuals();
         ConnectSignals();
     }
 
     public override void _ExitTree()
     {
-        _rotateTween?.Kill();
+        if (_background != null) _background.ItemRectChanged -= OnBackgroundRectChanged;
+        if (_cardPortrait != null) _cardPortrait.Resized -= UpdatePortraitShaderSize;
+
+        Model = null;
+        Context = null;
+
         _fadeInTween?.Kill();
         _fadeOutTween?.Kill();
 
-        if (Model is IPerformCard performCard)
-        {
-            performCard.Handle = null;
-        }
-
-        Model = null;
+        _card?.QueueFreeSafely();
+        _card = null;
     }
 
-    private void StartRotateLoop()
+    private static Vector2 GetTopRight(Control control)
     {
-        RotationDegrees %= 360;
-        _rotateTween?.Kill();
-        _rotateTween = CreateTween();
-        _rotateTween.TweenProperty(this, "rotation_degrees", RotationDegrees + 360, 8f)
-            .SetTrans(Tween.TransitionType.Linear);
-        _rotateTween.Finished += StartRotateLoop;
+        return control.Position + Vector2.Right * control.Size.X;
+    }
+
+    private void OnBackgroundRectChanged()
+    {
+        if (_background == null || _isAdjustingBackgroundRect) return;
+
+        if (!_background.Size.IsEqualApprox(_backgroundSize))
+        {
+            _isAdjustingBackgroundRect = true;
+            _background.Position = _backgroundTopRight - Vector2.Right * _background.Size.X;
+            _isAdjustingBackgroundRect = false;
+        }
+
+        _backgroundSize = _background.Size;
+        _backgroundTopRight = GetTopRight(_background);
+        UpdateBackgroundShaderSize();
+    }
+
+    private void UpdateBackgroundShaderSize()
+    {
+        _background?.SetInstanceShaderParameter(RectSizeShaderParameter, _background.Size);
+    }
+
+    private void UpdatePortraitShaderSize()
+    {
+        _cardPortrait?.SetInstanceShaderParameter(RectSizeShaderParameter, _cardPortrait.Size);
+    }
+
+    private void RefreshVisuals()
+    {
+        if (_cardPortrait != null)
+        {
+            _cardPortrait.Texture = Model?.Portrait ??
+                                    PreloadManager.Cache.GetTexture2D(
+                                        "res://BangDreamLib/images/sceneui/default_portrait.png");
+        }
+
+        if (_background != null)
+        {
+            if (Model is IPerformCard performCard)
+            {
+                _background.Modulate = performCard.IsInstant ? InstantColor : PerformColor;
+            }
+            else
+            {
+                _background.Modulate = DefaultColor;
+            }
+        }
     }
 
     protected override void OnFocus()
     {
-        if (Model != null)
+        if (Model == null) return;
+
+        _card ??= NCard.Create(Model);
+
+        if (_card != null)
         {
-            var cardNode = _card ?? NCard.Create(Model);
-            if (cardNode != null)
-            {
-                _card = cardNode;
+            _parent?.AddChildSafely(_card);
 
-                // 检查节点是否已经有父节点,避免重复添加
-                if (_card.GetParent() == null)
-                {
-                    GetParent().AddChild(_card);
-                }
+            _card.UpdateVisuals(PileType.Hand, CardPreviewMode.Normal);
+            _card.Scale = Vector2.Zero;
+            _card.GlobalPosition = GetViewport().GetVisibleRect().GetCenter();
 
-                _card.UpdateVisuals(PileType.Hand, CardPreviewMode.Normal);
-
-                _card.Scale = Vector2.Zero;
-                _card.GlobalPosition = GetViewport().GetVisibleRect().GetCenter();
-
-                _fadeInTween?.Kill();
-                _fadeOutTween?.Kill();
-
-                _fadeInTween = CreateTween();
-                _fadeInTween.TweenProperty(_card, "scale", Vector2.One, 0.2f);
-            }
+            _fadeOutTween?.Kill();
+            _fadeInTween?.Kill();
+            _fadeInTween = CreateTween();
+            _fadeInTween.TweenProperty(_card, "scale", Vector2.One, 0.2f);
         }
     }
 
     protected override void OnUnfocus()
     {
-        if (Model != null && _card != null)
-        {
-            _fadeInTween?.Kill();
-            _fadeOutTween?.Kill();
+        if (!_card.IsValid()) return;
 
-            _fadeOutTween = CreateTween();
-            _fadeOutTween.TweenProperty(_card, "scale", Vector2.Zero, 0.2f);
-            _fadeOutTween.Finished += () => GetParent().RemoveChild(_card);
-        }
+        _fadeInTween?.Kill();
+        _fadeOutTween?.Kill();
+        _fadeOutTween = CreateTween();
+        _fadeOutTween.TweenProperty(_card, "scale", Vector2.Zero, 0.2f);
+        _fadeOutTween.Finished += () => { _parent?.RemoveChildSafely(_card); };
     }
 }

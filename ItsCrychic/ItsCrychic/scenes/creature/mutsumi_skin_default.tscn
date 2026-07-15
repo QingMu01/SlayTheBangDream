@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://22irt17d6lwr"]
 
-[ext_resource type="SpineSkeletonDataResource" uid="uid://r88nefc17660" path="res://ItsCrychic/images/charui/mutsumi/default_mutsumi.tres" id="1_n40xx"]
+[ext_resource type="SpineSkeletonDataResource" uid="uid://r88nefc17660" path="res://ItsCrychic/themes/default_mutsumi.tres" id="1_n40xx"]
 
 [node name="MutsumiDefault" type="Node2D"]
 
