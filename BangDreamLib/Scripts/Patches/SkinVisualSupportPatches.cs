@@ -1,5 +1,4 @@
 using System.Reflection;
-using System.Reflection.Emit;
 using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
 using BangDreamLib.Scripts.Nodes.MegeScript;
@@ -11,11 +10,12 @@ using MegaCrit.Sts2.Core.Context;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Entities.TreasureRelicPicking;
-using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Nodes.Cards;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.CommonUi;
+using MegaCrit.Sts2.Core.Nodes.Events.Custom;
 using MegaCrit.Sts2.Core.Nodes.RestSite;
+using MegaCrit.Sts2.Core.Nodes.Rooms;
 using MegaCrit.Sts2.Core.Nodes.Screens.Map;
 using MegaCrit.Sts2.Core.Nodes.Screens.Shops;
 using MegaCrit.Sts2.Core.Nodes.Screens.TreasureRoomRelic;
@@ -26,6 +26,7 @@ using STS2RitsuLib.CardPiles.Nodes;
 using STS2RitsuLib.Patching.Core;
 using STS2RitsuLib.Patching.Models;
 using STS2RitsuLib.Scaffolding.Godot;
+using STS2RitsuLib.Utils.HarmonyIl;
 
 namespace BangDreamLib.Scripts.Patches;
 
@@ -38,6 +39,7 @@ public class SkinVisualSupportPatches : IModPatches
         patcher.RegisterPatch<RestSiteScenePatch>();
         patcher.RegisterPatch<RestSiteAnimPatch>();
         patcher.RegisterPatch<MerchantScenePatch>();
+        patcher.RegisterPatch<FakeMerchantScenePatch>();
         patcher.RegisterPatch<ArmPointingTexturePatch>();
         patcher.RegisterPatch<ArmFightTexturePatch>();
         patcher.RegisterPatch<MusicCardFramePatch>();
@@ -132,6 +134,12 @@ internal class RestSiteAnimPatch : IPatchMethod
 {
     public static string PatchId => "create_rest_site_anim_by_skin_info";
 
+    private static readonly MethodInfo GetRestSiteAnimNameMethod =
+        AccessTools.Method(typeof(RestSiteAnimPatch), nameof(GetRestSiteAnimName));
+
+    private static readonly MethodInfo GetPlayerMethod =
+        AccessTools.PropertyGetter(typeof(NRestSiteCharacter), nameof(NRestSiteCharacter.Player));
+
     public static ModPatchTarget[] GetTargets()
     {
         return [new ModPatchTarget(typeof(NRestSiteCharacter), nameof(NRestSiteCharacter._Ready))];
@@ -139,24 +147,33 @@ internal class RestSiteAnimPatch : IPatchMethod
 
     public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
     {
-        var codes = new List<CodeInstruction>(instructions);
+        var rewriter = HarmonyIlRewriter.From(instructions);
 
-        for (var i = 0; i < codes.Count - 2; i++)
+        var pattern = HarmonyIlPattern.Sequence(
+            HarmonyIl.IsLdloc(0),
+            HarmonyIl.IsLdloc(1),
+            HarmonyIl.IsStfld()
+        );
+
+        var matches = pattern.FindAll(rewriter.Code);
+
+        if (matches.Count == 1)
         {
-            if (codes[i].opcode == OpCodes.Ldloc_0 &&
-                codes[i + 1].opcode == OpCodes.Ldloc_1 &&
-                codes[i + 2].opcode == OpCodes.Stfld &&
-                codes[i + 2].operand is FieldInfo { Name: "animName" })
-            {
-                codes.Insert(i + 2, new CodeInstruction(OpCodes.Ldarg_0));
-                codes.Insert(i + 3, CodeInstruction.Call(typeof(NRestSiteCharacter), "get_Player"));
-                codes.Insert(i + 4,
-                    CodeInstruction.Call(typeof(RestSiteAnimPatch), nameof(GetRestSiteAnimName)));
-                break;
-            }
+            var match = matches[0];
+            rewriter.Replace(match, [
+                rewriter.Code[match.Index].Clone(),
+                rewriter.Code[match.Index + 1].Clone(),
+                HarmonyIl.Ldarg(0),
+                HarmonyIl.Call(GetPlayerMethod),
+                HarmonyIl.Call(GetRestSiteAnimNameMethod),
+                rewriter.Code[match.Index + 2].Clone()
+            ]);
+            return rewriter.InstructionsChecked("Replace rest site animName assignment");
         }
 
-        return codes;
+        BangDreamLibCore.Logger.Error(
+            $"Replace rest site animName transpiler failed to match. found {matches.Count} il codes.");
+        return rewriter.Code;
     }
 
     private static string GetRestSiteAnimName(string originalName, Player player)
@@ -175,47 +192,68 @@ internal class MerchantScenePatch : IPatchMethod
 {
     public static string PatchId => "create_merchant_by_skin_info";
 
-    private static Type MerchantPatcher =>
-        Type.GetType(
-            "STS2RitsuLib.Scaffolding.Characters.Patches.NMerchantRoomProceduralCharacterInstantiationPatch,STS2-RitsuLib") ??
-        throw new TypeLoadException("RitsuLib Patcher Not Found!");
+    public static ModPatchTarget[] GetTargets()
+    {
+        return [new ModPatchTarget(typeof(NMerchantRoom), "AfterRoomIsLoaded")];
+    }
 
-    private static Type FakeMerchantPatcher =>
-        Type.GetType(
-            "STS2RitsuLib.Scaffolding.Characters.Patches.NFakeMerchantProceduralCharacterInstantiationPatch,STS2-RitsuLib") ??
-        throw new TypeLoadException("RitsuLib Patcher Not Found!");
+    public static void Postfix(List<Player> ____players, List<NMerchantCharacter> ____playerVisuals,
+        Control ____characterContainer)
+    {
+        var players = ____players.ToList();
+        players.Reverse();
+        var nodeContainer = ____characterContainer.GetChildren().OfType<NMerchantCharacter>().ToList();
+        for (var i = 0; i < players.Count; i++)
+        {
+            var currentPlayer = players[i];
+            var merchantCharacter = BangDreamMerchant.Create(currentPlayer);
+            if (merchantCharacter != null)
+            {
+                var currentNode = nodeContainer[i];
+                var index = currentNode.GetIndex();
+                ____characterContainer.AddChild(merchantCharacter);
+                ____characterContainer.MoveChild(merchantCharacter, index);
+                var indexOf = ____playerVisuals.IndexOf(currentNode);
+                if (indexOf != -1)
+                {
+                    ____playerVisuals.RemoveAt(indexOf);
+                    ____playerVisuals.Insert(indexOf, merchantCharacter);
+                }
+
+                currentNode.QueueFree();
+            }
+        }
+    }
+}
+
+internal class FakeMerchantScenePatch : IPatchMethod
+{
+    public static string PatchId => "create_fake_merchant_by_skin_info";
 
     public static ModPatchTarget[] GetTargets()
     {
-        return
-        [
-            new ModPatchTarget(MerchantPatcher, "ApplyMerchantWorldVisuals"),
-            new ModPatchTarget(FakeMerchantPatcher, "ApplyMerchantWorldVisuals")
-        ];
+        return [new ModPatchTarget(typeof(NFakeMerchant), "AfterRoomIsLoaded")];
     }
 
-    public static bool Prefix(IReadOnlyList<Player> players, ref IReadOnlyList<NMerchantCharacter> visuals)
+    public static void Postfix(List<Player> ____players, Control ____characterContainer)
     {
-        var n = Math.Min(visuals.Count, players.Count);
-        for (var i = 0; i < n; i++)
+        var players = ____players.ToList();
+        players.Reverse();
+        var nodeContainer = ____characterContainer.GetChildren().OfType<NMerchantCharacter>().ToList();
+        for (var i = 0; i < players.Count; i++)
         {
             var currentPlayer = players[i];
-            var oldVisual = visuals[i];
-            if (currentPlayer.Character is ISkinSupportCharacter)
+            var merchantCharacter = BangDreamMerchant.Create(currentPlayer);
+            if (merchantCharacter != null)
             {
-                var newVisual = BangDreamMerchant.Create(currentPlayer);
-                var parent = oldVisual.GetParent();
-                var index = oldVisual.GetIndex();
-                parent.AddChild(newVisual);
-                parent.MoveChild(newVisual, index);
-                oldVisual.QueueFreeSafely();
-                continue;
+                var currentNode = nodeContainer[i];
+                var index = currentNode.GetIndex();
+                ____characterContainer.AddChild(merchantCharacter);
+                ____characterContainer.MoveChild(merchantCharacter, index);
+
+                currentNode.QueueFree();
             }
-
-            oldVisual.PlayAnimation("relaxed_loop", true);
         }
-
-        return false;
     }
 }
 
