@@ -3,10 +3,8 @@ using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
-using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.ValueProps;
 using STS2RitsuLib.Cards.DynamicVars;
 
@@ -25,8 +23,8 @@ public class Blessing() : AbstractSakikoCard(CustomCost, CustomType, CustomRarit
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        ComputedDynamicVarHelper.CreateDamageVar("BaseDamage", 4m, CalcIncrease),
-        ComputedDynamicVarHelper.CreateBlockVar("BaseBlock", 4m, CalcIncrease),
+        ComputedDynamicVarHelper.CreateDamageVar("CalcDamage", 4m, CalcIncrease),
+        ComputedDynamicVarHelper.CreateBlockVar("CalcBlock", 4m, CalcIncrease),
         QuickVar.Repeat.Create(0),
         ModCardVars.Int("IncreaseStep", 1)
     ];
@@ -35,14 +33,14 @@ public class Blessing() : AbstractSakikoCard(CustomCost, CustomType, CustomRarit
     {
         ArgumentNullException.ThrowIfNull(play.Target);
 
-        await DamageCmd.Attack(DynamicVars.ComputedValue("BaseDamage", play.Target))
+        await DamageCmd.Attack(DynamicVars.ComputedValue("CalcDamage", play.Target))
             .FromCard(this, play)
             .Targeting(play.Target)
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
 
         await CreatureCmd.GainBlock(Owner.Creature,
-            new BlockVar(DynamicVars.ComputedValue("BaseBlock"), ValueProp.Move), play);
+            new BlockVar(DynamicVars.ComputedValue("CalcBlock"), ValueProp.Move), play);
     }
 
     public Task OnSubside(PlayerChoiceContext choiceContext, CardPlay play)
@@ -56,13 +54,13 @@ public class Blessing() : AbstractSakikoCard(CustomCost, CustomType, CustomRarit
         DynamicVars["IncreaseStep"].UpgradeValueBy(1m);
     }
 
-    private static decimal CalcIncrease(CardModel? card, Creature? target)
+    private static decimal CalcIncrease(BangDreamComputedVar.ComputedVarsContext ctx)
     {
-        if (card != null && card.DynamicVars.TryGetValue("Repeat", out var dynamicVar))
+        if (ctx.IsInCombat() && ctx.ActiveCard.DynamicVars.TryGetValue("IncreaseStep", out var dynamicVar))
         {
-            return 4m + dynamicVar.BaseValue;
+            return ctx.BaseValue + dynamicVar.BaseValue * ctx.ActiveCard.DynamicVars.Repeat.BaseValue;
         }
 
-        return 4m;
+        return ctx.BaseValue;
     }
 }

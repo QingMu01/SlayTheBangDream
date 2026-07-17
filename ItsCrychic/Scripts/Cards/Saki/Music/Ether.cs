@@ -1,8 +1,10 @@
+using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using MegaCrit.Sts2.Core.Localization.DynamicVars;
+using MegaCrit.Sts2.Core.HoverTips;
+using MegaCrit.Sts2.Core.Models;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
@@ -11,32 +13,30 @@ public class Ether() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
     private const CardRarity CustomRarity = CardRarity.Uncommon;
     private const TargetType CustomTarget = TargetType.None;
 
-    protected override IEnumerable<CardKeyword> CardKeywords =>
-    [
-        CardKeyword.Exhaust,
-        BangDreamConst.Perform,
-        BangDreamConst.PerformArea,
-        BangDreamConst.Instant
-    ];
-
-    protected override IEnumerable<DynamicVar> CardVars => [];
-
-
-    public override async Task OnStartPerform(PlayerChoiceContext choiceContext)
+    protected override IEnumerable<IHoverTip> CardHoverTips
     {
-        var cardPile = BangDreamConst.PerformPile.GetPile(Owner);
-        foreach (var card in cardPile.Cards)
+        get
         {
-            if (card.Tags.Contains(BangDreamConst.SymbolCard) && card is IPerformCard performanceCard)
-            {
-                await performanceCard.OnStopPerform(choiceContext);
-            }
+            return ModelDb.AllCards.Where(item => item.Tags.Contains(BangDreamConst.SymbolCard))
+                .Select(cardModel => HoverTipFactory.FromCard(cardModel));
         }
     }
 
-    public override Task OnStopPerform(PlayerChoiceContext choiceContext)
+    protected override IEnumerable<CardKeyword> CardKeywords =>
+    [
+        CardKeyword.Exhaust
+    ];
+
+    public override async Task OnPerform(PlayerChoiceContext choiceContext)
     {
-        return Task.CompletedTask;
+        var symbolCards = BangDreamConst.PerformPile.GetPile(Owner).Cards
+            .Where(cardModel => cardModel.Tags.Contains(BangDreamConst.SymbolCard) && cardModel is IPerformCard)
+            .ToList();
+        var manager = Owner.AttachedData().PerformManager;
+        foreach (var symbolCard in symbolCards)
+        {
+            await manager.PerformCard(symbolCard);
+        }
     }
 
     protected override void OnUpgrade()

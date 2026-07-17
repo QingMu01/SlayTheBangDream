@@ -24,7 +24,7 @@ public class LessonLearned() : AbstractSakikoCard(CustomCost, CustomType, Custom
     protected override IEnumerable<DynamicVar> CardVars =>
     [
         QuickVar.Cards.Create(1),
-        QuickVar.LingeredEnergy.Create(3)
+        QuickVar.LingeredResource.Create(3)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
@@ -34,7 +34,8 @@ public class LessonLearned() : AbstractSakikoCard(CustomCost, CustomType, Custom
             await ExtraPileCmd.Draw(choiceContext, DynamicVars.Cards.IntValue, Owner);
         }
 
-        await PowerCmd.Apply<LessonLearnedPower>(choiceContext, Owner.Creature, DynamicVars["LingeredEnergy"].IntValue,
+        await PowerCmd.Apply<LessonLearnedPower>(choiceContext, Owner.Creature,
+            QuickVar.LingeredResource.GetVar(this).IntValue,
             Owner.Creature, this);
     }
 }

@@ -35,14 +35,15 @@ public class SakikoShield() : BandCardModel(CustomCost, CustomType, CustomRarity
     [
         QuickVar.Block.Create(3),
         QuickVar.Cards.Create(1),
-        QuickVar.LingeredEnergy.Create(1)
+        QuickVar.LingeredResource.Create(1)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
         await CreatureCmd.GainBlock(Owner.Creature, DynamicVars.Block, play);
         await CardPileCmd.Draw(choiceContext, DynamicVars.Cards.IntValue, Owner);
-        await SecondaryResourceCmd.Gain(Owner, BangDreamConst.LingeredResource, DynamicVars["LingeredEnergy"].IntValue,
+        await SecondaryResourceCmd.Gain(Owner, BangDreamConst.LingeredResource,
+            QuickVar.LingeredResource.GetVar(this).IntValue,
             this);
     }
 

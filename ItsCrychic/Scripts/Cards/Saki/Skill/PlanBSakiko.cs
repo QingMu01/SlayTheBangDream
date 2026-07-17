@@ -35,10 +35,10 @@ public class PlanBSakiko() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
         AddKeyword(CardKeyword.Retain);
     }
 
-    protected override (PileType, CardPilePosition) GetResultPileTypeAndPositionForCardPlay()
+    protected override CardLocation GetResultLocationForCardPlay()
     {
         return SecondaryResourceCmd.Get(Owner, BangDreamConst.LingeredResource) == 0
-            ? base.GetResultPileTypeAndPositionForCardPlay()
-            : (PileType.Exhaust, CardPilePosition.Bottom);
+            ? base.GetResultLocationForCardPlay()
+            : new CardLocation(Owner, PileType.Exhaust, CardPilePosition.Bottom);
     }
 }

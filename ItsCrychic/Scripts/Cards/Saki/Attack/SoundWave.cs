@@ -9,7 +9,7 @@ using MegaCrit.Sts2.Core.Models;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
-public class SoundWave() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget), IPerformAreaHook
+public class SoundWave() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget), IPerformHookListener
 {
     private const int CustomCost = 4;
     private const CardType CustomType = CardType.Attack;
@@ -44,14 +44,14 @@ public class SoundWave() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
         DynamicVars.Damage.UpgradeValueBy(4m);
     }
 
-    public Task OnCardEnterPerformArea(CardModel cardModel)
+    public Task OnCardEnterPerformArea(PlayerChoiceContext choiceContext, CardModel cardModel)
     {
         _performanceCards.Add(cardModel);
         UpdateCost();
         return Task.CompletedTask;
     }
 
-    public Task OnCardLeavePerformArea(CardModel cardModel)
+    public Task OnCardLeavePerformArea(PlayerChoiceContext choiceContext, CardModel cardModel)
     {
         _performanceCards.Remove(cardModel);
         UpdateCost();

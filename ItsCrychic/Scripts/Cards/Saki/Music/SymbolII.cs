@@ -1,11 +1,9 @@
-using BangDreamLib.Scripts.Commands;
 using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using MegaCrit.Sts2.Core.Models;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
@@ -14,46 +12,25 @@ public class SymbolIi() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
     private const CardRarity CustomRarity = CardRarity.Uncommon;
     private const TargetType CustomTarget = TargetType.None;
 
-    protected override IEnumerable<CardKeyword> CardKeywords =>
+    public override bool IsInstant => true;
+
+    protected override HashSet<CardTag> CanonicalTags =>
     [
-        BangDreamConst.Perform,
-        BangDreamConst.PerformArea
+        BangDreamConst.SymbolCard
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Cards.Create("Draw", 3)
+        QuickVar.Cards.Create(2)
     ];
 
-    public override async Task OnStartPerform(PlayerChoiceContext choiceContext)
+    public override async Task OnPerform(PlayerChoiceContext choiceContext)
     {
-        await MusicNoteCmd.FromCard(this, DynamicVars.Repeat.IntValue);
+        await CardPileCmd.Draw(choiceContext, DynamicVars.Cards.BaseValue, Owner);
     }
 
-    public override async Task OnStopPerform(PlayerChoiceContext choiceContext)
+    protected override void OnUpgrade()
     {
-        var exhaustPile = PileType.Exhaust.GetPile(Owner);
-        if (exhaustPile.Cards.Count > 0)
-        {
-            CardModel? selectedCard;
-            if (IsUpgraded)
-            {
-                var selectedCards = await CardSelectCmd.FromCombatPile(choiceContext,
-                    exhaustPile,
-                    Owner,
-                    CardSelectorPrompt.ToHand.GetFixedPrefs(1)
-                );
-                selectedCard = selectedCards.FirstOrDefault();
-            }
-            else
-            {
-                selectedCard = Owner.RunState.Rng.CombatCardSelection.NextItem(exhaustPile.Cards);
-            }
-
-            if (selectedCard != null)
-            {
-                await CardPileCmd.Add(selectedCard, PileType.Hand);
-            }
-        }
+        DynamicVars.Cards.UpgradeValueBy(1m);
     }
 }

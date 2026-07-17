@@ -22,13 +22,13 @@ public class AutoSamplerPower : BandPowerModel
     {
         if (side == CombatSide.Player && participants.Contains(Owner) && Owner.Player != null)
         {
-            var lingeredEnergy = SecondaryResourceCmd.Get(Owner.Player, BangDreamConst.LingeredResource);
-            if (lingeredEnergy > 0)
+            var resources = SecondaryResourceCmd.Get(Owner.Player, BangDreamConst.LingeredResource);
+            if (resources > 0)
             {
                 Flash();
                 await CreatureCmd.GainBlock(Owner,
-                    new BlockVar(Amount * lingeredEnergy, ValueProp.Move | ValueProp.Unpowered), null);
-                await SecondaryResourceCmd.Lose(Owner.Player, BangDreamConst.LingeredResource, lingeredEnergy);
+                    new BlockVar(Amount * resources, ValueProp.Move | ValueProp.Unpowered), null);
+                await SecondaryResourceCmd.Lose(Owner.Player, BangDreamConst.LingeredResource, resources);
             }
         }
     }

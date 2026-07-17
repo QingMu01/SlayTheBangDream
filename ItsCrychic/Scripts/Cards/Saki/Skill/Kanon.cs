@@ -34,12 +34,12 @@ public class Kanon() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, 
 
         var manager = Owner.AttachedData().PerformManager;
 
-        foreach (var card in manager.PerformancePile.Cards.Where(card => card is not IPerformCard).ToList())
+        foreach (var card in manager.PerformPile.Cards.Where(card => card is not IPerformCard).ToList())
         {
             await CardCmd.Discard(choiceContext, card);
         }
 
-        var needAddCardCount = manager.Capacity - manager.PerformancePile.Cards.Count;
+        var needAddCardCount = manager.Capacity - manager.PerformPile.Cards.Count;
 
         while (needAddCardCount > 0)
         {

@@ -4,7 +4,6 @@ using BangDreamLib.Scripts.Interfaces.CharacterAugment;
 using BangDreamLib.Scripts.Nodes;
 using BangDreamLib.Scripts.Utils;
 using BangDreamLib.Scripts.Utils.Infos;
-using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Players;
@@ -205,7 +204,7 @@ public class PerformManager : SingletonModel, ISecondaryResourceHookListener
         await RemoveOverflowItems();
     }
 
-    private async Task TryPerformInternal(ICombatState combatState, int slotIndex)
+    private async Task TryPerformInternal(int slotIndex, bool isSubsideTriggered = false)
     {
         var lingeredHitCard = (from pileCard in PerformPile.Cards
             let performContext = CardContexts.GetOrCreate(pileCard)
@@ -214,11 +213,17 @@ public class PerformManager : SingletonModel, ISecondaryResourceHookListener
 
         if (lingeredHitCard is IPerformCard { IsInstant: false } performCard)
         {
-            await BangDreamHook.RunPerformHookAction(combatState, lingeredHitCard,
-                choiceContext => performCard.OnPerform(choiceContext));
-
-            await BangDreamHook.OnCardPerform(combatState, CardContexts.GetOrCreate(lingeredHitCard),
-                lingeredHitCard);
+            var performContext = CardContexts.GetOrCreate(lingeredHitCard);
+            var previousSubsideState = performContext.IsSubsideTriggered;
+            performContext.IsSubsideTriggered = isSubsideTriggered;
+            try
+            {
+                await PerformCard(lingeredHitCard, performCard);
+            }
+            finally
+            {
+                performContext.IsSubsideTriggered = previousSubsideState;
+            }
 
             BangDreamLibCore.Logger.Info(
                 $"Player {Player.Character} ({Player.NetId}) Perform : {lingeredHitCard.Title}");
@@ -231,15 +236,28 @@ public class PerformManager : SingletonModel, ISecondaryResourceHookListener
 
         if (cardModel is IPerformCard { IsInstant: true } performCard)
         {
-            await BangDreamHook.RunPerformHookAction(cardModel.CombatState, cardModel,
-                choiceContext => performCard.OnPerform(choiceContext));
-
-            await BangDreamHook.OnCardPerform(cardModel.CombatState, CardContexts.GetOrCreate(cardModel),
-                cardModel);
+            await PerformCard(cardModel, performCard);
 
             BangDreamLibCore.Logger.Info(
                 $"Player {Player.Character} ({Player.NetId}) Instant Perform : {cardModel.Title}");
         }
+    }
+
+    public async Task PerformCard(CardModel cardModel)
+    {
+        if (cardModel is IPerformCard performCard)
+        {
+            await PerformCard(cardModel, performCard);
+        }
+    }
+
+    private async Task PerformCard(CardModel cardModel, IPerformCard performCard)
+    {
+        ArgumentNullException.ThrowIfNull(cardModel.CombatState);
+
+        await BangDreamHook.RunPerformHookAction(cardModel.CombatState, cardModel, performCard.OnPerform);
+
+        await BangDreamHook.OnCardPerform(cardModel.CombatState, CardContexts.GetOrCreate(cardModel), cardModel);
     }
 
     public int GetExpectedSlotIndex(CardModel cardModel)
@@ -252,13 +270,36 @@ public class PerformManager : SingletonModel, ISecondaryResourceHookListener
             return context.SlotIndex;
         }
 
-        if (context is { Strategy: PerformEnqueueStrategy.Fixed, AspirationSlot: >= 1 } && context.AspirationSlot <= Capacity)
+        if (context is { Strategy: PerformEnqueueStrategy.Fixed, AspirationSlot: >= 1 } &&
+            context.AspirationSlot <= Capacity)
         {
             return context.AspirationSlot;
         }
 
         var availableSlot = FindAvailableSlot(cardModel, context);
         return availableSlot >= 1 && availableSlot <= Capacity ? availableSlot : 1;
+    }
+
+    public CardModel? GetCardDisplacedBy(CardModel incomingCard)
+    {
+        if (Capacity <= 0) return null;
+
+        var context = CardContexts.GetOrCreate(incomingCard);
+        if (context is { Strategy: PerformEnqueueStrategy.Fixed, AspirationSlot: >= 1 } &&
+            context.AspirationSlot <= Capacity)
+        {
+            return FindCardInSlot(context.AspirationSlot, incomingCard);
+        }
+
+        if (FindAvailableSlot(incomingCard, context) >= 1)
+        {
+            return null;
+        }
+
+        return PerformPile.Cards
+            .Where(card => card != incomingCard)
+            .OrderByDescending(card => CardContexts.GetOrCreate(card).SlotIndex)
+            .FirstOrDefault();
     }
 
     private async Task<bool> TryAssignSlot(CardModel cardModel, PerformContext performContext)
@@ -422,7 +463,7 @@ public class PerformManager : SingletonModel, ISecondaryResourceHookListener
         {
             if (ctx.NewAmount > 0 && ctx.NewAmount <= Capacity)
             {
-                await TryPerformInternal(ctx.CombatState, ctx.NewAmount);
+                await TryPerformInternal(ctx.NewAmount, ctx.Reason == SecondaryResourceChangeReason.Spend);
             }
         }
     }

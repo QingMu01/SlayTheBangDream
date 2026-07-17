@@ -2,13 +2,10 @@ using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
-using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Powers;
-using STS2RitsuLib.Cards.DynamicVars;
 using STS2RitsuLib.Combat.SecondaryResources;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
@@ -33,43 +30,35 @@ public class StressBeat()
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        ModCardVars.Int("VulnerableDamage", 3),
-        ComputedDynamicVarHelper.CreateDamageVar("CalcDamage", 14m, CalculateDamage),
-        ComputedDynamicVarHelper.CreateBaseVar(nameof(VulnerablePower), 0m,
-            card => card == null ? 0m : SecondaryResourceCmd.Get(card.Owner, BangDreamConst.LingeredResource))
+        QuickVar.Damage.Create(9),
+        QuickVar.LingeredResource.Create(1),
+        QuickVar.Buff.Create(2),
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
         ArgumentNullException.ThrowIfNull(play.Target);
 
-        await DamageCmd.Attack(DynamicVars.ComputedValue("CalcDamage", play.Target))
+        var attack = await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
             .FromCard(this, play)
             .Targeting(play.Target)
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
+        var target = attack.Results.SelectMany(results => results).FirstOrDefault()?.Receiver;
+        if (target is not { IsHittable: true }) return;
 
-        var lingeredResource = SecondaryResourceCmd.Get(Owner, BangDreamConst.LingeredResource);
-        if (lingeredResource > 0)
+        await PowerCmd.Apply<VulnerablePower>(choiceContext, target, QuickVar.Buff.GetVar(this).IntValue,
+            Owner.Creature, this);
+        
+        var vulnerable = target.GetPower<VulnerablePower>()?.Amount ?? 0;
+        if (vulnerable > 0)
         {
-            await PowerCmd.Apply<VulnerablePower>(choiceContext, play.Target, lingeredResource, Owner.Creature, this);
+            await SecondaryResourceCmd.Gain(Owner, BangDreamConst.LingeredResource, vulnerable, this);
         }
     }
 
     protected override void OnUpgrade()
     {
-        DynamicVars["VulnerableDamage"].UpgradeValueBy(2m);
-    }
-
-    private static decimal CalculateDamage(CardModel? card, Creature? target)
-    {
-        var powerAmount = target?.GetPowerAmount<VulnerablePower>();
-        if (card != null && powerAmount.HasValue &&
-            card.DynamicVars.TryGetValue("VulnerableDamage", out var vulnerableDamage))
-        {
-            return 14m + powerAmount.Value * vulnerableDamage.BaseValue;
-        }
-
-        return 14m;
+        DynamicVars.Vulnerable.UpgradeValueBy(1);
     }
 }

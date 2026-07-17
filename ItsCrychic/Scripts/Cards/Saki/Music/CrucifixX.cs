@@ -4,47 +4,36 @@ using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using STS2RitsuLib.Cards.DynamicVars;
+using MegaCrit.Sts2.Core.ValueProps;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
 public class CrucifixX() : AbstractSakikoMusicCard(CardRarity.Uncommon, TargetType.None)
 {
-    public override bool IsInstant { get; set; } = true;
+    public override bool IsInstant => true;
 
-    protected override IEnumerable<CardKeyword> CardKeywords =>
-    [
-        BangDreamConst.Instant,
-        BangDreamConst.Perform
-    ];
+    protected override IEnumerable<CardKeyword> CardKeywords => [];
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        ModCardVars.Int("PerCardDamage", 3),
-        ComputedDynamicVarHelper.CreateBaseVar("FixedDamage", 7m, (card, _) =>
-        {
-            if (card != null && card.DynamicVars.TryGetValue("PerCardDamage", out var perCardDamage))
-            {
-                return 7m + card.Owner.AttachedData().PerformManager.Count * perCardDamage.IntValue;
-            }
-
-            return 7m;
-        })
+        QuickVar.Damage.Create(7),
+        QuickVar.Damage.Create("PerCard", 3)
     ];
 
-    public override async Task OnStartPerform(PlayerChoiceContext choiceContext)
+    public override async Task OnPerform(PlayerChoiceContext choiceContext)
     {
         ArgumentNullException.ThrowIfNull(CombatState);
-
-        await DamageCmd.Attack(DynamicVars.ComputedValue("FixedDamage"))
-            .FromCard(this, null)
-            .TargetingAllOpponents(CombatState)
-            .WithHitFx("vfx/vfx_attack_slash")
-            .Execute(choiceContext);
+        var count = BangDreamTools.GetPile(BangDreamConst.PerformPile, Owner).Cards.Count;
+        var damage = DynamicVars.Damage.IntValue + count * DynamicVars["PerCard"].IntValue;
+        foreach (var enemy in CombatState.HittableEnemies.ToList())
+        {
+            await CreatureCmd.Damage(choiceContext, enemy, new DamageVar(damage, ValueProp.Unpowered),
+                Owner.Creature, this, null);
+        }
     }
 
     protected override void OnUpgrade()
     {
-        DynamicVars["PerCardDamage"].UpgradeValueBy(2);
+        DynamicVars["PerCard"].UpgradeValueBy(2);
     }
 }

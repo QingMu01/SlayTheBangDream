@@ -4,7 +4,6 @@ using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using MegaCrit.Sts2.Core.Models;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
@@ -13,46 +12,25 @@ public class SymbolIv() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
     private const CardRarity CustomRarity = CardRarity.Uncommon;
     private const TargetType CustomTarget = TargetType.None;
 
-    protected override IEnumerable<CardKeyword> CardKeywords =>
+    public override bool IsInstant => true;
+
+    protected override HashSet<CardTag> CanonicalTags =>
     [
-        BangDreamConst.Perform,
-        BangDreamConst.PerformArea
+        BangDreamConst.SymbolCard
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Energy.Create(2)
+        QuickVar.Energy.Create(1)
     ];
 
-    public override async Task OnStartPerform(PlayerChoiceContext choiceContext)
+    public override async Task OnPerform(PlayerChoiceContext choiceContext)
     {
-        await PlayerCmd.GainEnergy(DynamicVars.Energy.IntValue, Owner);
+        await PlayerCmd.GainEnergy(DynamicVars.Energy.BaseValue, Owner);
     }
 
-    public override async Task OnStopPerform(PlayerChoiceContext choiceContext)
+    protected override void OnUpgrade()
     {
-        var extraDrawPile = BangDreamConst.ExtraDraw.GetPile(Owner);
-        if (extraDrawPile.Cards.Count > 0)
-        {
-            CardModel? selectedCard;
-            if (IsUpgraded)
-            {
-                var selectedCards = await CardSelectCmd.FromCombatPile(choiceContext,
-                    extraDrawPile,
-                    Owner,
-                    CardSelectorPrompt.ToHand.GetFixedPrefs(1)
-                );
-                selectedCard = selectedCards.FirstOrDefault();
-            }
-            else
-            {
-                selectedCard = Owner.RunState.Rng.CombatCardSelection.NextItem(extraDrawPile.Cards);
-            }
-
-            if (selectedCard != null)
-            {
-                await CardPileCmd.Add(selectedCard, PileType.Hand);
-            }
-        }
+        DynamicVars.Energy.UpgradeValueBy(1m);
     }
 }

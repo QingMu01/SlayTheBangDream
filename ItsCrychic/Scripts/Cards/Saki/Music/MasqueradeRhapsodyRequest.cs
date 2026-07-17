@@ -1,37 +1,38 @@
-using BangDreamLib.Scripts.Interfaces.GameHook;
-using BangDreamLib.Scripts.Utils;
+using BangDreamLib.Scripts.Extensions;
+using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
-using MegaCrit.Sts2.Core.Entities.Creatures;
+using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using MegaCrit.Sts2.Core.Models;
-using STS2RitsuLib.Cards.DynamicVars;
+using MegaCrit.Sts2.Core.Models.Powers;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
-public class MasqueradeRhapsodyRequest() : AbstractSakikoMusicCard(CardRarity.Uncommon, TargetType.None),
-    IMusicNoteModifyHook
+public class MasqueradeRhapsodyRequest() : AbstractSakikoMusicCard(CardRarity.Uncommon, TargetType.None)
 {
-    protected override IEnumerable<CardKeyword> CardKeywords =>
+    public override bool GainsBlock => true;
+
+    protected override IEnumerable<IHoverTip> CardHoverTips =>
     [
-        BangDreamConst.Perform,
-        BangDreamConst.MusicNote
+        HoverTipFactory.FromPower<DexterityPower>()
     ];
 
-    protected override IEnumerable<DynamicVar> CardVars => [ModCardVars.Int("Increase", 1)];
+    protected override IEnumerable<DynamicVar> CardVars =>
+    [
+        QuickVar.Block.Create(5),
+        QuickVar.Buff.Create(1)
+    ];
 
-    public decimal ModifyMusicNoteDamageAdditive(Creature? target, decimal amount, Creature? dealer,
-        AbstractModel? source)
+    public override async Task OnPerform(PlayerChoiceContext choiceContext)
     {
-        return Handle != null && dealer == Owner.Creature ? DynamicVars["Increase"].BaseValue : 0;
-    }
-
-    public decimal ModifyMusicNoteShotCount(decimal amount, Creature? dealer, AbstractModel? source)
-    {
-        return Handle != null && dealer == Owner.Creature ? amount + DynamicVars["Increase"].BaseValue : amount;
+        await CreatureCmd.GainBlock(Owner.Creature, DynamicVars.Block, null);
+        await PowerCmd.Apply<TemporaryDexterityPower>(choiceContext, Owner.Creature,
+            QuickVar.Buff.GetVar(this).BaseValue,
+            Owner.Creature, this);
     }
 
     protected override void OnUpgrade()
     {
-        DynamicVars["Increase"].UpgradeValueBy(1);
+        DynamicVars.Block.UpgradeValueBy(2);
     }
 }

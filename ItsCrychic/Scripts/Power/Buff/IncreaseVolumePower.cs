@@ -6,7 +6,7 @@ using MegaCrit.Sts2.Core.Models;
 
 namespace ItsCrychic.Scripts.Power.Buff;
 
-public class IncreaseVolumePower : BandPowerModel, IMusicNoteModifyHook
+public class IncreaseVolumePower : BandPowerModel, IMusicNoteModifyHookListener
 {
     public override PowerType Type => PowerType.Buff;
     public override PowerStackType StackType => PowerStackType.Counter;

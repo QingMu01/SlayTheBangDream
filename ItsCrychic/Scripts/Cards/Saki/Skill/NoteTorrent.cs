@@ -9,13 +9,13 @@ using STS2RitsuLib.Cards.DynamicVars;
 using STS2RitsuLib.Combat.SecondaryResources;
 using STS2RitsuLib.Interop.AutoRegistration;
 
-namespace ItsCrychic.Scripts.Cards.Saki.Attack;
+namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
 [RegisterDustyTomeCard(typeof(TogawaSakiko))]
 public class NoteTorrent() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget), ISubsideCard
 {
     private const int CustomCost = 0;
-    private const CardType CustomType = CardType.Attack;
+    private const CardType CustomType = CardType.Skill;
     private const CardRarity CustomRarity = CardRarity.Ancient;
     private const TargetType CustomTarget = TargetType.AllEnemies;
 

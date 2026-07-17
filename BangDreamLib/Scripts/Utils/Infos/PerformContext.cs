@@ -37,4 +37,9 @@ public class PerformContext(
     /// 入队期望插槽索引
     /// </summary>
     public int AspirationSlot { get; } = aspirationSlot;
+
+    /// <summary>
+    /// 当前演奏是否由休止消耗余音触发。
+    /// </summary>
+    public bool IsSubsideTriggered { get; set; }
 }

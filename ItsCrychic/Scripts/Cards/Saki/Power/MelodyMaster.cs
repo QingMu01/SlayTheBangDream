@@ -1,3 +1,4 @@
+using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
 using ItsCrychic.Scripts.Power.Buff;
 using MegaCrit.Sts2.Core.Commands;
@@ -9,26 +10,29 @@ namespace ItsCrychic.Scripts.Cards.Saki.Power;
 
 public class MelodyMaster() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget)
 {
-    private const int CustomCost = 2;
+    private const int CustomCost = 0;
     private const CardType CustomType = CardType.Power;
     private const CardRarity CustomRarity = CardRarity.Uncommon;
     private const TargetType CustomTarget = TargetType.Self;
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.PerformArea,
-        BangDreamConst.Music
+        BangDreamConst.MusicNote
     ];
 
-    protected override IEnumerable<DynamicVar> CardVars => [];
+    protected override IEnumerable<DynamicVar> CardVars =>
+    [
+        QuickVar.Repeat.Create(1)
+    ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        await PowerCmd.Apply<MelodyMasterPower>(choiceContext, Owner.Creature, 1, Owner.Creature, this);
+        await PowerCmd.Apply<MelodyMasterPower>(choiceContext, Owner.Creature, DynamicVars.Repeat.IntValue,
+            Owner.Creature, this);
     }
 
     protected override void OnUpgrade()
     {
-        EnergyCost.UpgradeBy(-1);
+        DynamicVars.Repeat.UpgradeValueBy(1);
     }
 }

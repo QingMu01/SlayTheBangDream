@@ -1,58 +1,49 @@
-using BangDreamLib.Scripts.Utils;
+using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Interfaces.GameHook;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models;
-using STS2RitsuLib.Combat.SecondaryResources;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
 public class HachimanguseiDance() : AbstractSakikoMusicCard(CardRarity.Uncommon, TargetType.None),
-    ISecondaryResourceHookListener
+    IPerformHookListener
 {
-    protected override IEnumerable<CardKeyword> CardKeywords => [BangDreamConst.Perform];
+    private bool _isReplayingAdjacent;
 
-    protected override IEnumerable<DynamicVar> CardVars => [];
+    protected override IEnumerable<DynamicVar> CardVars => [QuickVar.Cards.Create(2)];
 
-    public override bool TryModifyEnergyCostInCombatLate(CardModel card, decimal originalCost, out decimal modifiedCost)
+    public override async Task OnPerform(PlayerChoiceContext choiceContext)
     {
-        modifiedCost = originalCost;
-        if (Handle == null || card.Owner.Creature != Owner.Creature)
-            return false;
+        if (_isReplayingAdjacent) return;
 
-        var type = card.Pile?.Type;
-        if (type.HasValue)
+        var manager = Owner.AttachedData().PerformManager;
+        var slotIndex = manager.CardContexts.GetOrCreate(this).SlotIndex;
+        var adjacentCards = manager.PerformPile.Cards
+            .Where(card => card != this && Math.Abs(manager.CardContexts.GetOrCreate(card).SlotIndex - slotIndex) == 1)
+            .ToList();
+
+        _isReplayingAdjacent = true;
+        try
         {
-            switch (type.GetValueOrDefault())
+            foreach (var card in adjacentCards)
             {
-                case PileType.Hand:
-                case PileType.Play:
-                {
-                    modifiedCost = 0M;
-                    return true;
-                }
+                await manager.PerformCard(card);
             }
         }
-
-        return false;
-    }
-
-    public decimal ModifySecondaryResourceCostLate(SecondaryResourceCostContext context, decimal cost)
-    {
-        if (Handle != null && IsUpgraded && context.Definition.Id.Equals(BangDreamConst.LingeredResource))
+        finally
         {
-            return 0;
+            _isReplayingAdjacent = false;
         }
-
-        return cost;
     }
 
-    public override async Task BeforeCardPlayed(CardPlay cardPlay)
+    public async Task OnCardEnterPerformArea(PlayerChoiceContext choiceContext, CardModel cardModel)
     {
-        if (Handle != null)
+        if (IsUpgraded && cardModel == this)
         {
-            FlashInArea();
-            await CardPileCmd.Add(this, BangDreamConst.ExtraDraw);
+            await CardPileCmd.Draw(choiceContext, DynamicVars.Cards.IntValue, Owner);
         }
     }
 }

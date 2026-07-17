@@ -10,7 +10,7 @@ using MegaCrit.Sts2.Core.Models;
 
 namespace ItsCrychic.Scripts.Power.Buff;
 
-public class GiantNotePower : BandPowerModel, IMusicNoteModifyHook
+public class GiantNotePower : BandPowerModel, IMusicNoteModifyHookListener
 {
     public override PowerType Type => PowerType.Buff;
 

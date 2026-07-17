@@ -1,7 +1,7 @@
 ﻿using BangDreamLib.Scripts.Character;
+using BangDreamLib.Scripts.Enums;
 using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
-using BangDreamLib.Scripts.Utils.Enums;
 using ItsCrychic.Scripts.Character.CardPools;
 using ItsCrychic.Scripts.Character.PotionPools;
 using ItsCrychic.Scripts.Character.RelicPools;
@@ -37,11 +37,14 @@ public sealed class WakabaMutsumi()
         "res://ItsCrychic/skins/mutsumi/mutsumi_puppeteer.json"
     ];
 
-    public override string CustomTrailPath =>
-        "res://BangDreamLib/scenes/vfx/card_trail_sakiko.tscn";
-
     public override string SelectPoster =>
         "res://ItsCrychic/images/charui/img_mutsumi-wakaba_2.webp";
+
+    public override string SelectLogo =>
+        "res://ItsCrychic/images/charui/mutsumi/mutsumi_logo.png";
+
+    public override string CustomTrailPath =>
+        "res://BangDreamLib/scenes/vfx/card_trail_sakiko.tscn";
 
     public override string CustomIconPath =>
         "res://ItsCrychic/scenes/char_icon/mutsumi_icon.tscn";

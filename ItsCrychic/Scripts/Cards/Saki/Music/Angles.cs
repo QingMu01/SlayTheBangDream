@@ -5,45 +5,42 @@ using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Factories;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
+using MegaCrit.Sts2.Core.Models;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
 public class Angles() : AbstractSakikoMusicCard(CardRarity.Rare, TargetType.None)
 {
-    public override bool IsInstant { get; set; } = true;
+    public override bool IsInstant => true;
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        CardKeyword.Exhaust,
-        BangDreamConst.Perform,
-        BangDreamConst.Instant
+        CardKeyword.Exhaust
     ];
 
     protected override IEnumerable<DynamicVar> CardVars => [];
 
-    public override async Task OnStopPerform(PlayerChoiceContext choiceContext)
+    public override async Task OnPerform(PlayerChoiceContext choiceContext)
     {
         ArgumentNullException.ThrowIfNull(CombatState);
-
         var manager = Owner.AttachedData().PerformManager;
-        var candidates = CardFactory.FilterForCombat(Owner.Character.CardPool.AllCards)
-            .Where(card => card is { Type: CardType.Attack, Rarity: CardRarity.Rare })
-            .ToList();
+        var candidates = CardFactory.FilterForCombat(ModelDb.AllCards.Where(card =>
+            card is { Type: CardType.Attack, Rarity: CardRarity.Rare })).ToList();
 
-        while (manager.PerformancePile.Cards.Count < manager.Capacity && candidates.Count > 0)
+        while (manager.PerformPile.Cards.Count < manager.Capacity && candidates.Count > 0)
         {
-            var template = Owner.RunState.Rng.CombatCardGeneration.NextItem(candidates);
-            if (template == null) break;
-
-            var generatedCard = CombatState.CreateCard(template, Owner);
-            if (IsUpgraded)
-            {
-                CardCmd.Upgrade(generatedCard);
-            }
-
-            generatedCard.EnergyCost.SetUntilPlayed(0);
-
-            await CardPileCmd.AddGeneratedCardToCombat(generatedCard, BangDreamConst.PerformPile, Owner);
+            var prototype = Owner.RunState.Rng.CombatCardGeneration.NextItem(candidates);
+            if (prototype == null) break;
+            var card = CombatState.CreateCard(prototype, Owner);
+            if (IsUpgraded) CardCmd.Upgrade(card);
+            card.EnergyCost.SetThisTurnOrUntilPlayed(0, true);
+            await CardPileCmd.AddGeneratedCardToCombat(card, BangDreamConst.PerformPile, Owner);
+            await Cmd.CustomScaledWait(0.1f, 0.2f);
         }
+    }
+
+    protected override void OnUpgrade()
+    {
+        // 升级生成升级后的攻击牌。
     }
 }

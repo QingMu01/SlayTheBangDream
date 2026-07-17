@@ -14,28 +14,32 @@ public class Rehearsal() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
     private const CardRarity CustomRarity = CardRarity.Uncommon;
     private const TargetType CustomTarget = TargetType.None;
 
-    protected override IEnumerable<CardKeyword> CardKeywords => [];
+    protected override IEnumerable<CardKeyword> CardKeywords =>
+    [
+        BangDreamConst.PerformArea
+    ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Cards.Create(1),
-        QuickVar.Cards.Create("Draw", 3)
+        QuickVar.Cards.Create(1)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        var cardModels = await CardSelectCmd.FromHand(choiceContext, Owner,
-            CardSelectorPrompt.ToExtraDraw.GetLimitedPrefs(DynamicVars.Cards.IntValue, true, true), _ => true, this);
-        foreach (var cardModel in cardModels)
+        var performPile = BangDreamTools.GetPile(BangDreamConst.PerformPile, Owner);
+        var manager = Owner.AttachedData().PerformManager;
+        var cards = performPile.Cards
+            .OrderBy(card => manager.CardContexts.GetOrCreate(card).SlotIndex)
+            .Take(DynamicVars.Cards.IntValue)
+            .ToList();
+        foreach (var card in cards)
         {
-            await CardPileCmd.Add(cardModel, BangDreamConst.ExtraDraw);
+            await CardPileCmd.Add(card, PileType.Hand);
         }
-
-        await CardPileCmd.Draw(choiceContext, DynamicVars["Draw"].BaseValue, Owner);
     }
 
     protected override void OnUpgrade()
     {
-        DynamicVars["Draw"].UpgradeValueBy(1);
+        DynamicVars.Cards.UpgradeValueBy(1);
     }
 }

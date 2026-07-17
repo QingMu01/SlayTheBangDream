@@ -1,3 +1,4 @@
+using BangDreamLib.Scripts.Utils;
 using ItsCrychic.Scripts.Power.Buff;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -12,6 +13,11 @@ public class Reorganization() : AbstractSakikoCard(CustomCost, CustomType, Custo
     private const CardType CustomType = CardType.Power;
     private const CardRarity CustomRarity = CardRarity.Uncommon;
     private const TargetType CustomTarget = TargetType.Self;
+
+    protected override IEnumerable<CardKeyword> CardKeywords =>
+    [
+        BangDreamConst.Lingered
+    ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [

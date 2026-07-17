@@ -6,7 +6,7 @@ using MegaCrit.Sts2.Core.Models;
 
 namespace ItsCrychic.Scripts.Power.Buff;
 
-public class FullMoonBallPower : BandPowerModel, IMusicNoteModifyHook
+public class FullMoonBallPower : BandPowerModel, IMusicNoteModifyHookListener
 {
     public override PowerType Type => PowerType.Buff;
 

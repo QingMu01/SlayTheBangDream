@@ -17,17 +17,7 @@ public class Pursuit() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity
     private const CardRarity CustomRarity = CardRarity.Uncommon;
     private const TargetType CustomTarget = TargetType.AnyEnemy;
 
-    private int _lingeredEnergy = 6;
-
-    public int LingeredResourceCost
-    {
-        get => _lingeredEnergy;
-        private set
-        {
-            AssertMutable();
-            _lingeredEnergy = value;
-        }
-    }
+    public int LingeredResourceCost => 6;
 
     private bool _shouldCopySelfAndPlay;
 
@@ -41,8 +31,6 @@ public class Pursuit() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity
         }
     }
 
-    public bool IgnoreSubsideCost => false;
-
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
         BangDreamConst.Lingered
@@ -51,7 +39,7 @@ public class Pursuit() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity
     protected override IEnumerable<DynamicVar> CardVars =>
     [
         QuickVar.Damage.Create(16),
-        QuickVar.LingeredEnergy.Create(7)
+        QuickVar.LingeredResource.Create(7)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
@@ -67,7 +55,7 @@ public class Pursuit() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity
         if (attackCommand.Results.SelectMany(r => r).Any(result => result.WasTargetKilled))
         {
             await SecondaryResourceCmd.Gain(Owner, BangDreamConst.LingeredResource,
-                DynamicVars["LingeredEnergy"].IntValue, this);
+                QuickVar.LingeredResource.GetVar(this).IntValue, this);
         }
     }
 
@@ -79,10 +67,6 @@ public class Pursuit() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity
 
     protected override void OnUpgrade()
     {
-        LingeredResourceCost = 4;
-        if (DynamicVars.TryGetValue("Subside", out var var))
-        {
-            var.UpgradeValueBy(-2m);
-        }
+        this.SecondaryCosts().Set(BangDreamConst.LingeredResource, 4);
     }
 }

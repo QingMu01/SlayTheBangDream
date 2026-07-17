@@ -21,15 +21,22 @@ public class EleganceGreeting() : AbstractSakikoCard(CustomCost, CustomType, Cus
         CardKeyword.Exhaust
     ];
 
-    protected override IEnumerable<IHoverTip> CardHoverTips =>
-    [
-        HoverTipFactory.FromPower<WeakPower>()
-    ];
+    protected override IEnumerable<IHoverTip> CardHoverTips
+    {
+        get
+        {
+            yield return HoverTipFactory.FromPower<WeakPower>();
+            if (IsUpgraded)
+            {
+                yield return HoverTipFactory.FromPower<VulnerablePower>();
+            }
+        }
+    }
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
         QuickVar.Damage.Create(7),
-        new PowerVar<WeakPower>(1)
+        QuickVar.Buff.Create(1)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
@@ -45,14 +52,14 @@ public class EleganceGreeting() : AbstractSakikoCard(CustomCost, CustomType, Cus
         var damageResult = attackCommand.Results.SelectMany(r => r).FirstOrDefault();
         if (damageResult is { Receiver.IsHittable: true })
         {
-            await PowerCmd.Apply<WeakPower>(choiceContext, damageResult.Receiver, DynamicVars.Weak.IntValue,
+            var debuff = QuickVar.Buff.GetVar(this).IntValue;
+            await PowerCmd.Apply<WeakPower>(choiceContext, damageResult.Receiver, debuff,
                 Owner.Creature, this);
+            if (IsUpgraded)
+            {
+                await PowerCmd.Apply<WeakPower>(choiceContext, damageResult.Receiver, debuff,
+                    Owner.Creature, this);
+            }
         }
-    }
-
-    protected override void OnUpgrade()
-    {
-        DynamicVars.Damage.UpgradeValueBy(2m);
-        DynamicVars.Weak.UpgradeValueBy(1);
     }
 }

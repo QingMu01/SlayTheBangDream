@@ -5,10 +5,11 @@ using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.ValueProps;
+using STS2RitsuLib.Combat.AttackHits;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
-public class Tremolo() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget)
+public class Tremolo() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget), IAttackHitHookListener
 {
     private const int CustomCost = 0;
     private const CardType CustomType = CardType.Attack;
@@ -22,31 +23,45 @@ public class Tremolo() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity
         new DamageVar(7m, ValueProp.Move)
     ];
 
+    private readonly List<Creature> _enemiesSnapshot = [];
+    private readonly HashSet<Creature> _hitEnemies = [];
+
+    public async Task BeforeAttackHit(AttackHitContext context)
+    {
+        if (context.CardSource == this)
+        {
+            var nextTarget = GetNextTarget(_enemiesSnapshot, context.HitIndex);
+            if (nextTarget != null)
+            {
+                if (_hitEnemies.Add(nextTarget))
+                {
+                    await ExtraPileCmd.Draw(context.ChoiceContext, 1, Owner);
+                }
+
+                context.Targets = new List<Creature> { nextTarget };
+            }
+        }
+    }
+
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
         ArgumentNullException.ThrowIfNull(CombatState);
 
         var hitCount = ResolveEnergyXValue();
+
         if (hitCount > 0)
         {
-            var attackedEnemies = new HashSet<Creature>();
-            for (var i = 0; i < hitCount; i++)
-            {
-                var enemy = GetNextTarget(CombatState.HittableEnemies.ToList(), i);
-                if (enemy == null)
-                {
-                    return;
-                }
+            _enemiesSnapshot.Clear();
+            _enemiesSnapshot.AddRange(CombatState.HittableEnemies.ToList());
 
+            if (_enemiesSnapshot.Count > 0)
+            {
                 await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
                     .FromCard(this, play)
-                    .Targeting(enemy)
+                    .TargetingAllOpponents(CombatState)
+                    .WithHitCount(hitCount)
                     .WithHitFx("vfx/vfx_attack_slash")
                     .Execute(choiceContext);
-                if (attackedEnemies.Add(enemy))
-                {
-                    await ExtraPileCmd.Draw(choiceContext, 1, Owner);
-                }
             }
         }
     }

@@ -37,7 +37,7 @@ public class DivineWrath() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
     protected override IEnumerable<DynamicVar> CardVars =>
     [
         QuickVar.Damage.Create(8),
-        QuickVar.LingeredEnergy.Create(2)
+        QuickVar.LingeredResource.Create(2)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
@@ -51,7 +51,7 @@ public class DivineWrath() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
             .Execute(choiceContext);
 
         await SecondaryResourceCmd.Gain(Owner, BangDreamConst.LingeredResource,
-            DynamicVars["LingeredEnergy"].IntValue, this);
+            QuickVar.LingeredResource.GetVar(this).IntValue, this);
 
         if (Owner.RunState.Rng.CombatTargets.NextBool())
         {
@@ -61,6 +61,6 @@ public class DivineWrath() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
 
     protected override void OnUpgrade()
     {
-        DynamicVars["LingeredEnergy"].UpgradeValueBy(1m);
+        QuickVar.LingeredResource.GetVar(this).UpgradeValueBy(1m);
     }
 }

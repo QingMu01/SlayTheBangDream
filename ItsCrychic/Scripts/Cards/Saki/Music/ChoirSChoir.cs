@@ -1,33 +1,48 @@
 using BangDreamLib.Scripts.Extensions;
-using BangDreamLib.Scripts.Utils;
+using ItsCrychic.Scripts.Power.Debuff;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
-using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using MegaCrit.Sts2.Core.Models;
-using MegaCrit.Sts2.Core.ValueProps;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
 public class ChoirSChoir() : AbstractSakikoMusicCard(CardRarity.Uncommon, TargetType.None)
 {
-    protected override IEnumerable<CardKeyword> CardKeywords => [BangDreamConst.Perform];
+    protected override IEnumerable<IHoverTip> CardHoverTips =>
+    [
+        HoverTipFactory.FromPower<ChoirLockPower>()
+    ];
 
-    protected override IEnumerable<DynamicVar> CardVars => [QuickVar.Gold.Create(7)];
+    protected override IEnumerable<DynamicVar> CardVars =>
+    [
+        QuickVar.Damage.Create(8),
+        QuickVar.Buff.Create(5)
+    ];
 
-    public override async Task AfterDamageGiven(PlayerChoiceContext choiceContext, Creature? target,
-        DamageResult result, ValueProp props, Creature? dealer, CardModel? cardSource)
+    public override async Task OnPerform(PlayerChoiceContext choiceContext)
     {
-        if (Handle != null && dealer == Owner.Creature && result.WasTargetKilled)
+        ArgumentNullException.ThrowIfNull(CombatState);
+        var candidates = CombatState.HittableEnemies.ToList();
+        var locked = candidates.Where(enemy => enemy.GetPower<ChoirLockPower>() != null).ToList();
+        var target = Owner.RunState.Rng.CombatTargets.NextItem(locked.Count > 0 ? locked : candidates);
+        if (target == null) return;
+
+        await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
+            .FromCard(this, null)
+            .Targeting(target)
+            .WithHitFx("vfx/vfx_attack_slash")
+            .Execute(choiceContext);
+        if (target.IsHittable)
         {
-            FlashInArea();
-            await PlayerCmd.GainGold(DynamicVars.Gold.BaseValue, Owner);
+            await PowerCmd.Apply<ChoirLockPower>(choiceContext, target, QuickVar.Buff.GetVar(this).BaseValue,
+                Owner.Creature, this);
         }
     }
 
     protected override void OnUpgrade()
     {
-        DynamicVars.Gold.UpgradeValueBy(3);
+        QuickVar.Buff.GetVar(this).UpgradeValueBy(3);
     }
 }

@@ -1,6 +1,5 @@
 using BangDreamLib.Scripts.Extensions;
-using BangDreamLib.Scripts.Interfaces.CardAugment;
-using BangDreamLib.Scripts.Utils;
+using BangDreamLib.Scripts.Interfaces.GameHook;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.HoverTips;
@@ -9,84 +8,47 @@ using MegaCrit.Sts2.Core.Models;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
-public class AveMujica() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
+public class AveMujica() : AbstractSakikoMusicCard(CustomRarity, CustomTarget), IPerformHookListener
 {
     private const CardRarity CustomRarity = CardRarity.Rare;
     private const TargetType CustomTarget = TargetType.None;
-
-    private readonly List<CardModel> _effectCards = [];
-
-    protected override IEnumerable<CardKeyword> CardKeywords =>
-    [
-        BangDreamConst.Perform
-    ];
 
     protected override IEnumerable<IHoverTip> CardHoverTips =>
     [
         HoverTipFactory.Static(StaticHoverTip.ReplayStatic)
     ];
 
-    protected override IEnumerable<DynamicVar> CardVars =>
-    [
-        QuickVar.Repeat.Create(1)
-    ];
+    private readonly Dictionary<CardModel, int> _affectedCards = [];
 
-    public override Task OnStartPerform(PlayerChoiceContext choiceContext)
+    protected override IEnumerable<DynamicVar> CardVars => [QuickVar.Repeat.Create(1)];
+
+    public override Task OnPerform(PlayerChoiceContext choiceContext)
     {
-        var combatState = Owner.PlayerCombatState!;
+        ArgumentNullException.ThrowIfNull(Owner.PlayerCombatState);
 
-        foreach (var card in combatState.AllPiles.SelectMany(pile => pile.Cards))
+        foreach (var card in Owner.PlayerCombatState.Hand.Cards.Where(card => card.Rarity == CardRarity.Basic))
         {
-            if (card.Rarity == CardRarity.Basic && card is not IPerformCard)
-            {
-                card.BaseReplayCount += DynamicVars.Repeat.IntValue;
-                _effectCards.Add(card);
-            }
+            card.BaseReplayCount += DynamicVars.Repeat.IntValue;
+            _affectedCards[card] = _affectedCards.GetValueOrDefault(card) + DynamicVars.Repeat.IntValue;
         }
 
         return Task.CompletedTask;
     }
 
-    public override Task OnStopPerform(PlayerChoiceContext choiceContext)
+    public Task OnCardLeavePerformArea(PlayerChoiceContext choiceContext, CardModel cardModel)
     {
-        if (!IsUpgraded)
+        if (cardModel != this) return Task.CompletedTask;
+        foreach (var (card, amount) in _affectedCards)
         {
-            foreach (var effectCard in _effectCards)
-            {
-                effectCard.BaseReplayCount -= DynamicVars.Repeat.IntValue;
-                if (effectCard.BaseReplayCount <= 0)
-                {
-                    effectCard.BaseReplayCount = 0;
-                }
-            }
-
-            _effectCards.Clear();
+            card.BaseReplayCount = Math.Max(0, card.BaseReplayCount - amount);
         }
 
+        _affectedCards.Clear();
         return Task.CompletedTask;
     }
 
-    public override Task AfterCardPlayedLate(PlayerChoiceContext choiceContext, CardPlay play)
+    protected override void OnUpgrade()
     {
-        if (_effectCards.Contains(play.Card))
-        {
-            if (Handle != null && play.PlayIndex == 0)
-            {
-                FlashInArea();
-            }
-
-            if (IsUpgraded)
-            {
-                play.Card.BaseReplayCount -= DynamicVars.Repeat.IntValue;
-                if (play.Card.BaseReplayCount <= 0)
-                {
-                    play.Card.BaseReplayCount = 0;
-                }
-
-                _effectCards.Remove(play.Card);
-            }
-        }
-
-        return Task.CompletedTask;
+        DynamicVars.Repeat.UpgradeValueBy(1);
     }
 }

@@ -30,7 +30,7 @@ public class SetTheStage() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
         var playTarget = play.Target;
         if (playTarget != null)
         {
-            await CreatureCmd.LoseBlock(playTarget, playTarget.Block);
+            await CreatureCmd.LoseBlock(choiceContext, playTarget, playTarget.Block, Owner.Creature);
             await CreatureCmd.GainBlock(playTarget, DynamicVars.Block, play);
         }
     }

@@ -23,12 +23,11 @@ public class ComposeMusicPower : BandPowerModel
         }
     }
 
-    public override (PileType, CardPilePosition) ModifyCardPlayResultPileTypeAndPosition(CardModel card,
-        bool isAutoPlay,
-        ResourceInfo resources, PileType pileType, CardPilePosition position)
+    public override CardLocation ModifyCardPlayResultLocation(CardModel card, bool isAutoPlay, ResourceInfo resources,
+        CardLocation cardLocation)
     {
-        return card.Owner.Creature == Owner && pileType == PileType.Discard
-            ? (BangDreamConst.ExtraDraw, CardPilePosition.Bottom)
-            : base.ModifyCardPlayResultPileTypeAndPosition(card, isAutoPlay, resources, pileType, position);
+        return cardLocation.player == Owner.Player && cardLocation.pileType == PileType.Discard
+            ? new CardLocation(Owner.Player, BangDreamConst.ExtraDraw, CardPilePosition.Bottom)
+            : cardLocation;
     }
 }

@@ -14,6 +14,8 @@ public class HaneokaIndifference() : AbstractSakikoCard(CustomCost, CustomType, 
     private const CardRarity CustomRarity = CardRarity.Uncommon;
     private const TargetType CustomTarget = TargetType.None;
 
+    public override bool GainsBlock => true;
+
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
         CardKeyword.Ethereal

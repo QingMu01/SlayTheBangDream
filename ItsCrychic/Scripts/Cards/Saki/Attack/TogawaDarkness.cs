@@ -2,10 +2,8 @@ using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
-using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using MegaCrit.Sts2.Core.Models;
 using STS2RitsuLib.Cards.DynamicVars;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
@@ -20,7 +18,11 @@ public class TogawaDarkness() : AbstractSakikoCard(CustomCost, CustomType, Custo
     protected override IEnumerable<DynamicVar> CardVars =>
     [
         ModCardVars.Int("GoldReq", 15),
-        ComputedDynamicVarHelper.CreateDamageVar("CalcDamage", 9m, CalculateDamage)
+        ComputedDynamicVarHelper.CreateDamageVar("CalcDamage", 9m,
+            ctx => ctx.IsInCombat() && ctx.ActiveCard.DynamicVars.TryGetValue("GoldReq", out var goldReq)
+                ? ctx.BaseValue + Math.Round(ctx.ActiveCard.Owner.Gold / goldReq.BaseValue)
+                : ctx.BaseValue
+        )
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
@@ -37,15 +39,5 @@ public class TogawaDarkness() : AbstractSakikoCard(CustomCost, CustomType, Custo
     protected override void OnUpgrade()
     {
         DynamicVars["GoldReq"].UpgradeValueBy(-5);
-    }
-
-    private static decimal CalculateDamage(CardModel? card, Creature? target)
-    {
-        if (card is { IsMutable: true })
-        {
-            return 9m + Math.Round(card.Owner.Gold / card.DynamicVars["GoldReq"].BaseValue);
-        }
-
-        return 9m;
     }
 }

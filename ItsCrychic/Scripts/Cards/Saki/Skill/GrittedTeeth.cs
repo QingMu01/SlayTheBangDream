@@ -31,13 +31,14 @@ public class GrittedTeeth() : AbstractSakikoCard(CustomCost, CustomType, CustomR
     protected override IEnumerable<DynamicVar> CardVars =>
     [
         QuickVar.Block.Create(7),
-        QuickVar.LingeredEnergy.Create(2)
+        QuickVar.LingeredResource.Create(2)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
         await CreatureCmd.GainBlock(Owner.Creature, DynamicVars.Block, play);
-        await SecondaryResourceCmd.Gain(Owner, BangDreamConst.LingeredResource, DynamicVars["LingeredEnergy"].IntValue,
+        await SecondaryResourceCmd.Gain(Owner, BangDreamConst.LingeredResource,
+            QuickVar.LingeredResource.GetVar(this).IntValue,
             this);
     }
 
@@ -56,6 +57,6 @@ public class GrittedTeeth() : AbstractSakikoCard(CustomCost, CustomType, CustomR
     protected override void OnUpgrade()
     {
         DynamicVars.Block.UpgradeValueBy(2m);
-        DynamicVars["LingeredEnergy"].UpgradeValueBy(1m);
+        QuickVar.LingeredResource.GetVar(this).UpgradeValueBy(1m);
     }
 }

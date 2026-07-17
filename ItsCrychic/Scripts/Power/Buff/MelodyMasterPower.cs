@@ -1,40 +1,23 @@
-using BangDreamLib.Scripts.Interfaces.CardAugment;
+using BangDreamLib.Scripts.Commands;
 using BangDreamLib.Scripts.Interfaces.GameHook;
 using BangDreamLib.Scripts.Powers;
-using MegaCrit.Sts2.Core.Entities.Cards;
+using BangDreamLib.Scripts.Utils.Infos;
 using MegaCrit.Sts2.Core.Entities.Powers;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models;
 
 namespace ItsCrychic.Scripts.Power.Buff;
 
-public class MelodyMasterPower : BandPowerModel, IPerformAreaHook
+public class MelodyMasterPower : BandPowerModel, IPerformHookListener
 {
     public override PowerType Type => PowerType.Buff;
 
-    public override PowerStackType StackType => PowerStackType.Single;
+    public override PowerStackType StackType => PowerStackType.Counter;
 
-    private readonly List<CardModel> _applySlyCards = [];
-    
-    public Task OnCardLeavePerformArea(CardModel cardModel)
+    public async Task OnCardPerform(PlayerChoiceContext choiceContext, PerformContext ctx, CardModel cardModel)
     {
-        if (cardModel is not IPerformCard && cardModel.Owner == Owner.Player)
-        {
-            Flash();
-            cardModel.AddKeyword(CardKeyword.Sly);
-            _applySlyCards.Add(cardModel);
-        }
-
-        return Task.CompletedTask;
-    }
-
-    public override Task AfterCardPlayedLate(PlayerChoiceContext choiceContext, CardPlay play)
-    {
-        if (_applySlyCards.Contains(play.Card))
-        {
-            _applySlyCards.Remove(play.Card);
-        }
-
-        return Task.CompletedTask;
+        if (cardModel.Owner != Owner.Player) return;
+        Flash();
+        await MusicNoteCmd.FromPower(this, Amount);
     }
 }

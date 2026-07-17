@@ -2,10 +2,8 @@ using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
-using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using MegaCrit.Sts2.Core.Models;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
@@ -23,38 +21,32 @@ public class FinishTimes() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        ComputedDynamicVarHelper.CreateDamageVar("BaseDamage", 4m, CalculateDamage),
-        QuickVar.Repeat.Create(4)
+        ComputedDynamicVarHelper.CreateDamageVar("CalcDamage", 7m, ctx =>
+        {
+            if (ctx.IsInCombat())
+            {
+                var performanceCards = BangDreamConst.PerformPile.GetPile(ctx.ActiveCard.Owner).Cards.ToList();
+                if (performanceCards.GroupBy(card => card.Type).Any(group => group.Count() >= 3))
+                {
+                    var multiplier = ctx.ActiveCard.IsUpgraded ? 2m : 1.5m;
+                    return Math.Ceiling(ctx.BaseValue * multiplier);
+                }
+            }
+
+            return ctx.BaseValue;
+        }),
+        QuickVar.Repeat.Create(3)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
         ArgumentNullException.ThrowIfNull(play.Target);
 
-        await DamageCmd.Attack(DynamicVars.ComputedValue("BaseDamage"))
+        await DamageCmd.Attack(DynamicVars.ComputedValue("CalcDamage"))
             .FromCard(this, play)
             .WithHitCount(DynamicVars.Repeat.IntValue)
             .Targeting(play.Target)
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
-    }
-
-    private static decimal CalculateDamage(CardModel? cardModel, Creature? target)
-    {
-        if (cardModel != null)
-        {
-            var performanceCards = BangDreamTools.GetPile(BangDreamConst.PerformPile, cardModel.Owner).Cards.ToList();
-            var card = performanceCards.FirstOrDefault();
-            if (card != null)
-            {
-                if (performanceCards.All(c => c.Type == card.Type))
-                {
-                    var multiplier = cardModel.IsUpgraded ? 2m : 1.5m;
-                    return 4m * multiplier;
-                }
-            }
-        }
-
-        return 4m;
     }
 }

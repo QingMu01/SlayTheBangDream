@@ -29,13 +29,16 @@ public class InspirationBurst() : AbstractSakikoCard(CustomCost, CustomType, Cus
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
         ArgumentNullException.ThrowIfNull(CombatState);
-        var performanceCards = BangDreamTools.GetPile(BangDreamConst.PerformPile, Owner).Cards.ToList();
-        foreach (var cardModel in performanceCards)
+
+        var performCards = BangDreamTools.GetPile(BangDreamConst.PerformPile, Owner).Cards.OfType<MelodyFragments>()
+            .ToList();
+        var manager = Owner.AttachedData().PerformManager;
+        foreach (var cardModel in performCards)
         {
-            if (cardModel is MelodyFragments otherCard && cardModel != this)
-            {
-                await otherCard.OnStartPerform(choiceContext);
-            }
+            await manager.PerformCard(cardModel);
+            await CardPileCmd.Add(cardModel, PileType.Play);
+            await Cmd.CustomScaledWait(0.2f, 0.4f);
+            await CardPileCmd.Add(cardModel, PileType.Exhaust);
         }
 
         for (var i = 0; i < DynamicVars.Cards.IntValue; i++)

@@ -1,31 +1,37 @@
 using BangDreamLib.Scripts.Extensions;
-using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
-using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using MegaCrit.Sts2.Core.Models;
-using MegaCrit.Sts2.Core.ValueProps;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
 public class KamisamaBaka() : AbstractSakikoMusicCard(CardRarity.Uncommon, TargetType.None)
 {
-    protected override IEnumerable<CardKeyword> CardKeywords => [BangDreamConst.Perform];
+    protected override IEnumerable<IHoverTip> CardHoverTips =>
+    [
+        HoverTipFactory.Static(StaticHoverTip.Block)
+    ];
 
     protected override IEnumerable<DynamicVar> CardVars => [QuickVar.Damage.Create(10)];
 
-    public override async Task AfterBlockGained(Creature target, decimal amount, ValueProp props, CardModel? cardSource)
+    public override async Task OnPerform(PlayerChoiceContext choiceContext)
     {
-        if (Handle == null || CombatState == null || !CombatState.HittableEnemies.Contains(target) || target.Block <= 0)
+        ArgumentNullException.ThrowIfNull(CombatState);
+        var candidates = CombatState.HittableEnemies.ToList();
+        var blocked = candidates.Where(enemy => enemy.Block > 0).ToList();
+        var target = Owner.RunState.Rng.CombatTargets.NextItem(blocked.Count > 0 ? blocked : candidates);
+        if (target != null)
         {
-            return;
-        }
+            await CreatureCmd.LoseBlock(choiceContext, target, target.Block, Owner.Creature);
 
-        await CreatureCmd.LoseBlock(target, target.Block);
-        await CreatureCmd.Damage(new BlockingPlayerChoiceContext(), target,
-            new DamageVar(DynamicVars.Damage.BaseValue, ValueProp.Unpowered), this, null);
+            await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
+                .FromCard(this, null)
+                .Targeting(target)
+                .WithHitFx("vfx/vfx_attack_slash")
+                .Execute(choiceContext);
+        }
     }
 
     protected override void OnUpgrade()

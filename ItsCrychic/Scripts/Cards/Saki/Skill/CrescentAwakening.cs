@@ -1,6 +1,8 @@
 using BangDreamLib.Scripts.Commands;
 using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Interfaces.GameHook;
 using BangDreamLib.Scripts.Utils;
+using BangDreamLib.Scripts.Utils.Infos;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
@@ -9,12 +11,13 @@ using MegaCrit.Sts2.Core.Models;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
-public class CrescentAwakening() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget)
+public class CrescentAwakening() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget), IPerformHookListener
 {
     private const int CustomCost = 0;
     private const CardType CustomType = CardType.Skill;
     private const CardRarity CustomRarity = CardRarity.Common;
     private const TargetType CustomTarget = TargetType.None;
+    private int _performCount;
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
@@ -24,7 +27,7 @@ public class CrescentAwakening() : AbstractSakikoCard(CustomCost, CustomType, Cu
     protected override IEnumerable<DynamicVar> CardVars =>
     [
         QuickVar.Repeat.Create(4),
-        QuickVar.Cards.Create(10)
+        QuickVar.Cards.Create(3)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
@@ -32,17 +35,25 @@ public class CrescentAwakening() : AbstractSakikoCard(CustomCost, CustomType, Cu
         await MusicNoteCmd.FromCard(this, DynamicVars.Repeat.IntValue);
     }
 
-    public override async Task AfterCardDrawn(PlayerChoiceContext choiceContext, CardModel card, bool fromHandDraw)
+    public async Task OnCardPerform(PlayerChoiceContext choiceContext, PerformContext ctx, CardModel cardModel)
     {
-        if (CombatState != null && Pile != null && card.Owner == Owner)
+        if (cardModel.Owner != Owner || CombatState == null) return;
+
+        _performCount++;
+        if (_performCount >= DynamicVars.Cards.IntValue)
         {
-            DynamicVars.Cards.BaseValue--;
-            if (DynamicVars.Cards.BaseValue <= 0)
+            _performCount = 0;
+            if (Pile?.Type != PileType.Hand)
             {
-                DynamicVars.Cards.BaseValue = 10;
-                await CardCmd.AutoPlay(choiceContext, this, null);
+                await CardPileCmd.Add(this, PileType.Hand);
             }
         }
+    }
+
+    public override Task AfterCardEnteredCombat(CardModel card)
+    {
+        _performCount = 0;
+        return Task.CompletedTask;
     }
 
     protected override void OnUpgrade()

@@ -21,6 +21,8 @@ public class MelodyFragments() : MusicCardModel(CustomCost, CustomRarity, Custom
     private const CardRarity CustomRarity = CardRarity.Token;
     private const TargetType CustomTarget = TargetType.None;
 
+    public override bool IsInstant => true;
+
     public override CardPoolModel VisualCardPool => ModelDb.CardPool<SakikoMusicalCardPool>();
 
     protected override CardAssetProfile CardAssetProfile => CrychicConst.DefaultCardAssetProfile(this);
@@ -28,9 +30,7 @@ public class MelodyFragments() : MusicCardModel(CustomCost, CustomRarity, Custom
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
         CardKeyword.Exhaust,
-        BangDreamConst.MusicNote,
-        BangDreamConst.Perform,
-        BangDreamConst.PerformArea
+        BangDreamConst.MusicNote
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
@@ -38,7 +38,7 @@ public class MelodyFragments() : MusicCardModel(CustomCost, CustomRarity, Custom
         QuickVar.Repeat.Create(4)
     ];
 
-    public override async Task OnStartPerform(PlayerChoiceContext choiceContext)
+    public override async Task OnPerform(PlayerChoiceContext choiceContext)
     {
         await MusicNoteCmd.FromCard(this, DynamicVars.Repeat.IntValue);
     }

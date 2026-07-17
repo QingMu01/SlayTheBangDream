@@ -11,7 +11,7 @@ public class SakikoLingeredEnergyCounterPatch : IPatchMethod
 
     public static ModPatchTarget[] GetTargets()
     {
-        return [new ModPatchTarget(typeof(NEnergyCounter), nameof(NEnergyCounter._Ready))];
+        return [new ModPatchTarget(typeof(NEnergyCounter), nameof(NEnergyCounter._EnterTree))];
     }
 
     public static void Postfix(NEnergyCounter __instance, Player ____player)

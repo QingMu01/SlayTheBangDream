@@ -1,4 +1,6 @@
 using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Utils;
+using ItsCrychic.Scripts.Power.Buff;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
@@ -15,10 +17,15 @@ public class Desuwa() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity,
     private const CardRarity CustomRarity = CardRarity.Uncommon;
     private const TargetType CustomTarget = TargetType.AnyEnemy;
 
+    protected override IEnumerable<CardKeyword> CardKeywords =>
+    [
+        BangDreamConst.Lingered
+    ];
+
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Damage.Create(3),
-        QuickVar.Cards.Create(1)
+        QuickVar.Damage.Create(2),
+        QuickVar.LingeredResource.Create(1)
     ];
 
     public override async Task AfterCardPlayedLate(PlayerChoiceContext choiceContext, CardPlay play)
@@ -29,7 +36,7 @@ public class Desuwa() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity,
             if (cardPileAddResult.success)
             {
                 var locString = new LocString("cards", "ITS_CRYCHIC_CARD_DESUWA.verbal_tic");
-                locString.Add("CardName", play.Card.Title);
+                locString.Add("CardName", play.Card.Title.Replace("+", ""));
                 TalkCmd.Play(locString, Owner.Creature, VfxColor.White, VfxDuration.Short);
             }
         }
@@ -45,7 +52,8 @@ public class Desuwa() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity,
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
 
-        await CardPileCmd.Draw(choiceContext, DynamicVars.Cards.IntValue, Owner);
+        await PowerCmd.Apply<NextTurnLingeredPower>(choiceContext, Owner.Creature,
+            QuickVar.LingeredResource.GetVar(this).IntValue, Owner.Creature, this);
     }
 
     protected override void OnUpgrade()

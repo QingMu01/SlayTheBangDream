@@ -2,14 +2,15 @@ using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using STS2RitsuLib.Cards.DynamicVars;
+using STS2RitsuLib.Combat.AttackHits;
 using STS2RitsuLib.Combat.SecondaryResources;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
-public class Surge() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget)
+public class Surge() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget), IAttackHitHookListener
 {
     private const int CustomCost = 1;
     private const CardType CustomType = CardType.Attack;
@@ -23,24 +24,37 @@ public class Surge() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, 
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        ModCardVars.Int("LingeredEnergy", 3),
-        QuickVar.Damage.Create(10)
+        QuickVar.Damage.Create(10),
+        QuickVar.LingeredResource.Create(3)
     ];
+
+    private readonly List<Creature> _enemiesSnapshot = [];
+
+    public async Task BeforeAttackHit(AttackHitContext context)
+    {
+        if (context.CardSource == this)
+        {
+            await SecondaryResourceCmd.Gain(Owner, BangDreamConst.LingeredResource,
+                QuickVar.LingeredResource.GetVar(this).IntValue, this);
+
+            context.Targets = new List<Creature> { _enemiesSnapshot[context.HitIndex] };
+            context.Damage *= (int)Math.Pow(2, context.HitIndex);
+        }
+    }
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
         ArgumentNullException.ThrowIfNull(CombatState);
 
-        var enemies = CombatState.HittableEnemies.ToList();
-        await SecondaryResourceCmd.Gain(Owner, BangDreamConst.LingeredResource,
-            enemies.Count * DynamicVars["LingeredEnergy"].IntValue, this);
+        _enemiesSnapshot.Clear();
+        _enemiesSnapshot.AddRange(CombatState.HittableEnemies.ToList());
 
-        for (var i = 0; i < enemies.Count; i++)
+        if (_enemiesSnapshot.Count > 0)
         {
-            var damage = DynamicVars.Damage.BaseValue * (decimal)Math.Pow(2, i);
-            await DamageCmd.Attack(damage)
+            await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
                 .FromCard(this, play)
-                .Targeting(enemies[i])
+                .Targeting(_enemiesSnapshot[0])
+                .WithHitCount(_enemiesSnapshot.Count)
                 .WithHitFx("vfx/vfx_attack_slash")
                 .Execute(choiceContext);
         }

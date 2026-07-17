@@ -1,7 +1,7 @@
 ﻿using BangDreamLib.Scripts.Character;
+using BangDreamLib.Scripts.Enums;
 using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
-using BangDreamLib.Scripts.Utils.Enums;
 using ItsCrychic.Scripts.Character.CardPools;
 using ItsCrychic.Scripts.Character.PotionPools;
 using ItsCrychic.Scripts.Character.RelicPools;
@@ -13,7 +13,7 @@ using MegaCrit.Sts2.Core.Models;
 namespace ItsCrychic.Scripts.Character;
 
 public sealed class TogawaSakiko() : BandMemberModel<SakikoStandardCardPool, SakikoRelicPool, SakikoPotionPool>(
-    CrychicMemberEnum.Sakiko.GetMemberColor()), IExtraDeckSupportCharacter
+    CrychicMemberEnum.Sakiko.GetMemberColor()), IExtraDeckSupportCharacter, ILingeredResourceCharacter
 {
     public override int StartingHp => 75;
     public override int StartingGold => 99;
@@ -24,7 +24,7 @@ public sealed class TogawaSakiko() : BandMemberModel<SakikoStandardCardPool, Sak
     public override string MemberNameRoman => CrychicMemberEnum.Sakiko.GetMemberNameRoman();
     public override string MemberClass => BangDreamClass.Keyboard.GetBandClass();
 
-    public override bool AutoGenerateSubsideResource => true;
+    public bool AutoGenerateSubsideResource => true;
 
     public bool ShouldAlwaysShowExtraDeck => true;
     public bool ShouldAlwaysShowExtraPile => true;
@@ -36,11 +36,14 @@ public sealed class TogawaSakiko() : BandMemberModel<SakikoStandardCardPool, Sak
         "res://ItsCrychic/skins/sakiko/sakiko_melody.json"
     ];
 
-    public override string CustomTrailPath =>
-        "res://BangDreamLib/scenes/vfx/card_trail_sakiko.tscn";
-
     public override string SelectPoster =>
         "res://ItsCrychic/images/charui/img_sakiko-togawa_2.webp";
+
+    public override string SelectLogo =>
+        "res://ItsCrychic/images/charui/sakiko/sakiko_logo.png";
+
+    public override string CustomTrailPath =>
+        "res://BangDreamLib/scenes/vfx/card_trail_sakiko.tscn";
 
     public override string CustomIconPath =>
         "res://ItsCrychic/scenes/char_icon/sakiko_icon.tscn";
@@ -52,17 +55,15 @@ public sealed class TogawaSakiko() : BandMemberModel<SakikoStandardCardPool, Sak
         "res://ItsCrychic/images/charui/sakiko/character_icon_saki_outline.png";
 
     public override string CustomCharacterSelectTransitionPath =>
-        "res://ItsCrychic/images/charui/sakiko/sakiko_transition.tres";
+        "res://ItsCrychic/themes/sakiko_transition.tres";
 
     public override CreatureAnimator GenerateAnimator(MegaSprite controller)
     {
         var start = new AnimState("Start");
         var idle = new AnimState("Idle", true);
-        var combat = new AnimState("Combat");
+        var combat = new AnimState("Skill_1");
         var attack = new AnimState("Attack");
         var die = new AnimState("Die");
-        var relax = new AnimState("Relax");
-        var sit = new AnimState("Sit");
 
         start.NextState = idle;
         combat.NextState = idle;
@@ -73,8 +74,6 @@ public sealed class TogawaSakiko() : BandMemberModel<SakikoStandardCardPool, Sak
         animator.AddAnyState("Dead", die);
         animator.AddAnyState("Attack", attack);
         animator.AddAnyState("Cast", combat);
-        animator.AddAnyState("relaxed_loop", relax);
-        animator.AddAnyState("sit", sit);
         return animator;
     }
 }

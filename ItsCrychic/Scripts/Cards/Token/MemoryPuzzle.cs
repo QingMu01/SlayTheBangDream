@@ -32,20 +32,21 @@ public class MemoryPuzzle() : BandCardModel(CustomCost, CustomType, CustomRarity
     protected override IEnumerable<DynamicVar> CardVars =>
     [
         QuickVar.Cards.Create(1),
-        QuickVar.LingeredEnergy.Create(1),
+        QuickVar.LingeredResource.Create(1),
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
         await CardPileCmd.Draw(choiceContext, DynamicVars.Cards.BaseValue, Owner);
 
-        await SecondaryResourceCmd.Gain(Owner, BangDreamConst.LingeredResource, DynamicVars["LingeredEnergy"].IntValue,
+        await SecondaryResourceCmd.Gain(Owner, BangDreamConst.LingeredResource,
+            QuickVar.LingeredResource.GetVar(this).IntValue,
             this);
     }
 
     protected override void OnUpgrade()
     {
         DynamicVars.Cards.UpgradeValueBy(1);
-        DynamicVars["LingeredEnergy"].UpgradeValueBy(1);
+        QuickVar.LingeredResource.GetVar(this).UpgradeValueBy(1);
     }
 }

@@ -1,4 +1,6 @@
+using BangDreamLib.Scripts.Utils;
 using Godot;
+using MegaCrit.Sts2.Core.Helpers;
 using STS2RitsuLib.Combat.SecondaryResources;
 
 namespace ItsCrychic.Scripts.Nodes;
@@ -20,9 +22,9 @@ public partial class SakikoLingeredCounterSpecial : LingeredCounter
         _counterImg = GetNode<Control>("%CounterImg");
         LoadCounterTextures();
 
-        var styleSeed = Player?.RunState.Rng.Seed ?? 3257999;
+        var styleSeed = Player!.RunState.Rng.Seed;
         var useDarkStyle = new Random((int)styleSeed).Next(99) < 50;
-
+        ItsCrychic.Logger.Info($"Seed: {styleSeed} .Use {(useDarkStyle ? DarkStyle : LightStyle)} style.");
         foreach (var node in GetTree().GetNodesInGroup(useDarkStyle ? DarkStyle : LightStyle))
         {
             if (node is TextureRect textureRect)
@@ -30,7 +32,7 @@ public partial class SakikoLingeredCounterSpecial : LingeredCounter
                 textureRect.Visible = true;
             }
         }
-        
+
         foreach (var node in GetTree().GetNodesInGroup(useDarkStyle ? LightStyle : DarkStyle))
         {
             if (node is TextureRect textureRect)
@@ -38,12 +40,8 @@ public partial class SakikoLingeredCounterSpecial : LingeredCounter
                 textureRect.Visible = false;
             }
         }
-    }
 
-    public override void _ExitTree()
-    {
-        _counterTween?.Kill();
-        base._ExitTree();
+        TaskHelper.RunSafely(SecondaryResourceCmd.Reset(Player!, BangDreamConst.LingeredResource));
     }
 
     protected override void OnEnergyChanged(SecondaryResourceChangedEvent changedEvent)
@@ -72,6 +70,7 @@ public partial class SakikoLingeredCounterSpecial : LingeredCounter
 
         var tween = CreateTween();
         _counterTween = tween;
+        _counterTween.BindNode(this);
         tween.TweenMethod(Callable.From<double>(UpdateDisplayedCounter), _displayedCounter, targetCounter,
                 CounterTweenDuration)
             .SetTrans(Tween.TransitionType.Quad)

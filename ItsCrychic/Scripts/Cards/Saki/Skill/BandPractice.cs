@@ -1,44 +1,42 @@
-using BangDreamLib.Scripts.Commands;
-using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Utils;
+using ItsCrychic.Scripts.Cards.Token;
+using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using MegaCrit.Sts2.Core.Localization.DynamicVars;
+using MegaCrit.Sts2.Core.HoverTips;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
 public class BandPractice() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget)
 {
-    private const int CustomCost = 2;
+    private const int CustomCost = 1;
     private const CardType CustomType = CardType.Skill;
     private const CardRarity CustomRarity = CardRarity.Common;
     private const TargetType CustomTarget = TargetType.None;
 
-    protected override IEnumerable<CardKeyword> CardKeywords =>
+    protected override IEnumerable<IHoverTip> CardHoverTips =>
     [
-        BangDreamConst.Music
+        HoverTipFactory.FromCard<MelodyFragments>(IsUpgraded)
     ];
-
-    protected override IEnumerable<DynamicVar> CardVars => [];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        while (BangDreamTools.GetPile(BangDreamConst.ExtraDraw, Owner).Cards.Count > 0)
+        var selectedCards = await CardSelectCmd.FromHand(choiceContext, Owner,
+            CardSelectorPrompt.ToTransform.GetFixedPrefs(1), card => card != this, this);
+        foreach (var selectedCard in selectedCards)
         {
-            var drawnCardsTask = await ExtraPileCmd.Draw(choiceContext, 1, Owner);
-            var drawnCards = drawnCardsTask.ToList();
-            if (drawnCards.Count == 0)
-                break;
-            var drawnCard = drawnCards.First();
-            if (drawnCard is IPerformCard)
+            await CardPileCmd.Add(selectedCard, PileType.Play);
+            var cardPileAddResult = await CardCmd.TransformTo<MelodyFragments>(selectedCard);
+            if (cardPileAddResult is { success: true })
             {
-                break;
+                if (IsUpgraded)
+                {
+                    CardCmd.Upgrade(cardPileAddResult.Value.cardAdded);
+                }
+
+                await Cmd.CustomScaledWait(0.15f, 0.3f);
+                await CardPileCmd.Add(cardPileAddResult.Value.cardAdded, BangDreamConst.ExtraDraw);
             }
         }
-    }
-
-    protected override void OnUpgrade()
-    {
-        EnergyCost.UpgradeBy(-1);
     }
 }

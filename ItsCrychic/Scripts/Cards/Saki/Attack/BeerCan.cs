@@ -17,8 +17,6 @@ public class BeerCan() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity
 
     public int LingeredResourceCost => 4;
 
-    public bool IgnoreSubsideCost => false;
-
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
         BangDreamConst.Lingered
@@ -26,22 +24,23 @@ public class BeerCan() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Damage.Create(12),
-        QuickVar.Energy.Create(1)
+        QuickVar.Energy.Create(1),
+        ComputedDynamicVarHelper.CreateDamageVar("CalcDamage", 12m, ctx =>
+        {
+            if (ctx.IsInCombat())
+            {
+                return ctx.ActiveCombatState.HittableEnemies.Count == 1 ? ctx.BaseValue * 2m : ctx.BaseValue;
+            }
+
+            return ctx.BaseValue;
+        })
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
         ArgumentNullException.ThrowIfNull(CombatState);
 
-        var damage = DynamicVars.Damage.BaseValue;
-        var enemyCount = CombatState.HittableEnemies.Count;
-        if (enemyCount == 1)
-        {
-            damage *= 2;
-        }
-
-        await DamageCmd.Attack(damage)
+        await DamageCmd.Attack(DynamicVars.ComputedValue("CalcDamage"))
             .FromCard(this, play)
             .TargetingAllOpponents(CombatState)
             .WithHitFx("vfx/vfx_attack_slash")
@@ -55,6 +54,6 @@ public class BeerCan() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity
 
     protected override void OnUpgrade()
     {
-        DynamicVars.Damage.UpgradeValueBy(3m);
+        DynamicVars["CalcDamage"].UpgradeValueBy(3m);
     }
 }

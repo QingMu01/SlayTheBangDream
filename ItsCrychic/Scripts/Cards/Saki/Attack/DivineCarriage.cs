@@ -16,6 +16,7 @@ public class DivineCarriage() : AbstractSakikoCard(CustomCost, CustomType, Custo
 
     protected override bool IsPlayable =>
         BangDreamTools.GetPile(BangDreamConst.ExtraDraw, Owner).Cards.Count > Owner.PlayerCombatState!.DrawPile.Cards.Count;
+    
     protected override IEnumerable<DynamicVar> CardVars =>
     [
         QuickVar.Damage.Create(30)

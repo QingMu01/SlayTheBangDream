@@ -1,3 +1,4 @@
+using BangDreamLib.Scripts.Commands;
 using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -24,14 +25,14 @@ public class ParallelPerformance() : AbstractSakikoCard(CustomCost, CustomType, 
         ModCardVars.Int("CapacityIncrease", 2)
     ];
 
-    protected override Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
+    protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
+        await ExtraPileCmd.Draw(choiceContext, 1, Owner);
         Owner.AttachedData().PerformManager.AddCapacity(DynamicVars["CapacityIncrease"].IntValue);
-        return Task.CompletedTask;
     }
 
     protected override void OnUpgrade()
     {
-        DynamicVars["CapacityIncrease"].UpgradeValueBy(1);
+        AddKeyword(CardKeyword.Innate);
     }
 }

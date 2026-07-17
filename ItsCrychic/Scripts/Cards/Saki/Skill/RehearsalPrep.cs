@@ -21,12 +21,13 @@ public class RehearsalPrep() : AbstractSakikoCard(CustomCost, CustomType, Custom
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.LingeredEnergy.Create(6)
+        QuickVar.LingeredResource.Create(6)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        await SecondaryResourceCmd.Gain(Owner, BangDreamConst.LingeredResource, DynamicVars["LingeredEnergy"].IntValue,
+        await SecondaryResourceCmd.Gain(Owner, BangDreamConst.LingeredResource,
+            QuickVar.LingeredResource.GetVar(this).IntValue,
             this);
     }
 

@@ -22,10 +22,11 @@ public class OblivionForm() : AbstractSakikoCard(CustomCost, CustomType, CustomR
     {
         await PowerCmd.Apply<OblivionFormPower>(choiceContext, Owner.Creature,
             DynamicVars["Multiplier"].IntValue, Owner.Creature, this);
+
     }
 
     protected override void OnUpgrade()
     {
-        DynamicVars["Multiplier"].UpgradeValueBy(1);
+        RemoveKeyword(CardKeyword.Ethereal);
     }
 }

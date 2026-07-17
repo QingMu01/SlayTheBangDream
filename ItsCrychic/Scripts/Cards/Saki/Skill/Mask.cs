@@ -1,10 +1,12 @@
 using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
-using ItsCrychic.Scripts.Power.Buff;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
+using MegaCrit.Sts2.Core.Models.Powers;
+using STS2RitsuLib.Combat.SecondaryResources;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
@@ -22,6 +24,11 @@ public class Mask() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, C
         BangDreamConst.Lingered
     ];
 
+    protected override IEnumerable<IHoverTip> CardHoverTips =>
+    [
+        HoverTipFactory.FromPower<VigorPower>()
+    ];
+
     protected override IEnumerable<DynamicVar> CardVars =>
     [
         QuickVar.Block.Create(8)
@@ -30,11 +37,15 @@ public class Mask() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, C
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
         await CreatureCmd.GainBlock(Owner.Creature, DynamicVars.Block, play);
-        await PowerCmd.Apply<MaskPower>(choiceContext, Owner.Creature, 1m, Owner.Creature, this);
+        var lingeredResource = SecondaryResourceCmd.Get(Owner, BangDreamConst.LingeredResource);
+        if (lingeredResource > 0)
+        {
+            await PowerCmd.Apply<VigorPower>(choiceContext, Owner.Creature, lingeredResource, Owner.Creature, this);
+        }
     }
 
     protected override void OnUpgrade()
     {
-        AddKeyword(CardKeyword.Innate);
+        DynamicVars.Block.UpgradeValueBy(4m);
     }
 }

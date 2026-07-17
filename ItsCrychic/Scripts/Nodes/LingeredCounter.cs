@@ -1,4 +1,3 @@
-using BangDreamLib.Scripts.Utils;
 using Godot;
 using MegaCrit.Sts2.Core.Entities.Players;
 using STS2RitsuLib.Combat.SecondaryResources;
@@ -23,7 +22,6 @@ public abstract partial class LingeredCounter : Control
         {
             Player = player;
             SecondaryResourceStateStore.Get(Player).Changed += OnEnergyChanged;
-            _ = SecondaryResourceCmd.Reset(Player, BangDreamConst.LingeredResource);
         }
         else
         {
