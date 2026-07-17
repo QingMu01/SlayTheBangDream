@@ -9,7 +9,7 @@
   "dependencies": [
     {
       "id":"STS2-RitsuLib",
-      "min_version":"0.4.47"
+      "min_version":"0.4.58"
     },
     {
       "id":"BangDreamLib",
@@ -17,5 +17,5 @@
     }
   ],
   "affects_gameplay": true,
-  "min_game_version": "0.108.0"
+  "min_game_version": "0.109.0"
 }

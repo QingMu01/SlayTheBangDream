@@ -252,8 +252,7 @@ public class PerformManager : SingletonModel, ISecondaryResourceHookListener
             return context.SlotIndex;
         }
 
-        if (context.Strategy == PerformEnqueueStrategy.Fixed &&
-            context.AspirationSlot >= 1 && context.AspirationSlot <= Capacity)
+        if (context is { Strategy: PerformEnqueueStrategy.Fixed, AspirationSlot: >= 1 } && context.AspirationSlot <= Capacity)
         {
             return context.AspirationSlot;
         }

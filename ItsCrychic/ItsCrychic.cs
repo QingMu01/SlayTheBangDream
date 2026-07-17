@@ -1,6 +1,6 @@
 using System.Reflection;
+using BangDreamLib.Scripts.Enums;
 using BangDreamLib.Scripts.Extensions;
-using BangDreamLib.Scripts.Utils.Enums;
 using ItsCrychic.Scripts.Character;
 using ItsCrychic.Scripts.Patches;
 using ItsCrychic.Scripts.Relics.Sakiko;
