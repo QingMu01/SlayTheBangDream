@@ -4,7 +4,6 @@ using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.ValueProps;
-using STS2RitsuLib.Cards.DynamicVars;
 using STS2RitsuLib.Combat.SecondaryResources;
 
 namespace BangDreamLib.Scripts.Extensions;
@@ -86,7 +85,7 @@ public static class DynamicVarsExtensions
 
     public static decimal ComputedValue(this DynamicVarSet varSet, string name, Creature? target)
     {
-        return Var<ComputedDynamicVar>(varSet, name, out var computedVar)
+        return Var<BangDreamComputedVar>(varSet, name, out var computedVar)
             ? computedVar.Calculate(target)
             : throw new KeyNotFoundException($"Compute dynamic var {name} not found");
     }

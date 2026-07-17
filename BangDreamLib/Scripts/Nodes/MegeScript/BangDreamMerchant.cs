@@ -22,7 +22,7 @@ public partial class BangDreamMerchant : NMerchantCharacter
         }
     }
 
-    public static NMerchantCharacter Create(Player player)
+    public static NMerchantCharacter? Create(Player player)
     {
         if (player.Character is ISkinSupportCharacter)
         {
@@ -41,6 +41,6 @@ public partial class BangDreamMerchant : NMerchantCharacter
             }
         }
 
-        throw new Exception("skin character merchant scene not found!");
+        return null;
     }
 }

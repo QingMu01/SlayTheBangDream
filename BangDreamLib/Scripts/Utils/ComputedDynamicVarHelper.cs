@@ -1,97 +1,53 @@
 using MegaCrit.Sts2.Core.Entities.Cards;
-using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Hooks;
-using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.ValueProps;
-using STS2RitsuLib.Cards.DynamicVars;
 
 namespace BangDreamLib.Scripts.Utils;
 
 public static class ComputedDynamicVarHelper
 {
-    public static ComputedDynamicVar CreateBaseVar(string name, decimal baseValue,
-        Func<CardModel?, Creature?, decimal> calc)
+    public static BangDreamComputedVar CreateBaseVar(string name, decimal baseValue,
+        Func<BangDreamComputedVar.ComputedVarsContext, decimal> calc)
     {
-        return ModCardVars.Computed(name, baseValue,
-            calc,
-            (card, _, target, _) => calc(card, target));
+        return new BangDreamComputedVar(name, baseValue, calc);
     }
 
-    public static ComputedDynamicVar CreateBaseVar(string name, decimal baseValue,
-        Func<CardModel?, decimal> calc)
+    public static BangDreamComputedVar CreateDamageVar(string name, decimal baseValue,
+        Func<BangDreamComputedVar.ComputedVarsContext, decimal> calc, ValueProp prop = ValueProp.Move)
     {
-        return ModCardVars.Computed(name, baseValue,
-            (card, _) => calc(card),
-            (card, _, _, _) => calc(card));
-    }
-
-    public static ComputedDynamicVar CreateDamageVar(string name, decimal baseValue,
-        Func<CardModel?, Creature?, decimal> calc, ValueProp prop = ValueProp.Move)
-    {
-        return ModCardVars.Computed(name, baseValue,
-            calc,
-            (card, mode, target, runHooks) => ApplyHooks(card, mode, target, runHooks, prop, true, calc)
+        return new BangDreamComputedVar(name, baseValue, calc,
+            (ctx, mode, runHooks) => ApplyHooks(ctx, mode, runHooks, prop, true, calc)
         );
     }
 
-    public static ComputedDynamicVar CreateDamageVar(string name, decimal baseValue,
-        Func<CardModel?, decimal> calc, ValueProp prop = ValueProp.Move)
+    public static BangDreamComputedVar CreateBlockVar(string name, decimal baseValue,
+        Func<BangDreamComputedVar.ComputedVarsContext, decimal> calc, ValueProp prop = ValueProp.Move)
     {
-        return ModCardVars.Computed(name, baseValue,
-            calc,
-            (card, mode, target, runHooks) => ApplyHooks(card, mode, target, runHooks, prop, true, calc)
+        return new BangDreamComputedVar(name, baseValue, calc,
+            (ctx, mode, runHooks) => ApplyHooks(ctx, mode, runHooks, prop, false, calc)
         );
     }
 
-    public static ComputedDynamicVar CreateBlockVar(string name, decimal baseValue,
-        Func<CardModel?, Creature?, decimal> calc, ValueProp prop = ValueProp.Move)
+    private static decimal ApplyHooks(BangDreamComputedVar.ComputedVarsContext ctx, CardPreviewMode mode,
+        bool runHooks, ValueProp prop, bool isDamage,
+        Func<BangDreamComputedVar.ComputedVarsContext, decimal> calc)
     {
-        return ModCardVars.Computed(name, baseValue,
-            calc,
-            (card, mode, target, runHooks) => ApplyHooks(card, mode, target, runHooks, prop, false, calc)
-        );
-    }
-
-    public static ComputedDynamicVar CreateBlockVar(string name, decimal baseValue,
-        Func<CardModel?, decimal> calc, ValueProp prop = ValueProp.Move)
-    {
-        return ModCardVars.Computed(name, baseValue,
-            calc,
-            (card, mode, target, runHooks) => ApplyHooks(card, mode, target, runHooks, prop, false, calc)
-        );
-    }
-
-    private static decimal ApplyHooks(CardModel? card, CardPreviewMode mode, Creature? target,
-        bool runHooks,
-        ValueProp prop, bool isDamage, Func<CardModel?, Creature?, decimal> calc)
-    {
-        var baseValue = calc(card, target);
-
-        if (card is { RunState: not null, CombatState: not null } && runHooks)
+        if (ctx.IsInCombat())
         {
-            return isDamage
-                ? Hook.ModifyDamage(card.RunState, card.CombatState, target, card.Owner.Creature,
-                    baseValue, prop, card, null, ModifyDamageHookType.All, mode, out _)
-                : Hook.ModifyBlock(card.CombatState, card.Owner.Creature, baseValue, prop, card, null, out _);
+            var calcValue = calc(ctx);
+            if (runHooks)
+            {
+                return isDamage
+                    ? Hook.ModifyDamage(ctx.ActiveRunState, ctx.ActiveCombatState, ctx.Target,
+                        ctx.ActiveCard.Owner.Creature, calcValue, prop, ctx.ActiveCard, null,
+                        ModifyDamageHookType.All, mode, out _)
+                    : Hook.ModifyBlock(ctx.ActiveCombatState, ctx.ActiveCard.Owner.Creature, calcValue, prop,
+                        ctx.ActiveCard, null, out _);
+            }
+
+            return calcValue;
         }
 
-        return baseValue;
-    }
-
-    private static decimal ApplyHooks(CardModel? card, CardPreviewMode mode, Creature? target,
-        bool runHooks,
-        ValueProp prop, bool isDamage, Func<CardModel?, decimal> calc)
-    {
-        var baseValue = calc(card);
-
-        if (card is { RunState: not null, CombatState: not null } && runHooks)
-        {
-            return isDamage
-                ? Hook.ModifyDamage(card.RunState, card.CombatState, target, card.Owner.Creature,
-                    baseValue, prop, card, null, ModifyDamageHookType.All, mode, out _)
-                : Hook.ModifyBlock(card.CombatState, card.Owner.Creature, baseValue, prop, card, null, out _);
-        }
-
-        return baseValue;
+        return ctx.BaseValue;
     }
 }
