@@ -13,8 +13,6 @@ bin
 /BangDreamLib/shaders
 /BangDreamLib/themes
 
-CLAUDE.md
-AGENTS.md
 *.sln.DotSettings.user
 
 SpineGodotExtension4.5.1

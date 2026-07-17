@@ -22,14 +22,16 @@ public abstract class MusicCardModel(
         return Task.CompletedTask;
     }
 
-    public virtual (PileType, CardPilePosition) StopPerformanceNextPile()
+    public virtual CardLocation StopPerformanceNextPile()
     {
-        var (moveTo, position) = base.GetResultPileTypeAndPositionForCardPlay();
-        return (moveTo == PileType.Discard ? BangDreamConst.ExtraDraw : moveTo, position);
+        var location = base.GetResultLocationForCardPlay();
+        return location.pileType == PileType.Discard
+            ? new CardLocation(Owner, BangDreamConst.ExtraDraw, CardPilePosition.Bottom)
+            : location;
     }
 
-    protected sealed override (PileType, CardPilePosition) GetResultPileTypeAndPositionForCardPlay()
+    protected sealed override CardLocation GetResultLocationForCardPlay()
     {
-        return (BangDreamConst.PerformPile, CardPilePosition.Bottom);
+        return new CardLocation(Owner, BangDreamConst.PerformPile, CardPilePosition.Bottom);
     }
 }

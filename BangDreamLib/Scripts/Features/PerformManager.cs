@@ -428,15 +428,16 @@ public class PerformManager : SingletonModel, ISecondaryResourceHookListener
         }
     }
 
-    public override (PileType, CardPilePosition) ModifyCardPlayResultPileTypeAndPosition(CardModel card,
-        bool isAutoPlay, ResourceInfo resources, PileType pileType, CardPilePosition position)
+    public override CardLocation ModifyCardPlayResultLocation(CardModel card, bool isAutoPlay, ResourceInfo resources,
+        CardLocation cardLocation)
     {
-        if (card.Owner == Player && card is IPerformCard performanceCard && pileType == PileType.Discard)
+        if (cardLocation.player == Player && card is IPerformCard performanceCard &&
+            cardLocation.pileType == PileType.Discard)
         {
             return performanceCard.StopPerformanceNextPile();
         }
 
-        return base.ModifyCardPlayResultPileTypeAndPosition(card, isAutoPlay, resources, pileType, position);
+        return cardLocation;
     }
 
     public override async Task AfterCardPlayed(PlayerChoiceContext choiceContext, CardPlay play)
@@ -495,28 +496,29 @@ public class PerformManager : SingletonModel, ISecondaryResourceHookListener
 
     private static async Task MoveCardInternal(CardModel cardModel)
     {
-        (PileType, CardPilePosition) nextPile;
+        if (cardModel.IsDupe)
+        {
+            await CardPileCmd.RemoveFromCombat(cardModel);
+            return;
+        }
+
+        CardLocation location;
         if (cardModel is IPerformCard performanceCard)
         {
-            nextPile = performanceCard.StopPerformanceNextPile();
+            location = performanceCard.StopPerformanceNextPile();
         }
         else
         {
-            nextPile = (PileType.Discard, CardPilePosition.Bottom);
+            location = new CardLocation(cardModel.Owner, PileType.Discard, CardPilePosition.Bottom);
         }
 
-        if (cardModel.IsDupe)
-        {
-            nextPile = (PileType.None, CardPilePosition.Bottom);
-        }
-
-        if (nextPile.Item1 == PileType.None)
+        if (location.pileType == PileType.None)
         {
             await CardPileCmd.RemoveFromCombat(cardModel);
         }
         else
         {
-            await CardPileCmd.Add(cardModel, nextPile.Item1, nextPile.Item2);
+            await CardPileCmd.Add(cardModel, location.pileType, location.position);
         }
     }
 

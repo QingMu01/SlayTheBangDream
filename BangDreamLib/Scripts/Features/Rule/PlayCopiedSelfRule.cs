@@ -28,7 +28,7 @@ public class CopySelfAndPlayCardRule() : HookedSingletonModel(HookType.Combat)
 
         if (shouldCopySelfAndPlay)
         {
-            var cardModel = play.Card.CreateDupe();
+            var cardModel = play.Card.CreateDupe(play.Player);
             if (play.Target == null)
             {
                 await CardCmd.AutoPlay(choiceContext, cardModel, null);

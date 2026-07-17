@@ -24,7 +24,7 @@ public interface IPerformCard
     /// <summary>
     /// 决定演奏中的牌被丢弃时候的牌堆
     /// </summary>
-    (PileType, CardPilePosition) StopPerformanceNextPile();
+    CardLocation StopPerformanceNextPile();
 
     Task OnPerform(PlayerChoiceContext choiceContext);
 }
