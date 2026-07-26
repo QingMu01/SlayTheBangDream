@@ -1,3 +1,4 @@
+using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
 using ItsCrychic.Scripts.Power.Buff;
 using MegaCrit.Sts2.Core.Commands;
@@ -16,23 +17,22 @@ public class Enfeoffment() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        CardKeyword.Innate,
         BangDreamConst.Music
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        new PowerVar<EnfeoffmentPower>(1)
+        QuickVar.Buff.Create(1)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
         await PowerCmd.Apply<EnfeoffmentPower>(choiceContext, Owner.Creature,
-            DynamicVars["EnfeoffmentPower"].IntValue, Owner.Creature, this);
+            QuickVar.Buff.GetVar(this).IntValue, Owner.Creature, this);
     }
 
     protected override void OnUpgrade()
     {
-        AddKeyword(CardKeyword.Retain);
+        AddKeyword(CardKeyword.Innate);
     }
 }

@@ -1,3 +1,4 @@
+using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
 using ItsCrychic.Scripts.Power.Buff;
 using MegaCrit.Sts2.Core.Commands;
@@ -22,13 +23,13 @@ public class DivineAscent() : AbstractSakikoCard(CustomCost, CustomType, CustomR
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        new PowerVar<DivineAscentPower>(1)
+        QuickVar.Buff.Create(1)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
         await PowerCmd.Apply<DivineAscentPower>(choiceContext, Owner.Creature,
-            DynamicVars["DivineAscentPower"].IntValue, Owner.Creature, this);
+            QuickVar.Buff.GetVar(this).IntValue, Owner.Creature, this);
     }
 
     protected override void OnUpgrade()

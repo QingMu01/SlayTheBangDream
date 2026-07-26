@@ -9,8 +9,7 @@ namespace BangDreamLib.Scripts.Character;
 
 public abstract class BandMemberModel<TCardPoolModel, TRelicPoolModel, TPotionPoolModel>(Color mainColor)
     : ModCharacterTemplate<TCardPoolModel, TRelicPoolModel, TPotionPoolModel>,
-        IPerformableCharacter, ISkinSupportCharacter, IGroupableCharacter,
-        IBangDreamMateData
+        ISkinSupportCharacter, IGroupableCharacter, IBangDreamMateData
     where TCardPoolModel : CardPoolModel
     where TRelicPoolModel : RelicPoolModel
     where TPotionPoolModel : PotionPoolModel
@@ -43,8 +42,6 @@ public abstract class BandMemberModel<TCardPoolModel, TRelicPoolModel, TPotionPo
     public abstract override string CustomIconOutlineTexturePath { get; }
 
     public abstract List<string> CharacterSkinList { get; }
-
-    public abstract int GetDefaultCapacity { get; }
 
     public override List<string> GetArchitectAttackVfx()
     {

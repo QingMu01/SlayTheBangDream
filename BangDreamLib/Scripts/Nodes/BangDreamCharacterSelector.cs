@@ -1,10 +1,10 @@
+using BangDreamLib.Scripts.Enums;
 using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
 using BangDreamLib.Scripts.Nodes.MegeScript;
 using BangDreamLib.Scripts.Nodes.SubNode;
-using BangDreamLib.Scripts.Utils.Enums;
+using BangDreamLib.Scripts.Utils;
 using Godot;
-using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Models;
@@ -83,6 +83,9 @@ public partial class BangDreamCharacterSelector : Control
 
         _ascensionPanel.Connect(BangDreamAscensionPanel.SignalName.AscensionLevelChanged,
             Callable.From(OnAscensionPanelLevelChanged));
+
+        _skinSelector.Connect(BangDreamSkinSelector.SignalName.SkinSelected,
+            Callable.From((Action<string>)OnSelectedSkin));
     }
 
     public void SelectCharacter(CharacterModel character)
@@ -130,7 +133,7 @@ public partial class BangDreamCharacterSelector : Control
             var poster = mateData.SelectPoster;
             if (_characterPoster != null)
             {
-                _characterPoster.Texture = poster != null ? PreloadManager.Cache.GetTexture2D(poster) : null;
+                _characterPoster.Texture = poster != null ? BangDreamPreloadManager.GetTexture2D(poster) : null;
                 _characterPoster.Modulate = new Color(1, 1, 1, 0);
                 _characterPoster.Scale = new Vector2(1.25f, 1.25f);
             }
@@ -150,13 +153,7 @@ public partial class BangDreamCharacterSelector : Control
         if (character.StartingRelics.Count > 0)
         {
             var relic = character.StartingRelics[0];
-            if (_relicIcon != null)
-            {
-                _relicIcon.Texture = relic.Icon;
-            }
-
-            _relicDescription?.SetTextAutoSize(
-                $"[b]{relic.Title.GetFormattedText()}[/b]\n{relic.DynamicDescription.GetFormattedText()}");
+            SetRelicShow(relic);
         }
 
         // 设置背景着色器颜色
@@ -244,6 +241,17 @@ public partial class BangDreamCharacterSelector : Control
         }
     }
 
+    private void SetRelicShow(RelicModel relic)
+    {
+        if (_relicIcon != null)
+        {
+            _relicIcon.Texture = relic.Icon;
+        }
+
+        _relicDescription?.SetTextAutoSize(
+            $"[b]{relic.Title.GetFormattedText()}[/b]\n{relic.DynamicDescription.GetFormattedText()}");
+    }
+
     private void OnAscensionPanelLevelChanged()
     {
         if (Lobby == null)
@@ -254,5 +262,14 @@ public partial class BangDreamCharacterSelector : Control
             return;
 
         Lobby.SyncAscensionChange(_ascensionPanel.Ascension);
+    }
+
+    private void OnSelectedSkin(string skinPath)
+    {
+        var startingRelic = SkinManager.GetSkinInfo(skinPath)?.GetStartingRelics().FirstOrDefault();
+        if (startingRelic != null)
+        {
+            SetRelicShow(startingRelic);
+        }
     }
 }

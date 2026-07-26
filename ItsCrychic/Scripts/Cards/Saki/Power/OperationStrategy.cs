@@ -1,3 +1,4 @@
+using BangDreamLib.Scripts.Extensions;
 using ItsCrychic.Scripts.Power.Buff;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -15,13 +16,13 @@ public class OperationStrategy() : AbstractSakikoCard(CustomCost, CustomType, Cu
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        new PowerVar<OperationStrategyPower>(1)
+        QuickVar.Buff.Create(1)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
         await PowerCmd.Apply<OperationStrategyPower>(choiceContext, Owner.Creature,
-            DynamicVars["OperationStrategyPower"].IntValue, Owner.Creature, this);
+            QuickVar.Buff.GetVar(this).IntValue, Owner.Creature, this);
     }
 
     protected override void OnUpgrade()

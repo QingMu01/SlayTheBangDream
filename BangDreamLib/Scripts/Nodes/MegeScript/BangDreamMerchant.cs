@@ -1,6 +1,5 @@
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
 using BangDreamLib.Scripts.Utils;
-using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Nodes.Screens.Shops;
 
@@ -31,7 +30,7 @@ public partial class BangDreamMerchant : NMerchantCharacter
             var name = skinInfo?.MultiplayerVisual.MerchantAnimName;
             if (path != null)
             {
-                var merchant = PreloadManager.Cache.GetScene(path).Instantiate<BangDreamMerchant>();
+                var merchant = BangDreamPreloadManager.GetScene(path).Instantiate<BangDreamMerchant>();
                 if (!string.IsNullOrEmpty(name))
                 {
                     merchant._animName = name;

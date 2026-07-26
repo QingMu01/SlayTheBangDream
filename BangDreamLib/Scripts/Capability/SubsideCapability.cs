@@ -1,5 +1,6 @@
 using BangDreamLib.Scripts.Features.Rule;
 using BangDreamLib.Scripts.Utils;
+using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
@@ -12,7 +13,7 @@ namespace BangDreamLib.Scripts.Capability;
 
 [RegisterModelCapability]
 public class SubsideCapability : CardCapability, ICardDescriptionContributor, ICardHoverTipContributor,
-    ICardGlowContributor
+    ICardGlowContributor, ICardOverlayContributor
 {
     private const string SubsidePostfix = ".subside";
 
@@ -23,9 +24,25 @@ public class SubsideCapability : CardCapability, ICardDescriptionContributor, IC
 
     public IEnumerable<CardDescriptionFragment> GetDescriptionFragments(CardDescriptionContext context)
     {
-        var cardDescription = new LocString("cards", context.Card.Id.Entry + SubsidePostfix);
-        context.Card.DynamicVars.AddTo(cardDescription);
-        Text.Add(new StringVar("desc", cardDescription.GetFormattedText()));
+        var subsideDescription = new LocString("cards", context.Card.Id.Entry + SubsidePostfix);
+
+        context.Card.DynamicVars.AddTo(subsideDescription);
+
+        subsideDescription.Add(new IfUpgradedVar(context.IsUpgradePreview ? UpgradeDisplay.UpgradePreview :
+            context.Card.IsUpgraded ? UpgradeDisplay.Upgraded : UpgradeDisplay.Normal));
+
+        var pileType = context.Card.Pile?.Type;
+        if (pileType != null)
+        {
+            subsideDescription.Add("OnTable", pileType is PileType.Hand or PileType.Play);
+        }
+        else
+        {
+            subsideDescription.Add("OnTable", false);
+        }
+
+
+        Text.Add(new StringVar("Description", subsideDescription.GetFormattedText()));
         yield return new CardDescriptionFragment(Text);
     }
 
@@ -44,5 +61,11 @@ public class SubsideCapability : CardCapability, ICardDescriptionContributor, IC
     public bool ShouldGlowGold(CardModel card)
     {
         return LingeredResourcesRule.IsSufficient(card);
+    }
+
+    //TODO 小人冒头
+    public IEnumerable<CardOverlayContribution> GetCardOverlays(CardOverlayContext context)
+    {
+        return [];
     }
 }

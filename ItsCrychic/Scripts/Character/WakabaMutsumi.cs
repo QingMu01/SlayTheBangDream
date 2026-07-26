@@ -14,18 +14,18 @@ namespace ItsCrychic.Scripts.Character;
 
 public sealed class WakabaMutsumi()
     : BandMemberModel<MutsumiStandardCardPool, MutsumiRelicPool, MutsumiPotionPool>(
-        CrychicMemberEnum.Mutsumi.GetMemberColor()), IExtraDeckSupportCharacter
+        CrychicMemberEnum.Mutsumi.GetMemberColor()), IPerformableCharacter
 {
     public override int StartingHp => 20;
     public override int StartingGold => 99;
-
-    public override int GetDefaultCapacity => 1;
 
     public override CharacterGroup Group => CharacterGroup.Crychic;
     public override string MemberNameRoman => CrychicMemberEnum.Mutsumi.GetMemberNameRoman();
     public override string MemberClass => BangDreamClass.Guitar.GetBandClass();
 
     public override bool AllowSelect => false;
+
+    public int GetDefaultCapacity => 1;
 
     public bool ShouldAlwaysShowExtraDeck => true;
     public bool ShouldAlwaysShowExtraPile => true;

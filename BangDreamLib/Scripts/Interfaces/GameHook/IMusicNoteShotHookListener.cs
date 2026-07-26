@@ -5,5 +5,5 @@ namespace BangDreamLib.Scripts.Interfaces.GameHook;
 
 public interface IMusicNoteShotHookListener
 {
-    Task OnMusicNoteSpawn(VfxContext context, Player player);
+    Task AfterShot(VfxContext context, Player player) => Task.CompletedTask;
 }

@@ -34,24 +34,22 @@ public class LingeringSound()
     protected override IEnumerable<DynamicVar> CardVars =>
     [
         QuickVar.Damage.Create(1),
-        ComputedDynamicVarHelper.CreateBaseVar("RepeatCount", 0, ctx => ctx.IsInCombat()
+        ComputedDynamicVarHelper.CreateBaseVar("RepeatCount", 0m, ctx => ctx.IsInCombat()
             ? SecondaryResourceCmd.Get(ctx.ActiveCard.Owner, BangDreamConst.LingeredResource)
             : ctx.BaseValue)
     ];
-    
-    //TODO Bug检查
+
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        ArgumentNullException.ThrowIfNull(CombatState);
         ArgumentNullException.ThrowIfNull(play.Target);
 
-        var computedValue = DynamicVars.ComputedValue("RepeatCount");
+        var computedValue = play.SecondaryResources().Value(BangDreamConst.LingeredResource);
         if (computedValue > 0)
         {
             await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
                 .FromCard(this, play)
                 .Targeting(play.Target)
-                .WithHitCount((int)computedValue)
+                .WithHitCount(computedValue)
                 .WithHitFx("vfx/vfx_attack_slash")
                 .Execute(choiceContext);
         }

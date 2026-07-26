@@ -28,8 +28,8 @@ public class ReproductionPower : BandPowerModel
         ValueProp props,
         Creature? dealer, CardModel? cardSource)
     {
-        if (dealer == Owner && props.HasFlag(ValueProp.Unpowered) && result.Receiver != Owner &&
-            result.TotalDamage + result.OverkillDamage > 0)
+        if (dealer == Owner && props.HasFlag(ValueProp.Unpowered) && !props.HasFlag(ValueProp.Move) &&
+            result.Receiver != Owner && result.TotalDamage + result.OverkillDamage > 0)
         {
             Flash();
             await CreatureCmd.Heal(Owner, result.TotalDamage + result.OverkillDamage);

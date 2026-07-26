@@ -1,11 +1,11 @@
 using BangDreamLib.Scripts.Extensions;
-using BangDreamLib.Scripts.Features.Rule;
 using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
+using STS2RitsuLib.Combat.SecondaryResources;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
@@ -17,7 +17,7 @@ public class BitterChoice()
     private const CardRarity CustomRarity = CardRarity.Common;
     private const TargetType CustomTarget = TargetType.AnyEnemy;
 
-    public int LingeredResourceCost => 2;
+    public int LingeredResourceCost => 4;
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
@@ -26,8 +26,7 @@ public class BitterChoice()
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Damage.Create(20),
-        QuickVar.Cards.Create(1)
+        QuickVar.Damage.Create(20)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
@@ -40,39 +39,14 @@ public class BitterChoice()
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
 
-        if (!LingeredResourcesRule.IsSufficient(this))
+        var payment = play.SecondaryResources();
+        var triggeredSubside = payment.HasLines && payment.Shortfall(BangDreamConst.LingeredResource) == 0;
+        if (!triggeredSubside)
         {
-            var discardPileCards = PileType.Discard.GetPile(Owner).Cards.ToList();
-            for (var i = 0; i < DynamicVars.Cards.IntValue; i++)
-            {
-                var cardModel = Owner.RunState.Rng.CombatCardSelection.NextItem(discardPileCards);
-                if (cardModel != null)
-                {
-                    await CardPileCmd.Add(cardModel, BangDreamConst.ExtraDraw);
-                }
-                else
-                {
-                    return;
-                }
-            }
+            var cards = Owner.AttachedData().PerformManager.PerformPile.Cards.ToList();
+            await CardPileCmd.Add(cards, BangDreamConst.ExtraDraw, CardPilePosition.Random);
         }
     }
 
-    public async Task OnSubside(PlayerChoiceContext choiceContext, CardPlay play)
-    {
-        var selectedCards = await CardSelectCmd.FromCombatPile(choiceContext,
-            PileType.Discard.GetPile(Owner),
-            Owner,
-            CardSelectorPrompt.ToExtraDraw.GetLimitedPrefs(DynamicVars.Cards.IntValue, true, true)
-        );
-        foreach (var selectedCard in selectedCards)
-        {
-            await CardPileCmd.Add(selectedCard, BangDreamConst.ExtraDraw);
-        }
-    }
-
-    protected override void OnUpgrade()
-    {
-        DynamicVars.Cards.UpgradeValueBy(1);
-    }
+    public Task OnSubside(PlayerChoiceContext choiceContext, CardPlay play) => Task.CompletedTask;
 }

@@ -22,7 +22,7 @@ public class Resonance() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        ModCardVars.Int("AddedDamage", 1)
+        ModCardVars.Int("AddedDamage", 2)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)

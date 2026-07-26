@@ -1,6 +1,7 @@
-﻿using BangDreamLib.Scripts.Powers;
+using BangDreamLib.Scripts.Powers;
+using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
-using MegaCrit.Sts2.Core.Entities.Players;
+using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Powers;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models.Powers;
@@ -13,11 +14,14 @@ public class NextTurnPlatingPower : BandPowerModel
 
     public override PowerStackType StackType => PowerStackType.Counter;
 
-    public override async Task AfterPlayerTurnStart(PlayerChoiceContext choiceContext, Player player)
+    public override async Task AfterSideTurnStartLate(
+        CombatSide side,
+        IReadOnlyList<Creature> participants,
+        ICombatState combatState)
     {
-        if (player == Owner.Player)
+        if (participants.Contains(Owner))
         {
-            await PowerCmd.Apply<PlatingPower>(choiceContext, Owner, Amount, Owner, null);
+            await PowerCmd.Apply<PlatingPower>(new BlockingPlayerChoiceContext(), Owner, Amount, Owner, null);
             await PowerCmd.Remove(this);
         }
     }

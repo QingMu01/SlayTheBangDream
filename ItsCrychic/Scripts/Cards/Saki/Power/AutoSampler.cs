@@ -1,3 +1,4 @@
+using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
 using ItsCrychic.Scripts.Power.Buff;
 using MegaCrit.Sts2.Core.Commands;
@@ -5,7 +6,6 @@ using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using STS2RitsuLib.Cards.DynamicVars;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Power;
 
@@ -29,17 +29,17 @@ public class AutoSampler() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        ModCardVars.Int("Efficiency", 1)
+        QuickVar.Buff.Create(1)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        await PowerCmd.Apply<AutoSamplerPower>(choiceContext, Owner.Creature, DynamicVars["Efficiency"].BaseValue,
+        await PowerCmd.Apply<AutoSamplerPower>(choiceContext, Owner.Creature, QuickVar.Buff.GetVar(this).BaseValue,
             Owner.Creature, this);
     }
 
     protected override void OnUpgrade()
     {
-        DynamicVars["Efficiency"].UpgradeValueBy(1m);
+        QuickVar.Buff.GetVar(this).UpgradeValueBy(1m);
     }
 }

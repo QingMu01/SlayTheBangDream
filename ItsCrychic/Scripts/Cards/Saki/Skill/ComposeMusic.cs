@@ -1,9 +1,9 @@
-using BangDreamLib.Scripts.Extensions;
-using ItsCrychic.Scripts.Power.Debuff;
+using BangDreamLib.Scripts.Interfaces.CardAugment;
+using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.Factories;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using MegaCrit.Sts2.Core.Localization.DynamicVars;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
@@ -19,22 +19,22 @@ public class ComposeMusic() : AbstractSakikoCard(CustomCost, CustomType, CustomR
         CardKeyword.Exhaust
     ];
 
-    protected override IEnumerable<DynamicVar> CardVars =>
-    [
-        QuickVar.Energy.Create(2),
-        new PowerVar<ComposeMusicPower>(1)
-    ];
-
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        await PlayerCmd.GainEnergy(DynamicVars.Energy.BaseValue, Owner);
+        ArgumentNullException.ThrowIfNull(CombatState);
+        var candidates = CardFactory.FilterForCombat(BangDreamTools.GetCharacterExtraCards(Owner, true))
+            .Where(card => card is IPerformCard)
+            .ToList();
+        var card = Owner.RunState.Rng.CombatCardGeneration.NextItem(candidates);
+        if (card == null) return;
 
-        await PowerCmd.Apply<ComposeMusicPower>(choiceContext, Owner.Creature,
-            DynamicVars["ComposeMusicPower"].IntValue, Owner.Creature, this);
+        var generated = CombatState.CreateCard(card, Owner);
+        CardCmd.PreviewCardPileAdd(await CardPileCmd.AddGeneratedCardToCombat(
+            generated, BangDreamConst.ExtraDraw, Owner, CardPilePosition.Random));
     }
 
     protected override void OnUpgrade()
     {
-        DynamicVars.Energy.UpgradeValueBy(1m);
+        RemoveKeyword(CardKeyword.Exhaust);
     }
 }

@@ -30,7 +30,7 @@ public class Command() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity
         ArgumentNullException.ThrowIfNull(CombatState);
 
         var selectedCards = await CardSelectCmd.FromCombatPile(choiceContext,
-            BangDreamTools.GetPile(BangDreamConst.ExtraDraw, Owner),
+            BangDreamConst.ExtraDraw.GetPile(Owner),
             Owner,
             CardSelectorPrompt.ToHand.GetFixedPrefs(DynamicVars.Cards.IntValue)
         );

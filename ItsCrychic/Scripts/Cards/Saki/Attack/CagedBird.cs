@@ -12,7 +12,7 @@ namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
 public class CagedBird() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget)
 {
-    private const int CustomCost = 3;
+    private const int CustomCost = 2;
     private const CardType CustomType = CardType.Attack;
     private const CardRarity CustomRarity = CardRarity.Uncommon;
     private const TargetType CustomTarget = TargetType.AllEnemies;
@@ -26,7 +26,7 @@ public class CagedBird() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
     protected override IEnumerable<DynamicVar> CardVars =>
     [
         QuickVar.Damage.Create(12),
-        new PowerVar<WeakPower>(1)
+        QuickVar.Buff.Create(1)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
@@ -42,7 +42,7 @@ public class CagedBird() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
         foreach (var target in attack.Results.SelectMany(results => results)
                      .Select(result => result.Receiver).Where(target => target.IsHittable).Distinct())
         {
-            await PowerCmd.Apply<CagedBirdPower>(choiceContext, target, DynamicVars.Weak.IntValue,
+            await PowerCmd.Apply<CagedBirdPower>(choiceContext, target, QuickVar.Buff.GetVar(this).IntValue,
                 Owner.Creature, this);
         }
     }

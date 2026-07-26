@@ -22,7 +22,7 @@ public class SetTheStage() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        new BlockVar(10m, ValueProp.Move | ValueProp.Unpowered)
+        new BlockVar(11m, ValueProp.Move | ValueProp.Unpowered)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)

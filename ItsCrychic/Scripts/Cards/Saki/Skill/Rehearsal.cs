@@ -26,10 +26,9 @@ public class Rehearsal() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        var performPile = BangDreamTools.GetPile(BangDreamConst.PerformPile, Owner);
         var manager = Owner.AttachedData().PerformManager;
-        var cards = performPile.Cards
-            .OrderBy(card => manager.CardContexts.GetOrCreate(card).SlotIndex)
+        var cards = BangDreamConst.PerformPile.GetPile(Owner).Cards.ToList()
+            .OrderByDescending(card => manager.CardContexts.GetOrCreate(card).SlotIndex)
             .Take(DynamicVars.Cards.IntValue)
             .ToList();
         foreach (var card in cards)

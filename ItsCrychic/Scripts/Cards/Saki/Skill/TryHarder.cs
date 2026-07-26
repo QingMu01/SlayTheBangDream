@@ -1,4 +1,5 @@
-using BangDreamLib.Scripts.Utils;
+using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Interfaces.CardAugment;
 using ItsCrychic.Scripts.Cards.Token;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -22,27 +23,46 @@ public class TryHarder() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
 
     protected override IEnumerable<IHoverTip> CardHoverTips =>
     [
-        HoverTipFactory.FromCard<GiantNote>()
+        HoverTipFactory.FromCard<GiantNote>(IsUpgraded)
     ];
 
-    protected override IEnumerable<DynamicVar> CardVars => [];
+    protected override IEnumerable<DynamicVar> CardVars => [QuickVar.Buff.Create(1)];
 
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
         ArgumentNullException.ThrowIfNull(CombatState);
+        ArgumentNullException.ThrowIfNull(Owner.PlayerCombatState);
 
-        var extraDraw = BangDreamTools.GetPile(BangDreamConst.ExtraDraw, Owner);
-        var cards = extraDraw.Cards.ToList();
+        var manager = Owner.AttachedData().PerformManager;
+        manager.AddCapacity(QuickVar.Buff.GetVar(this).IntValue);
 
-        foreach (var card in cards)
+        var musicCards = Owner.PlayerCombatState.AllCards
+            .Where(card => card is IPerformCard)
+            .ToList();
+        foreach (var card in musicCards)
         {
-            await CardPileCmd.RemoveFromCombat(card);
+            var giantNote = CombatState.CreateCard<GiantNote>(Owner);
+            if (IsUpgraded) CardCmd.Upgrade(giantNote);
+            if (manager.PerformPile.Cards.Contains(card))
+            {
+                var originalContext = manager.CardContexts.GetOrCreate(card);
+                var replacementContext = manager.CardContexts.GetOrCreate(giantNote);
+                replacementContext.Manager = manager;
+                replacementContext.SlotIndex = originalContext.SlotIndex;
+                var result = await CardCmd.Transform(card, giantNote);
+                if (result is not { success: true })
+                    manager.CardContexts.Remove(giantNote);
+            }
+            else
+            {
+                await CardCmd.Transform(card, giantNote);
+            }
         }
+    }
 
-        foreach (var giantNote in cards.Select(_ => CombatState.CreateCard<GiantNote>(Owner)))
-        {
-            await CardPileCmd.AddGeneratedCardToCombat(giantNote, extraDraw.Type, Owner);
-        }
+    protected override void OnUpgrade()
+    {
+        QuickVar.Buff.GetVar(this).UpgradeValueBy(1);
     }
 }

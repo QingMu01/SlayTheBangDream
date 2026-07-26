@@ -22,12 +22,12 @@ public class CelestialRotation() : AbstractSakikoCard(CustomCost, CustomType, Cu
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Cards.Create(1)
+        QuickVar.Buff.Create(1)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        await PowerCmd.Apply<CelestialRotationPower>(choiceContext, Owner.Creature, DynamicVars.Cards.IntValue,
+        await PowerCmd.Apply<CelestialRotationPower>(choiceContext, Owner.Creature, QuickVar.Buff.GetVar(this).IntValue,
             Owner.Creature, this);
     }
 

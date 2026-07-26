@@ -1,16 +1,13 @@
-﻿using MegaCrit.Sts2.Core.Entities.Cards;
+﻿using BangDreamLib.Scripts.Interfaces.CardAugment;
+using BangDreamLib.Scripts.Interfaces.CharacterAugment;
 using MegaCrit.Sts2.Core.Entities.Players;
+using MegaCrit.Sts2.Core.Models;
 using STS2RitsuLib.Utils;
 
 namespace BangDreamLib.Scripts.Utils;
 
 public static class BangDreamTools
 {
-    public static CardPile GetPile(PileType type, Player player)
-    {
-        return CardPile.Get(type, player) ?? throw new NullReferenceException("card pile is not ready.");
-    }
-
     public static T? LoadFromJson<T>(string filePath)
     {
         if (FileOperations.FileExists(filePath))
@@ -21,6 +18,34 @@ public static class BangDreamTools
 
         BangDreamLibCore.Logger.Error($"file not found: {filePath}");
         return default;
+    }
+
+    public static IEnumerable<CardModel> GetCharacterExtraCards(Player player, bool onlyMusic = false,
+        bool fallbackToAllChar = true)
+    {
+        if (onlyMusic)
+        {
+            if (player.Character is IPerformableCharacter performableCharacter)
+            {
+                return performableCharacter.ExtraCardPool.AllCards.Where(card => card is IPerformCard);
+            }
+        }
+        else
+        {
+            if (player.Character is IExtraDeckSupportCharacter extraDeckSupportCharacter)
+            {
+                return extraDeckSupportCharacter.ExtraCardPool.AllCards;
+            }
+        }
+
+        if (fallbackToAllChar)
+        {
+            return ModelDb.AllCharacters.OfType<IExtraDeckSupportCharacter>()
+                .SelectMany(character => character.ExtraCardPool.AllCards)
+                .Where(card => !onlyMusic || card is IPerformCard);
+        }
+
+        return [];
     }
 
     public static void Init<T>(ref T? storage, T value, string propertyName) where T : class

@@ -1,4 +1,6 @@
 using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Interfaces.CardAugment;
+using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
@@ -6,12 +8,19 @@ using MegaCrit.Sts2.Core.Localization.DynamicVars;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
-public class DrawKill() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget)
+public class DrawKill() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget), ISubsideCard
 {
     private const int CustomCost = 1;
     private const CardType CustomType = CardType.Attack;
     private const CardRarity CustomRarity = CardRarity.Common;
     private const TargetType CustomTarget = TargetType.AnyEnemy;
+
+    public int LingeredResourceCost => 3;
+
+    protected override IEnumerable<CardKeyword> CardKeywords =>
+    [
+        BangDreamConst.Lingered
+    ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
@@ -27,17 +36,17 @@ public class DrawKill() : AbstractSakikoCard(CustomCost, CustomType, CustomRarit
             .Targeting(play.Target)
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
+    }
 
+    public async Task OnSubside(PlayerChoiceContext choiceContext, CardPlay play)
+    {
         var attackCards = PileType.Draw.GetPile(Owner).Cards
             .Where(card => card.Type == CardType.Attack)
             .ToList();
-        if (attackCards.Count > 0)
+        var randomAttackCard = Owner.RunState.Rng.CombatCardSelection.NextItem(attackCards);
+        if (randomAttackCard != null)
         {
-            var randomAttackCard = Owner.RunState.Rng.CombatCardSelection.NextItem(attackCards);
-            if (randomAttackCard != null)
-            {
-                await CardCmd.AutoPlay(choiceContext, randomAttackCard, play.Target);
-            }
+            await CardCmd.AutoPlay(choiceContext, randomAttackCard, play.Target);
         }
     }
 

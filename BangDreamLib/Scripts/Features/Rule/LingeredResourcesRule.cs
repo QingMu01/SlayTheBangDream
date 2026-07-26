@@ -1,8 +1,10 @@
-﻿using BangDreamLib.Scripts.Interfaces.CardAugment;
+﻿using System.Runtime.CompilerServices;
+using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models;
 using STS2RitsuLib.Combat.SecondaryResources;
@@ -16,28 +18,22 @@ public sealed class LingeredResourcesRule() : HookedSingletonModel(HookType.Comb
 {
     public const int HardMaxAmount = 7;
 
+    private readonly ConditionalWeakTable<Player, SemaphoreSlim> _overflowLocks = new();
+    private readonly AsyncLocal<IReadOnlySet<Player>?> _normalizingPlayers = new();
+
     // 休止机制触发判定
     public override async Task AfterCardPlayed(PlayerChoiceContext context, CardPlay cardPlay)
     {
-        var playedCard = cardPlay.Card;
-        if (playedCard is ISubsideCard subsideCard)
+        if (cardPlay.Card is not ISubsideCard subsideCard) return;
+
+        var payment = cardPlay.SecondaryResources();
+        if (payment.HasLines && payment.Shortfall(BangDreamConst.LingeredResource) == 0)
         {
-            var sumCost = SecondaryResourcePaymentResolver.Plan(playedCard).Lines
-                .Where(line => line.ResourceId.Equals(BangDreamConst.LingeredResource))
-                .Sum(line => line.Value);
-
-            var spend = await SecondaryResourceCmd.Spend(playedCard.Owner, BangDreamConst.LingeredResource,
-                sumCost, playedCard, cardPlay.Card);
-
-            if (spend)
-            {
-                await subsideCard.OnSubside(context, cardPlay);
-
-                await BangDreamHook.AfterCardSubside(context, cardPlay);
-            }
-
-            await Cmd.CustomScaledWait(0.1f, 0.2f);
+            await subsideCard.OnSubside(context, cardPlay);
+            await BangDreamHook.AfterCardSubside(context, cardPlay);
         }
+
+        await Cmd.CustomScaledWait(0.1f, 0.2f);
     }
 
     // 自动生成余音资源唯一渠道
@@ -65,26 +61,46 @@ public sealed class LingeredResourcesRule() : HookedSingletonModel(HookType.Comb
     public async Task AfterSecondaryResourceChanged(SecondaryResourceChangeContext context)
     {
         if (!context.Definition.Id.Equals(BangDreamConst.LingeredResource)) return;
-        if (context.Reason == SecondaryResourceChangeReason.Gain && context.NewAmount > context.OldAmount)
+        if (_normalizingPlayers.Value?.Contains(context.Player) == true) return;
+
+        var overflowLock = _overflowLocks.GetValue(context.Player, _ => new SemaphoreSlim(1, 1));
+        await overflowLock.WaitAsync();
+        var previousNormalizingPlayers = _normalizingPlayers.Value;
+        var normalizingPlayers = previousNormalizingPlayers?.ToHashSet() ?? [];
+        normalizingPlayers.Add(context.Player);
+        _normalizingPlayers.Value = normalizingPlayers;
+        try
         {
             while (SecondaryResourceCmd.Get(context.Player, BangDreamConst.LingeredResource) >= HardMaxAmount)
             {
-                var extraDraw = BangDreamTools.GetPile(BangDreamConst.ExtraDraw, context.Player);
-                var topCardInPile = extraDraw.Cards.ToList().FirstOrDefault();
-                if (topCardInPile != null)
+                var extraDraw = BangDreamConst.ExtraDraw.GetPile(context.Player);
+                var topCardInPile = extraDraw.Cards.FirstOrDefault();
+                if (topCardInPile == null) break;
+
+                var result = await CardPileCmd.Add(topCardInPile, BangDreamConst.PerformPile);
+                if (!result.success) break;
+
+                await Cmd.CustomScaledWait(0.05f, 0.1f);
+                await SecondaryResourceCmd.Lose(context.Player, BangDreamConst.LingeredResource, HardMaxAmount,
+                    this);
+            }
+        }
+        finally
+        {
+            try
+            {
+                var current = SecondaryResourceCmd.Get(context.Player, BangDreamConst.LingeredResource);
+                var max = SecondaryResourceCmd.GetMax(context.Player, BangDreamConst.LingeredResource) ?? HardMaxAmount;
+                var overflow = Math.Max(0, current - max);
+                if (overflow > 0)
                 {
-                    var result = await CardPileCmd.Add(topCardInPile, BangDreamConst.PerformPile);
-                    if (result.success)
-                    {
-                        await Cmd.CustomScaledWait(0.1f, 0.2f);
-                        await SecondaryResourceCmd.Lose(context.Player, BangDreamConst.LingeredResource, HardMaxAmount,
-                            this);
-                    }
+                    await SecondaryResourceCmd.Lose(context.Player, BangDreamConst.LingeredResource, overflow, this);
                 }
-                else
-                {
-                    break;
-                }
+            }
+            finally
+            {
+                _normalizingPlayers.Value = previousNormalizingPlayers;
+                overflowLock.Release();
             }
         }
     }

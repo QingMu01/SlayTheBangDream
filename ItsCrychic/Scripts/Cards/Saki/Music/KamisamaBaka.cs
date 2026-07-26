@@ -1,41 +1,36 @@
 using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Interfaces.CardAugment;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
-public class KamisamaBaka() : AbstractSakikoMusicCard(CardRarity.Uncommon, TargetType.None)
+public class KamisamaBaka() : AbstractSakikoMusicCard(CardRarity.Rare, TargetType.None)
 {
-    protected override IEnumerable<IHoverTip> CardHoverTips =>
+    protected override IEnumerable<DynamicVar> CardVars =>
     [
-        HoverTipFactory.Static(StaticHoverTip.Block)
+        QuickVar.Repeat.Create(1)
     ];
-
-    protected override IEnumerable<DynamicVar> CardVars => [QuickVar.Damage.Create(10)];
 
     public override async Task OnPerform(PlayerChoiceContext choiceContext)
     {
-        ArgumentNullException.ThrowIfNull(CombatState);
-        var candidates = CombatState.HittableEnemies.ToList();
-        var blocked = candidates.Where(enemy => enemy.Block > 0).ToList();
-        var target = Owner.RunState.Rng.CombatTargets.NextItem(blocked.Count > 0 ? blocked : candidates);
-        if (target != null)
-        {
-            await CreatureCmd.LoseBlock(choiceContext, target, target.Block, Owner.Creature);
+        var performCandidates = Owner.AttachedData().PerformManager.PerformPile.Cards
+            .Where(card => card != this && !card.IsUpgraded && card is IPerformCard)
+            .ToList();
+        var performCard = Owner.RunState.Rng.CombatCardSelection.NextItem(performCandidates);
+        if (performCard == null) return;
 
-            await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
-                .FromCard(this, null)
-                .Targeting(target)
-                .WithHitFx("vfx/vfx_attack_slash")
-                .Execute(choiceContext);
+        CardCmd.Upgrade(performCard);
+        for (var repeat = 0; repeat < DynamicVars.Repeat.IntValue; repeat++)
+        {
+            await Owner.AttachedData().PerformManager.PerformCard(performCard);
         }
     }
 
     protected override void OnUpgrade()
     {
-        DynamicVars.Damage.UpgradeValueBy(5);
+        DynamicVars.Repeat.UpgradeValueBy(1);
     }
 }

@@ -1,7 +1,7 @@
-using BangDreamLib.Scripts.Commands;
 using BangDreamLib.Scripts.Interfaces.GameHook;
 using BangDreamLib.Scripts.Powers;
 using BangDreamLib.Scripts.Utils.Infos;
+using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Powers;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models;
@@ -17,7 +17,8 @@ public class MelodyMasterPower : BandPowerModel, IPerformHookListener
     public async Task OnCardPerform(PlayerChoiceContext choiceContext, PerformContext ctx, CardModel cardModel)
     {
         if (cardModel.Owner != Owner.Player) return;
+
         Flash();
-        await MusicNoteCmd.FromPower(this, Amount);
+        await CardPileCmd.Draw(choiceContext, Amount, Owner.Player);
     }
 }

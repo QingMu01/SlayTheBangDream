@@ -1,8 +1,7 @@
 using BangDreamLib.Scripts.Commands;
 using BangDreamLib.Scripts.Extensions;
-using BangDreamLib.Scripts.Interfaces.GameHook;
+using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Utils;
-using BangDreamLib.Scripts.Utils.Infos;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
@@ -11,14 +10,12 @@ using MegaCrit.Sts2.Core.Models;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
-public class CrescentAwakening() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget), IPerformHookListener
+public class CrescentAwakening() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget), ISubsideCard
 {
     private const int CustomCost = 0;
     private const CardType CustomType = CardType.Skill;
     private const CardRarity CustomRarity = CardRarity.Common;
     private const TargetType CustomTarget = TargetType.None;
-    private int _performCount;
-
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
         BangDreamConst.MusicNote
@@ -26,38 +23,34 @@ public class CrescentAwakening() : AbstractSakikoCard(CustomCost, CustomType, Cu
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Repeat.Create(4),
-        QuickVar.Cards.Create(3)
+        QuickVar.Repeat.Create(6),
+        QuickVar.Repeat.Create("SubsideNotes", 4)
     ];
+
+    public int LingeredResourceCost => 4;
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
         await MusicNoteCmd.FromCard(this, DynamicVars.Repeat.IntValue);
     }
 
-    public async Task OnCardPerform(PlayerChoiceContext choiceContext, PerformContext ctx, CardModel cardModel)
+    public async Task OnSubside(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        if (cardModel.Owner != Owner || CombatState == null) return;
-
-        _performCount++;
-        if (_performCount >= DynamicVars.Cards.IntValue)
-        {
-            _performCount = 0;
-            if (Pile?.Type != PileType.Hand)
-            {
-                await CardPileCmd.Add(this, PileType.Hand);
-            }
-        }
+        await MusicNoteCmd.FromCard(this, DynamicVars["SubsideNotes"].IntValue);
     }
 
-    public override Task AfterCardEnteredCombat(CardModel card)
+    public override async Task AfterEnergySpent(CardModel card, int energySpent)
     {
-        _performCount = 0;
-        return Task.CompletedTask;
+        if (card.Owner == Owner && energySpent > 0 && Owner.PlayerCombatState?.Energy == 0 &&
+            Pile?.Type != PileType.Hand)
+        {
+            await CardPileCmd.Add(this, PileType.Hand);
+        }
     }
 
     protected override void OnUpgrade()
     {
         DynamicVars.Repeat.UpgradeValueBy(2);
+        DynamicVars["SubsideNotes"].UpgradeValueBy(2);
     }
 }

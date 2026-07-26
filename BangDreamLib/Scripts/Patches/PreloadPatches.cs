@@ -12,7 +12,8 @@ public class PreloadPatches : IModPatches
     public static void AddTo(ModPatcher patcher)
     {
         patcher.RegisterPatch<PreloadCommonPatch>();
-        patcher.RegisterPatch<PreloadRunPatch>();
+        patcher.RegisterPatch<PrepareCombatAssetsPatch>();
+        patcher.RegisterPatch<PreloadCombatPatch>();
     }
 }
 
@@ -29,15 +30,21 @@ internal class PreloadCommonPatch : IPatchMethod
         ];
     }
 
-    public static void Prefix()
+    public static void Postfix(ref Task __result)
     {
-        _ = BangDreamPreloadManager.LoadCommonAssets();
+        __result = LoadCommonAssetsAfter(__result);
+    }
+
+    private static async Task LoadCommonAssetsAfter(Task originalPreload)
+    {
+        await originalPreload;
+        await BangDreamPreloadManager.LoadCommonAssets();
     }
 }
 
-internal class PreloadRunPatch : IPatchMethod
+internal class PrepareCombatAssetsPatch : IPatchMethod
 {
-    public static string PatchId => "add_mod_extra_run_asset_to_preload_manager";
+    public static string PatchId => "prepare_mod_combat_assets_for_preload_manager";
     public static bool IsCritical => false;
 
     public static ModPatchTarget[] GetTargets()
@@ -51,6 +58,31 @@ internal class PreloadRunPatch : IPatchMethod
 
     public static void Prefix(RunState runState)
     {
-        _ = BangDreamPreloadManager.LoadRunAssets(runState.Players);
+        BangDreamPreloadManager.PrepareCombatAssets(runState.Players);
+    }
+}
+
+internal class PreloadCombatPatch : IPatchMethod
+{
+    public static string PatchId => "add_mod_combat_assets_to_preload_manager";
+    public static bool IsCritical => false;
+
+    public static ModPatchTarget[] GetTargets()
+    {
+        return
+        [
+            new ModPatchTarget(typeof(PreloadManager), nameof(PreloadManager.LoadRunAssets))
+        ];
+    }
+
+    public static void Postfix(ref Task __result)
+    {
+        __result = LoadCombatAssetsAfter(__result);
+    }
+
+    private static async Task LoadCombatAssetsAfter(Task originalPreload)
+    {
+        await originalPreload;
+        await BangDreamPreloadManager.LoadPreparedCombatAssets();
     }
 }

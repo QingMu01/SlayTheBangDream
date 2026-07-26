@@ -1,5 +1,4 @@
 using BangDreamLib.Scripts.Extensions;
-using BangDreamLib.Scripts.Utils;
 using ItsCrychic.Scripts.Cards.Token;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -12,23 +11,18 @@ namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
 public class CherishedMemories() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget)
 {
-    private const int CustomCost = 1;
+    private const int CustomCost = 2;
     private const CardType CustomType = CardType.Skill;
     private const CardRarity CustomRarity = CardRarity.Uncommon;
     private const TargetType CustomTarget = TargetType.None;
 
-    public override bool GainsBlock => true;
-
     protected override IEnumerable<IHoverTip> CardHoverTips =>
     [
-        HoverTipFactory.FromCard<MemoryPuzzle>()
+        HoverTipFactory.FromCard<MemoryPuzzle>(IsUpgraded)
     ];
 
-    protected override IEnumerable<DynamicVar> CardVars =>
-    [
-        QuickVar.Block.Create(3)
-    ];
-    
+    protected override IEnumerable<DynamicVar> CardVars => [QuickVar.Cards.Create(1)];
+
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
         ArgumentNullException.ThrowIfNull(CombatState);
@@ -40,21 +34,16 @@ public class CherishedMemories() : AbstractSakikoCard(CustomCost, CustomType, Cu
         foreach (var card in handCards)
         {
             await CardPileCmd.Add(card, PileType.Discard);
-            await CreatureCmd.GainBlock(Owner.Creature, DynamicVars.Block, play);
         }
 
         var generatedCards = new List<CardModel>();
         for (var i = 0; i < discardedCount; i++)
         {
-            generatedCards.Add(CombatState.CreateCard<MemoryPuzzle>(Owner));
+            var puzzle = CombatState.CreateCard<MemoryPuzzle>(Owner);
+            if (IsUpgraded) CardCmd.Upgrade(puzzle);
+            generatedCards.Add(puzzle);
         }
 
-        await CardPileCmd.AddGeneratedCardsToCombat(generatedCards, BangDreamConst.ExtraDraw,
-            Owner, CardPilePosition.Top);
-    }
-
-    protected override void OnUpgrade()
-    {
-        DynamicVars.Block.UpgradeValueBy(1m);
+        await CardPileCmd.AddGeneratedCardsToCombat(generatedCards, PileType.Hand, Owner);
     }
 }

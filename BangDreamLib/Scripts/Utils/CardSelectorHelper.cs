@@ -41,6 +41,13 @@ public static class SelectorPrefsExtensions
     private static readonly LocString ToEnchant = new(LocTable, "BANG_DREAM_LIB_PROMPT_TO_ENCHANT");
     private static readonly LocString ToTransform = new(LocTable, "BANG_DREAM_LIB_PROMPT_TO_TRANSFORM");
 
+    /// <summary>
+    /// 选择固定数量的牌
+    /// </summary>
+    /// <param name="prompt">提示词</param>
+    /// <param name="amount">数量</param>
+    /// <param name="cancelable">是否可取消选择</param>
+    /// <param name="reqConfirm">是否需要确认</param>
     public static CardSelectorPrefs GetFixedPrefs(this CardSelectorPrompt prompt, int amount, bool cancelable = false,
         bool reqConfirm = false)
     {
@@ -58,6 +65,14 @@ public static class SelectorPrefsExtensions
         };
     }
 
+    /// <summary>
+    /// 在给定范围中选择任意张牌
+    /// </summary>
+    /// <param name="prompt">提示词</param>
+    /// <param name="min">至少选择数</param>
+    /// <param name="max">至多选择数</param>
+    /// <param name="cancelable">是否可取消选择</param>
+    /// <param name="reqConfirm">是否需要确认</param>
     public static CardSelectorPrefs GetRangePrefs(this CardSelectorPrompt prompt, int min, int max,
         bool cancelable = false, bool reqConfirm = false)
     {
@@ -75,6 +90,13 @@ public static class SelectorPrefsExtensions
         };
     }
 
+    /// <summary>
+    /// 选择任意张牌但不超过最大数
+    /// </summary>
+    /// <param name="prompt">提示词</param>
+    /// <param name="amount">至多选择数</param>
+    /// <param name="cancelable">是否可取消选择</param>
+    /// <param name="reqConfirm">是否需要确认</param>
     public static CardSelectorPrefs GetLimitedPrefs(this CardSelectorPrompt prompt, int amount, bool cancelable = false,
         bool reqConfirm = false)
     {
@@ -92,6 +114,12 @@ public static class SelectorPrefsExtensions
         };
     }
 
+    /// <summary>
+    /// 选择任意张牌
+    /// </summary>
+    /// <param name="prompt">提示词</param>
+    /// <param name="cancelable">是否可取消选择</param>
+    /// <param name="reqConfirm">是否需要确认</param>
     public static CardSelectorPrefs GetUnlimitedPrefs(this CardSelectorPrompt prompt, bool cancelable = false,
         bool reqConfirm = false)
     {

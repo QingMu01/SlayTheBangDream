@@ -21,7 +21,7 @@ public interface IBangDreamMateData
     string? SelectPoster { get; }
 
     /// <summary>
-    /// 角色代表图标
+    /// 角色选择按钮上的 Logo 资源路径
     /// </summary>
     string? SelectLogo { get; }
 }

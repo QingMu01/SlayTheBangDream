@@ -1,0 +1,188 @@
+[gd_scene load_steps=22 format=3 uid="uid://c0bbliii8y2dv"]
+
+[ext_resource type="Script" uid="uid://c4gjl6tn645ld" path="res://Scripts/Nodes/VFX/MusicNoteFlyingVfx.cs" id="1_yrgko"]
+[ext_resource type="Material" uid="uid://djawuiyoxrp1y" path="res://materials/vfx/sprite_additive.tres" id="2_cky8c"]
+[ext_resource type="Texture2D" uid="uid://dlh7cfjsrcb6t" path="res://images/packed/vfx/trail3.png" id="3_ukiev"]
+[ext_resource type="Script" uid="uid://cj4l6wy07qqqo" path="res://Scripts/Nodes/MegeScript/BangDreamCardTrail.cs" id="4_x377i"]
+[ext_resource type="Shader" uid="uid://cs8mgukhp76l1" path="res://BangDreamLib/shaders/decal.gdshader" id="5_uguny"]
+[ext_resource type="Texture2D" uid="uid://c1sg4haave0uj" path="res://BangDreamLib/images/vfx/oblvns_skin_05.png" id="7_omh7l"]
+[ext_resource type="Texture2D" uid="uid://d2srbops1xqm0" path="res://images/vfx/dot.png" id="7_p8ei8"]
+[ext_resource type="Texture2D" uid="uid://cgisg63mv7c5u" path="res://BangDreamLib/images/vfx/ray_130.png" id="8_yrgko"]
+[ext_resource type="Texture2D" uid="uid://dunhat805blce" path="res://images/ui/combat/energy_star_flash_glow.png" id="9_cky8c"]
+[ext_resource type="Texture2D" uid="uid://b2jc5nbae67bp" path="res://BangDreamLib/images/vfx/star_270_1.png" id="10_x377i"]
+
+[sub_resource type="Curve" id="Curve_taqy4"]
+_data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(1, 1), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="Gradient" id="Gradient_4cc0w"]
+offsets = PackedFloat32Array(0, 0.6, 0.8, 1)
+colors = PackedColorArray(1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0.5882353, 1, 1, 1, 0.8235294)
+metadata/_snap_enabled = true
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ryo1r"]
+shader = ExtResource("5_uguny")
+shader_parameter/density = 4.0
+shader_parameter/size = 1.5000000223518
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_gop3w"]
+
+[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_ukiev"]
+blend_mode = 1
+
+[sub_resource type="Animation" id="Animation_xaasx"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath(".:scale")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector2(0.4, 0.4)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("..:rotation")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [0.0]
+}
+
+[sub_resource type="Animation" id="Animation_uguny"]
+resource_name = "surround"
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath(".:scale")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.5, 1),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector2(0.4, 0.4), Vector2(0.1, 0.1), Vector2(0.4, 0.4)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("..:rotation")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.5, 1),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [0.0, 3.141592653589793, 6.283185307179586]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_p8ei8"]
+_data = {
+&"RESET": SubResource("Animation_xaasx"),
+&"surround": SubResource("Animation_uguny")
+}
+
+[sub_resource type="Curve" id="Curve_x377i"]
+_data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="CurveTexture" id="CurveTexture_rg41t"]
+curve = SubResource("Curve_x377i")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_uguny"]
+particle_flag_disable_z = true
+angle_min = -179.99998
+angle_max = 180.00002
+spread = 180.0
+initial_velocity_max = 120.0
+angular_velocity_min = -180.00002
+angular_velocity_max = 179.99998
+orbit_velocity_min = -0.19999991
+orbit_velocity_max = 0.2000001
+gravity = Vector3(0, 0, 0)
+damping_min = 10.0
+damping_max = 20.0
+attractor_interaction_enabled = false
+scale_min = 0.01
+scale_max = 0.049999997
+scale_curve = SubResource("CurveTexture_rg41t")
+
+[node name="FlyingMusicNoteDefault" type="Node2D"]
+script = ExtResource("1_yrgko")
+
+[node name="Trails" type="Node2D" parent="."]
+
+[node name="Trail" type="Line2D" parent="Trails"]
+modulate = Color(0.46666667, 0.6, 0.8, 0.5882353)
+material = ExtResource("2_cky8c")
+width = 60.0
+width_curve = SubResource("Curve_taqy4")
+gradient = SubResource("Gradient_4cc0w")
+texture = ExtResource("3_ukiev")
+texture_mode = 2
+joint_mode = 2
+script = ExtResource("4_x377i")
+
+[node name="TrailStar" type="Line2D" parent="Trails"]
+modulate = Color(1, 1, 1, 0.627451)
+texture_repeat = 2
+material = SubResource("ShaderMaterial_ryo1r")
+width = 60.0
+width_curve = SubResource("Curve_taqy4")
+gradient = SubResource("Gradient_4cc0w")
+texture = ExtResource("3_ukiev")
+texture_mode = 1
+joint_mode = 2
+script = ExtResource("4_x377i")
+
+[node name="GlowBackground1" type="Sprite2D" parent="."]
+self_modulate = Color(0.46666667, 0.6, 0.8, 0.49019608)
+material = ExtResource("2_cky8c")
+scale = Vector2(0.48999998, 0.48999998)
+texture = ExtResource("7_p8ei8")
+
+[node name="GlowBackground2" type="Sprite2D" parent="."]
+self_modulate = Color(0.46666667, 0.6, 0.8, 0.49019608)
+material = ExtResource("2_cky8c")
+scale = Vector2(0.48999998, 0.48999998)
+texture = ExtResource("7_p8ei8")
+
+[node name="Notes" type="Sprite2D" parent="."]
+material = SubResource("ShaderMaterial_gop3w")
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("7_omh7l")
+hframes = 2
+vframes = 2
+
+[node name="Ring" type="Sprite2D" parent="."]
+material = SubResource("CanvasItemMaterial_ukiev")
+rotation = 4.2105865
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("8_yrgko")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="Ring"]
+reset_on_save = false
+root_node = NodePath("../Star")
+libraries = {
+&"": SubResource("AnimationLibrary_p8ei8")
+}
+
+[node name="Star" type="Sprite2D" parent="Ring"]
+position = Vector2(84, 0)
+scale = Vector2(0.20208141, 0.20208141)
+texture = ExtResource("10_x377i")
+
+[node name="GPUParticles2D" type="GPUParticles2D" parent="."]
+amount = 12
+texture = ExtResource("9_cky8c")
+randomness = 0.3
+process_material = SubResource("ParticleProcessMaterial_uguny")

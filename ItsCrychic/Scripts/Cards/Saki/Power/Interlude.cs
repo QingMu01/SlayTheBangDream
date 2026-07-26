@@ -1,3 +1,4 @@
+using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
 using ItsCrychic.Scripts.Power.Buff;
 using MegaCrit.Sts2.Core.Commands;
@@ -5,7 +6,6 @@ using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using STS2RitsuLib.Cards.DynamicVars;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Power;
 
@@ -28,17 +28,17 @@ public class Interlude() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        ModCardVars.Int("GainBlock", 2)
+        QuickVar.Buff.Create(2)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        await PowerCmd.Apply<InterludePower>(choiceContext, Owner.Creature, DynamicVars["GainBlock"].IntValue,
+        await PowerCmd.Apply<InterludePower>(choiceContext, Owner.Creature, QuickVar.Buff.GetVar(this).IntValue,
             Owner.Creature, this);
     }
 
     protected override void OnUpgrade()
     {
-        DynamicVars["GainBlock"].UpgradeValueBy(1m);
+        QuickVar.Buff.GetVar(this).UpgradeValueBy(1m);
     }
 }

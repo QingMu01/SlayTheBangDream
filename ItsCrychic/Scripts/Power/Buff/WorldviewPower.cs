@@ -1,4 +1,3 @@
-using BangDreamLib.Scripts.Interfaces.CharacterAugment;
 using BangDreamLib.Scripts.Powers;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
@@ -7,7 +6,6 @@ using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Entities.Powers;
 using MegaCrit.Sts2.Core.Factories;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using MegaCrit.Sts2.Core.Models;
 
 namespace ItsCrychic.Scripts.Power.Buff;
 
@@ -21,24 +19,23 @@ public class WorldviewPower : BandPowerModel
     {
         if (player != Owner.Player || Owner.CombatState == null) return;
 
-        var musicCards = new List<CardModel>();
-        if (Owner.Player.Character is IExtraDeckSupportCharacter character && character.ExtraCardPool.AllCards.Any())
-        {
-            musicCards.AddRange(character.ExtraCardPool.AllCards);
-        }
-        else
-        {
-            musicCards.AddRange(ModelDb.AllCharacters
-                .OfType<IExtraDeckSupportCharacter>()
-                .SelectMany(item => item.ExtraCardPool.AllCards));
-        }
 
-        var card = Owner.Player.RunState.Rng.CombatCardGeneration.NextItem(CardFactory.FilterForCombat(musicCards));
-        if (card == null) return;
+        var musicCards = CardFactory.FilterForCombat(BangDreamTools.GetCharacterExtraCards(player, true)).ToList();
 
-        var generatedCard = Owner.CombatState.CreateCard(card, Owner.Player);
-        generatedCard.AddKeyword(CardKeyword.Exhaust);
-        
-        CardCmd.PreviewCardPileAdd(await CardPileCmd.AddGeneratedCardToCombat(generatedCard, BangDreamConst.PerformPile, Owner.Player));
+        if (Amount > 0 && musicCards.Count > 0)
+        {
+            var generatedCards = Enumerable.Range(0, Amount)
+                .Select(_ => Owner.Player.RunState.Rng.CombatCardGeneration.NextItem(musicCards))
+                .Where(card => card != null)
+                .Select(card =>
+                {
+                    var generatedCard = Owner.CombatState.CreateCard(card!, Owner.Player);
+                    generatedCard.AddKeyword(CardKeyword.Exhaust);
+                    return generatedCard;
+                })
+                .ToList();
+            CardCmd.PreviewCardPileAdd(await CardPileCmd.AddGeneratedCardsToCombat(generatedCards,
+                BangDreamConst.PerformPile, Owner.Player));
+        }
     }
 }

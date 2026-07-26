@@ -28,11 +28,9 @@ public class FinishTimes() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
                 var performanceCards = BangDreamConst.PerformPile.GetPile(ctx.ActiveCard.Owner).Cards.ToList();
                 if (performanceCards.GroupBy(card => card.Type).Any(group => group.Count() >= 3))
                 {
-                    var multiplier = ctx.ActiveCard.IsUpgraded ? 2m : 1.5m;
-                    return Math.Ceiling(ctx.BaseValue * multiplier);
+                    return ctx.BaseValue * 2m;
                 }
             }
-
             return ctx.BaseValue;
         }),
         QuickVar.Repeat.Create(3)
@@ -48,5 +46,10 @@ public class FinishTimes() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
             .Targeting(play.Target)
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
+    }
+
+    protected override void OnUpgrade()
+    {
+        DynamicVars.Repeat.UpgradeValueBy(1);
     }
 }

@@ -1,9 +1,12 @@
+using BangDreamLib.Scripts.Extensions;
+using ItsCrychic.Scripts.Cards.Token;
 using ItsCrychic.Scripts.Power.Buff;
+using ItsCrychic.Scripts.Power.Debuff;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using STS2RitsuLib.Cards.DynamicVars;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Power;
 
@@ -14,19 +17,29 @@ public class OblivionForm() : AbstractSakikoCard(CustomCost, CustomType, CustomR
     private const CardRarity CustomRarity = CardRarity.Rare;
     private const TargetType CustomTarget = TargetType.Self;
 
-    protected override IEnumerable<CardKeyword> CardKeywords => [CardKeyword.Ethereal];
+    protected override IEnumerable<IHoverTip> CardHoverTips =>
+    [
+        HoverTipFactory.FromCard<Residue>()
+    ];
 
-    protected override IEnumerable<DynamicVar> CardVars => [ModCardVars.Int("Multiplier", 3)];
+    protected override IEnumerable<CardKeyword> CardKeywords =>
+    [
+        CardKeyword.Ethereal
+    ];
+
+    protected override IEnumerable<DynamicVar> CardVars =>
+    [
+        QuickVar.Buff.Create(3)
+    ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
         await PowerCmd.Apply<OblivionFormPower>(choiceContext, Owner.Creature,
-            DynamicVars["Multiplier"].IntValue, Owner.Creature, this);
-
+            QuickVar.Buff.GetVar(this).BaseValue, Owner.Creature, this);
+        if (!Owner.Creature.HasPower<AmnesiaPower>())
+        {
+            await PowerCmd.Apply<AmnesiaPower>(choiceContext, Owner.Creature, 1, Owner.Creature, this);
+        }
     }
 
-    protected override void OnUpgrade()
-    {
-        RemoveKeyword(CardKeyword.Ethereal);
-    }
 }

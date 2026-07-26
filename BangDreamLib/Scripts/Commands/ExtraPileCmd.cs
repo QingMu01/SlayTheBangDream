@@ -1,18 +1,92 @@
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Audio.Debug;
+using MegaCrit.Sts2.Core.CardSelection;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
+using MegaCrit.Sts2.Core.Context;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Players;
+using MegaCrit.Sts2.Core.GameActions;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Hooks;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Multiplayer.Game;
+using MegaCrit.Sts2.Core.Nodes.Screens.CardSelection;
+using MegaCrit.Sts2.Core.Runs;
 
 namespace BangDreamLib.Scripts.Commands;
 
 public static class ExtraPileCmd
 {
+    public static async Task<IEnumerable<CardModel>> FromExtraDeckForUpgrade(Player player, CardSelectorPrefs prefs)
+    {
+        var upgradableCards = BangDreamConst.ExtraDeck.GetPile(player).Cards
+            .Where(card => card.IsUpgradable)
+            .ToList();
+        if (upgradableCards.Count == 0)
+            return [];
+
+        IEnumerable<CardModel> selectedCards;
+        if (upgradableCards.Count <= prefs.MinSelect && !prefs.RequireManualConfirmation)
+        {
+            selectedCards = upgradableCards;
+        }
+        else if (CardSelectCmd.Selector != null)
+        {
+            selectedCards = await CardSelectCmd.Selector.GetSelectedCards(
+                upgradableCards, prefs.MinSelect, prefs.MaxSelect);
+        }
+        else
+        {
+            var choiceId = RunManager.Instance.PlayerChoiceSynchronizer.ReserveChoiceId(player);
+            if (ShouldSelectLocalCard(player))
+            {
+                if (CardSelectCmd.LocalSelector != null)
+                {
+                    selectedCards = await CardSelectCmd.LocalSelector.GetSelectedCards(
+                        upgradableCards, prefs.MinSelect, prefs.MaxSelect);
+                }
+                else
+                {
+                    var localSelection = (await NDeckUpgradeSelectScreen
+                        .ShowScreen(upgradableCards, prefs, player.RunState)
+                        .CardsSelected()).ToList();
+                    selectedCards = localSelection;
+                    RunManager.Instance.PlayerChoiceSynchronizer.SyncLocalChoice(
+                        player,
+                        choiceId,
+                        PlayerChoiceResult.FromIndexes(localSelection
+                            .Select(card => upgradableCards.IndexOf(card))
+                            .ToList()));
+                }
+            }
+            else
+            {
+                selectedCards = (await RunManager.Instance.PlayerChoiceSynchronizer
+                        .WaitForRemoteChoice(player, choiceId))
+                    .AsIndexes()
+                    .Select(index => upgradableCards[index])
+                    .ToList();
+            }
+        }
+
+        var result = selectedCards.ToList();
+        LogChoice(player, result);
+        return result;
+    }
+
+    private static bool ShouldSelectLocalCard(Player player)
+    {
+        return LocalContext.IsMe(player) && RunManager.Instance.NetService.Type != NetGameType.Replay;
+    }
+
+    private static void LogChoice(Player player, IEnumerable<CardModel> cards)
+    {
+        var cardIds = string.Join(",", cards.Select(card => card.Id.Entry));
+        BangDreamLibCore.Logger.Info($"Player {player.NetId} chose extra deck cards [{cardIds}]");
+    }
+
     public static async Task<IEnumerable<CardModel>> Draw(PlayerChoiceContext choiceContext,
         decimal count,
         Player player,
@@ -33,7 +107,7 @@ public static class ExtraPileCmd
         var combatState = player.Creature.CombatState;
         var result = new List<CardModel>();
         var hand = PileType.Hand.GetPile(player);
-        var drawPile = BangDreamTools.GetPile(BangDreamConst.ExtraDraw, player);
+        var drawPile = BangDreamConst.ExtraDraw.GetPile(player);
         var drawsRequested = count > 0M ? (int)Math.Ceiling(count) : 0;
         if (drawsRequested == 0)
             return result;
@@ -74,7 +148,7 @@ public static class ExtraPileCmd
 
     private static bool CheckIfDrawIsPossibleAndShowThoughtBubbleIfNot(Player player)
     {
-        if (BangDreamTools.GetPile(BangDreamConst.ExtraDraw, player).Cards.Count == 0)
+        if (BangDreamConst.ExtraDraw.GetPile(player).Cards.Count == 0)
         {
             ThinkCmd.Play(new LocString("combat_messages", "NO_DRAW"), player.Creature, 2.0);
             return false;

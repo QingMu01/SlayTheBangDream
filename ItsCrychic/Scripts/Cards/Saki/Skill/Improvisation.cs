@@ -29,14 +29,14 @@ public class Improvisation() : AbstractSakikoCard(CustomCost, CustomType, Custom
         ArgumentNullException.ThrowIfNull(CombatState);
 
         var musicCards = new List<CardModel>();
-        if (Owner.Character is IExtraDeckSupportCharacter character && character.ExtraCardPool.AllCards.Any())
+        if (Owner.Character is IPerformableCharacter character && character.ExtraCardPool.AllCards.Any())
         {
             musicCards.AddRange(character.ExtraCardPool.AllCards);
         }
         else
         {
             musicCards.AddRange(ModelDb.AllCharacters
-                .OfType<IExtraDeckSupportCharacter>()
+                .OfType<IPerformableCharacter>()
                 .SelectMany(item => item.ExtraCardPool.AllCards));
         }
 

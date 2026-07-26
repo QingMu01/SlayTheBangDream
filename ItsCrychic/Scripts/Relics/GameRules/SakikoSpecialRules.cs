@@ -1,8 +1,11 @@
 ﻿using BangDreamLib.Scripts.Interfaces.CharacterAugment;
 using BangDreamLib.Scripts.Relics;
+using BangDreamLib.Scripts.RestSiteOption;
 using BangDreamLib.Scripts.Rewards;
 using BangDreamLib.Scripts.Utils;
+using ItsCrychic.Scripts.Character;
 using MegaCrit.Sts2.Core.Entities.Players;
+using MegaCrit.Sts2.Core.Entities.RestSite;
 using MegaCrit.Sts2.Core.Models.RelicPools;
 using MegaCrit.Sts2.Core.Rewards;
 using MegaCrit.Sts2.Core.Rooms;
@@ -19,8 +22,7 @@ public class SakikoSpecialRules : HiddenRelic
 
     public override bool TryModifyRewards(Player player, List<Reward> rewards, AbstractRoom? room)
     {
-        if (player == Owner && rewards.Count > 0 && player.Character is IExtraDeckSupportCharacter extraDeck &&
-            room != null)
+        if (player == Owner && rewards.Count > 0 && player.Character is IPerformableCharacter extraDeck && room != null)
         {
             MusicCardReward? cardReward = null;
             switch (room.RoomType)
@@ -71,6 +73,17 @@ public class SakikoSpecialRules : HiddenRelic
                 rewards.Add(cardReward);
                 return true;
             }
+        }
+
+        return false;
+    }
+
+    public override bool TryModifyRestSiteOptions(Player player, ICollection<RestSiteOption> options)
+    {
+        if (player.Character is TogawaSakiko)
+        {
+            options.Add(new TechnicalPracticeOption(player));
+            return true;
         }
 
         return false;

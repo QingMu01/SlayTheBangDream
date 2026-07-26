@@ -4,8 +4,8 @@ using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Entities.Powers;
+using MegaCrit.Sts2.Core.Extensions;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using MegaCrit.Sts2.Core.Models;
 
 namespace ItsCrychic.Scripts.Power.Buff;
 
@@ -21,32 +21,26 @@ public class OperationStrategyPower : BandPowerModel
     {
         if (player != Owner.Player) return;
 
-        var cardPool = CombatManager.Instance.History.CardPlaysFinished
-            .Select(item => item.CardPlay.Card.Type == CardType.Skill)
+        var cardHistories = CombatManager.Instance.History.CardPlaysFinished
+            .Where(entry => entry.CardPlay.Player == Owner.Player && entry.CardPlay.Card.Type == CardType.Skill)
+            .Select(entry => entry.CardPlay.Card)
             .ToList();
-        if (cardPool.Count > 0)
+        if (cardHistories.Count > 0)
         {
-            var waitAddCards = new List<CardModel>();
-            while (waitAddCards.Count < Amount)
-            {
-                var randomCard = player.RunState.Rng.CombatCardSelection
-                    .NextItem(CombatManager.Instance.History.CardPlaysFinished)?.CardPlay.Card;
-                if (randomCard != null)
+            var selectedCard = cardHistories.StableShuffle(player.RunState.Rng.CombatCardSelection)
+                .Take(Math.Clamp(Amount, 0, cardHistories.Count))
+                .Select(card =>
                 {
-                    var cloneCard = randomCard.CreateClone();
-                    cloneCard.SetToFreeThisTurn();
-                    waitAddCards.Add(cloneCard);
-                }
-                else
-                {
-                    break;
-                }
-            }
+                    var cardModel = card.CreateClone();
+                    cardModel.SetToFreeThisTurn();
+                    return cardModel;
+                })
+                .ToList();
 
-            if (waitAddCards.Count > 0)
+            if (selectedCard.Count > 0)
             {
                 Flash();
-                await CardPileCmd.Add(waitAddCards, PileType.Hand);
+                await CardPileCmd.Add(selectedCard, PileType.Hand);
             }
         }
     }

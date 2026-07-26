@@ -1,4 +1,5 @@
 using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Interfaces.GameHook;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -8,8 +9,21 @@ using MegaCrit.Sts2.Core.Models;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
-public class KillKiss() : AbstractSakikoMusicCard(CardRarity.Rare, TargetType.RandomEnemy)
+public class KillKiss() : AbstractSakikoMusicCard(CardRarity.Rare, TargetType.RandomEnemy), IPerformHookListener
 {
+    protected override bool ShouldGlowGoldInternal
+    {
+        get
+        {
+            if (IsMutable && DynamicVars.TryGetValue("IsInHand", out var isInHand) && isInHand is BoolVar boolVar)
+            {
+                return boolVar.BoolVal;
+            }
+
+            return false;
+        }
+    }
+
     protected override IEnumerable<DynamicVar> CardVars =>
     [
         new BoolVar("IsInHand", false),
@@ -27,6 +41,16 @@ public class KillKiss() : AbstractSakikoMusicCard(CardRarity.Rare, TargetType.Ra
         })
     ];
 
+    protected override Task OnPlay(PlayerChoiceContext choiceContext, CardPlay cardPlay)
+    {
+        if (!cardPlay.IsAutoPlay)
+        {
+            if (DynamicVars["IsInHand"] is BoolVar var) var.BoolVal = true;
+        }
+
+        return Task.CompletedTask;
+    }
+
     public override async Task OnPerform(PlayerChoiceContext choiceContext)
     {
         ArgumentNullException.ThrowIfNull(CombatState);
@@ -40,6 +64,8 @@ public class KillKiss() : AbstractSakikoMusicCard(CardRarity.Rare, TargetType.Ra
                 .WithHitFx("vfx/vfx_attack_slash")
                 .Execute(choiceContext);
         }
+
+        if (DynamicVars["IsInHand"] is BoolVar var) var.BoolVal = false;
     }
 
     public override Task AfterCardChangedPiles(CardModel card, PileType oldPileType, AbstractModel? clonedBy)
@@ -53,6 +79,14 @@ public class KillKiss() : AbstractSakikoMusicCard(CardRarity.Rare, TargetType.Ra
         }
 
         return Task.CompletedTask;
+    }
+
+    public async Task OnCardEnterPerformArea(PlayerChoiceContext choiceContext, CardModel cardModel)
+    {
+        if (cardModel == this && DynamicVars["IsInHand"] is BoolVar { BoolVal: true })
+        {
+            await Owner.AttachedData().PerformManager.PerformCard(this);
+        }
     }
 
     protected override void OnUpgrade()

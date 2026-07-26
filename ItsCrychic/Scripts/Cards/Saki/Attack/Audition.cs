@@ -1,4 +1,5 @@
 using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -34,13 +35,16 @@ public class Audition() : AbstractSakikoCard(CustomCost, CustomType, CustomRarit
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
 
-        var extraDrawCards = BangDreamTools.GetPile(BangDreamConst.ExtraDraw, Owner).Cards.ToList();
-        if (extraDrawCards.Count > 0)
+        var manager = Owner.AttachedData().PerformManager;
+        var musicCards = manager.PerformPile.Cards
+            .Where(card => card is IPerformCard)
+            .ToList();
+        if (musicCards.Count > 0)
         {
-            var randomCard = Owner.RunState.Rng.CombatCardSelection.NextItem(extraDrawCards);
+            var randomCard = Owner.RunState.Rng.CombatCardSelection.NextItem(musicCards);
             if (randomCard != null)
             {
-                await CardPileCmd.Add(randomCard, BangDreamConst.PerformPile);
+                await manager.PerformCard(randomCard);
             }
         }
     }

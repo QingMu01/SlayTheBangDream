@@ -30,9 +30,9 @@ public class StressBeat()
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Damage.Create(9),
+        QuickVar.Damage.Create(12),
         QuickVar.LingeredResource.Create(1),
-        QuickVar.Buff.Create(2),
+        QuickVar.Buff.Create(2)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
@@ -45,20 +45,21 @@ public class StressBeat()
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
         var target = attack.Results.SelectMany(results => results).FirstOrDefault()?.Receiver;
-        if (target is not { IsHittable: true }) return;
-
-        await PowerCmd.Apply<VulnerablePower>(choiceContext, target, QuickVar.Buff.GetVar(this).IntValue,
-            Owner.Creature, this);
-        
-        var vulnerable = target.GetPower<VulnerablePower>()?.Amount ?? 0;
-        if (vulnerable > 0)
+        if (target is { IsHittable: true })
         {
-            await SecondaryResourceCmd.Gain(Owner, BangDreamConst.LingeredResource, vulnerable, this);
+            await PowerCmd.Apply<VulnerablePower>(choiceContext, target, QuickVar.Buff.GetVar(this).IntValue,
+                Owner.Creature, this);
+
+            var vulnerable = target.GetPower<VulnerablePower>()?.Amount ?? 0;
+            if (vulnerable > 0)
+            {
+                await SecondaryResourceCmd.Gain(Owner, BangDreamConst.LingeredResource, vulnerable, this);
+            }
         }
     }
 
     protected override void OnUpgrade()
     {
-        DynamicVars.Vulnerable.UpgradeValueBy(1);
+        QuickVar.Buff.GetVar(this).UpgradeValueBy(1);
     }
 }

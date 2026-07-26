@@ -1,43 +1,28 @@
 using BangDreamLib.Scripts.Extensions;
-using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.Extensions;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using STS2RitsuLib.Combat.SecondaryResources;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
-public class DivineWrath() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget),
-    ICopySelfAndPlayFlag
+public class DivineWrath() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget)
 {
     private const int CustomCost = 1;
     private const CardType CustomType = CardType.Attack;
     private const CardRarity CustomRarity = CardRarity.Uncommon;
     private const TargetType CustomTarget = TargetType.AnyEnemy;
 
-    private bool _shouldCopySelfAndPlay;
-
-    public bool ShouldCopySelfAndPlayOnce
-    {
-        get => _shouldCopySelfAndPlay;
-        set
-        {
-            AssertMutable();
-            _shouldCopySelfAndPlay = value;
-        }
-    }
-
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.Lingered
+        BangDreamConst.PerformArea
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Damage.Create(8),
-        QuickVar.LingeredResource.Create(2)
+        QuickVar.Damage.Create(9)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
@@ -50,17 +35,16 @@ public class DivineWrath() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
 
-        await SecondaryResourceCmd.Gain(Owner, BangDreamConst.LingeredResource,
-            QuickVar.LingeredResource.GetVar(this).IntValue, this);
-
-        if (Owner.RunState.Rng.CombatTargets.NextBool())
-        {
-            ShouldCopySelfAndPlayOnce = true;
-        }
+        var manager = Owner.AttachedData().PerformManager;
+        var shuffledCards = manager.PerformPile.Cards
+            .ToList()
+            .StableShuffle(Owner.RunState.Rng.CombatCardSelection)
+            .ToList();
+        await manager.ReorderAndReenter(choiceContext, shuffledCards);
     }
 
     protected override void OnUpgrade()
     {
-        QuickVar.LingeredResource.GetVar(this).UpgradeValueBy(1m);
+        DynamicVars.Damage.UpgradeValueBy(3m);
     }
 }

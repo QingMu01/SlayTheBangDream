@@ -1,5 +1,4 @@
 using BangDreamLib.Scripts.Extensions;
-using BangDreamLib.Scripts.Interfaces.GameHook;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -9,14 +8,12 @@ using MegaCrit.Sts2.Core.Models;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
-public class SoundWave() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget), IPerformHookListener
+public class SoundWave() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget)
 {
     private const int CustomCost = 4;
     private const CardType CustomType = CardType.Attack;
     private const CardRarity CustomRarity = CardRarity.Uncommon;
     private const TargetType CustomTarget = TargetType.AllEnemies;
-
-    private readonly HashSet<CardModel> _performanceCards = [];
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
@@ -44,46 +41,16 @@ public class SoundWave() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
         DynamicVars.Damage.UpgradeValueBy(4m);
     }
 
-    public Task OnCardEnterPerformArea(PlayerChoiceContext choiceContext, CardModel cardModel)
+    public override bool TryModifyEnergyCostInCombat(CardModel card, decimal originalCost, out decimal modifiedCost)
     {
-        _performanceCards.Add(cardModel);
-        UpdateCost();
-        return Task.CompletedTask;
-    }
-
-    public Task OnCardLeavePerformArea(PlayerChoiceContext choiceContext, CardModel cardModel)
-    {
-        _performanceCards.Remove(cardModel);
-        UpdateCost();
-        return Task.CompletedTask;
-    }
-
-    public override Task AfterCardDrawn(PlayerChoiceContext choiceContext, CardModel card, bool fromHandDraw)
-    {
-        InitSet();
-        return Task.CompletedTask;
-    }
-
-    public override Task AfterCardEnteredCombat(CardModel card)
-    {
-        InitSet();
-        return Task.CompletedTask;
-    }
-
-    private void InitSet()
-    {
-        _performanceCards.Clear();
-        var performanceCards = BangDreamTools.GetPile(BangDreamConst.PerformPile, Owner).Cards.ToList();
-        foreach (var card in performanceCards)
+        if (card != this)
         {
-            _performanceCards.Add(card);
+            modifiedCost = originalCost;
+            return false;
         }
 
-        UpdateCost();
-    }
-
-    private void UpdateCost()
-    {
-        EnergyCost.SetThisTurn(-_performanceCards.Count);
+        var performCardCount = BangDreamConst.PerformPile.GetPile(Owner).Cards.Count;
+        modifiedCost = Math.Max(0m, originalCost - performCardCount);
+        return modifiedCost != originalCost;
     }
 }

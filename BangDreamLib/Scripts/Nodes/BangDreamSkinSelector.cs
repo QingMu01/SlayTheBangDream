@@ -18,6 +18,9 @@ public partial class BangDreamSkinSelector : Control
     private static readonly Color DisabledColor = new(0.5f, 0.5f, 0.5f);
     private static readonly Color EnabledColor = new(1f, 1f, 1f);
 
+    [Signal]
+    public delegate void SkinSelectedEventHandler(string skinPath);
+
     private BangDreamGoldArrowButton? _leftArrow;
     private BangDreamGoldArrowButton? _rightArrow;
 
@@ -153,6 +156,7 @@ public partial class BangDreamSkinSelector : Control
 
                     visuals.Scale = new Vector2(0.7f, 0.7f);
                     _skinContainer.AddChild(visuals);
+                    EmitSignalSkinSelected(_skinInfos[_currentSkinIndex].Item1);
                     CallDeferred(nameof(SetAnim), visuals, "Idle");
                 }
             }

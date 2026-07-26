@@ -4,6 +4,7 @@ using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.HoverTips;
+using MegaCrit.Sts2.Core.Nodes.Rooms;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
@@ -21,21 +22,26 @@ public class BandPractice() : AbstractSakikoCard(CustomCost, CustomType, CustomR
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        var selectedCards = await CardSelectCmd.FromHand(choiceContext, Owner,
-            CardSelectorPrompt.ToTransform.GetFixedPrefs(1), card => card != this, this);
+        var selectedCards = await CardSelectCmd.FromHand(
+            choiceContext,
+            Owner,
+            CardSelectorPrompt.ToTransform.GetFixedPrefs(1),
+            card => card != this,
+            this
+        );
+
         foreach (var selectedCard in selectedCards)
         {
-            await CardPileCmd.Add(selectedCard, PileType.Play);
-            var cardPileAddResult = await CardCmd.TransformTo<MelodyFragments>(selectedCard);
-            if (cardPileAddResult is { success: true })
-            {
-                if (IsUpgraded)
-                {
-                    CardCmd.Upgrade(cardPileAddResult.Value.cardAdded);
-                }
+            NCombatRoom.Instance?.Ui.Hand.Remove(selectedCard);
 
-                await Cmd.CustomScaledWait(0.15f, 0.3f);
-                await CardPileCmd.Add(cardPileAddResult.Value.cardAdded, BangDreamConst.ExtraDraw);
+            await CardPileCmd.Add(selectedCard, BangDreamConst.ExtraDraw, skipVisuals: true);
+
+            var transformResult = await CardCmd.TransformTo<MelodyFragments>(selectedCard);
+
+            if (transformResult is { success: true })
+            {
+                var transformedCard = transformResult.Value.cardAdded;
+                if (IsUpgraded) CardCmd.Upgrade(transformedCard);
             }
         }
     }

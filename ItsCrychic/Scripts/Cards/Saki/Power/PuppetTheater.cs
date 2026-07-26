@@ -1,3 +1,4 @@
+using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
 using ItsCrychic.Scripts.Power.Buff;
 using MegaCrit.Sts2.Core.Commands;
@@ -18,15 +19,20 @@ public class PuppetTheater() : AbstractSakikoCard(CustomCost, CustomType, Custom
     [
         BangDreamConst.Lingered
     ];
-    protected override IEnumerable<DynamicVar> CardVars => [];
+
+    protected override IEnumerable<DynamicVar> CardVars =>
+    [
+        QuickVar.Buff.Create(4)
+    ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        await PowerCmd.Apply<PuppetTheaterPower>(choiceContext, Owner.Creature, 1, Owner.Creature, this);
+        await PowerCmd.Apply<PuppetTheaterPower>(choiceContext, Owner.Creature, QuickVar.Buff.GetVar(this).BaseValue,
+            Owner.Creature, this);
     }
 
     protected override void OnUpgrade()
     {
-        AddKeyword(CardKeyword.Innate);
+        QuickVar.Buff.GetVar(this).UpgradeValueBy(2);
     }
 }

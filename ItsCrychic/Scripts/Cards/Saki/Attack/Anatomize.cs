@@ -14,6 +14,8 @@ public class Anatomize() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
     private const CardRarity CustomRarity = CardRarity.Rare;
     private const TargetType CustomTarget = TargetType.AnyEnemy;
 
+    protected override IEnumerable<CardKeyword> CardKeywords => [CardKeyword.Exhaust];
+
     protected override IEnumerable<DynamicVar> CardVars =>
     [
         ComputedDynamicVarHelper.CreateDamageVar("CalcDamage", 18m, ctx =>

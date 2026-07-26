@@ -15,7 +15,7 @@ public abstract class MusicCardModel(
 {
     public virtual bool IsInstant => false;
     public virtual int AspirationSlot => 0;
-    public virtual PerformEnqueueStrategy Strategy => PerformEnqueueStrategy.Nearby;
+    public virtual PerformEnqueueStrategy Strategy => PerformEnqueueStrategy.Default;
 
     public virtual Task OnPerform(PlayerChoiceContext choiceContext)
     {

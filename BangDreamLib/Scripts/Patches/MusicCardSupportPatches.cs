@@ -25,7 +25,7 @@ internal class CardNodeSupportMusicTypePatch : IPatchMethod
 {
     private static readonly LocString MusicType = new("gameplay_ui", "BANG_DREAM_LIB_MUSIC_TYPE");
 
-    public static string PatchId => "replace_card_type_locString_if_its_implemented_IPerformance";
+    public static string PatchId => "replace_music_card_type";
 
     public static bool IsCritical => false;
 

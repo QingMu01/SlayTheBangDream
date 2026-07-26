@@ -1,5 +1,5 @@
 using System.Reflection;
-using BangDreamLib.Scripts.Interfaces;
+using BangDreamLib.Scripts.Enums;
 using BangDreamLib.Scripts.Utils.Infos;
 using Godot;
 using HarmonyLib;
@@ -19,6 +19,8 @@ public partial class BangDreamVfxManager : Control
 
     private readonly Dictionary<NBangDreamFlyingVfx, List<(StringName, Callable)>> _connectedCallables = new();
 
+    private readonly Dictionary<NBangDreamFlyingVfx, VfxHandle> _handles = new();
+
     private readonly HashSet<NBangDreamFlyingVfx> _activeVfx = [];
 
     private Control? _parent;
@@ -31,10 +33,11 @@ public partial class BangDreamVfxManager : Control
     public override void _ExitTree()
     {
         foreach (var vfx in _activeVfx.ToArray())
-            UnregisterVfx(vfx);
+            UnregisterVfx(vfx, VfxResult.Cancelled);
 
         _treeExitedActions.Clear();
         _connectedCallables.Clear();
+        _handles.Clear();
 
         _activeVfx.Clear();
 
@@ -46,70 +49,93 @@ public partial class BangDreamVfxManager : Control
         _parent = GetParent<Control>();
     }
 
-    public void SubmitVfx(NBangDreamFlyingVfx flyingVfx, IVfxEffectHandler handler)
+    public VfxHandle SubmitVfx(NBangDreamFlyingVfx flyingVfx)
     {
-        if (!_activeVfx.Add(flyingVfx)) return;
+        ArgumentNullException.ThrowIfNull(flyingVfx);
+
+        if (!_activeVfx.Add(flyingVfx))
+            return _handles[flyingVfx];
+
+        var handle = new VfxHandle(flyingVfx.Context);
+        _handles[flyingVfx] = handle;
 
         var connections = new List<(StringName, Callable)>
         {
-            (NBangDreamFlyingVfx.SignalName.VfxSpawned, ToCallable(handler.OnSpawn)),
-            (NBangDreamFlyingVfx.SignalName.BeforeHit, ToCallable(handler.OnBeforeHit)),
-            (NBangDreamFlyingVfx.SignalName.HitTriggered, ToCallable(handler.OnHit)),
-            (NBangDreamFlyingVfx.SignalName.AfterHit, ToCallable(handler.OnAfterHit)),
-            (NBangDreamFlyingVfx.SignalName.VfxFinished, ToCallable(handler.OnFinish)),
+            (NBangDreamFlyingVfx.SignalName.HitTriggered,
+                Callable.From<VfxContext>(_ => handle.CompleteArrival(VfxResult.Arrived))),
+            (NBangDreamFlyingVfx.SignalName.VfxFinished,
+                Callable.From<VfxContext>(_ =>
+                {
+                    var result = CombatManager.Instance.IsInProgress
+                        ? VfxResult.Finished
+                        : VfxResult.CombatEnded;
+                    handle.Complete(result);
+                })),
         };
 
-        foreach (var (signal, callable) in connections)
-            flyingVfx.Connect(signal, callable);
-
-        _connectedCallables[flyingVfx] = connections;
-
-        var onTreeExited = () => UnregisterVfx(flyingVfx);
-        _treeExitedActions[flyingVfx] = onTreeExited;
-        flyingVfx.TreeExited += onTreeExited;
-
-        var container = _parent ?? this;
-        container.AddChildSafely(flyingVfx);
+        RegisterVfx(flyingVfx, connections);
+        return handle;
     }
 
-
-    public void UnregisterVfx(NBangDreamFlyingVfx? vfx)
+    public void UnregisterVfx(NBangDreamFlyingVfx? vfx, VfxResult result = VfxResult.NodeRemoved)
     {
-        if (!IsInstanceValid(vfx) || !_activeVfx.Contains(vfx)) return;
+        if (vfx == null || !_activeVfx.Contains(vfx)) return;
 
         if (_treeExitedActions.Remove(vfx, out var treeAction))
         {
-            vfx.TreeExited -= treeAction;
+            if (IsInstanceValid(vfx))
+                vfx.TreeExited -= treeAction;
         }
 
         if (_connectedCallables.Remove(vfx, out var connections))
         {
-            foreach (var (signal, callable) in connections)
-                vfx.Disconnect(signal, callable);
+            if (IsInstanceValid(vfx))
+            {
+                foreach (var (signal, callable) in connections)
+                    vfx.Disconnect(signal, callable);
+            }
         }
 
-        if (vfx.UpdateCombatTracker)
+        if (_handles.Remove(vfx, out var handle))
         {
-            StateChanged?.Invoke(CombatManager.Instance.StateTracker, ["FakeInvoke"]);
+            handle.Complete(result);
         }
 
         _activeVfx.Remove(vfx);
     }
 
-    private static Callable ToCallable(Func<VfxContext, Task> asyncAction)
+    internal static void NotifyCombatStateChanged()
     {
-        return Callable.From<VfxContext>(context => { _ = SafeInvokeAsync(asyncAction, context); });
+        if (CombatManager.Instance.IsInProgress)
+            StateChanged?.Invoke(CombatManager.Instance.StateTracker, ["BangDreamVfx"]);
     }
 
-    private static async Task SafeInvokeAsync(Func<VfxContext, Task> asyncAction, VfxContext context)
+    private void RegisterVfx(NBangDreamFlyingVfx flyingVfx, List<(StringName, Callable)> connections)
     {
+        foreach (var (signal, callable) in connections)
+            flyingVfx.Connect(signal, callable);
+
+        _connectedCallables[flyingVfx] = connections;
+
+        var onTreeExited = () =>
+        {
+            var result = CombatManager.Instance.IsInProgress
+                ? VfxResult.NodeRemoved
+                : VfxResult.CombatEnded;
+            UnregisterVfx(flyingVfx, result);
+        };
+        _treeExitedActions[flyingVfx] = onTreeExited;
+        flyingVfx.TreeExited += onTreeExited;
+
         try
         {
-            await asyncAction(context);
+            var container = _parent ?? this;
+            container.AddChildSafely(flyingVfx);
         }
-        catch (Exception e)
+        catch
         {
-            BangDreamLibCore.Logger.Error($"VfxManager dispatch error: {e}");
+            UnregisterVfx(flyingVfx, VfxResult.Cancelled);
+            throw;
         }
     }
 }

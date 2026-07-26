@@ -1,15 +1,14 @@
-using BangDreamLib.Scripts.Commands;
 using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using STS2RitsuLib.Cards.DynamicVars;
+using STS2RitsuLib.Combat.AttackHits;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
-public class Legato() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget)
+public class Legato() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget), IAttackHitHookListener
 {
     private const int CustomCost = 1;
     private const CardType CustomType = CardType.Attack;
@@ -24,32 +23,32 @@ public class Legato() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity,
     protected override IEnumerable<DynamicVar> CardVars =>
     [
         QuickVar.Damage.Create(4),
-        ModCardVars.Int("MusicNote", 1),
-        ComputedDynamicVarHelper.CreateBaseVar("RepeatCount", 0m,
+        ComputedDynamicVarHelper.CreateBaseVar("RepeatCount", 1m,
             ctx => ctx.IsInCombat()
-                ? BangDreamConst.PerformPile.GetPile(ctx.ActiveCard.Owner).Cards.Count
+                ? BangDreamConst.PerformPile.GetPile(ctx.ActiveCard.Owner).Cards.Count + ctx.BaseValue
                 : ctx.BaseValue)
     ];
+
+    // TODO 攻击特效
+    public Task BeforeAttackHit(AttackHitContext context)
+    {
+        return Task.CompletedTask;
+    }
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
         ArgumentNullException.ThrowIfNull(play.Target);
-        var cardsCount = BangDreamConst.PerformPile.GetPile(Owner).Cards.Count;
-        if (cardsCount > 0)
-        {
-            await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
-                .FromCard(this, play)
-                .Targeting(play.Target)
-                .WithHitCount(cardsCount)
-                .WithHitFx("vfx/vfx_attack_slash")
-                .Execute(choiceContext);
-            await MusicNoteCmd.FromCard(this, DynamicVars["MusicNote"].IntValue * cardsCount);
-        }
+
+        await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
+            .FromCard(this, play)
+            .Targeting(play.Target)
+            .WithHitCount((int)DynamicVars.ComputedValue("RepeatCount"))
+            .WithHitFx("vfx/vfx_attack_slash")
+            .Execute(choiceContext);
     }
 
     protected override void OnUpgrade()
     {
         DynamicVars.Damage.UpgradeValueBy(2m);
-        DynamicVars["MusicNote"].UpgradeValueBy(1m);
     }
 }

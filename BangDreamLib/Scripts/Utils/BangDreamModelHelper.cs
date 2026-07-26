@@ -61,6 +61,7 @@ public static class BangDreamModelHelper
             _ => CardRarityOddsType.RegularEncounter
         };
 
-        return new CardCreationOptions([model], source, cardRarityOddsType);
+        return new CardCreationOptions([model], source, cardRarityOddsType).WithFlags(CardCreationFlags
+            .NoCardPoolModifications);
     }
 }

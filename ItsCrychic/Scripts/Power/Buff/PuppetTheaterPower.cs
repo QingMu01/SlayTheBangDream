@@ -1,50 +1,29 @@
+using BangDreamLib.Scripts.Interfaces.GameHook;
 using BangDreamLib.Scripts.Powers;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
-using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Entities.Powers;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using STS2RitsuLib.Combat.SecondaryResources;
+using MegaCrit.Sts2.Core.Localization.DynamicVars;
+using MegaCrit.Sts2.Core.ValueProps;
 
 namespace ItsCrychic.Scripts.Power.Buff;
 
-public class PuppetTheaterPower : BandPowerModel, ISecondaryResourceHookListener
+public class PuppetTheaterPower : BandPowerModel, ISubsideHookListener
 {
     public override PowerType Type => PowerType.Buff;
 
     public override PowerStackType StackType => PowerStackType.Counter;
 
-    private int _count;
-
-    public async Task AfterSecondaryResourceChanged(SecondaryResourceChangeContext context)
+    public async Task AfterCardSubside(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        if (context.Player == Owner.Player && context.Reason == SecondaryResourceChangeReason.Spend)
+        if (play.Card.Owner != Owner.Player || Owner.CombatState == null) return;
+
+        Flash();
+        foreach (var enemy in Owner.CombatState.Enemies.Where(enemy => enemy.IsHittable))
         {
-            if (_count < Amount)
-            {
-                var discardPileCards = Owner.Player.PlayerCombatState?.DiscardPile.Cards;
-                if (discardPileCards is { Count: > 0 })
-                {
-                    var randomCard = Owner.Player.RunState.Rng.CombatCardSelection.NextItem(discardPileCards);
-                    if (randomCard != null)
-                    {
-                        Flash();
-                        await CardPileCmd.Add(randomCard, PileType.Hand);
-                    }
-                }
-
-                _count++;
-            }
+            await CreatureCmd.Damage(choiceContext, enemy,
+                new DamageVar(Amount, ValueProp.Unpowered | ValueProp.Unblockable | ValueProp.SkipHurtAnim), Owner);
         }
-    }
-
-    public override Task AfterPlayerTurnStart(PlayerChoiceContext choiceContext, Player player)
-    {
-        if (player == Owner.Player)
-        {
-            _count = 0;
-        }
-
-        return Task.CompletedTask;
     }
 }

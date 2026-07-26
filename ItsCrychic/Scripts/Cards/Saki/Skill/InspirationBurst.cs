@@ -30,7 +30,7 @@ public class InspirationBurst() : AbstractSakikoCard(CustomCost, CustomType, Cus
     {
         ArgumentNullException.ThrowIfNull(CombatState);
 
-        var performCards = BangDreamTools.GetPile(BangDreamConst.PerformPile, Owner).Cards.OfType<MelodyFragments>()
+        var performCards = BangDreamConst.PerformPile.GetPile(Owner).Cards.OfType<MelodyFragments>()
             .ToList();
         var manager = Owner.AttachedData().PerformManager;
         foreach (var cardModel in performCards)

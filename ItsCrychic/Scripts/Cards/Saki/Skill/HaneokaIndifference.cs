@@ -24,7 +24,7 @@ public class HaneokaIndifference() : AbstractSakikoCard(CustomCost, CustomType, 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
         QuickVar.Block.Create(6),
-        QuickVar.Cards.Create(2)
+        QuickVar.Cards.Create(1)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
@@ -34,14 +34,14 @@ public class HaneokaIndifference() : AbstractSakikoCard(CustomCost, CustomType, 
         await CreatureCmd.GainBlock(Owner.Creature, DynamicVars.Block, play);
 
         var selectedCards = await CardSelectCmd.FromCombatPile(choiceContext,
-            PileType.Draw.GetPile(Owner),
+            BangDreamConst.PerformPile.GetPile(Owner),
             Owner,
-            CardSelectorPrompt.ToExtraDraw.GetLimitedPrefs(DynamicVars.Cards.IntValue)
+            CardSelectorPrompt.ToHand.GetLimitedPrefs(DynamicVars.Cards.IntValue, reqConfirm: true)
         );
 
         foreach (var selectedCard in selectedCards)
         {
-            await CardPileCmd.Add(selectedCard, BangDreamConst.ExtraDraw);
+            await CardPileCmd.Add(selectedCard, PileType.Hand);
         }
     }
 

@@ -17,6 +17,8 @@ public class InterludePower : BandPowerModel, IPerformHookListener
 
     public async Task OnCardEnterPerformArea(PlayerChoiceContext choiceContext, CardModel cardModel)
     {
+        if (cardModel.Owner != Owner.Player) return;
+
         await CreatureCmd.GainBlock(Owner, new BlockVar(Amount, ValueProp.Unpowered), null);
     }
 

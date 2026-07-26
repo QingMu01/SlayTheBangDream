@@ -11,38 +11,45 @@ namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
 public class SoraNoMusica() : AbstractSakikoMusicCard(CardRarity.Rare, TargetType.None), IPerformHookListener
 {
+    private const int BaseNoteCount = 8;
+    private const int BaseNoteDamage = 1;
+
     public override bool IsInstant => true;
 
     protected override IEnumerable<CardKeyword> CardKeywords => [];
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Repeat.Create(5),
-        QuickVar.Repeat.Create("Increase", 1)
+        QuickVar.Repeat.Create(BaseNoteCount),
+        QuickVar.Damage.Create(BaseNoteDamage)
     ];
 
     public override async Task OnPerform(PlayerChoiceContext choiceContext)
     {
-        await MusicNoteCmd.FromCard(this, DynamicVars.Repeat.IntValue);
+        var noteDamage = DynamicVars.Damage.BaseValue;
+        DynamicVars.Damage.BaseValue = BaseNoteDamage;
+        await MusicNoteCmd.FromCard(this, DynamicVars.Repeat.IntValue, baseDamage: noteDamage);
     }
 
     public Task OnCardPerform(PlayerChoiceContext choiceContext, PerformContext ctx, CardModel cardModel)
     {
         if (cardModel.Owner == Owner)
         {
-            DynamicVars.Repeat.BaseValue += DynamicVars["Increase"].IntValue;
+            DynamicVars.Damage.BaseValue += 1m;
         }
+
         return Task.CompletedTask;
     }
 
     public override Task AfterCardEnteredCombat(CardModel card)
     {
-        DynamicVars.Repeat.BaseValue = 5;
+        DynamicVars.Repeat.BaseValue = IsUpgraded ? BaseNoteCount + 2 : BaseNoteCount;
+        DynamicVars.Damage.BaseValue = BaseNoteDamage;
         return Task.CompletedTask;
     }
 
     protected override void OnUpgrade()
     {
-        DynamicVars["Increase"].UpgradeValueBy(1);
+        DynamicVars.Repeat.UpgradeValueBy(2);
     }
 }

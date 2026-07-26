@@ -4,7 +4,6 @@ using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Factories;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
@@ -17,9 +16,7 @@ public class Angles() : AbstractSakikoMusicCard(CardRarity.Rare, TargetType.None
     [
         CardKeyword.Exhaust
     ];
-
-    protected override IEnumerable<DynamicVar> CardVars => [];
-
+    
     public override async Task OnPerform(PlayerChoiceContext choiceContext)
     {
         ArgumentNullException.ThrowIfNull(CombatState);
@@ -37,10 +34,5 @@ public class Angles() : AbstractSakikoMusicCard(CardRarity.Rare, TargetType.None
             await CardPileCmd.AddGeneratedCardToCombat(card, BangDreamConst.PerformPile, Owner);
             await Cmd.CustomScaledWait(0.1f, 0.2f);
         }
-    }
-
-    protected override void OnUpgrade()
-    {
-        // 升级生成升级后的攻击牌。
     }
 }

@@ -1,13 +1,11 @@
 using BangDreamLib.Scripts.Nodes.VFX;
 using Godot;
-using MegaCrit.Sts2.Core.Assets;
 
 namespace BangDreamLib.Scripts.Utils.Builder;
 
-public class VfxCreator<T>(string scene)
-    where T : NBangDreamFlyingVfx
+public class VfxCreator<T>(string scene) where T : NBangDreamFlyingVfx
 {
-    private PackedScene Scene { get; } = PreloadManager.Cache.GetScene(scene);
+    private PackedScene Scene { get; } = BangDreamPreloadManager.GetScene(scene);
 
     public T Create(Action<T>? configure = null)
     {

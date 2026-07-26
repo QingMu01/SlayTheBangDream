@@ -3,14 +3,12 @@ using BangDreamLib.Scripts.Commands;
 using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
 using ItsCrychic.Scripts.Character.CardPools;
-using ItsCrychic.Scripts.Utils;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.CardPools;
 using STS2RitsuLib.Interop.AutoRegistration;
-using STS2RitsuLib.Scaffolding.Content;
 
 namespace ItsCrychic.Scripts.Cards.Token;
 
@@ -24,8 +22,6 @@ public class MelodyFragments() : MusicCardModel(CustomCost, CustomRarity, Custom
     public override bool IsInstant => true;
 
     public override CardPoolModel VisualCardPool => ModelDb.CardPool<SakikoMusicalCardPool>();
-
-    protected override CardAssetProfile CardAssetProfile => CrychicConst.DefaultCardAssetProfile(this);
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [

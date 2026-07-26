@@ -1,6 +1,5 @@
 using BangDreamLib.Scripts.Utils;
 using Godot;
-using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.DevConsole;
 using MegaCrit.Sts2.Core.DevConsole.ConsoleCommands;
 using MegaCrit.Sts2.Core.Entities.Players;
@@ -31,7 +30,7 @@ public class VfxConsoleCmd : AbstractConsoleCmd
     private static async Task PlayVfx(int index)
     {
         var vfxPath = BangDreamPreloadManager.VfxAssets.ToList()[index];
-        var instantiate = PreloadManager.Cache.GetScene(vfxPath).Instantiate<Node2D>();
+        var instantiate = BangDreamPreloadManager.GetScene(vfxPath).Instantiate<Node2D>();
         instantiate.GlobalPosition = NCombatRoom.Instance?.CombatVfxContainer.GetViewportRect().GetCenter() ??
                                      new Vector2(960f, 540f);
         await Task.Delay(500);

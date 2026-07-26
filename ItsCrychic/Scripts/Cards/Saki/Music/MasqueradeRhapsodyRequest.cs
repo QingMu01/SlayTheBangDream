@@ -1,4 +1,5 @@
 using BangDreamLib.Scripts.Extensions;
+using ItsCrychic.Scripts.Power.Temporary;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
@@ -26,7 +27,7 @@ public class MasqueradeRhapsodyRequest() : AbstractSakikoMusicCard(CardRarity.Un
     public override async Task OnPerform(PlayerChoiceContext choiceContext)
     {
         await CreatureCmd.GainBlock(Owner.Creature, DynamicVars.Block, null);
-        await PowerCmd.Apply<TemporaryDexterityPower>(choiceContext, Owner.Creature,
+        await PowerCmd.Apply<RhapsodyRequestPower>(choiceContext, Owner.Creature,
             QuickVar.Buff.GetVar(this).BaseValue,
             Owner.Creature, this);
     }

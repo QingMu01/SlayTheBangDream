@@ -1,48 +1,49 @@
-using BangDreamLib.Scripts.Commands;
 using BangDreamLib.Scripts.Extensions;
-using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Utils;
+using ItsCrychic.Scripts.Power.Temporary;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
+using MegaCrit.Sts2.Core.Models.Powers;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
-public class PathDependence() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget), ISubsideCard
+public class PathDependence() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget)
 {
     private const int CustomCost = 1;
     private const CardType CustomType = CardType.Skill;
     private const CardRarity CustomRarity = CardRarity.Uncommon;
     private const TargetType CustomTarget = TargetType.None;
 
-    public int LingeredResourceCost => -1;
+    public override bool GainsBlock => true;
+
+    protected override IEnumerable<IHoverTip> CardHoverTips =>
+    [
+        HoverTipFactory.FromPower<DexterityPower>()
+    ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Cards.Create(0),
+        QuickVar.Buff.Create(1),
+        QuickVar.Block.Create(3)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        ArgumentNullException.ThrowIfNull(CombatState);
-
-        var selectedCards = await CardSelectCmd.FromHand(choiceContext, Owner,
-            CardSelectorPrompt.ToExtraDraw.GetUnlimitedPrefs(), _ => true, this);
-        DynamicVars.Cards.BaseValue = 0;
-        foreach (var selectedCard in selectedCards)
+        await PowerCmd.Apply<PathDependencePower>(choiceContext, Owner.Creature,
+            QuickVar.Buff.GetVar(this).IntValue, Owner.Creature, this);
+        var cardCount = BangDreamConst.PerformPile.GetPile(Owner).Cards.Count;
+        if (cardCount > 0)
         {
-            DynamicVars.Cards.BaseValue++;
-            await CardPileCmd.Add(selectedCard, BangDreamConst.ExtraDraw);
+            await CreatureCmd.GainBlock(Owner.Creature,
+                new BlockVar(DynamicVars.Block.BaseValue * cardCount, DynamicVars.Block.Props), play);
         }
     }
 
-    public async Task OnSubside(PlayerChoiceContext choiceContext, CardPlay play)
+    protected override void OnUpgrade()
     {
-        var needDrawCount = DynamicVars.Cards.BaseValue + (IsUpgraded ? 1 : 0);
-        if (needDrawCount > 0)
-        {
-            await ExtraPileCmd.Draw(choiceContext, needDrawCount, Owner);
-        }
+        DynamicVars.Block.UpgradeValueBy(1);
     }
 }

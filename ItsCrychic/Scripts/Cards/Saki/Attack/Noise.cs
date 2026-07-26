@@ -9,14 +9,14 @@ namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
 public class Noise() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget)
 {
-    private const int CustomCost = 1;
+    private const int CustomCost = 0;
     private const CardType CustomType = CardType.Attack;
     private const CardRarity CustomRarity = CardRarity.Common;
     private const TargetType CustomTarget = TargetType.AnyEnemy;
 
     protected override IEnumerable<CardKeyword> CardKeywords => [BangDreamConst.PerformArea];
 
-    protected override IEnumerable<DynamicVar> CardVars => [QuickVar.Damage.Create(11)];
+    protected override IEnumerable<DynamicVar> CardVars => [QuickVar.Damage.Create(8)];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
@@ -34,7 +34,7 @@ public class Noise() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, 
             .FirstOrDefault();
         if (topCard != null)
         {
-            await CardPileCmd.Add(topCard, BangDreamConst.ExtraDraw);
+            await CardPileCmd.Add(topCard, BangDreamConst.ExtraDraw, CardPilePosition.Bottom);
         }
     }
 

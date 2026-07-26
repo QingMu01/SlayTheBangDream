@@ -14,7 +14,7 @@ public class Pulverise() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
     private const CardRarity CustomRarity = CardRarity.Rare;
     private const TargetType CustomTarget = TargetType.AnyEnemy;
 
-    public int LingeredResourceCost => 5;
+    public int LingeredResourceCost => 3;
 
     protected override bool HasEnergyCostX => true;
 
@@ -52,6 +52,9 @@ public class Pulverise() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
 
     public async Task OnSubside(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        await CardPileCmd.Add(this, PileType.Hand);
+        if (play.Resources.EnergySpent > 0)
+        {
+            await CardPileCmd.Add(this, PileType.Hand);
+        }
     }
 }

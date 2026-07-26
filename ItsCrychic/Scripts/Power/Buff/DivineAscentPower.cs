@@ -1,18 +1,23 @@
+using BangDreamLib.Scripts.Interfaces.GameHook;
 using BangDreamLib.Scripts.Powers;
-using BangDreamLib.Scripts.Utils;
+using MegaCrit.Sts2.Core.Commands;
+using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Powers;
-using STS2RitsuLib.Combat.SecondaryResources;
+using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 
 namespace ItsCrychic.Scripts.Power.Buff;
 
-public class DivineAscentPower : BandPowerModel, ISecondaryResourceHookListener
+public class DivineAscentPower : BandPowerModel, ISubsideHookListener
 {
     public override PowerType Type => PowerType.Buff;
 
-    public override PowerStackType StackType => PowerStackType.Single;
+    public override PowerStackType StackType => PowerStackType.Counter;
 
-    public decimal ModifySecondaryResourceCost(SecondaryResourceCostContext context, decimal cost)
+    public async Task AfterCardSubside(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        return context.Definition.Id.Equals(BangDreamConst.LingeredResource) ? 0m : cost;
+        if (play.Card.Owner != Owner.Player) return;
+
+        Flash();
+        await PlayerCmd.GainEnergy(Amount, Owner.Player);
     }
 }

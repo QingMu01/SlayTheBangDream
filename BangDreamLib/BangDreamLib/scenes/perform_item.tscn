@@ -1,40 +1,36 @@
-[gd_scene load_steps=10 format=3 uid="uid://txb6745aun8k"]
+[gd_scene load_steps=11 format=3 uid="uid://txb6745aun8k"]
 
 [ext_resource type="Script" uid="uid://fmns5ke8lita" path="res://Scripts/Nodes/SubNode/NPerformItem.cs" id="1_b1k58"]
 [ext_resource type="Shader" uid="uid://6lk8eakexseb" path="res://BangDreamLib/shaders/parallelogram_clip.gdshader" id="2_eapvb"]
 [ext_resource type="Texture2D" uid="uid://dp5uao2yd501l" path="res://BangDreamLib/images/sceneui/default_portrait.png" id="3_l5gee"]
+[ext_resource type="FontVariation" uid="uid://b31wycusbsq8w" path="res://themes/fonts/jpn/noto_sans_cjkjp_bold_shared.tres" id="4_eapvb"]
+[ext_resource type="Shader" uid="uid://d0wcj6w86sq02" path="res://BangDreamLib/shaders/parallelogram_overlay.gdshader" id="5_overlay"]
 
-[sub_resource type="Gradient" id="Gradient_eapvb"]
-colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1)
-
-[sub_resource type="GradientTexture1D" id="GradientTexture1D_82c18"]
-gradient = SubResource("Gradient_eapvb")
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_vrxph"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_background"]
 shader = ExtResource("2_eapvb")
-shader_parameter/slant_ratio = 0.05499997828141995
+shader_parameter/slant_slope = 0.29999997094239994
 shader_parameter/edge_softness = 0.0
-shader_parameter/gradient_texture = SubResource("GradientTexture1D_82c18")
-shader_parameter/gradient_angle = 0.0
-shader_parameter/dot_radius = 1.0
-shader_parameter/dot_spacing = 6.0
-shader_parameter/dot_offset = Vector2(0, 0)
 
-[sub_resource type="Gradient" id="Gradient_68tsg"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_portrait"]
+shader = ExtResource("2_eapvb")
+shader_parameter/slant_slope = 0.3
+shader_parameter/edge_softness = 0.0
+
+[sub_resource type="Gradient" id="Gradient_overlay"]
 offsets = PackedFloat32Array(0, 0.39999998, 0.7, 1)
 colors = PackedColorArray(0, 0, 0, 1, 0, 0, 0, 0.92156863, 0, 0, 0, 0.5882353, 0, 0, 0, 0)
-metadata/_snap_enabled = true
 
-[sub_resource type="GradientTexture1D" id="GradientTexture1D_68tsg"]
-gradient = SubResource("Gradient_68tsg")
+[sub_resource type="GradientTexture1D" id="GradientTexture_overlay"]
+gradient = SubResource("Gradient_overlay")
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_68tsg"]
-shader = ExtResource("2_eapvb")
-shader_parameter/slant_ratio = 0.12999997660502
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_overlay"]
+shader = ExtResource("5_overlay")
+shader_parameter/slant_slope = 0.3
 shader_parameter/edge_softness = 0.0
-shader_parameter/gradient_texture = SubResource("GradientTexture1D_68tsg")
+shader_parameter/edge_coverage_power = 0.25
+shader_parameter/gradient_texture = SubResource("GradientTexture_overlay")
 shader_parameter/gradient_angle = 0.0
-shader_parameter/dot_radius = 1.5000000223518
+shader_parameter/dot_radius = 1.5
 shader_parameter/dot_spacing = 6.5
 shader_parameter/dot_offset = Vector2(0, 0)
 
@@ -45,21 +41,22 @@ script = ExtResource("1_b1k58")
 
 [node name="Background" type="ColorRect" parent="."]
 unique_name_in_owner = true
-material = SubResource("ShaderMaterial_vrxph")
-instance_shader_parameters/rect_size = Vector2(165, 22)
-custom_minimum_size = Vector2(165, 22)
+material = SubResource("ShaderMaterial_background")
+instance_shader_parameters/rect_size = Vector2(165, 25)
+custom_minimum_size = Vector2(165, 25)
 layout_mode = 1
 anchors_preset = 6
 anchor_left = 1.0
 anchor_top = 0.5
 anchor_right = 1.0
 anchor_bottom = 0.5
-offset_left = -179.0
-offset_top = 9.0
-offset_right = -14.0
-offset_bottom = 34.0
+offset_left = -174.0
+offset_top = 5.0
+offset_right = -9.0
+offset_bottom = 30.0
 grow_horizontal = 0
 grow_vertical = 2
+mouse_filter = 2
 color = Color(0.5669666, 0.5669666, 0.5669666, 1)
 
 [node name="MarginContainer" type="MarginContainer" parent="."]
@@ -78,11 +75,44 @@ grow_vertical = 2
 
 [node name="Portrait" type="TextureRect" parent="MarginContainer"]
 unique_name_in_owner = true
-material = SubResource("ShaderMaterial_68tsg")
-instance_shader_parameters/dot_color = Color(0.6117647, 0.6117647, 0.6117647, 1)
+material = SubResource("ShaderMaterial_portrait")
 instance_shader_parameters/rect_size = Vector2(160, 50)
+instance_shader_parameters/reveal_progress = 1.0
 custom_minimum_size = Vector2(160, 50)
 layout_mode = 2
+mouse_filter = 2
 texture = ExtResource("3_l5gee")
 expand_mode = 1
 stretch_mode = 6
+
+[node name="Overlay" type="ColorRect" parent="MarginContainer"]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_overlay")
+instance_shader_parameters/dot_color = Color(0.6117647, 0.6117647, 0.6117647, 0.3)
+instance_shader_parameters/rect_size = Vector2(160, 50)
+instance_shader_parameters/reveal_progress = 1.0
+custom_minimum_size = Vector2(160, 50)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="TitleMargin" type="MarginContainer" parent="MarginContainer"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 4
+
+[node name="Title" type="Label" parent="MarginContainer/TitleMargin"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.65)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.9)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("4_eapvb")
+theme_override_font_sizes/font_size = 28
+horizontal_alignment = 1
+vertical_alignment = 1

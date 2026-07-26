@@ -26,7 +26,7 @@ public class StressReaction() : AbstractSakikoCard(CustomCost, CustomType, Custo
     protected override IEnumerable<DynamicVar> CardVars =>
     [
         QuickVar.Damage.Create(5),
-        new PowerVar<WeakPower>(1)
+        QuickVar.Buff.Create(1)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
@@ -42,7 +42,7 @@ public class StressReaction() : AbstractSakikoCard(CustomCost, CustomType, Custo
         var damageResult = attackCommand.Results.SelectMany(r => r).FirstOrDefault();
         if (damageResult is { Receiver.IsHittable: true })
         {
-            await PowerCmd.Apply<WeakPower>(choiceContext, damageResult.Receiver, DynamicVars.Weak.IntValue,
+            await PowerCmd.Apply<WeakPower>(choiceContext, damageResult.Receiver, QuickVar.Buff.GetVar(this).IntValue,
                 Owner.Creature, this);
         }
     }
@@ -63,6 +63,6 @@ public class StressReaction() : AbstractSakikoCard(CustomCost, CustomType, Custo
     protected override void OnUpgrade()
     {
         DynamicVars.Damage.UpgradeValueBy(3m);
-        DynamicVars.Weak.UpgradeValueBy(1);
+        QuickVar.Buff.GetVar(this).UpgradeValueBy(1);
     }
 }

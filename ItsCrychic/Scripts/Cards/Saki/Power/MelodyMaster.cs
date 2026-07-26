@@ -10,29 +10,30 @@ namespace ItsCrychic.Scripts.Cards.Saki.Power;
 
 public class MelodyMaster() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget)
 {
-    private const int CustomCost = 0;
+    private const int CustomCost = 2;
     private const CardType CustomType = CardType.Power;
     private const CardRarity CustomRarity = CardRarity.Uncommon;
     private const TargetType CustomTarget = TargetType.Self;
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.MusicNote
+        CardKeyword.Innate,
+        BangDreamConst.PerformArea
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Repeat.Create(1)
+        QuickVar.Buff.Create(1)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        await PowerCmd.Apply<MelodyMasterPower>(choiceContext, Owner.Creature, DynamicVars.Repeat.IntValue,
+        await PowerCmd.Apply<MelodyMasterPower>(choiceContext, Owner.Creature, QuickVar.Buff.GetVar(this).IntValue,
             Owner.Creature, this);
     }
 
     protected override void OnUpgrade()
     {
-        DynamicVars.Repeat.UpgradeValueBy(1);
+        EnergyCost.UpgradeBy(-1);
     }
 }

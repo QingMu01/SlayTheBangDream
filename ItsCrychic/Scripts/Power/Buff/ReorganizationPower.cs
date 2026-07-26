@@ -1,33 +1,47 @@
+using BangDreamLib.Scripts.Commands;
+using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Powers;
 using MegaCrit.Sts2.Core.Commands;
+using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Powers;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using STS2RitsuLib.Combat.SecondaryResources;
+using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.ValueProps;
 
 namespace ItsCrychic.Scripts.Power.Buff;
 
-public class ReorganizationPower : BandPowerModel, ISecondaryResourceHookListener
+public class ReorganizationPower : BandPowerModel
 {
-    private const int MaxAmount = 7;
-
-    private int _lingeredEnergyUsed;
-
     public override PowerType Type => PowerType.Buff;
 
     public override PowerStackType StackType => PowerStackType.Counter;
 
-    public async Task AfterSecondaryResourceChanged(SecondaryResourceChangeContext context)
+    public override async Task AfterCardPlayed(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        if (context.Player != Owner.Player) return;
-        if (context.NewAmount < context.OldAmount)
+        if (play.Card.Owner != Owner.Player || play.Card.Type != CardType.Attack) return;
+
+        Flash();
+        await ExtraPileCmd.Draw(choiceContext, Amount, Owner.Player);
+    }
+
+    public override async Task AfterDamageReceived(PlayerChoiceContext choiceContext, Creature target,
+        DamageResult result, ValueProp props, Creature? dealer, CardModel? cardSource)
+    {
+        if (target != Owner || dealer == Owner || result.UnblockedDamage <= 0 || !props.IsPoweredAttack()) return;
+
+        var player = Owner.Player;
+        if (player == null) return;
+
+        for (var i = 0; i < Amount; i++)
         {
-            _lingeredEnergyUsed += context.OldAmount - context.NewAmount;
-            while (_lingeredEnergyUsed >= MaxAmount)
-            {
-                Flash();
-                _lingeredEnergyUsed -= MaxAmount;
-                await CardPileCmd.Draw(new BlockingPlayerChoiceContext(), Amount, Owner.Player);
-            }
+            var cards = player.AttachedData().PerformManager.PerformPile.Cards;
+            if (cards.Count == 0) break;
+
+            Flash();
+            var card = player.RunState.Rng.CombatCardSelection.NextItem(cards);
+            if (card == null) break;
+            await CardPileCmd.Add(card, PileType.Discard);
         }
     }
 }

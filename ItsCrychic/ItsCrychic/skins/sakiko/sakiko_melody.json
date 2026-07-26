@@ -11,7 +11,7 @@
     "MerchantAnimName": "Relax"
   },
   "MultiplayerVfx": {
-    "MusicNote": "res://BangDreamLib/scenes/vfx/flying_music_note_default.tscn"
+    "MusicNote": "res://BangDreamLib/scenes/vfx/flying_music_note_melody.tscn"
   },
   "Ui": {
     "EnergyCounterScene": "res://ItsCrychic/scenes/sakiko_energy_counter_sp.tscn",
@@ -45,10 +45,11 @@
       "ITS_CRYCHIC_CARD_OSCILLATION"
     ],
     "StartingExtraDeck": [
-      "ITS_CRYCHIC_CARD_SHEET_MUSIC_SAKIKO"
+      "ITS_CRYCHIC_CARD_SHEET_MUSIC_SUN",
+      "ITS_CRYCHIC_CARD_SHEET_MUSIC_MOON"
     ],
     "StartingRelics": [
-      "ITS_CRYCHIC_RELIC_SYNTHESIZER",
+      "ITS_CRYCHIC_RELIC_SWORD_OF_LORD",
       "ITS_CRYCHIC_RELIC_SAKIKO_SPECIAL_RULES"
     ]
   }

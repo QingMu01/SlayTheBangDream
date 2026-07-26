@@ -126,7 +126,7 @@ public partial class NPerformArea : Control
         TaskHelper.RunSafely(ApplyCapacityChanged(previousCapacity));
     }
 
-    public void AddItem(CardModel cardModel, PerformContext context)
+    public void AddItem(CardModel cardModel, PerformContext context, bool waitForCardArrival)
     {
         if (_itemContainer == null || _items.Any(item => item.Model == cardModel)) return;
         if (context.SlotIndex < 1 || context.SlotIndex > _items.Count) return;
@@ -134,12 +134,17 @@ public partial class NPerformArea : Control
         var slot = _items[context.SlotIndex - 1];
         if (slot.Model != null) return;
 
-        slot.PrepareCardArrival();
+        var cardArrivalAlreadyFinished = _pendingArrivalBounces.Remove(cardModel);
+        if (waitForCardArrival || cardArrivalAlreadyFinished)
+        {
+            slot.PrepareCardArrival();
+        }
+
         slot.Model = cardModel;
         slot.Context = context;
         context.Slot = slot;
         _lastCardSlotCenters[cardModel] = slot.GetSlotGlobalCenter();
-        if (_pendingArrivalBounces.Remove(cardModel))
+        if (cardArrivalAlreadyFinished)
         {
             slot.PlayCardEnterBounce();
         }

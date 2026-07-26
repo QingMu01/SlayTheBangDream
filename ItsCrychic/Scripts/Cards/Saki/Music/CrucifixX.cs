@@ -1,39 +1,62 @@
 using BangDreamLib.Scripts.Extensions;
-using BangDreamLib.Scripts.Utils;
+using BangDreamLib.Scripts.Interfaces.GameHook;
+using BangDreamLib.Scripts.Utils.Infos;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using MegaCrit.Sts2.Core.ValueProps;
+using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Models.Powers;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
-public class CrucifixX() : AbstractSakikoMusicCard(CardRarity.Uncommon, TargetType.None)
+public class CrucifixX() : AbstractSakikoMusicCard(CardRarity.Uncommon, TargetType.None), IPerformHookListener
 {
-    public override bool IsInstant => true;
+    private bool _isRepeatingSubsidePerform;
 
-    protected override IEnumerable<CardKeyword> CardKeywords => [];
+    protected override IEnumerable<IHoverTip> CardHoverTips =>
+    [
+        HoverTipFactory.FromPower<VulnerablePower>(),
+        HoverTipFactory.FromPower<WeakPower>()
+    ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Damage.Create(7),
-        QuickVar.Damage.Create("PerCard", 3)
+        QuickVar.Buff.Create(1)
     ];
 
     public override async Task OnPerform(PlayerChoiceContext choiceContext)
     {
         ArgumentNullException.ThrowIfNull(CombatState);
-        var count = BangDreamTools.GetPile(BangDreamConst.PerformPile, Owner).Cards.Count;
-        var damage = DynamicVars.Damage.IntValue + count * DynamicVars["PerCard"].IntValue;
-        foreach (var enemy in CombatState.HittableEnemies.ToList())
+
+        var targets = IsUpgraded
+            ? CombatState.HittableEnemies.ToList()
+            : Owner.RunState.Rng.CombatTargets.NextItem(CombatState.HittableEnemies) is { } randomTarget
+                ? [randomTarget]
+                : [];
+        var buff = QuickVar.Buff.GetVar(this);
+        foreach (var target in targets)
         {
-            await CreatureCmd.Damage(choiceContext, enemy, new DamageVar(damage, ValueProp.Unpowered),
-                Owner.Creature, this, null);
+            await PowerCmd.Apply<VulnerablePower>(choiceContext, target, buff.IntValue,
+                Owner.Creature, this);
+            await PowerCmd.Apply<WeakPower>(choiceContext, target, buff.IntValue,
+                Owner.Creature, this);
         }
     }
 
-    protected override void OnUpgrade()
+    public async Task OnCardPerform(PlayerChoiceContext choiceContext, PerformContext ctx, CardModel cardModel)
     {
-        DynamicVars["PerCard"].UpgradeValueBy(2);
+        if (cardModel != this || !ctx.IsSubsideTriggered || _isRepeatingSubsidePerform) return;
+
+        _isRepeatingSubsidePerform = true;
+        try
+        {
+            await Owner.AttachedData().PerformManager.PerformCard(this);
+        }
+        finally
+        {
+            _isRepeatingSubsidePerform = false;
+        }
     }
 }

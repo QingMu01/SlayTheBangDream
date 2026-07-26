@@ -15,18 +15,13 @@ public class DejaVu() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity,
     private const CardRarity CustomRarity = CardRarity.Common;
     private const TargetType CustomTarget = TargetType.AnyEnemy;
 
-    public int LingeredResourceCost => 3;
+    public int LingeredResourceCost => 2;
+
     protected override IEnumerable<DynamicVar> CardVars =>
     [
         QuickVar.Damage.Create(3),
-        QuickVar.Repeat.Create(1),
+        QuickVar.Repeat.Create(2),
     ];
-
-    public Task OnSubside(PlayerChoiceContext choiceContext, CardPlay play)
-    {
-        EnergyCost.AddThisCombat(-1, true);
-        return Task.CompletedTask;
-    }
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
@@ -39,8 +34,14 @@ public class DejaVu() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity,
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
 
-        DynamicVars.Repeat.BaseValue += 1;
+        DynamicVars.Repeat.UpgradeValueBy(1m);
         EnergyCost.AddThisCombat(1);
+    }
+
+    public Task OnSubside(PlayerChoiceContext choiceContext, CardPlay play)
+    {
+        EnergyCost.AddThisCombat(-1, true);
+        return Task.CompletedTask;
     }
 
     protected override void OnUpgrade()

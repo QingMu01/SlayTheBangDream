@@ -11,10 +11,15 @@ namespace BangDreamLib.Scripts.Nodes.SubNode;
 public partial class NCharacterButton : Button
 {
     private const string MessagePrefixKey = "BANG_DREAM_LIB_CHARACTER_CANT_SELECT_";
+    private const float AnimationDuration = 0.12f;
+
+    private static readonly Vector2 ActiveOffset = new(50f, 0f);
+    private static readonly Vector2 IdleLogoScale = new(0.9f, 0.9f);
 
     private BangDreamCharacterSelector? _parent;
 
     private Tween? _hoverTween;
+    private TextureRect? _selectLogo;
 
     private Vector2 _originalPosition;
     private bool _isSelected;
@@ -48,11 +53,15 @@ public partial class NCharacterButton : Button
     {
         Modulate = Character?.NameColor ?? Colors.Black;
         _originalPosition = Position;
+        _selectLogo = GetNode<TextureRect>("SelectLogo");
 
-        if (IsSelected)
+        if (Character is IBangDreamMateData { SelectLogo: { } path } && !string.IsNullOrWhiteSpace(path))
         {
-            Position = _originalPosition + new Vector2(50f, 0f);
+            _selectLogo.Texture = BangDreamPreloadManager.GetTexture2D(path);
+            _selectLogo.Show();
         }
+
+        ApplyVisualState(IsSelected, false);
     }
 
     public override void _EnterTree()
@@ -73,9 +82,8 @@ public partial class NCharacterButton : Button
     {
         if (Character is IGroupableCharacter { AllowSelect: false })
             return;
-        _hoverTween?.Kill();
-        _hoverTween = CreateTween();
-        _hoverTween.TweenProperty(this, "position", _originalPosition + new Vector2(50f, 0f), 0.1f);
+
+        ApplyVisualState(true);
     }
 
     private void OnMouseExited()
@@ -83,9 +91,36 @@ public partial class NCharacterButton : Button
         if (IsSelected)
             return;
 
+        ApplyVisualState(false);
+    }
+
+    private void ApplyVisualState(bool active, bool animated = true)
+    {
         _hoverTween?.Kill();
+
+        var targetPosition = _originalPosition + (active ? ActiveOffset : Vector2.Zero);
+        var targetLogoScale = active ? Vector2.One : IdleLogoScale;
+
+        if (!animated)
+        {
+            Position = targetPosition;
+            if (_selectLogo != null)
+            {
+                _selectLogo.Scale = targetLogoScale;
+            }
+
+            return;
+        }
+
         _hoverTween = CreateTween();
-        _hoverTween.TweenProperty(this, "position", _originalPosition, 0.1f);
+        _hoverTween.SetParallel()
+            .SetTrans(Tween.TransitionType.Quad)
+            .SetEase(Tween.EaseType.Out);
+        _hoverTween.TweenProperty(this, "position", targetPosition, AnimationDuration);
+        if (_selectLogo != null)
+        {
+            _hoverTween.TweenProperty(_selectLogo, "scale", targetLogoScale, AnimationDuration);
+        }
     }
 
     private void OnPressed()

@@ -1,10 +1,12 @@
+using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Powers;
+using BangDreamLib.Scripts.Utils;
 using ItsCrychic.Scripts.Cards.Token;
 using MegaCrit.Sts2.Core.Commands;
-using MegaCrit.Sts2.Core.Context;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Powers;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using MegaCrit.Sts2.Core.HoverTips;
 
 namespace ItsCrychic.Scripts.Power.Debuff;
 
@@ -14,20 +16,30 @@ public class AmnesiaPower : BandPowerModel
 
     public override PowerStackType StackType => PowerStackType.Single;
 
-    // Todo: 非最终效果
+    protected override IEnumerable<IHoverTip> PowerHoverTips =>
+    [
+        HoverTipFactory.FromCard<Residue>()
+    ];
+
     public override async Task AfterCardPlayedLate(PlayerChoiceContext choiceContext, CardPlay cardPlay)
     {
-        if (LocalContext.IsMe(Owner) && cardPlay.Card.Owner.Creature == Owner && cardPlay.Card.Type == CardType.Attack)
+        if (cardPlay.Card.Owner != Owner.Player || cardPlay.Card.Type != CardType.Attack ||
+            Owner.Player == null || Owner.CombatState == null) return;
+
+        var manager = Owner.Player.AttachedData().PerformManager;
+
+        if (manager.PerformPile.Cards.Count == 0 || manager.PerformPile.Cards.Any(card => card is not Residue))
         {
-            if (Owner.Player?.PlayerCombatState != null)
+            var showAdd = new List<CardPileAddResult>();
+            for (var i = 0; i < manager.Capacity; i++)
             {
-                var selectedHandCard =
-                    Owner.Player.RunState.Rng.CombatCardSelection.NextItem(Owner.Player.PlayerCombatState.Hand.Cards);
-                if (selectedHandCard != null)
-                {
-                    await CardCmd.TransformTo<SakikoShield>(selectedHandCard);
-                }
+                var residue = Owner.CombatState.CreateCard<Residue>(Owner.Player);
+                var addResult =
+                    await CardPileCmd.AddGeneratedCardToCombat(residue, BangDreamConst.PerformPile, Owner.Player);
+                showAdd.Add(addResult);
             }
+
+            CardCmd.PreviewCardPileAdd(showAdd);
         }
     }
 }

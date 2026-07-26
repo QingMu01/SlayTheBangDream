@@ -34,7 +34,7 @@ using Logger = MegaCrit.Sts2.Core.Logging.Logger;
 namespace BangDreamLib;
 
 [ModInitializer(nameof(Initialize))]
-public class BangDreamLibCore
+public static class BangDreamLibCore
 {
     public static readonly Logger Logger = RitsuLibFramework.CreateLogger(BangDreamConst.ModId);
 
@@ -76,6 +76,10 @@ public class BangDreamLibCore
         {
             throw new InvalidOperationException("skins support patches failed.");
         }
+
+        var commonPatcher = RitsuLibFramework.CreatePatcher(BangDreamConst.ModId, "common_patch");
+        commonPatcher.RegisterPatch<CardHoverTipPatch>();
+        commonPatcher.PatchAll();
 
         // 注册持久化数据
         using (RitsuLibFramework.BeginModDataRegistration(BangDreamConst.ModId))
@@ -167,8 +171,8 @@ public class BangDreamLibCore
             locTable: "card_keywords",
             titleKey: "BANG_DREAM_LIB_KEYWORD_LINGERED.title",
             descriptionKey: "BANG_DREAM_LIB_KEYWORD_LINGERED.description",
-            smallIconPath: "res://BangDreamLib/images/sceneui/lingered_resource_small.png",
-            largeIconPath: "res://BangDreamLib/images/sceneui/lingered_resource_big.png"
+            smallIconPath: "res://BangDreamLib/images/sceneui/xz-energy_lingered_small.png",
+            largeIconPath: "res://BangDreamLib/images/sceneui/xz-energy_lingered.png"
         )
         {
             DefaultInsufficientPayment = SecondaryResourceInsufficientPayment.AllowPlay(spendAvailable: false)
@@ -180,6 +184,7 @@ public class BangDreamLibCore
                 {
                     SlotSize = new Vector2(58f, 58f),
                     IconSize = new Vector2(48f, 48f),
+                    LabelOffset = new Vector2(-5f, 0f),
                     FontSize = 24,
                     OutlineSize = 10,
                     ReserveVanillaStarCostSlot = true,
@@ -215,7 +220,6 @@ public class BangDreamLibCore
         commonContent.RegisterCharacterStarterRelic<GroupCharacterPlaceholder, Circlet>();
 
         commonContent.RegisterSingleton<LingeredResourcesRule>();
-        commonContent.RegisterSingleton<CopySelfAndPlayCardRule>();
 
         // 预加载皮肤资源
         RitsuLibFramework.SubscribeLifecycle<ModelPreloadingCompletedEvent>(_ =>
@@ -266,10 +270,7 @@ public class BangDreamLibCore
 
         ModHelper.SubscribeForCombatStateHooks("ExtraSubscribe", state =>
         {
-            var subscribeModels = new List<AbstractModel>
-            {
-                ModelDb.Singleton<CopySelfAndPlayCardRule>()
-            };
+            var subscribeModels = new List<AbstractModel>();
             subscribeModels.AddRange(state.Players.Select(player => player.AttachedData().PerformManager));
             subscribeModels.AddRange(state.Players.Select(player => player.AttachedData().MusicNoteDamageTracker));
             return subscribeModels;

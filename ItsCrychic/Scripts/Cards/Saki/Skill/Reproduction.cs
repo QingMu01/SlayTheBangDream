@@ -13,6 +13,8 @@ public class Reproduction() : AbstractSakikoCard(CustomCost, CustomType, CustomR
     private const CardRarity CustomRarity = CardRarity.Rare;
     private const TargetType CustomTarget = TargetType.Self;
 
+    public override bool CanBeGeneratedInCombat => false;
+
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
         CardKeyword.Exhaust

@@ -30,8 +30,6 @@ public abstract partial class NBangDreamFlyingVfx : Node2D
         get { return _context ??= new VfxContext(this); }
     }
 
-    public virtual bool UpdateCombatTracker { get; set; } = false;
-
     protected void EmitSpawnSignal()
     {
         Context.Lifecycle = VfxLifecycle.Spawn;

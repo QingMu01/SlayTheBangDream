@@ -1,3 +1,4 @@
+using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
 using ItsCrychic.Scripts.Power.Buff;
 using MegaCrit.Sts2.Core.Commands;
@@ -16,11 +17,15 @@ public class Worldview() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
 
     protected override IEnumerable<CardKeyword> CardKeywords => [CardKeyword.Innate, BangDreamConst.Music];
 
-    protected override IEnumerable<DynamicVar> CardVars => [];
+    protected override IEnumerable<DynamicVar> CardVars =>
+    [
+        QuickVar.Buff.Create(1)
+    ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        await PowerCmd.Apply<WorldviewPower>(choiceContext, Owner.Creature, 1, Owner.Creature, this);
+        await PowerCmd.Apply<WorldviewPower>(choiceContext, Owner.Creature, QuickVar.Buff.GetVar(this).BaseValue,
+            Owner.Creature, this);
     }
 
     protected override void OnUpgrade()

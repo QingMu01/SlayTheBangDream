@@ -19,7 +19,7 @@ public class WaningMoonEcho()
     private const CardRarity CustomRarity = CardRarity.Rare;
     private const TargetType CustomTarget = TargetType.AnyEnemy;
 
-    public int LingeredResourceCost => 4;
+    public int LingeredResourceCost => 2;
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [

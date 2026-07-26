@@ -14,27 +14,21 @@ public class CelestialRotationPower : BandPowerModel
 
     public override PowerStackType StackType => PowerStackType.Counter;
 
-    public override decimal ModifyHandDraw(Player player, decimal count)
-    {
-        return player != Owner.Player ? count : count + Amount;
-    }
-
     public override async Task AfterPlayerTurnStart(PlayerChoiceContext choiceContext, Player player)
     {
-        if (player == Owner.Player)
-        {
-            var handCards = PileType.Hand.GetPile(Owner.Player).Cards;
-            if (handCards.Count > 0)
-            {
-                var selectedCards = await CardSelectCmd.FromHand(choiceContext, Owner.Player,
-                    CardSelectorPrompt.ToPerformance.GetFixedPrefs(Amount),
-                    _ => true, this);
+        if (player != Owner.Player) return;
 
-                foreach (var selectedCard in selectedCards)
-                {
-                    await CardPileCmd.Add(selectedCard, BangDreamConst.PerformPile);
-                }
-            }
+        var performPile = BangDreamConst.PerformPile.GetPile(player);
+        if (performPile.Cards.Count == 0) return;
+
+        var selectedCards = await CardSelectCmd.FromCombatPile(choiceContext,
+            performPile,
+            player,
+            CardSelectorPrompt.ToHand.GetFixedPrefs(Math.Min(Amount, performPile.Cards.Count)));
+
+        foreach (var selectedCard in selectedCards)
+        {
+            await CardPileCmd.Add(selectedCard, PileType.Hand);
         }
     }
 }

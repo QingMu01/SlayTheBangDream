@@ -53,8 +53,8 @@ internal class PopulateExtraDeckInCombatPatch : IPatchMethod
 
     public static void Postfix(Player __instance, Rng rng, CombatState state)
     {
-        var extraDeck = BangDreamTools.GetPile(BangDreamConst.ExtraDeck, __instance);
-        var extraDraw = BangDreamTools.GetPile(BangDreamConst.ExtraDraw, __instance);
+        var extraDeck = BangDreamConst.ExtraDeck.GetPile(__instance);
+        var extraDraw = BangDreamConst.ExtraDraw.GetPile(__instance);
         foreach (var deckCard in extraDeck.Cards)
         {
             var cloneCard = state.CloneCard(deckCard);

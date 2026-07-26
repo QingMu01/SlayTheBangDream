@@ -4,6 +4,7 @@ using BangDreamLib.Scripts.Interfaces.CharacterAugment;
 using BangDreamLib.Scripts.Nodes;
 using BangDreamLib.Scripts.Utils;
 using BangDreamLib.Scripts.Utils.Infos;
+using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Players;
@@ -11,6 +12,7 @@ using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Nodes.Cards;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Rooms;
 using STS2RitsuLib.Combat.SecondaryResources;
@@ -37,7 +39,15 @@ public class PerformManager : SingletonModel, ISecondaryResourceHookListener
 
     private Player? _player;
     private CardPile? _pile;
+
+    private readonly Lock _performAreaChangeQueueLock = new();
+
     private readonly Queue<CardModel> _cardsAwaitingArrival = [];
+    private readonly HashSet<CardModel> _cardsWithArrivalVisual = [];
+    private readonly Queue<PerformAreaChange> _performAreaChanges = [];
+    private readonly Dictionary<CardModel, int> _pendingPerformAreaAdditions = [];
+
+    private bool _isProcessingPerformAreaChanges;
 
     public Player Player
     {
@@ -56,7 +66,7 @@ public class PerformManager : SingletonModel, ISecondaryResourceHookListener
         set
         {
             AssertMutable();
-            BangDreamTools.Init(ref _pile, value, nameof(PerformPile));
+            _pile = value;
         }
     }
 
@@ -101,15 +111,32 @@ public class PerformManager : SingletonModel, ISecondaryResourceHookListener
         TaskHelper.RunSafely(RemoveOverflowItems());
     }
 
+    public async Task Clean()
+    {
+        foreach (var cardModel in PerformPile.Cards.ToList())
+        {
+            if (cardModel.Pile != PerformPile) continue;
+
+            await Cmd.CustomScaledWait(0.15f, 0.3f);
+            await MoveCardInternal(cardModel);
+        }
+    }
+
     private void OnCardAdded(CardModel cardModel)
     {
-        _cardsAwaitingArrival.Enqueue(cardModel);
-        RunPerformAreaChangedHook(cardModel, HandleCardAddedInternal);
+        if (NCard.FindOnTable(cardModel) != null)
+        {
+            _cardsAwaitingArrival.Enqueue(cardModel);
+            _cardsWithArrivalVisual.Add(cardModel);
+        }
+
+        QueuePerformAreaChange(cardModel, PerformAreaChangeType.Added);
     }
 
     private void OnCardAddFinished()
     {
         if (!_cardsAwaitingArrival.TryDequeue(out var cardModel)) return;
+        _cardsWithArrivalVisual.Remove(cardModel);
         if (cardModel.Pile == PerformPile)
         {
             PerformArea.PlayCardArrivalBounce(cardModel);
@@ -120,31 +147,33 @@ public class PerformManager : SingletonModel, ISecondaryResourceHookListener
     {
         PerformArea.RemoveItem(cardModel);
 
-        if (cardModel.CombatState == null)
+        if (cardModel.CombatState == null && Player.Creature.CombatState == null)
         {
             CardContexts.Remove(cardModel);
             return;
         }
 
-        RunPerformAreaChangedHook(cardModel, HandleCardRemovedInternal);
+        QueuePerformAreaChange(cardModel, PerformAreaChangeType.Removed);
     }
 
     private async Task RemoveOverflowItems()
     {
         if (Capacity <= 0)
         {
-            foreach (var cardModel in PerformPile.Cards.ToList())
-            {
-                await Cmd.CustomScaledWait(0.15f, 0.3f);
-                await MoveCardInternal(cardModel);
-            }
-
+            await Clean();
             return;
+        }
+
+        HashSet<CardModel> pendingAdditions;
+        lock (_performAreaChangeQueueLock)
+        {
+            pendingAdditions = _pendingPerformAreaAdditions.Keys.ToHashSet();
         }
 
         var overflowItems = from cardModel in PerformPile.Cards
             let performContext = CardContexts.GetOrCreate(cardModel)
-            where performContext.SlotIndex < 1 || performContext.SlotIndex > Capacity
+            where !pendingAdditions.Contains(cardModel) &&
+                  (performContext.SlotIndex < 1 || performContext.SlotIndex > Capacity)
             select cardModel;
 
         foreach (var overflowItem in overflowItems.ToList())
@@ -169,17 +198,17 @@ public class PerformManager : SingletonModel, ISecondaryResourceHookListener
 
         var performContext = CardContexts.GetOrCreate(cardModel);
         performContext.Manager = this;
-        if (!await TryAssignSlot(cardModel, performContext))
+        var enqueuePlan = CreateEnqueuePlan(cardModel);
+        if (enqueuePlan == null)
         {
-            if (!await MakeRoomForNewCard(cardModel, performContext))
-            {
-                ThinkCmd.Play(MaxSizeThink, Player.Creature, 1.5f);
-                await MoveCardInternal(cardModel);
-                return;
-            }
+            ThinkCmd.Play(MaxSizeThink, Player.Creature, 1.5f);
+            await MoveCardInternal(cardModel);
+            return;
         }
 
-        PerformArea.AddItem(cardModel, performContext);
+        await ApplyEnqueuePlan(enqueuePlan, performContext);
+
+        PerformArea.AddItem(cardModel, performContext, _cardsWithArrivalVisual.Contains(cardModel));
 
         await TryInstantInternal(cardModel);
 
@@ -190,14 +219,19 @@ public class PerformManager : SingletonModel, ISecondaryResourceHookListener
 
     private async Task HandleCardRemovedInternal(PlayerChoiceContext choiceContext, CardModel cardModel)
     {
-        ArgumentNullException.ThrowIfNull(cardModel.CombatState);
+        var combatState = cardModel.CombatState ?? Player.Creature.CombatState;
+        if (combatState == null)
+        {
+            CardContexts.Remove(cardModel);
+            return;
+        }
 
         if (PerformPile.Cards.Contains(cardModel))
         {
             await MoveCardInternal(cardModel);
         }
 
-        await BangDreamHook.OnCardLeavePerformArea(choiceContext, cardModel.CombatState, cardModel);
+        await BangDreamHook.OnCardLeavePerformArea(choiceContext, combatState, cardModel);
 
         CardContexts.Remove(cardModel);
 
@@ -260,155 +294,176 @@ public class PerformManager : SingletonModel, ISecondaryResourceHookListener
         await BangDreamHook.OnCardPerform(cardModel.CombatState, CardContexts.GetOrCreate(cardModel), cardModel);
     }
 
-    public int GetExpectedSlotIndex(CardModel cardModel)
+    /// <summary>
+    /// 将当前管理的歌单卡牌移动到指定槽位。若目标槽位已被占用，则交换两张卡牌的位置。
+    /// 此操作不会触发卡牌进入或离开歌单的 Hook。
+    /// </summary>
+    /// <returns>卡牌和目标槽位均有效时返回 <see langword="true"/>，否则返回 <see langword="false"/>。</returns>
+    public bool TryMoveCardToSlot(CardModel cardModel, int targetSlotIndex)
     {
-        if (Capacity <= 0) return -1;
+        ArgumentNullException.ThrowIfNull(cardModel);
 
-        var context = CardContexts.GetOrCreate(cardModel);
-        if (context.SlotIndex >= 1 && context.SlotIndex <= Capacity)
-        {
-            return context.SlotIndex;
-        }
-
-        if (context is { Strategy: PerformEnqueueStrategy.Fixed, AspirationSlot: >= 1 } &&
-            context.AspirationSlot <= Capacity)
-        {
-            return context.AspirationSlot;
-        }
-
-        var availableSlot = FindAvailableSlot(cardModel, context);
-        return availableSlot >= 1 && availableSlot <= Capacity ? availableSlot : 1;
-    }
-
-    public CardModel? GetCardDisplacedBy(CardModel incomingCard)
-    {
-        if (Capacity <= 0) return null;
-
-        var context = CardContexts.GetOrCreate(incomingCard);
-        if (context is { Strategy: PerformEnqueueStrategy.Fixed, AspirationSlot: >= 1 } &&
-            context.AspirationSlot <= Capacity)
-        {
-            return FindCardInSlot(context.AspirationSlot, incomingCard);
-        }
-
-        if (FindAvailableSlot(incomingCard, context) >= 1)
-        {
-            return null;
-        }
-
-        return PerformPile.Cards
-            .Where(card => card != incomingCard)
-            .OrderByDescending(card => CardContexts.GetOrCreate(card).SlotIndex)
-            .FirstOrDefault();
-    }
-
-    private async Task<bool> TryAssignSlot(CardModel cardModel, PerformContext performContext)
-    {
-        if (Capacity <= 0)
+        if (cardModel.Pile != PerformPile || !IsValidSlot(targetSlotIndex))
         {
             return false;
         }
 
-        if (performContext.Strategy == PerformEnqueueStrategy.Fixed)
-        {
-            if (performContext.AspirationSlot >= 1 && performContext.AspirationSlot <= Capacity)
-            {
-                var occupyingCard = FindCardInSlot(performContext.AspirationSlot, cardModel);
-                if (occupyingCard != null)
-                {
-                    await MoveCardInternal(occupyingCard);
-                }
-
-                performContext.SlotIndex = performContext.AspirationSlot;
-                return true;
-            }
-        }
-
-        var slotIndex = FindAvailableSlot(cardModel, performContext);
-        if (slotIndex < 1 || slotIndex > Capacity)
+        var cardContext = CardContexts.GetOrCreate(cardModel);
+        if (cardContext.Manager != this || !IsValidSlot(cardContext.SlotIndex))
         {
             return false;
         }
 
-        performContext.SlotIndex = slotIndex;
-        return true;
-    }
-
-    private CardModel? FindCardInSlot(int slotIndex, CardModel excludedCard)
-    {
-        return PerformPile.Cards.FirstOrDefault(card =>
-            card != excludedCard && CardContexts.GetOrCreate(card).SlotIndex == slotIndex);
-    }
-
-    private async Task<bool> MakeRoomForNewCard(CardModel cardModel, PerformContext performContext)
-    {
-        if (Capacity <= 0)
+        var sourceSlotIndex = cardContext.SlotIndex;
+        if (sourceSlotIndex == targetSlotIndex)
         {
-            return false;
+            return true;
         }
 
-        var occupiedCards = PerformPile.Cards
-            .Where(card => card != cardModel)
-            .Select(card => new
-            {
-                Card = card,
-                Context = CardContexts.GetOrCreate(card)
-            })
-            .Where(entry => entry.Context.SlotIndex >= 1 && entry.Context.SlotIndex <= Capacity)
-            .ToList();
+        var cardInTargetSlot = PerformPile.Cards.FirstOrDefault(card =>
+            card != cardModel && CardContexts.GetOrCreate(card).SlotIndex == targetSlotIndex);
 
-        if (occupiedCards.Count < Capacity)
+        cardContext.SlotIndex = targetSlotIndex;
+        if (cardInTargetSlot != null)
         {
-            return false;
+            CardContexts.GetOrCreate(cardInTargetSlot).SlotIndex = sourceSlotIndex;
         }
 
-        var squeezedCard = occupiedCards
-            .OrderByDescending(entry => entry.Context.SlotIndex)
-            .First();
-
-        await MoveCardInternal(squeezedCard.Card);
-
-        foreach (var entry in occupiedCards.Where(entry => entry.Card != squeezedCard.Card))
-        {
-            entry.Context.SlotIndex += 1;
-        }
-
-        performContext.SlotIndex = 1;
         PerformArea.RefreshItemLayout();
         return true;
     }
 
-    private int FindAvailableSlot(CardModel cardModel, PerformContext performContext)
+    /// <summary>
+    /// 按指定顺序重排歌单，并让每张牌重新触发进入歌单时的效果。
+    /// </summary>
+    public async Task ReorderAndReenter(
+        PlayerChoiceContext choiceContext,
+        IReadOnlyList<CardModel> orderedCards)
     {
-        var occupiedSlots = PerformPile.Cards
-            .Where(card => card != cardModel)
-            .Select(card => CardContexts.GetOrCreate(card).SlotIndex)
-            .Where(slotIndex => slotIndex is >= 1 and <= MaxCapacity)
-            .ToHashSet();
-
-        var aspirationSlot = NormalizeAspirationSlot(performContext.AspirationSlot);
-        var candidates = performContext.Strategy switch
+        if (orderedCards.Count != PerformPile.Cards.Count ||
+            !orderedCards.ToHashSet().SetEquals(PerformPile.Cards))
         {
-            PerformEnqueueStrategy.Fixed => EnumerateNearbyFirst(aspirationSlot),
-            PerformEnqueueStrategy.Top => EnumerateTopFirst(aspirationSlot),
-            PerformEnqueueStrategy.Bottom => EnumerateBottomFirst(aspirationSlot),
-            _ => EnumerateNearbyFirst(aspirationSlot)
-        };
+            throw new ArgumentException("Cards must contain every card currently in the perform pile.",
+                nameof(orderedCards));
+        }
 
-        foreach (var slotIndex in candidates)
+        for (var index = 0; index < orderedCards.Count; index++)
         {
-            if (slotIndex >= 1 && slotIndex <= Capacity && !occupiedSlots.Contains(slotIndex))
+            var context = CardContexts.GetOrCreate(orderedCards[index]);
+            context.Manager = this;
+            context.SlotIndex = index + 1;
+        }
+
+        PerformArea.RefreshItemLayout();
+
+        foreach (var card in orderedCards)
+        {
+            if (card.Pile != PerformPile || card.CombatState == null) continue;
+
+            await TryInstantInternal(card);
+            await BangDreamHook.OnCardEnterPerformArea(choiceContext, card.CombatState, card);
+        }
+    }
+
+    public int GetExpectedSlotIndex(CardModel cardModel)
+    {
+        return CreateEnqueuePlan(cardModel)?.SlotIndex ?? -1;
+    }
+
+    public CardModel? GetCardDisplacedBy(CardModel incomingCard)
+    {
+        return CreateEnqueuePlan(incomingCard)?.DisplacedCard;
+    }
+
+    private async Task ApplyEnqueuePlan(EnqueuePlan plan, PerformContext incomingContext)
+    {
+        if (plan.DisplacedCard != null)
+        {
+            await MoveCardInternal(plan.DisplacedCard);
+        }
+
+        foreach (var change in plan.SlotChanges)
+        {
+            change.Context.SlotIndex = change.SlotIndex;
+        }
+
+        incomingContext.SlotIndex = plan.SlotIndex;
+        if (plan.SlotChanges.Count > 0)
+        {
+            PerformArea.RefreshItemLayout();
+            foreach (var change in plan.SlotChanges)
             {
-                return slotIndex;
+                change.Context.Slot?.PlayPortraitReveal();
+            }
+        }
+    }
+
+    private EnqueuePlan? CreateEnqueuePlan(CardModel incomingCard)
+    {
+        if (Capacity <= 0) return null;
+
+        var incomingContext = CardContexts.GetOrCreate(incomingCard);
+        if (IsValidSlot(incomingContext.SlotIndex))
+        {
+            return new EnqueuePlan(incomingContext.SlotIndex, null, []);
+        }
+
+        var occupiedSlots = PerformPile.Cards
+            .Where(card => card != incomingCard)
+            .Select(card => new OccupiedSlot(card, CardContexts.GetOrCreate(card)))
+            .Where(slot => IsValidSlot(slot.Context.SlotIndex))
+            .ToDictionary(slot => slot.Context.SlotIndex);
+
+        if (incomingContext.Strategy == PerformEnqueueStrategy.Fixed &&
+            IsValidSlot(incomingContext.AspirationSlot))
+        {
+            occupiedSlots.TryGetValue(incomingContext.AspirationSlot, out var displacedSlot);
+            return new EnqueuePlan(incomingContext.AspirationSlot, displacedSlot?.Card, []);
+        }
+
+        if (incomingContext.Strategy is not (PerformEnqueueStrategy.Default or PerformEnqueueStrategy.Fixed))
+        {
+            var aspirationSlot = Math.Clamp(incomingContext.AspirationSlot, 1, Capacity);
+            var availableSlot = EnumerateCandidateSlots(incomingContext.Strategy, aspirationSlot)
+                .FirstOrDefault(slotIndex => !occupiedSlots.ContainsKey(slotIndex));
+            if (availableSlot > 0)
+            {
+                return new EnqueuePlan(availableSlot, null, []);
             }
         }
 
-        return -1;
+        var firstAvailableSlot = Enumerable.Range(1, Capacity)
+            .FirstOrDefault(slotIndex => !occupiedSlots.ContainsKey(slotIndex));
+        if (firstAvailableSlot > 0)
+        {
+            var slotChanges = occupiedSlots.Values
+                .Where(slot => slot.Context.SlotIndex < firstAvailableSlot)
+                .Select(slot => new SlotChange(slot.Context, slot.Context.SlotIndex + 1))
+                .ToList();
+            return new EnqueuePlan(1, null, slotChanges);
+        }
+
+        occupiedSlots.TryGetValue(Capacity, out var overflowSlot);
+        var overflowSlotChanges = occupiedSlots.Values
+            .Where(slot => slot.Context.SlotIndex < Capacity)
+            .Select(slot => new SlotChange(slot.Context, slot.Context.SlotIndex + 1))
+            .ToList();
+        return new EnqueuePlan(1, overflowSlot?.Card, overflowSlotChanges);
     }
 
-    private int NormalizeAspirationSlot(int aspirationSlot)
+    private bool IsValidSlot(int slotIndex)
     {
-        return aspirationSlot < 1 ? 1 : Math.Min(aspirationSlot, Capacity);
+        return slotIndex >= 1 && slotIndex <= Capacity;
+    }
+
+    private IEnumerable<int> EnumerateCandidateSlots(PerformEnqueueStrategy strategy, int aspirationSlot)
+    {
+        return strategy switch
+        {
+            PerformEnqueueStrategy.Bottom => EnumerateBottomFirst(aspirationSlot),
+            PerformEnqueueStrategy.Top => EnumerateTopFirst(aspirationSlot),
+            _ => EnumerateNearbyFirst(aspirationSlot)
+        };
     }
 
     private IEnumerable<int> EnumerateNearbyFirst(int aspirationSlot)
@@ -433,12 +488,12 @@ public class PerformManager : SingletonModel, ISecondaryResourceHookListener
 
     private IEnumerable<int> EnumerateTopFirst(int aspirationSlot)
     {
-        for (var slotIndex = aspirationSlot; slotIndex >= 1; slotIndex--)
+        for (var slotIndex = aspirationSlot; slotIndex <= Capacity; slotIndex++)
         {
             yield return slotIndex;
         }
 
-        for (var slotIndex = aspirationSlot + 1; slotIndex <= Capacity; slotIndex++)
+        for (var slotIndex = aspirationSlot - 1; slotIndex >= 1; slotIndex--)
         {
             yield return slotIndex;
         }
@@ -446,12 +501,12 @@ public class PerformManager : SingletonModel, ISecondaryResourceHookListener
 
     private IEnumerable<int> EnumerateBottomFirst(int aspirationSlot)
     {
-        for (var slotIndex = aspirationSlot; slotIndex <= Capacity; slotIndex++)
+        for (var slotIndex = aspirationSlot; slotIndex >= 1; slotIndex--)
         {
             yield return slotIndex;
         }
 
-        for (var slotIndex = aspirationSlot - 1; slotIndex >= 1; slotIndex--)
+        for (var slotIndex = aspirationSlot + 1; slotIndex <= Capacity; slotIndex++)
         {
             yield return slotIndex;
         }
@@ -493,7 +548,7 @@ public class PerformManager : SingletonModel, ISecondaryResourceHookListener
         if (!_isSubscribed)
         {
             _isSubscribed = true;
-            PerformPile = BangDreamTools.GetPile(BangDreamConst.PerformPile, Player);
+            PerformPile = BangDreamConst.PerformPile.GetPile(Player);
 
             if (ModNodeAttachmentRegistry.For(BangDreamConst.ModId).TryGetAttached<NCreature, NPerformArea>(
                     Player.Creature.GetCreatureNode()!, "perform_area", out var areaNode))
@@ -513,6 +568,8 @@ public class PerformManager : SingletonModel, ISecondaryResourceHookListener
             PerformPile.CardAddFinished += OnCardAddFinished;
             PerformPile.CardRemoved += OnCardRemoved;
             _cardsAwaitingArrival.Clear();
+            _cardsWithArrivalVisual.Clear();
+            ClearPerformAreaChanges();
             CardContexts.Clear();
         }
 
@@ -528,6 +585,8 @@ public class PerformManager : SingletonModel, ISecondaryResourceHookListener
             PerformPile.CardAddFinished -= OnCardAddFinished;
             PerformPile.CardRemoved -= OnCardRemoved;
             _cardsAwaitingArrival.Clear();
+            _cardsWithArrivalVisual.Clear();
+            ClearPerformAreaChanges();
             CardContexts.Clear();
         }
 
@@ -562,18 +621,129 @@ public class PerformManager : SingletonModel, ISecondaryResourceHookListener
         }
     }
 
-    private static void RunPerformAreaChangedHook(CardModel cardModel,
-        Func<PlayerChoiceContext, CardModel, Task> handler)
+    private void QueuePerformAreaChange(CardModel cardModel, PerformAreaChangeType type)
     {
-        if (cardModel.CombatState == null)
+        var combatState = cardModel.CombatState ?? Player.Creature.CombatState;
+        if (combatState == null)
         {
             return;
         }
 
-        TaskHelper.RunSafely(BangDreamHook.RunPerformHookAction(
-            cardModel.CombatState,
-            cardModel,
-            choiceContext => handler(choiceContext, cardModel))
-        );
+        var shouldStartProcessing = false;
+        lock (_performAreaChangeQueueLock)
+        {
+            _performAreaChanges.Enqueue(new PerformAreaChange(combatState, cardModel, type));
+            if (type == PerformAreaChangeType.Added)
+            {
+                _pendingPerformAreaAdditions.TryGetValue(cardModel, out var pendingCount);
+                _pendingPerformAreaAdditions[cardModel] = pendingCount + 1;
+            }
+
+            if (!_isProcessingPerformAreaChanges)
+            {
+                _isProcessingPerformAreaChanges = true;
+                shouldStartProcessing = true;
+            }
+        }
+
+        if (shouldStartProcessing)
+        {
+            TaskHelper.RunSafely(ProcessPerformAreaChanges());
+        }
     }
+
+    private async Task ProcessPerformAreaChanges()
+    {
+        while (TryDequeuePerformAreaChange(out var change))
+        {
+            try
+            {
+                await BangDreamHook.RunPerformHookAction(
+                    change.CombatState,
+                    change.CardModel,
+                    choiceContext => HandlePerformAreaChange(choiceContext, change));
+            }
+            catch (Exception exception)
+            {
+                BangDreamLibCore.Logger.Error(
+                    $"Failed to process perform area {change.Type} hook for {change.CardModel.Title}: {exception}");
+            }
+            finally
+            {
+                if (change.Type == PerformAreaChangeType.Added)
+                {
+                    CompletePendingPerformAreaAddition(change.CardModel);
+                }
+            }
+        }
+    }
+
+    private bool TryDequeuePerformAreaChange(out PerformAreaChange change)
+    {
+        lock (_performAreaChangeQueueLock)
+        {
+            if (_performAreaChanges.Count > 0)
+            {
+                change = _performAreaChanges.Dequeue();
+                return true;
+            }
+
+            _isProcessingPerformAreaChanges = false;
+            change = default;
+            return false;
+        }
+    }
+
+    private Task HandlePerformAreaChange(PlayerChoiceContext choiceContext, PerformAreaChange change)
+    {
+        return change.Type switch
+        {
+            PerformAreaChangeType.Added => HandleCardAddedInternal(choiceContext, change.CardModel),
+            PerformAreaChangeType.Removed => HandleCardRemovedInternal(choiceContext, change.CardModel),
+            _ => throw new ArgumentOutOfRangeException(nameof(change), $"Unknown change type: {change.Type}")
+        };
+    }
+
+    private void CompletePendingPerformAreaAddition(CardModel cardModel)
+    {
+        lock (_performAreaChangeQueueLock)
+        {
+            if (!_pendingPerformAreaAdditions.TryGetValue(cardModel, out var pendingCount)) return;
+
+            if (pendingCount <= 1)
+            {
+                _pendingPerformAreaAdditions.Remove(cardModel);
+            }
+            else
+            {
+                _pendingPerformAreaAdditions[cardModel] = pendingCount - 1;
+            }
+        }
+    }
+
+    private void ClearPerformAreaChanges()
+    {
+        lock (_performAreaChangeQueueLock)
+        {
+            _performAreaChanges.Clear();
+            _pendingPerformAreaAdditions.Clear();
+        }
+    }
+
+    private enum PerformAreaChangeType
+    {
+        Added,
+        Removed
+    }
+
+    private sealed record OccupiedSlot(CardModel Card, PerformContext Context);
+
+    private sealed record SlotChange(PerformContext Context, int SlotIndex);
+
+    private sealed record EnqueuePlan(int SlotIndex, CardModel? DisplacedCard, IReadOnlyList<SlotChange> SlotChanges);
+
+    private readonly record struct PerformAreaChange(
+        ICombatState CombatState,
+        CardModel CardModel,
+        PerformAreaChangeType Type);
 }

@@ -22,7 +22,7 @@ public class AttendantServant() : AbstractSakikoCard(CustomCost, CustomType, Cus
 
     protected override IEnumerable<IHoverTip> CardHoverTips =>
     [
-        HoverTipFactory.FromCard<SakikoShield>()
+        HoverTipFactory.FromCard<SakikoShield>(IsUpgraded)
     ];
 
     private bool _returnToHand;

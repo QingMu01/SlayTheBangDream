@@ -1,9 +1,13 @@
 using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
+using ItsCrychic.Scripts.Power.Buff;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
+using MegaCrit.Sts2.Core.Models.Powers;
+using STS2RitsuLib.Combat.SecondaryResources;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
@@ -12,33 +16,34 @@ public class RobustPhysique()
 {
     private const int CustomCost = 1;
     private const CardType CustomType = CardType.Skill;
-    private const CardRarity CustomRarity = CardRarity.Uncommon;
+    private const CardRarity CustomRarity = CardRarity.Common;
     private const TargetType CustomTarget = TargetType.Self;
-
-    public override bool GainsBlock => true;
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.PerformArea
+        CardKeyword.Exhaust,
+        BangDreamConst.Lingered
+    ];
+
+    protected override IEnumerable<IHoverTip> CardHoverTips =>
+    [
+        HoverTipFactory.FromPower<PlatingPower>()
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Block.Create(7),
-        QuickVar.Cards.Create(3)
+        QuickVar.Buff.Create(3)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        await CreatureCmd.GainBlock(Owner.Creature, DynamicVars.Block, play);
-        if (Owner.AttachedData().PerformManager.PerformPile.Cards.Count >= DynamicVars.Cards.IntValue)
-        {
-            await CreatureCmd.GainBlock(Owner.Creature, DynamicVars.Block, play);
-        }
+        var lingered = SecondaryResourceCmd.Get(Owner, BangDreamConst.LingeredResource);
+        await PowerCmd.Apply<NextTurnPlatingPower>(choiceContext, Owner.Creature,
+            QuickVar.Buff.GetVar(this).IntValue + lingered, Owner.Creature, this);
     }
 
     protected override void OnUpgrade()
     {
-        DynamicVars.Block.UpgradeValueBy(2);
+        EnergyCost.UpgradeBy(-1);
     }
 }

@@ -31,7 +31,7 @@ public class Mask() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, C
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Block.Create(8)
+        QuickVar.Block.Create(7)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
@@ -46,6 +46,6 @@ public class Mask() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, C
 
     protected override void OnUpgrade()
     {
-        DynamicVars.Block.UpgradeValueBy(4m);
+        DynamicVars.Block.UpgradeValueBy(3m);
     }
 }

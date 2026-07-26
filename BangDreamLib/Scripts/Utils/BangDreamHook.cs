@@ -14,6 +14,17 @@ namespace BangDreamLib.Scripts.Utils;
 
 public static class BangDreamHook
 {
+    public static decimal CaptureMusicNoteDamageAdditive(
+        ICombatState combatState,
+        Creature? dealer,
+        AbstractModel? source)
+    {
+        return IterateCombatHookListeners(combatState)
+            .OfType<IMusicNoteModifyHookListener>()
+            .ToList()
+            .Sum(listener => listener.CaptureMusicNoteDamageAdditive(dealer, source));
+    }
+
     public static decimal ModifyMusicNoteDamage(
         ICombatState combatState,
         Creature? target,
@@ -24,20 +35,21 @@ public static class BangDreamHook
     )
     {
         var damageAmount = damage;
+        var listeners = IterateCombatHookListeners(combatState)
+            .OfType<IMusicNoteModifyHookListener>()
+            .ToList();
         if (modifyDamageHookType.HasFlag(ModifyDamageHookType.Additive))
         {
-            damageAmount = combatState.IterateHookListeners().OfType<IMusicNoteModifyHookListener>()
-                .Aggregate(damageAmount,
-                    (current, modifyHook) =>
-                        current + modifyHook.ModifyMusicNoteDamageAdditive(target, current, dealer, source));
+            damageAmount = listeners.Aggregate(damageAmount,
+                (current, listener) =>
+                    current + listener.ModifyMusicNoteDamageAdditive(target, current, dealer, source));
         }
 
         if (modifyDamageHookType.HasFlag(ModifyDamageHookType.Multiplicative))
         {
-            damageAmount = combatState.IterateHookListeners().OfType<IMusicNoteModifyHookListener>()
-                .Aggregate(damageAmount,
-                    (current, modifyHook) =>
-                        current * modifyHook.ModifyMusicNoteDamageMultiplicative(target, current, dealer, source));
+            damageAmount = listeners.Aggregate(damageAmount,
+                (current, listener) =>
+                    current * listener.ModifyMusicNoteDamageMultiplicative(target, current, dealer, source));
         }
 
         return damageAmount;
@@ -46,14 +58,14 @@ public static class BangDreamHook
     public static decimal ModifyMusicNoteShotCount(ICombatState combatState, Creature? dealer, decimal amount,
         AbstractModel? source)
     {
-        return combatState.IterateHookListeners().OfType<IMusicNoteModifyHookListener>().Aggregate(amount,
+        return IterateCombatHookListeners(combatState).OfType<IMusicNoteModifyHookListener>().Aggregate(amount,
             (current, model) => model.ModifyMusicNoteShotCount(current, dealer, source));
     }
 
     public static decimal ModifyMusicNoteBounceCount(ICombatState combatState, Creature? dealer, decimal amount,
         AbstractModel? source)
     {
-        return combatState.IterateHookListeners().OfType<IMusicNoteModifyHookListener>().Aggregate(amount,
+        return IterateCombatHookListeners(combatState).OfType<IMusicNoteModifyHookListener>().Aggregate(amount,
             (current, model) => model.ModifyMusicNoteBounceCount(current, dealer, source));
     }
 
@@ -61,10 +73,10 @@ public static class BangDreamHook
     {
         ArgumentNullException.ThrowIfNull(play.Card.CombatState);
 
-        foreach (var model in play.Card.CombatState.IterateHookListeners().OfType<ISubsideHookListener>())
-        {
-            await model.AfterCardSubside(choiceContext, play);
-        }
+        await DispatchCombatHooks<ISubsideHookListener>(
+            choiceContext,
+            play.Card.CombatState,
+            listener => listener.AfterCardSubside(choiceContext, play));
     }
 
     public static async Task OnCardEnterPerformArea(
@@ -72,10 +84,10 @@ public static class BangDreamHook
         ICombatState combatState,
         CardModel cardModel)
     {
-        foreach (var model in combatState.IterateHookListeners().OfType<IPerformHookListener>())
-        {
-            await model.OnCardEnterPerformArea(choiceContext, cardModel);
-        }
+        await DispatchCombatHooks<IPerformHookListener>(
+            choiceContext,
+            combatState,
+            listener => listener.OnCardEnterPerformArea(choiceContext, cardModel));
     }
 
     public static async Task OnCardLeavePerformArea(
@@ -83,10 +95,11 @@ public static class BangDreamHook
         ICombatState combatState,
         CardModel cardModel)
     {
-        foreach (var model in combatState.IterateHookListeners().OfType<IPerformHookListener>())
-        {
-            await model.OnCardLeavePerformArea(choiceContext, cardModel);
-        }
+        await DispatchCombatHooks<IPerformHookListener>(
+            choiceContext,
+            combatState,
+            listener => listener.OnCardLeavePerformArea(choiceContext, cardModel),
+            cardModel);
     }
 
     public static async Task OnCardPerform(
@@ -94,24 +107,59 @@ public static class BangDreamHook
         PerformContext performContext,
         CardModel cardModel)
     {
-        var netId = LocalContext.NetId;
-        if (!netId.HasValue)
+        await RunPerformHookAction(
+            combatState,
+            cardModel,
+            choiceContext => DispatchCombatHooks<IPerformHookListener>(
+                choiceContext,
+                combatState,
+                listener => listener.OnCardPerform(choiceContext, performContext, cardModel)));
+    }
+
+    private static async Task DispatchCombatHooks<TListener>(
+        PlayerChoiceContext choiceContext,
+        ICombatState combatState,
+        Func<TListener, Task> dispatch,
+        AbstractModel? additionalListenerModel = null)
+        where TListener : class
+    {
+        var listenerModels = IterateCombatHookListeners(combatState)
+            .Where(model => model is TListener)
+            .ToList();
+        if (additionalListenerModel is TListener &&
+            CanDispatchCombatHooks() &&
+            listenerModels.All(model => !ReferenceEquals(model, additionalListenerModel)))
         {
-            return;
+            listenerModels.Add(additionalListenerModel);
         }
 
-        foreach (var model in combatState.IterateHookListeners().OfType<IPerformHookListener>())
+        foreach (var model in listenerModels)
         {
-            var choiceContext = new HookPlayerChoiceContext(cardModel, netId.Value, combatState, GameActionType.Combat);
-            await model.OnCardPerform(choiceContext, performContext, cardModel);
+            choiceContext.PushModel(model);
+            try
+            {
+                await ExecuteTaskThenInvokeExecutionFinished(
+                    model,
+                    dispatch((TListener)(object)model));
+            }
+            finally
+            {
+                choiceContext.PopModel(model);
+            }
         }
     }
 
-
-    public static async Task OnMusicNoteSpawn(ICombatState combatState, VfxContext context, Player dealer)
+    public static async Task AfterMusicNoteShot(ICombatState combatState, VfxContext context, Player dealer)
     {
-        foreach (var model in combatState.IterateHookListeners().OfType<IMusicNoteShotHookListener>())
-            await model.OnMusicNoteSpawn(context, dealer);
+        var listenerModels = IterateCombatHookListeners(combatState)
+            .Where(model => model is IMusicNoteShotHookListener)
+            .ToList();
+        foreach (var model in listenerModels)
+        {
+            await ExecuteTaskThenInvokeExecutionFinished(
+                model,
+                ((IMusicNoteShotHookListener)model).AfterShot(context, dealer));
+        }
     }
 
     public static async Task RunPerformHookAction(
@@ -119,6 +167,11 @@ public static class BangDreamHook
         AbstractModel source,
         Func<PlayerChoiceContext, Task> hook)
     {
+        if (!CanDispatchCombatHooks())
+        {
+            return;
+        }
+
         var netId = LocalContext.NetId;
         if (!netId.HasValue)
         {
@@ -126,8 +179,32 @@ public static class BangDreamHook
         }
 
         var choiceContext = new HookPlayerChoiceContext(source, netId.Value, combatState, GameActionType.Combat);
-        var task = hook(choiceContext);
+        var task = ExecuteTaskThenInvokeExecutionFinished(source, hook(choiceContext));
         await choiceContext.AssignTaskAndWaitForPauseOrCompletion(task);
         await choiceContext.WaitForCompletion();
+    }
+
+    private static IEnumerable<AbstractModel> IterateCombatHookListeners(ICombatState combatState)
+    {
+        if (!CanDispatchCombatHooks())
+        {
+            yield break;
+        }
+
+        foreach (var model in combatState.IterateHookListeners())
+        {
+            yield return model;
+        }
+    }
+
+    private static bool CanDispatchCombatHooks()
+    {
+        return CombatManager.Instance is not { IsOverOrEnding: true, IsStarting: false };
+    }
+
+    private static async Task ExecuteTaskThenInvokeExecutionFinished(AbstractModel model, Task task)
+    {
+        await task;
+        model.InvokeExecutionFinished();
     }
 }

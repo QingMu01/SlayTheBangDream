@@ -53,7 +53,7 @@ public class Surge() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, 
         {
             await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
                 .FromCard(this, play)
-                .Targeting(_enemiesSnapshot[0])
+                .TargetingAllOpponents(CombatState)
                 .WithHitCount(_enemiesSnapshot.Count)
                 .WithHitFx("vfx/vfx_attack_slash")
                 .Execute(choiceContext);

@@ -1,13 +1,11 @@
 using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Interfaces.CardAugment;
-using BangDreamLib.Scripts.Interfaces.CharacterAugment;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Factories;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using MegaCrit.Sts2.Core.Models;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
@@ -22,7 +20,8 @@ public class MiracleToDaily() : AbstractSakikoCard(CustomCost, CustomType, Custo
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.PerformArea
+        BangDreamConst.Instant,
+        BangDreamConst.PerformArea,
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
@@ -32,26 +31,40 @@ public class MiracleToDaily() : AbstractSakikoCard(CustomCost, CustomType, Custo
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
+        ArgumentNullException.ThrowIfNull(CombatState);
+
         await CreatureCmd.GainBlock(Owner.Creature, DynamicVars.Block, play);
 
-        var manager = Owner.AttachedData().PerformManager;
-        var performanceCards = manager.PerformPile.Cards.ToList();
-        var candidates = Owner.Character is IExtraDeckSupportCharacter character
-            ? character.ExtraCardPool.AllCards.OfType<IPerformCard>().Where(card => card.IsInstant)
-                .Cast<CardModel>().ToList()
-            : [];
-        foreach (var performanceCard in performanceCards)
+        var performManager = Owner.AttachedData().PerformManager;
+        var performCards = BangDreamConst.PerformPile.GetPile(Owner).Cards.ToList();
+
+        var candidates = CardFactory.FilterForCombat(BangDreamTools.GetCharacterExtraCards(Owner))
+            .Where(card => card is IPerformCard { IsInstant: true })
+            .ToList();
+
+        if (candidates.Count > 0)
         {
-            var replacement = CardFactory.GetForCombat(Owner, candidates, 1,
-                Owner.RunState.Rng.CombatCardGeneration).FirstOrDefault();
-            if (replacement == null) continue;
-
-            if (IsUpgraded) CardCmd.Upgrade(replacement);
-
-            var transformResult = await CardCmd.Transform(performanceCard, replacement);
-            if (transformResult is { success: true })
+            foreach (var originalCard in performCards)
             {
-                await CardPileCmd.Add(transformResult.Value.cardAdded, BangDreamConst.PerformPile);
+                var candidate = Owner.RunState.Rng.CombatCardGeneration.NextItem(candidates);
+                if (candidate == null) continue;
+
+                var transformCard = CombatState.CreateCard(candidate, Owner);
+
+                if (IsUpgraded) CardCmd.Upgrade(transformCard);
+
+                // 在替换牌进入歌单前继承原牌槽位。
+                var originalContext = performManager.CardContexts.GetOrCreate(originalCard);
+                var replacementContext = performManager.CardContexts.GetOrCreate(transformCard);
+
+                replacementContext.Manager = performManager;
+                replacementContext.SlotIndex = originalContext.SlotIndex;
+
+                var result = await CardCmd.Transform(originalCard, transformCard);
+                if (result is not { success: true })
+                {
+                    performManager.CardContexts.Remove(transformCard);
+                }
             }
         }
     }

@@ -21,17 +21,10 @@ public class EleganceGreeting() : AbstractSakikoCard(CustomCost, CustomType, Cus
         CardKeyword.Exhaust
     ];
 
-    protected override IEnumerable<IHoverTip> CardHoverTips
-    {
-        get
-        {
-            yield return HoverTipFactory.FromPower<WeakPower>();
-            if (IsUpgraded)
-            {
-                yield return HoverTipFactory.FromPower<VulnerablePower>();
-            }
-        }
-    }
+    protected override IEnumerable<IHoverTip> CardHoverTips =>
+    [
+        HoverTipFactory.FromPower<WeakPower>()
+    ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
@@ -55,11 +48,11 @@ public class EleganceGreeting() : AbstractSakikoCard(CustomCost, CustomType, Cus
             var debuff = QuickVar.Buff.GetVar(this).IntValue;
             await PowerCmd.Apply<WeakPower>(choiceContext, damageResult.Receiver, debuff,
                 Owner.Creature, this);
-            if (IsUpgraded)
-            {
-                await PowerCmd.Apply<WeakPower>(choiceContext, damageResult.Receiver, debuff,
-                    Owner.Creature, this);
-            }
         }
+    }
+
+    protected override void OnUpgrade()
+    {
+        QuickVar.Buff.GetVar(this).UpgradeValueBy(1);
     }
 }

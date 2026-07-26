@@ -13,16 +13,16 @@ using MegaCrit.Sts2.Core.Models;
 namespace ItsCrychic.Scripts.Character;
 
 public sealed class TogawaSakiko() : BandMemberModel<SakikoStandardCardPool, SakikoRelicPool, SakikoPotionPool>(
-    CrychicMemberEnum.Sakiko.GetMemberColor()), IExtraDeckSupportCharacter, ILingeredResourceCharacter
+    CrychicMemberEnum.Sakiko.GetMemberColor()), IPerformableCharacter, ILingeredResourceCharacter
 {
     public override int StartingHp => 75;
     public override int StartingGold => 99;
 
-    public override int GetDefaultCapacity => 3;
-
     public override CharacterGroup Group => CharacterGroup.Crychic;
     public override string MemberNameRoman => CrychicMemberEnum.Sakiko.GetMemberNameRoman();
     public override string MemberClass => BangDreamClass.Keyboard.GetBandClass();
+
+    public int GetDefaultCapacity => 3;
 
     public bool AutoGenerateSubsideResource => true;
 

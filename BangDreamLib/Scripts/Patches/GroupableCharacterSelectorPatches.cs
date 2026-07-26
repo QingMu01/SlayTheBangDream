@@ -7,7 +7,6 @@ using BangDreamLib.Scripts.Nodes;
 using BangDreamLib.Scripts.Utils;
 using Godot;
 using HarmonyLib;
-using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.Entities.UI;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Models;
@@ -190,7 +189,7 @@ internal class SetupGroupableCharacterSelectButtonPatch : IPatchMethod
                 {
                     if (IconField.GetValue(child) is TextureRect icon)
                     {
-                        icon.Texture = PreloadManager.Cache.GetTexture2D(groupSelectIcon);
+                        icon.Texture = BangDreamPreloadManager.GetTexture2D(groupSelectIcon);
                     }
                 }
             }
@@ -268,7 +267,7 @@ internal class SelectGroupButtonIconPatch : IPatchMethod
                 var groupSelectIcon = characterGroup.Value.GetGroupSelectIcon();
                 if (!string.IsNullOrEmpty(groupSelectIcon) && ResourceLoader.Exists(groupSelectIcon))
                 {
-                    var texture = PreloadManager.Cache.GetTexture2D(groupSelectIcon);
+                    var texture = BangDreamPreloadManager.GetTexture2D(groupSelectIcon);
                     ____icon.Texture = texture;
                     ____lock.Texture = texture;
                     ____iconAdd.Texture = texture;

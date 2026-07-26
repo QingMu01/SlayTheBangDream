@@ -5,7 +5,6 @@ using BangDreamLib.Scripts.Nodes.MegeScript;
 using BangDreamLib.Scripts.Utils;
 using Godot;
 using HarmonyLib;
-using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.Context;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Players;
@@ -274,7 +273,7 @@ internal class ArmPointingTexturePatch : IPatchMethod
                 .ArmPointingTexture;
             if (path != null)
             {
-                ____textureRect.Texture = PreloadManager.Cache.GetTexture2D(path);
+                ____textureRect.Texture = BangDreamPreloadManager.GetTexture2D(path);
             }
         }
     }
@@ -304,7 +303,7 @@ internal class ArmFightTexturePatch : IPatchMethod
             };
             if (path != null)
             {
-                ____textureRect.Texture = PreloadManager.Cache.GetTexture2D(path);
+                ____textureRect.Texture = BangDreamPreloadManager.GetTexture2D(path);
             }
         }
     }
@@ -328,7 +327,7 @@ internal class MusicCardFramePatch : IPatchMethod
             if (path != null)
             {
                 ____frame ??= new TextureRect();
-                ____frame.Texture = PreloadManager.Cache.GetTexture2D(path);
+                ____frame.Texture = BangDreamPreloadManager.GetTexture2D(path);
             }
         }
     }
@@ -373,7 +372,7 @@ internal class MapMarkerPatch : IPatchMethod
             var path = BangDreamConst.PlayerSkin.Get(player).GetSkin()?.SkinTemplate.Ui.MapMarker;
             if (path != null)
             {
-                __instance.Texture = PreloadManager.Cache.GetTexture2D(path);
+                __instance.Texture = BangDreamPreloadManager.GetTexture2D(path);
             }
         }
     }
@@ -407,14 +406,14 @@ internal class TopBarPatch : IPatchMethod
                 {
                     var textureRect = __instance.Hp.GetNodeOrNull<TextureRect>("HpIcon");
                     if (textureRect != null)
-                        textureRect.Texture = PreloadManager.Cache.GetTexture2D(hpIconPath);
+                        textureRect.Texture = BangDreamPreloadManager.GetTexture2D(hpIconPath);
                 }
 
                 if (goldIconPath != null)
                 {
                     var textureRect = __instance.Gold.GetNodeOrNull<TextureRect>("GoldIcon");
                     if (textureRect != null)
-                        textureRect.Texture = PreloadManager.Cache.GetTexture2D(goldIconPath);
+                        textureRect.Texture = BangDreamPreloadManager.GetTexture2D(goldIconPath);
                 }
 
                 if (floorIconPath != null)
@@ -422,28 +421,28 @@ internal class TopBarPatch : IPatchMethod
                     var textureRect =
                         __instance.FloorIcon.GetNodeOrNull<TextureRect>("FloorIconPositioner/FloorInfoIcon");
                     if (textureRect != null)
-                        textureRect.Texture = PreloadManager.Cache.GetTexture2D(floorIconPath);
+                        textureRect.Texture = BangDreamPreloadManager.GetTexture2D(floorIconPath);
                 }
 
                 if (mapIconPath != null)
                 {
                     var textureRect = __instance.Map.GetNodeOrNull<TextureRect>("Control/Icon");
                     if (textureRect != null)
-                        textureRect.Texture = PreloadManager.Cache.GetTexture2D(mapIconPath);
+                        textureRect.Texture = BangDreamPreloadManager.GetTexture2D(mapIconPath);
                 }
 
                 if (deckIconPath != null)
                 {
                     var textureRect = __instance.Deck.GetNodeOrNull<TextureRect>("Control/Icon");
                     if (textureRect != null)
-                        textureRect.Texture = PreloadManager.Cache.GetTexture2D(deckIconPath);
+                        textureRect.Texture = BangDreamPreloadManager.GetTexture2D(deckIconPath);
                 }
 
                 if (settingIconPath != null)
                 {
                     var textureRect = __instance.Pause.GetNodeOrNull<TextureRect>("Control/Icon");
                     if (textureRect != null)
-                        textureRect.Texture = PreloadManager.Cache.GetTexture2D(settingIconPath);
+                        textureRect.Texture = BangDreamPreloadManager.GetTexture2D(settingIconPath);
                 }
             }
         }
@@ -467,7 +466,7 @@ internal class TopBarExtraDeckPatch : IPatchMethod
             var path = BangDreamConst.PlayerSkin.Get(player).GetSkin()?.SkinTemplate.Ui.TopBarExtraDeckIcon;
             if (path != null && ____icon is TextureRect textureRect)
             {
-                textureRect.Texture = PreloadManager.Cache.GetTexture2D(path);
+                textureRect.Texture = BangDreamPreloadManager.GetTexture2D(path);
             }
         }
     }
@@ -491,7 +490,7 @@ internal class CombatCardPilePatch : IPatchMethod
                 var path = BangDreamConst.PlayerSkin.Get(player).GetSkin()?.SkinTemplate.Ui.CombatDrawIcon;
                 if (path != null && ____icon is TextureRect textureRect)
                 {
-                    textureRect.Texture = PreloadManager.Cache.GetTexture2D(path);
+                    textureRect.Texture = BangDreamPreloadManager.GetTexture2D(path);
                 }
             }
             else if (__instance is NDiscardPileButton)
@@ -499,7 +498,7 @@ internal class CombatCardPilePatch : IPatchMethod
                 var path = BangDreamConst.PlayerSkin.Get(player).GetSkin()?.SkinTemplate.Ui.CombatDiscardIcon;
                 if (path != null && ____icon is TextureRect textureRect)
                 {
-                    textureRect.Texture = PreloadManager.Cache.GetTexture2D(path);
+                    textureRect.Texture = BangDreamPreloadManager.GetTexture2D(path);
                 }
             }
         }

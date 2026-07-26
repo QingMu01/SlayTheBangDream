@@ -1,11 +1,9 @@
-using BangDreamLib.Scripts.Commands;
 using BangDreamLib.Scripts.Extensions;
-using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Utils;
-using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
+using STS2RitsuLib.Combat.SecondaryResources;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
@@ -18,28 +16,25 @@ public class BeginnerMind() : AbstractSakikoCard(CustomCost, CustomType, CustomR
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.Music
+        BangDreamConst.Lingered,
+        BangDreamConst.PerformArea
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Cards.Create(2),
-        QuickVar.Energy.Create(1)
+        QuickVar.Buff.Create(1)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        var drawnCards = await ExtraPileCmd.Draw(choiceContext, DynamicVars.Cards.BaseValue, Owner);
-
-        var musicCount = drawnCards.Count(card => card is IPerformCard);
-        if (musicCount > 0)
-        {
-            await PlayerCmd.GainEnergy(DynamicVars.Energy.BaseValue * musicCount, Owner);
-        }
+        var lingered = SecondaryResourceCmd.Get(Owner, BangDreamConst.LingeredResource);
+        if (lingered > 0)
+            await SecondaryResourceCmd.Lose(Owner, BangDreamConst.LingeredResource, lingered, this);
+        Owner.AttachedData().PerformManager.AddCapacity(QuickVar.Buff.GetVar(this).IntValue);
     }
 
     protected override void OnUpgrade()
     {
-        DynamicVars.Cards.UpgradeValueBy(1m);
+        EnergyCost.UpgradeBy(-1);
     }
 }

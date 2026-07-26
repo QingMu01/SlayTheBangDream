@@ -16,7 +16,7 @@ using Logger = MegaCrit.Sts2.Core.Logging.Logger;
 namespace ItsCrychic;
 
 [ModInitializer(nameof(Initialize))]
-public class ItsCrychic
+public static class ItsCrychic
 {
     public static readonly Logger Logger = RitsuLibFramework.CreateLogger(CrychicConst.ModId);
 

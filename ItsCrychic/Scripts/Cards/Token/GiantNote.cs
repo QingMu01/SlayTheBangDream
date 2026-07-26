@@ -1,39 +1,45 @@
 using BangDreamLib.Scripts.Cards;
 using BangDreamLib.Scripts.Commands;
 using BangDreamLib.Scripts.Extensions;
-using ItsCrychic.Scripts.Power.Buff;
-using ItsCrychic.Scripts.Utils;
-using MegaCrit.Sts2.Core.Commands;
+using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models.CardPools;
+using STS2RitsuLib.Combat.SecondaryResources;
 using STS2RitsuLib.Interop.AutoRegistration;
-using STS2RitsuLib.Scaffolding.Content;
 
 namespace ItsCrychic.Scripts.Cards.Token;
 
 [RegisterCard(typeof(TokenCardPool))]
-public sealed class GiantNote() : BandCardModel(CustomCost, CustomType, CustomRarity, CustomTarget)
+public sealed class GiantNote() : MusicCardModel(CustomCost, CustomRarity, CustomTarget)
 {
     private const int CustomCost = 0;
-    private const CardType CustomType = CardType.Skill;
     private const CardRarity CustomRarity = CardRarity.Token;
     private const TargetType CustomTarget = TargetType.None;
 
-    protected override CardAssetProfile CardAssetProfile => CrychicConst.DefaultCardAssetProfile(this);
-
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Cards.Create(1),
-        QuickVar.Repeat.Create(1)
+        QuickVar.Repeat.Create(3)
     ];
 
-    protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
+    public override async Task OnPerform(PlayerChoiceContext choiceContext)
     {
-        await CardPileCmd.Draw(choiceContext, DynamicVars.Cards.BaseValue, Owner);
-        await MusicNoteCmd.FromCard(this, 1);
-        await PowerCmd.Apply<GiantNotePower>(choiceContext, Owner.Creature, DynamicVars.Repeat.BaseValue,
-            Owner.Creature, this);
+        await MusicNoteCmd.FromCard(this, DynamicVars.Repeat.IntValue);
+
+        var manager = Owner.AttachedData().PerformManager;
+        var topCard = BangDreamConst.PerformPile.GetPile(Owner).Cards.ToList()
+            .OrderByDescending(card => manager.CardContexts.GetOrCreate(card).SlotIndex)
+            .FirstOrDefault();
+
+        if (topCard == this)
+        {
+            await SecondaryResourceCmd.Reset(Owner, BangDreamConst.LingeredResource);
+        }
+    }
+
+    protected override void OnUpgrade()
+    {
+        DynamicVars.Repeat.UpgradeValueBy(1m);
     }
 }
