@@ -11,14 +11,17 @@ public class AttachePlayerData
     public static readonly AttachedState<Player, AttachePlayerData> State = new(p => new AttachePlayerData(p));
 
     public PerformManager PerformManager { get; }
+    public LingeredOrbitManager LingeredOrbitManager { get; }
     public MusicNoteDamageTracker MusicNoteDamageTracker { get; }
 
     private AttachePlayerData(Player player)
     {
         PerformManager = (PerformManager)ModelDb.Singleton<PerformManager>().MutableClone();
+        LingeredOrbitManager = (LingeredOrbitManager)ModelDb.Singleton<LingeredOrbitManager>().MutableClone();
 
         MusicNoteDamageTracker = (MusicNoteDamageTracker)ModelDb.Singleton<MusicNoteDamageTracker>().MutableClone();
 
         PerformManager.Player = player;
+        LingeredOrbitManager.Player = player;
     }
 }

@@ -7,6 +7,7 @@ using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
 using BangDreamLib.Scripts.Multiplayer.RunData;
 using BangDreamLib.Scripts.Nodes;
+using BangDreamLib.Scripts.Nodes.VFX;
 using BangDreamLib.Scripts.Patches;
 using BangDreamLib.Scripts.Rewards;
 using BangDreamLib.Scripts.Utils;
@@ -77,8 +78,16 @@ public static class BangDreamLibCore
             throw new InvalidOperationException("skins support patches failed.");
         }
 
+        var inputEventPatcher = RitsuLibFramework.CreatePatcher(BangDreamConst.ModId, "input_event_hook_patch");
+        inputEventPatcher.RegisterPatches<LingeredOrbitCardDragPatches>();
+        if (!inputEventPatcher.PatchAll())
+        {
+            throw new InvalidOperationException("input event hook patches failed.");
+        }
+
         var commonPatcher = RitsuLibFramework.CreatePatcher(BangDreamConst.ModId, "common_patch");
         commonPatcher.RegisterPatch<CardHoverTipPatch>();
+        commonPatcher.RegisterPatch<WaitForCombatResolutionPatch>();
         commonPatcher.PatchAll();
 
         // 注册持久化数据
@@ -213,6 +222,17 @@ public static class BangDreamLibCore
                     DuplicatePolicy = NodeAttachmentDuplicatePolicy.ReplaceExistingByName,
                     SetupTiming = NodeAttachmentSetupTiming.AfterAdd,
                 });
+        ModNodeAttachmentRegistry.For(BangDreamConst.ModId)
+            .RegisterReadyChild<NCreature, NLingeredOrbitVfx>(
+                NLingeredOrbitVfx.AttachmentId,
+                static creature => NLingeredOrbitVfx.Create(creature),
+                new NodeAttachmentOptions
+                {
+                    Name = NLingeredOrbitVfx.AttachmentName,
+                    Order = 20,
+                    DuplicatePolicy = NodeAttachmentDuplicatePolicy.ReplaceExistingByName,
+                    SetupTiming = NodeAttachmentSetupTiming.AfterAdd,
+                });
 
         // 注册公共内容
         var commonContent = RitsuLibFramework.GetContentRegistry(BangDreamConst.ModId);
@@ -237,6 +257,28 @@ public static class BangDreamLibCore
                     {
                         Logger.Error($"Failed to load skin template from {skinPath}");
                     }
+                }
+            }
+        });
+        RitsuLibFramework.SubscribeLifecycle<CombatStartingEvent>(ctx =>
+        {
+            if (ctx.CombatState?.Players != null)
+            {
+                foreach (var player in ctx.CombatState.Players)
+                {
+                    player.AttachedData().PerformManager.SubmitCombatState();
+                    player.AttachedData().LingeredOrbitManager.SubmitCombatState();
+                }
+            }
+        });
+        RitsuLibFramework.SubscribeLifecycle<CombatEndedEvent>(ctx =>
+        {
+            if (ctx.CombatState?.Players != null)
+            {
+                foreach (var player in ctx.CombatState.Players)
+                {
+                    player.AttachedData().PerformManager.UnsubscribeCombatState();
+                    player.AttachedData().LingeredOrbitManager.UnsubscribeCombatState();
                 }
             }
         });

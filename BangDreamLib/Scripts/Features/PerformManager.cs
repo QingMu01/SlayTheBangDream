@@ -1,4 +1,5 @@
 using BangDreamLib.Scripts.Enums;
+using BangDreamLib.Scripts.Interfaces;
 using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
 using BangDreamLib.Scripts.Nodes;
@@ -14,14 +15,13 @@ using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Nodes.Cards;
 using MegaCrit.Sts2.Core.Nodes.Combat;
-using MegaCrit.Sts2.Core.Rooms;
 using STS2RitsuLib.Combat.SecondaryResources;
 using STS2RitsuLib.Scaffolding.Godot.NodeAttachments;
 using STS2RitsuLib.Utils;
 
 namespace BangDreamLib.Scripts.Features;
 
-public class PerformManager : SingletonModel, ISecondaryResourceHookListener
+public class PerformManager : SingletonModel, IInCombatManager, ISecondaryResourceHookListener
 {
     private const string LocTable = "combat_messages";
     private const string MessagePrefix = "BANG_DREAM_LIB_PERFORM_MANAGER";
@@ -34,8 +34,6 @@ public class PerformManager : SingletonModel, ISecondaryResourceHookListener
     private const int MaxCapacity = 7;
 
     public override bool ShouldReceiveCombatHooks => true;
-
-    private bool _isSubscribed;
 
     private Player? _player;
     private CardPile? _pile;
@@ -543,54 +541,42 @@ public class PerformManager : SingletonModel, ISecondaryResourceHookListener
         }
     }
 
-    public override Task BeforeCombatStart()
+    public void SubmitCombatState()
     {
-        if (!_isSubscribed)
+        PerformPile = BangDreamConst.PerformPile.GetPile(Player);
+
+        if (ModNodeAttachmentRegistry.For(BangDreamConst.ModId).TryGetAttached<NCreature, NPerformArea>(
+                Player.Creature.GetCreatureNode()!, "perform_area", out var areaNode))
         {
-            _isSubscribed = true;
-            PerformPile = BangDreamConst.PerformPile.GetPile(Player);
-
-            if (ModNodeAttachmentRegistry.For(BangDreamConst.ModId).TryGetAttached<NCreature, NPerformArea>(
-                    Player.Creature.GetCreatureNode()!, "perform_area", out var areaNode))
-            {
-                PerformArea = areaNode;
-            }
-
-            if (Player.Character is IPerformableCharacter character)
-                Capacity = character.GetDefaultCapacity;
-            else
-                Capacity = 0;
-
-            PerformArea.SetCapacity(Capacity);
-            PerformArea.SubmitChanged();
-
-            PerformPile.CardAdded += OnCardAdded;
-            PerformPile.CardAddFinished += OnCardAddFinished;
-            PerformPile.CardRemoved += OnCardRemoved;
-            _cardsAwaitingArrival.Clear();
-            _cardsWithArrivalVisual.Clear();
-            ClearPerformAreaChanges();
-            CardContexts.Clear();
+            PerformArea = areaNode;
         }
 
-        return Task.CompletedTask;
+        if (Player.Character is IPerformableCharacter character)
+            Capacity = character.GetDefaultCapacity;
+        else
+            Capacity = 0;
+
+        PerformArea.SetCapacity(Capacity);
+        PerformArea.SubmitChanged();
+
+        PerformPile.CardAdded += OnCardAdded;
+        PerformPile.CardAddFinished += OnCardAddFinished;
+        PerformPile.CardRemoved += OnCardRemoved;
+        _cardsAwaitingArrival.Clear();
+        _cardsWithArrivalVisual.Clear();
+        ClearPerformAreaChanges();
+        CardContexts.Clear();
     }
 
-    public override Task AfterCombatEnd(CombatRoom room)
+    public void UnsubscribeCombatState()
     {
-        if (_isSubscribed)
-        {
-            _isSubscribed = false;
-            PerformPile.CardAdded -= OnCardAdded;
-            PerformPile.CardAddFinished -= OnCardAddFinished;
-            PerformPile.CardRemoved -= OnCardRemoved;
-            _cardsAwaitingArrival.Clear();
-            _cardsWithArrivalVisual.Clear();
-            ClearPerformAreaChanges();
-            CardContexts.Clear();
-        }
-
-        return Task.CompletedTask;
+        PerformPile.CardAdded -= OnCardAdded;
+        PerformPile.CardAddFinished -= OnCardAddFinished;
+        PerformPile.CardRemoved -= OnCardRemoved;
+        _cardsAwaitingArrival.Clear();
+        _cardsWithArrivalVisual.Clear();
+        ClearPerformAreaChanges();
+        CardContexts.Clear();
     }
 
     private static async Task MoveCardInternal(CardModel cardModel)

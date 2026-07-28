@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://fmns5ke8lita" path="res://Scripts/Nodes/SubNode/NPerformItem.cs" id="1_b1k58"]
 [ext_resource type="Shader" uid="uid://6lk8eakexseb" path="res://BangDreamLib/shaders/parallelogram_clip.gdshader" id="2_eapvb"]
-[ext_resource type="Texture2D" uid="uid://dp5uao2yd501l" path="res://BangDreamLib/images/sceneui/default_portrait.png" id="3_l5gee"]
+[ext_resource type="Texture2D" uid="uid://bbnqvh5ldyuh1" path="res://BangDreamLib/images/sceneui/default_portrait.png" id="3_l5gee"]
 [ext_resource type="FontVariation" uid="uid://b31wycusbsq8w" path="res://themes/fonts/jpn/noto_sans_cjkjp_bold_shared.tres" id="4_eapvb"]
 [ext_resource type="Shader" uid="uid://d0wcj6w86sq02" path="res://BangDreamLib/shaders/parallelogram_overlay.gdshader" id="5_overlay"]
 

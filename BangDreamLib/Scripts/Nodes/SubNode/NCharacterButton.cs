@@ -14,12 +14,11 @@ public partial class NCharacterButton : Button
     private const float AnimationDuration = 0.12f;
 
     private static readonly Vector2 ActiveOffset = new(50f, 0f);
-    private static readonly Vector2 IdleLogoScale = new(0.9f, 0.9f);
 
     private BangDreamCharacterSelector? _parent;
 
     private Tween? _hoverTween;
-    private TextureRect? _selectLogo;
+    private TextureRect? _icon;
 
     private Vector2 _originalPosition;
     private bool _isSelected;
@@ -51,17 +50,16 @@ public partial class NCharacterButton : Button
 
     public override void _Ready()
     {
-        Modulate = Character?.NameColor ?? Colors.Black;
+        SelfModulate = Character?.NameColor ?? Colors.Black;
         _originalPosition = Position;
-        _selectLogo = GetNode<TextureRect>("SelectLogo");
+        _icon = GetNode<TextureRect>("Icon");
 
         if (Character is IBangDreamMateData { SelectLogo: { } path } && !string.IsNullOrWhiteSpace(path))
         {
-            _selectLogo.Texture = BangDreamPreloadManager.GetTexture2D(path);
-            _selectLogo.Show();
+            _icon.Texture = BangDreamPreloadManager.GetTexture2D(path);
         }
 
-        ApplyVisualState(IsSelected, false);
+        ApplyVisualState(IsSelected);
     }
 
     public override void _EnterTree()
@@ -94,33 +92,17 @@ public partial class NCharacterButton : Button
         ApplyVisualState(false);
     }
 
-    private void ApplyVisualState(bool active, bool animated = true)
+    private void ApplyVisualState(bool active)
     {
         _hoverTween?.Kill();
 
         var targetPosition = _originalPosition + (active ? ActiveOffset : Vector2.Zero);
-        var targetLogoScale = active ? Vector2.One : IdleLogoScale;
-
-        if (!animated)
-        {
-            Position = targetPosition;
-            if (_selectLogo != null)
-            {
-                _selectLogo.Scale = targetLogoScale;
-            }
-
-            return;
-        }
 
         _hoverTween = CreateTween();
         _hoverTween.SetParallel()
             .SetTrans(Tween.TransitionType.Quad)
             .SetEase(Tween.EaseType.Out);
         _hoverTween.TweenProperty(this, "position", targetPosition, AnimationDuration);
-        if (_selectLogo != null)
-        {
-            _hoverTween.TweenProperty(_selectLogo, "scale", targetLogoScale, AnimationDuration);
-        }
     }
 
     private void OnPressed()

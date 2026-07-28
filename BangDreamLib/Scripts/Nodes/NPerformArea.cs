@@ -62,6 +62,7 @@ public partial class NPerformArea : Control
     private bool _isExiting;
 
     private sealed record RunningTween(Tween Tween, TaskCompletionSource Completion);
+
     private sealed record SlotEntranceState(NPerformItem Slot, Vector2 TargetPosition, float TargetAlpha);
 
     public static NPerformArea Create(Player? player)
@@ -93,10 +94,12 @@ public partial class NPerformArea : Control
 
     public void SubmitChanged()
     {
-        if (_player != null)
+        if (_player == null)
         {
-            SecondaryResourceStateStore.Get(_player).Changed += OnSecondaryResourceChanged;
+            throw new InvalidOperationException("player is null.");
         }
+
+        SecondaryResourceStateStore.Get(_player).Changed += OnSecondaryResourceChanged;
     }
 
     public override void _ExitTree()
@@ -590,6 +593,7 @@ public partial class NPerformArea : Control
             {
                 slot.SetHintHighlighted(true, true);
             }
+
             return;
         }
 

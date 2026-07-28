@@ -27,6 +27,7 @@ public static class BangDreamPreloadManager
     {
         { PreloadKey.PerformItem, "res://BangDreamLib/scenes/perform_item.tscn" },
         { PreloadKey.PerformArea, "res://BangDreamLib/scenes/perform_area.tscn" },
+        { PreloadKey.LingeredOrbitVfx, "res://BangDreamLib/scenes/vfx/lingered_orbit_vfx.tscn" },
         { PreloadKey.CharacterSelector, "res://BangDreamLib/scenes/character_selector/character_selector.tscn" },
         { PreloadKey.CharacterButton, "res://BangDreamLib/scenes/character_selector/character_button.tscn" },
         { PreloadKey.AscensionPanel, "res://BangDreamLib/scenes/character_selector/ascension_panel.tscn" },
@@ -44,7 +45,8 @@ public static class BangDreamPreloadManager
     private static readonly HashSet<PreloadKey> CombatSceneKeys =
     [
         PreloadKey.PerformItem,
-        PreloadKey.PerformArea
+        PreloadKey.PerformArea,
+        PreloadKey.LingeredOrbitVfx
     ];
 
     private static readonly HashSet<string> CombatAssets =
@@ -386,6 +388,7 @@ public enum PreloadKey
 {
     PerformItem,
     PerformArea,
+    LingeredOrbitVfx,
     CharacterSelector,
     CharacterButton,
     AscensionPanel,
