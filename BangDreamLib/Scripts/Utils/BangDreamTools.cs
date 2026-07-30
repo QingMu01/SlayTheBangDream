@@ -48,6 +48,11 @@ public static class BangDreamTools
         return [];
     }
 
+    public static bool CardIsInCombat(CardModel? card)
+    {
+        return card is { IsMutable: true, Owner: not null };
+    }
+
     public static void Init<T>(ref T? storage, T value, string propertyName) where T : class
     {
         if (storage is not null)

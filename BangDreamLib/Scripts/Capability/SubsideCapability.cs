@@ -1,4 +1,6 @@
 using BangDreamLib.Scripts.Features.Rule;
+using BangDreamLib.Scripts.Interfaces.CardAugment;
+using BangDreamLib.Scripts.Nodes;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.HoverTips;
@@ -63,9 +65,16 @@ public class SubsideCapability : CardCapability, ICardDescriptionContributor, IC
         return LingeredResourcesRule.IsSufficient(card);
     }
 
-    //TODO 小人冒头
     public IEnumerable<CardOverlayContribution> GetCardOverlays(CardOverlayContext context)
     {
+        if (context.Card is ISubsideCard)
+        {
+            return
+            [
+                CardOverlayContribution.FromFactory("head_tip", ctx => BangDreamHeadTip.Create(ctx.Card))
+            ];
+        }
+
         return [];
     }
 }

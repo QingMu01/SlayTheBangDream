@@ -58,6 +58,7 @@ public sealed partial class NLingeredOrbitVfx : Node2D
         _effectLayer = GetNode<Node2D>("%Effects");
         _noteTemplate = GetNode<Sprite2D>("%NoteTemplate");
         _particleTemplate = GetNode<Sprite2D>("%ParticleTemplate");
+        _noteTemplate.Visible = false;
 
         if (_creature != null)
         {
@@ -353,7 +354,7 @@ public sealed partial class NLingeredOrbitVfx : Node2D
                 var particleScale = Rng.Chaotic.NextFloat(0.018f, 0.042f);
                 var particle = CreateParticleSprite(particleScale);
                 particle.Position = position;
-                particle.Modulate = new Color(0.78f, 0.92f, 1f, 1f);
+                particle.Modulate = new Color(0.78f, 0.92f, 1f);
                 _effectLayer.AddChild(particle);
                 particles.Add(new ExplosionParticle(
                     particle,
@@ -542,6 +543,7 @@ public sealed partial class NLingeredOrbitVfx : Node2D
 
         var sprite = (Sprite2D)_noteTemplate.Duplicate();
         sprite.Visible = true;
+        sprite.Modulate = Colors.White;
         sprite.Frame = Rng.Chaotic.NextInt(0, 8);
         return sprite;
     }

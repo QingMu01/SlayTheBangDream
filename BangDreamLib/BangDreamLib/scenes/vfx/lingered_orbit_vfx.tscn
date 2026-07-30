@@ -1,18 +1,20 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=7 format=3 uid="uid://ofu2bo1jkaty"]
 
-[ext_resource type="Script" path="res://Scripts/Nodes/VFX/NLingeredOrbitVfx.cs" id="1_script"]
-[ext_resource type="Texture2D" path="res://BangDreamLib/images/vfx/icon_music_note.png" id="2_note"]
-[ext_resource type="Shader" path="res://BangDreamLib/shaders/glare.gdshader" id="3_glare"]
-[ext_resource type="Texture2D" path="res://images/ui/combat/energy_star_flash_glow.png" id="4_particle"]
-[ext_resource type="Material" path="res://materials/vfx/sprite_additive.tres" id="5_additive"]
+[ext_resource type="Script" uid="uid://b6ju3xpa253cw" path="res://Scripts/Nodes/VFX/NLingeredOrbitVfx.cs" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://ddg1bga84moge" path="res://BangDreamLib/images/vfx/icon_music_note.png" id="2_note"]
+[ext_resource type="Shader" uid="uid://b4i57lutfjbcq" path="res://BangDreamLib/scenes/vfx/lingered_note_colors.gdshader" id="3_note_colors"]
+[ext_resource type="Texture2D" uid="uid://dunhat805blce" path="res://images/ui/combat/energy_star_flash_glow.png" id="4_particle"]
+[ext_resource type="Material" uid="uid://djawuiyoxrp1y" path="res://materials/vfx/sprite_additive.tres" id="5_additive"]
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_note"]
-shader = ExtResource("3_glare")
-shader_parameter/offset_up = 3.5
-shader_parameter/offset_left = 0.1
-shader_parameter/offset_down = 0.1
-shader_parameter/offset_rigth = 3.1
-shader_parameter/color = Color(0.56, 0.78, 1, 0.72)
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_note_colors"]
+shader = ExtResource("3_note_colors")
+shader_parameter/atlas_grid = Vector2(3, 3)
+shader_parameter/facet_strength = 0.4
+shader_parameter/specular_strength = 0.58
+shader_parameter/inner_glow_strength = 0.32
+shader_parameter/outer_glow_strength = 0.9
+shader_parameter/near_glow_pixels = 1.8
+shader_parameter/far_glow_pixels = 5.0
 
 [node name="LingeredOrbitVfx" type="Node2D"]
 script = ExtResource("1_script")
@@ -31,7 +33,9 @@ unique_name_in_owner = true
 [node name="NoteTemplate" type="Sprite2D" parent="Templates"]
 unique_name_in_owner = true
 visible = false
-material = SubResource("ShaderMaterial_note")
+modulate = Color(0.4, 0.76, 1, 1)
+material = SubResource("ShaderMaterial_note_colors")
+instance_shader_parameters/facet_phase = 0.0
 texture = ExtResource("2_note")
 hframes = 3
 vframes = 3

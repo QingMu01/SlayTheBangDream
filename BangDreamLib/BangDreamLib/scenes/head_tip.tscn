@@ -1,0 +1,70 @@
+[gd_scene load_steps=6 format=3 uid="uid://c8htkh2h4x5v5"]
+
+[ext_resource type="Script" uid="uid://m7s6mvl1p6aq" path="res://Scripts/Nodes/BangDreamHeadTip.cs" id="1_x80pd"]
+[ext_resource type="Texture2D" uid="uid://dvm51bgk2pglq" path="res://BangDreamLib/images/sceneui/sherry_head.png" id="2_a1drw"]
+[ext_resource type="Texture2D" uid="uid://dy0g40ienjvu1" path="res://BangDreamLib/images/sceneui/hand.png" id="3_chh51"]
+
+[sub_resource type="Shader" id="Shader_vjiek"]
+code = "shader_type canvas_item;
+
+instance uniform float progress : hint_range(0.0, 1.0, 0.01) = 0.0;
+
+const float OFFSET_Y_RANGE = 100.0;
+const float DEFAULT_OFFSET_Y = 60.0;
+
+varying float local_y;
+
+void vertex() {
+    float offset = progress * OFFSET_Y_RANGE + DEFAULT_OFFSET_Y;
+    VERTEX.y -= offset;
+
+    local_y = VERTEX.y;
+}
+
+void fragment() {
+    if (local_y >= 0.0) {
+        discard;
+    }
+}"
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_3v1p8"]
+shader = SubResource("Shader_vjiek")
+
+[node name="HeadTip" type="Control"]
+layout_mode = 3
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+grow_horizontal = 2
+mouse_filter = 2
+script = ExtResource("1_x80pd")
+
+[node name="Head" type="TextureRect" parent="."]
+material = SubResource("ShaderMaterial_3v1p8")
+instance_shader_parameters/progress = 0.0
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 55.0
+offset_right = -45.0
+offset_bottom = 200.0
+grow_horizontal = 2
+mouse_filter = 2
+texture = ExtResource("2_a1drw")
+expand_mode = 2
+stretch_mode = 5
+
+[node name="Hand" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -512.0
+offset_top = -100.0
+offset_right = 512.0
+offset_bottom = 100.0
+grow_horizontal = 2
+mouse_filter = 2
+texture = ExtResource("3_chh51")
+expand_mode = 2
+stretch_mode = 5
