@@ -15,8 +15,8 @@ C# 代码位于各项目的 `Scripts/` 目录下，Godot 资源（图片、场�
 
 在编写新功能前，可先参考依赖库的文档。
 
-- STS2-RitsuLib存在XML文档，可于Nuget包中找到
-- sts2.dll提供同名XML文档，与sts2.dll位置一致
+- STS2-RitsuLib存在XML文档，可于Nuget包中找到（源码：D:\MyProject\ProjectPolaris\STS2-RitsuLib）
+- sts2.dll提供同名XML文档（源码：D:\MyProject\ProjectPolaris\BangDreamInSpire\BangDreamLib\src）
 
 ## 关键约定
 

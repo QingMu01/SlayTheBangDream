@@ -118,29 +118,26 @@ public static class ExtraPileCmd
             return result;
         }
 
-        for (var i = 0;
-             i < drawsRequested && num > 0 && CheckIfDrawIsPossibleAndShowThoughtBubbleIfNot(player);
-             ++i)
+        for (var i = 0; i < drawsRequested; ++i)
         {
-            await CardPileCmd.ShuffleIfNecessary(choiceContext, player);
-            if (CheckIfDrawIsPossibleAndShowThoughtBubbleIfNot(player))
-            {
-                var card = drawPile.Cards.ToList().FirstOrDefault();
-                if (card != null && hand.Cards.Count < CardPile.MaxCardsInHand)
-                {
-                    result.Add(card);
-                    await CardPileCmd.Add(card, hand);
-                    CombatManager.Instance.History.CardDrawn(combatState, card, fromHandDraw);
-                    await Hook.AfterCardDrawn(combatState, choiceContext, card, fromHandDraw);
-                    card.InvokeDrawn();
-                    NDebugAudioManager.Instance?.Play("card_deal.mp3", 0.25f, PitchVariance.Small);
-                    num = Math.Max(0, CardPile.MaxCardsInHand - hand.Cards.Count);
-                }
-                else
-                    break;
-            }
-            else
+            if (num <= 0)
                 break;
+            if (CombatManager.Instance.IsOverOrEnding)
+                break;
+            if (!CheckIfDrawIsPossibleAndShowThoughtBubbleIfNot(player))
+                break;
+
+            var card = drawPile.Cards.ToList().FirstOrDefault();
+            if (card == null || hand.Cards.Count >= CardPile.MaxCardsInHand)
+                break;
+
+            result.Add(card);
+            await CardPileCmd.Add(card, hand);
+            CombatManager.Instance.History.CardDrawn(combatState, card, fromHandDraw);
+            await Hook.AfterCardDrawn(combatState, choiceContext, card, fromHandDraw);
+            card.InvokeDrawn();
+            NDebugAudioManager.Instance?.Play("card_deal.mp3", 0.25f, PitchVariance.Small);
+            num = Math.Max(0, CardPile.MaxCardsInHand - hand.Cards.Count);
         }
 
         return result;
