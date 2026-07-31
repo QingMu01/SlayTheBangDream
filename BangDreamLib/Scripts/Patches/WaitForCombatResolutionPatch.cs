@@ -15,9 +15,13 @@ internal class WaitForCombatResolutionPatch : IPatchMethod
         return [new ModPatchTarget(typeof(CombatManager), "WaitUntilQueueIsEmptyOrWaitingOnNonPlayerDrivenAction")];
     }
 
-    public static void Postfix(CombatState ____state, ref Task __result)
+    public static void Postfix(CombatManager __instance, ref Task __result)
     {
-        __result = WaitForResolutionAsync(__result, ____state);
+        var combatState = __instance.DebugOnlyGetState();
+        if (combatState != null)
+        {
+            __result = WaitForResolutionAsync(__result, combatState);
+        }
     }
 
     private static async Task WaitForResolutionAsync(Task originalQueueWait, ICombatState combatState)

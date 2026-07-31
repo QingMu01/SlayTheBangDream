@@ -2,6 +2,7 @@ using BangDreamLib.Scripts.Utils;
 using Godot;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Random;
+using Environment = Godot.Environment;
 
 namespace BangDreamLib.Scripts.Nodes.VFX;
 
@@ -9,6 +10,14 @@ public sealed partial class NLingeredOrbitVfx : Node2D
 {
     public const string AttachmentId = "lingered_orbit_vfx";
     public const string AttachmentName = "LingeredOrbitVfx";
+
+    private static readonly List<Color> NoteColors =
+    [
+        new(0.18f, 1.35f, 3.1f, 0.9f),
+        new(3.0f, 0.5f, 1.85f, 0.9f),
+        new(3.2f, 1.65f, 0.2f, 0.9f),
+        new(0.35f, 2.65f, 0.9f, 0.9f)
+    ];
 
     private const float OrbitAngularSpeed = 0.72f;
     private const float LayoutFollowSpeed = 8f;
@@ -27,9 +36,13 @@ public sealed partial class NLingeredOrbitVfx : Node2D
     private readonly List<OrbitNote> _previewNotes = [];
 
     private NCreature? _creature;
-    private Node2D? _backLayer;
-    private Node2D? _frontLayer;
-    private Node2D? _effectLayer;
+    private Node2D? _backRenderLayer;
+    private Node2D? _frontRenderLayer;
+    private Node2D? _effectRenderLayer;
+    private Node2D? _backDisplayLayer;
+    private Node2D? _frontDisplayLayer;
+    private SubViewport? _backViewport;
+    private SubViewport? _frontViewport;
     private Sprite2D? _noteTemplate;
     private Sprite2D? _particleTemplate;
     private GatherBatch? _gatherBatch;
@@ -53,18 +66,25 @@ public sealed partial class NLingeredOrbitVfx : Node2D
 
     public override void _Ready()
     {
-        _backLayer = GetNode<Node2D>("%Back");
-        _frontLayer = GetNode<Node2D>("%Front");
-        _effectLayer = GetNode<Node2D>("%Effects");
+        _backRenderLayer = GetNode<Node2D>("%Back");
+        _frontRenderLayer = GetNode<Node2D>("%Front");
+        _effectRenderLayer = GetNode<Node2D>("%Effects");
+        _backDisplayLayer = GetNode<Node2D>("%BackDisplay");
+        _frontDisplayLayer = GetNode<Node2D>("%FrontDisplay");
+        _backViewport = GetNode<SubViewport>("%BackViewport");
+        _frontViewport = GetNode<SubViewport>("%FrontViewport");
         _noteTemplate = GetNode<Sprite2D>("%NoteTemplate");
         _particleTemplate = GetNode<Sprite2D>("%ParticleTemplate");
         _noteTemplate.Visible = false;
 
+        ConfigureHdrViewport(_backViewport);
+        ConfigureHdrViewport(_frontViewport);
+        SetRenderActive(false);
+
         if (_creature != null)
         {
             UpdateCreatureBoundsMetrics();
-            GlobalPosition = _creature.VfxSpawnPosition;
-            AttachVisualLayersToCreature();
+            AttachDisplayLayersToCreature();
         }
 
         SetProcess(false);
@@ -82,24 +102,28 @@ public sealed partial class NLingeredOrbitVfx : Node2D
         _activeChange = null;
         _gatherBatch = null;
         _explosionBatch = null;
-        QueueFreeDetachedLayer(_backLayer);
-        QueueFreeDetachedLayer(_frontLayer);
-        QueueFreeDetachedLayer(_effectLayer);
-        _backLayer = null;
-        _frontLayer = null;
-        _effectLayer = null;
+        QueueFreeDetachedLayer(_backDisplayLayer);
+        QueueFreeDetachedLayer(_frontDisplayLayer);
+        _backRenderLayer = null;
+        _frontRenderLayer = null;
+        _effectRenderLayer = null;
+        _backDisplayLayer = null;
+        _frontDisplayLayer = null;
+        _backViewport = null;
+        _frontViewport = null;
     }
 
     public override void _Process(double delta)
     {
         if (!_initialized || _isExiting ||
-            _backLayer == null || _frontLayer == null || _effectLayer == null)
+            _backRenderLayer == null || _frontRenderLayer == null || _effectRenderLayer == null ||
+            _backDisplayLayer == null || _frontDisplayLayer == null)
         {
             return;
         }
 
         var frameDelta = (float)delta;
-        SyncLayersToCreature();
+        SyncDisplayLayersToCreature();
         _orbitPhase = Mathf.PosMod(_orbitPhase + OrbitAngularSpeed * frameDelta, Mathf.Tau);
 
         UpdatePreviewCleanup(frameDelta);
@@ -136,8 +160,9 @@ public sealed partial class NLingeredOrbitVfx : Node2D
         _activeChange = null;
         _gatherBatch = null;
         _explosionBatch = null;
+        SetRenderActive(true);
         UpdateCreatureBoundsMetrics();
-        SyncLayersToCreature();
+        SyncDisplayLayersToCreature();
         ClearEffectLayer();
         SetAmountImmediately(Math.Max(0, initialAmount));
         SetProcess(true);
@@ -155,6 +180,7 @@ public sealed partial class NLingeredOrbitVfx : Node2D
         _previewCleanupRemaining = -1f;
         ClearAllNotes();
         ClearEffectLayer();
+        SetRenderActive(false);
     }
 
     public void SubmitResourceAmount(int targetAmount, int previewAmountAfter)
@@ -216,7 +242,7 @@ public sealed partial class NLingeredOrbitVfx : Node2D
 
     private void StartGather(int amount)
     {
-        if (_effectLayer == null)
+        if (_effectRenderLayer == null)
         {
             SetAmountImmediately(_activeChange!.TargetAmount);
             CompleteActiveResourceChange();
@@ -252,7 +278,7 @@ public sealed partial class NLingeredOrbitVfx : Node2D
                 var particleScale = Rng.Chaotic.NextFloat(0.012f, 0.032f);
                 var sprite = CreateParticleSprite(particleScale);
                 sprite.Position = start;
-                _effectLayer.AddChild(sprite);
+                _effectRenderLayer.AddChild(sprite);
                 particles.Add(new GatherParticle(
                     sprite,
                     note,
@@ -321,7 +347,7 @@ public sealed partial class NLingeredOrbitVfx : Node2D
 
     private void StartExplosion(int amount)
     {
-        if (_effectLayer == null)
+        if (_effectRenderLayer == null)
         {
             SetAmountImmediately(_activeChange!.TargetAmount);
             CompleteActiveResourceChange();
@@ -333,20 +359,20 @@ public sealed partial class NLingeredOrbitVfx : Node2D
         foreach (var note in selected)
         {
             var position = note.Sprite.Position;
-            var burstSprite = CreateNoteSprite();
+            var burstSprite = CreateNoteSprite(note.GlowColor);
             burstSprite.Frame = note.Sprite.Frame;
             burstSprite.Position = position;
             burstSprite.Scale = note.Sprite.Scale;
             var burstModulate = note.Sprite.Modulate;
             burstModulate.A = Math.Max(0.85f, burstModulate.A);
             burstSprite.Modulate = burstModulate;
-            _effectLayer.AddChild(burstSprite);
+            _effectRenderLayer.AddChild(burstSprite);
 
             const float flashStartScale = 0.035f;
             var flash = CreateParticleSprite(flashStartScale);
             flash.Position = position;
             flash.Modulate = new Color(0.72f, 0.9f, 1f, 0.9f);
-            _effectLayer.AddChild(flash);
+            _effectRenderLayer.AddChild(flash);
 
             var particles = new List<ExplosionParticle>(10);
             for (var particleIndex = 0; particleIndex < 10; particleIndex++)
@@ -357,7 +383,7 @@ public sealed partial class NLingeredOrbitVfx : Node2D
                 var particle = CreateParticleSprite(particleScale);
                 particle.Position = position;
                 particle.Modulate = new Color(0.78f, 0.92f, 1f);
-                _effectLayer.AddChild(particle);
+                _effectRenderLayer.AddChild(particle);
                 particles.Add(new ExplosionParticle(
                     particle,
                     position,
@@ -511,12 +537,12 @@ public sealed partial class NLingeredOrbitVfx : Node2D
 
     private void ClearEffectLayer()
     {
-        if (_effectLayer == null)
+        if (_effectRenderLayer == null)
         {
             return;
         }
 
-        foreach (var child in _effectLayer.GetChildren())
+        foreach (var child in _effectRenderLayer.GetChildren())
         {
             child.QueueFree();
         }
@@ -524,11 +550,12 @@ public sealed partial class NLingeredOrbitVfx : Node2D
 
     private OrbitNote CreateNote(bool visible)
     {
-        var sprite = CreateNoteSprite();
+        var glowColor = Rng.Chaotic.NextItem(NoteColors);
+        var sprite = CreateNoteSprite(glowColor);
         var motionBlurSprites = CreatePreviewMotionBlurSprites(sprite);
         sprite.Visible = visible;
-        (_frontLayer ?? this).AddChild(sprite);
-        return new OrbitNote(sprite, motionBlurSprites)
+        (_frontRenderLayer ?? this).AddChild(sprite);
+        return new OrbitNote(sprite, motionBlurSprites, glowColor)
         {
             PreviewPhase = Rng.Chaotic.NextFloat(0f, Mathf.Tau),
             PopElapsed = visible ? -1f : 0f,
@@ -536,7 +563,7 @@ public sealed partial class NLingeredOrbitVfx : Node2D
         };
     }
 
-    private Sprite2D CreateNoteSprite()
+    private Sprite2D CreateNoteSprite(Color glowColor)
     {
         if (_noteTemplate == null)
         {
@@ -547,6 +574,7 @@ public sealed partial class NLingeredOrbitVfx : Node2D
         sprite.Visible = true;
         sprite.Modulate = Colors.White;
         sprite.Frame = Rng.Chaotic.NextInt(0, 8);
+        sprite.SetInstanceShaderParameter("outline_color", glowColor);
         return sprite;
     }
 
@@ -600,6 +628,7 @@ public sealed partial class NLingeredOrbitVfx : Node2D
 
     private void UpdateNotes(float delta)
     {
+        var time = Time.GetTicksMsec() * 0.001f;
         foreach (var note in _notes)
         {
             note.CurrentSlotOffset = Mathf.LerpAngle(
@@ -636,25 +665,43 @@ public sealed partial class NLingeredOrbitVfx : Node2D
             var depthScale = depth < 0f
                 ? Mathf.Lerp(0.7f, 0.86f, depth + 1f)
                 : Mathf.Lerp(0.9f, 1.04f, depth);
+            var glowPulse = 1f + Mathf.Sin(time * 2.4f + note.VisualPhase) * 0.045f;
             var scale = note.PreviewBlend > 0f
                 ? NoteBaseScale
-                : NoteBaseScale * depthScale * popScale;
+                : NoteBaseScale * depthScale * popScale * glowPulse;
             note.Sprite.Scale = Vector2.One * scale;
+            note.Sprite.Rotation =
+                Mathf.Sin(time * 1.35f + note.VisualPhase) * 0.085f +
+                Mathf.Cos(orbitAngle) * 0.035f;
             UpdatePreviewMotionBlur(note, position);
 
             var backBrightness = Mathf.Lerp(0.52f, 0.76f, depth + 1f);
             var brightness = depth < 0f ? backBrightness : 1f;
             brightness = Mathf.Lerp(brightness, 1f, note.PreviewBlend);
+            var fadeInAlpha = UpdateFadeInAlpha(note, delta);
             note.Sprite.Modulate = new Color(
                 brightness,
                 brightness,
                 brightness,
-                UpdateFadeInAlpha(note, delta));
+                fadeInAlpha);
 
-            var targetLayer = depth < 0f && note.PreviewBlend < 0.5f ? _backLayer : _frontLayer;
+            var depthGlow = depth < 0f
+                ? Mathf.Lerp(0.42f, 0.72f, depth + 1f)
+                : Mathf.Lerp(0.82f, 1.08f, depth);
+            var glowIntensity = Mathf.Lerp(depthGlow, 1.15f, note.PreviewBlend) * glowPulse;
+            var glowColor = note.GlowColor;
+            glowColor.R *= glowIntensity;
+            glowColor.G *= glowIntensity;
+            glowColor.B *= glowIntensity;
+            glowColor.A *= fadeInAlpha;
+            note.Sprite.SetInstanceShaderParameter("outline_color", glowColor);
+
+            var targetLayer = depth < 0f && note.PreviewBlend < 0.5f
+                ? _backRenderLayer
+                : _frontRenderLayer;
             if (targetLayer != null && note.Sprite.GetParent() != targetLayer)
             {
-                note.Sprite.Reparent(targetLayer, keepGlobalTransform: true);
+                note.Sprite.Reparent(targetLayer, keepGlobalTransform: false);
             }
         }
     }
@@ -803,7 +850,7 @@ public sealed partial class NLingeredOrbitVfx : Node2D
         _previewHeight = Mathf.Clamp(boundsSize.Y * 0.6f + 32f, 108f, 280f);
     }
 
-    private void SyncLayersToCreature()
+    private void SyncDisplayLayersToCreature()
     {
         if (_creature == null || !IsInstanceValid(_creature))
         {
@@ -812,28 +859,22 @@ public sealed partial class NLingeredOrbitVfx : Node2D
 
         var scale = _creature.Visuals.Scale;
         var position = _creature.VfxSpawnPosition;
-        if (_backLayer != null && IsInstanceValid(_backLayer))
+        if (_backDisplayLayer != null && IsInstanceValid(_backDisplayLayer))
         {
-            _backLayer.Scale = scale;
-            _backLayer.GlobalPosition = position;
+            _backDisplayLayer.Scale = scale;
+            _backDisplayLayer.GlobalPosition = position;
         }
 
-        if (_frontLayer != null && IsInstanceValid(_frontLayer))
+        if (_frontDisplayLayer != null && IsInstanceValid(_frontDisplayLayer))
         {
-            _frontLayer.Scale = scale;
-            _frontLayer.GlobalPosition = position;
-        }
-
-        if (_effectLayer != null && IsInstanceValid(_effectLayer))
-        {
-            _effectLayer.Scale = scale;
-            _effectLayer.GlobalPosition = position;
+            _frontDisplayLayer.Scale = scale;
+            _frontDisplayLayer.GlobalPosition = position;
         }
     }
 
-    private void AttachVisualLayersToCreature()
+    private void AttachDisplayLayersToCreature()
     {
-        if (_creature == null || _backLayer == null || _frontLayer == null || _effectLayer == null)
+        if (_creature == null || _backDisplayLayer == null || _frontDisplayLayer == null)
         {
             return;
         }
@@ -845,24 +886,73 @@ public sealed partial class NLingeredOrbitVfx : Node2D
             return;
         }
 
-        ConfigureLayerForVisuals(_backLayer, visuals);
-        ConfigureLayerForVisuals(_frontLayer, visuals);
-        ConfigureLayerForVisuals(_effectLayer, visuals);
+        ConfigureLayerForVisuals(_backDisplayLayer, visuals);
+        ConfigureLayerForVisuals(_frontDisplayLayer, visuals);
 
-        _backLayer.Reparent(visualParent, keepGlobalTransform: true);
-        visualParent.MoveChild(_backLayer, visuals.GetIndex());
+        _backDisplayLayer.Reparent(visualParent, keepGlobalTransform: true);
+        visualParent.MoveChild(_backDisplayLayer, visuals.GetIndex());
 
-        _frontLayer.Reparent(visualParent, keepGlobalTransform: true);
-        visualParent.MoveChild(_frontLayer, visuals.GetIndex() + 1);
-
-        _effectLayer.Reparent(visualParent, keepGlobalTransform: true);
-        visualParent.MoveChild(_effectLayer, _frontLayer.GetIndex() + 1);
+        _frontDisplayLayer.Reparent(visualParent, keepGlobalTransform: true);
+        visualParent.MoveChild(_frontDisplayLayer, visuals.GetIndex() + 1);
     }
 
     private static void ConfigureLayerForVisuals(CanvasItem layer, CanvasItem visuals)
     {
         layer.ZAsRelative = visuals.ZAsRelative;
         layer.ZIndex = visuals.ZIndex;
+    }
+
+    private static void ConfigureHdrViewport(SubViewport viewport)
+    {
+        viewport.UseHdr2D = true;
+        viewport.TransparentBg = true;
+
+        var worldEnvironment = viewport.GetNode<WorldEnvironment>("WorldEnvironment");
+        var environment = worldEnvironment.Environment ?? new Environment();
+        environment.BackgroundMode = Environment.BGMode.Canvas;
+        environment.GlowEnabled = true;
+        environment.GlowNormalized = true;
+        environment.GlowIntensity = 0.65f;
+        environment.GlowStrength = 0.8f;
+        environment.GlowBloom = 0.02f;
+        environment.GlowBlendMode = Environment.GlowBlendModeEnum.Additive;
+        environment.GlowHdrThreshold = 0.9f;
+        environment.GlowHdrScale = 1.1f;
+        environment.GlowHdrLuminanceCap = 8f;
+        environment.SetGlowLevel(0, 0.08f);
+        environment.SetGlowLevel(1, 0.32f);
+        environment.SetGlowLevel(2, 0.72f);
+        environment.SetGlowLevel(3, 0.92f);
+        environment.SetGlowLevel(4, 0.62f);
+        environment.SetGlowLevel(5, 0.24f);
+        environment.SetGlowLevel(6, 0.06f);
+        worldEnvironment.Environment = environment;
+    }
+
+    private void SetRenderActive(bool active)
+    {
+        var updateMode = active
+            ? SubViewport.UpdateMode.Always
+            : SubViewport.UpdateMode.Disabled;
+        if (_backViewport != null)
+        {
+            _backViewport.RenderTargetUpdateMode = updateMode;
+        }
+
+        if (_frontViewport != null)
+        {
+            _frontViewport.RenderTargetUpdateMode = updateMode;
+        }
+
+        if (_backDisplayLayer != null)
+        {
+            _backDisplayLayer.Visible = active;
+        }
+
+        if (_frontDisplayLayer != null)
+        {
+            _frontDisplayLayer.Visible = active;
+        }
     }
 
     private static void QueueFreeDetachedLayer(Node2D? layer)
@@ -900,14 +990,19 @@ public sealed partial class NLingeredOrbitVfx : Node2D
                progress * progress * end;
     }
 
-    private sealed class OrbitNote(Sprite2D sprite, Sprite2D[] motionBlurSprites)
+    private sealed class OrbitNote(
+        Sprite2D sprite,
+        Sprite2D[] motionBlurSprites,
+        Color glowColor)
     {
         public Sprite2D Sprite { get; } = sprite;
         public Sprite2D[] MotionBlurSprites { get; } = motionBlurSprites;
+        public Color GlowColor { get; } = glowColor;
         public float CurrentSlotOffset { get; set; }
         public float TargetSlotOffset { get; set; }
         public float PreviewBlend { get; set; }
         public float PreviewPhase { get; set; }
+        public float VisualPhase { get; } = Rng.Chaotic.NextFloat(0f, Mathf.Tau);
         public float PopElapsed { get; set; }
         public float FadeInElapsed { get; set; }
         public Vector2 PreviousPosition { get; set; }
