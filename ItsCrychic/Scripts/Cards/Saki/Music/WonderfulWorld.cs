@@ -1,3 +1,4 @@
+using BangDreamLib.Scripts.Extensions;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
@@ -7,24 +8,25 @@ namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
 public class WonderfulWorld() : AbstractSakikoMusicCard(CardRarity.Uncommon, TargetType.None)
 {
-    protected override IEnumerable<DynamicVar> CardVars => [];
+    protected override IEnumerable<DynamicVar> CardVars =>
+    [
+        QuickVar.Cards.Create(1)
+    ];
 
     public override async Task OnPerform(PlayerChoiceContext choiceContext)
     {
         ArgumentNullException.ThrowIfNull(Owner.PlayerCombatState);
-        foreach (var card in Owner.PlayerCombatState.Hand.Cards.ToList())
+        var cardModel = Owner.RunState.Rng.CombatCardSelection.NextItem(Owner.PlayerCombatState.Hand.Cards);
+        if (cardModel != null)
         {
-            var result = await CardCmd.TransformToRandom(card, Owner.RunState.Rng.CombatCardGeneration);
-            if (result is { success: false }) continue;
-
-            var replacement = result.cardAdded;
-            if (IsUpgraded)
+            var result = await CardCmd.TransformToRandom(cardModel, Owner.RunState.Rng.CombatCardGeneration);
+            if (result.success)
             {
-                replacement.AddKeyword(CardKeyword.Exhaust);
+                if (IsUpgraded)
+                {
+                    result.cardAdded.AddKeyword(CardKeyword.Exhaust);
+                }
             }
-
-            await Cmd.CustomScaledWait(0.15f, 0.3f);
-            await CardPileCmd.Add(replacement, PileType.Hand);
         }
     }
 }

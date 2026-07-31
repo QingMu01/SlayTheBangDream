@@ -19,6 +19,7 @@
         <Compile Remove="models/**"/>
         <Compile Remove="scenes/**"/>
         <Compile Remove="shaders/**"/>
+        <Compile Remove="src/**"/>
         <Compile Remove="themes/**"/>
         <EmbeddedResource Remove="animations/**"/>
         <EmbeddedResource Remove="fonts/**"/>
@@ -27,6 +28,7 @@
         <EmbeddedResource Remove="models/**"/>
         <EmbeddedResource Remove="scenes/**"/>
         <EmbeddedResource Remove="shaders/**"/>
+        <EmbeddedResource Remove="src/**"/>
         <EmbeddedResource Remove="themes/**"/>
     </ItemGroup>
 </Project>

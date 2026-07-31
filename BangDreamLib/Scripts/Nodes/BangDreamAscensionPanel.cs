@@ -247,9 +247,9 @@ public partial class BangDreamAscensionPanel : Control
             if ((uint)(_mode - 1) <= 1u)
             {
                 if (_leftTriggerIcon != null)
-                    _leftTriggerIcon.Visible = NControllerManager.Instance?.IsUsingController ?? false;
+                    _leftTriggerIcon.Visible = NControllerManager.Instance?.IsUsingDirectionalNavigation ?? false;
                 if (_rightTriggerIcon != null)
-                    _rightTriggerIcon.Visible = NControllerManager.Instance?.IsUsingController ?? false;
+                    _rightTriggerIcon.Visible = NControllerManager.Instance?.IsUsingDirectionalNavigation ?? false;
                 if (_leftTriggerIcon != null)
                     _leftTriggerIcon.Texture = NInputManager.Instance?.GetHotkeyIcon(MegaInput.viewDeckAndTabLeft);
                 if (_rightTriggerIcon != null)

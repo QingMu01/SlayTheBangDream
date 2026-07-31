@@ -6,6 +6,7 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <Sts2Dir>D:\SteamLibrary\steamapps\common\Slay the Spire 2</Sts2Dir>
         <Sts2DataDir>$(Sts2Dir)\data_sts2_windows_x86_64</Sts2DataDir>
+        <DebugSts2DataDir>D:\MyProject\ProjectPolaris\BangDreamInSpire\bin\Debug</DebugSts2DataDir>
         <GodotExe>D:\Megadot\MegaDot_v4.5.1-stable_mono_win64.exe</GodotExe>
     </PropertyGroup>
 
@@ -19,12 +20,12 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Reference Include="sts2" HintPath="$(Sts2DataDir)\sts2.dll" Private="True"/>
+        <Reference Include="sts2" HintPath="$(DebugSts2DataDir)\sts2.dll" Private="True"/>
         <Reference Include="0Harmony" HintPath="$(Sts2DataDir)\0Harmony.dll" Private="False"/>
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="STS2.RitsuLib" Version="0.4.58" />
+        <PackageReference Include="STS2.RitsuLib" Version="0.5.0" />
 <!--        <PackageReference Include="Krafs.Publicizer" Version="2.3.0" PrivateAssets="all"/>-->
     </ItemGroup>
 

@@ -26,7 +26,10 @@ public class TryHarder() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
         HoverTipFactory.FromCard<GiantNote>(IsUpgraded)
     ];
 
-    protected override IEnumerable<DynamicVar> CardVars => [QuickVar.Buff.Create(1)];
+    protected override IEnumerable<DynamicVar> CardVars =>
+    [
+        QuickVar.Buff.Create(1)
+    ];
 
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
@@ -40,6 +43,7 @@ public class TryHarder() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
         var musicCards = Owner.PlayerCombatState.AllCards
             .Where(card => card is IPerformCard)
             .ToList();
+
         foreach (var card in musicCards)
         {
             var giantNote = CombatState.CreateCard<GiantNote>(Owner);

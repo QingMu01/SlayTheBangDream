@@ -1,3 +1,4 @@
+using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
@@ -44,14 +45,26 @@ public class BeyondDream() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
         var candidates = GetCandidates()?.Select(card => CombatState.CreateCard(card.CanonicalInstance, Owner))
             .ToList();
 
-        if (candidates is { Count: > 0 })
+        if (candidates == null || candidates.Count == 0)
         {
-            var selected = await CardSelectCmd.FromChooseACardScreen(choiceContext, candidates, Owner, true);
-            if (selected != null)
-            {
-                selected.EnergyCost.SetThisCombat(0, true);
-                await CardPileCmd.AddGeneratedCardToCombat(selected, PileType.Hand, Owner);
-            }
+            return;
+        }
+
+        CardModel? selectedCard;
+        if (candidates.Count < 3)
+        {
+            selectedCard = await CardSelectCmd.FromChooseACardScreen(choiceContext, candidates, Owner, true);
+        }
+        else
+        {
+            selectedCard = (await CardSelectCmd.FromSimpleGrid(choiceContext, candidates, Owner,
+                CardSelectorPrompt.ToHand.GetFixedPrefs(1, false, true))).FirstOrDefault();
+        }
+
+        if (selectedCard != null)
+        {
+            selectedCard.EnergyCost.SetThisCombat(0, true);
+            await CardPileCmd.AddGeneratedCardToCombat(selectedCard, PileType.Hand, Owner);
         }
     }
 

@@ -65,16 +65,7 @@ public class BangDreamComputedVar : DynamicVar
 
         public bool IsInCombat()
         {
-            if (Card is { IsMutable: true })
-            {
-                var runState = Card.RunState;
-                var combatState = Card.CombatState;
-
-                return runState != null && runState is not NullRunState &&
-                       combatState != null && combatState is not NullCombatState;
-            }
-
-            return false;
+            return BangDreamTools.CardIsInCombat(Card);
         }
     }
 }

@@ -19,14 +19,14 @@ public class Blessing() : AbstractSakikoCard(CustomCost, CustomType, CustomRarit
 
     public override bool GainsBlock => true;
 
-    public int LingeredResourceCost => IsUpgraded ? 1 : 2;
+    public int LingeredResourceCost => 2;
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        ComputedDynamicVarHelper.CreateDamageVar("CalcDamage", 4m, CalcIncrease),
-        ComputedDynamicVarHelper.CreateBlockVar("CalcBlock", 4m, CalcIncrease),
-        QuickVar.Repeat.Create(0),
-        ModCardVars.Int("IncreaseStep", 2)
+        ComputedDynamicVarHelper.CreateDamageVar("CalcDamage", 5m, CalcIncrease),
+        ComputedDynamicVarHelper.CreateBlockVar("CalcBlock", 5m, CalcIncrease),
+        ModCardVars.Int("IncreaseStep", 2),
+        QuickVar.Repeat.Create(0)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
@@ -45,7 +45,7 @@ public class Blessing() : AbstractSakikoCard(CustomCost, CustomType, CustomRarit
 
     public Task OnSubside(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        DynamicVars.Repeat.BaseValue += DynamicVars["IncreaseStep"].BaseValue;
+        DynamicVars.Repeat.BaseValue++;
         return Task.CompletedTask;
     }
 

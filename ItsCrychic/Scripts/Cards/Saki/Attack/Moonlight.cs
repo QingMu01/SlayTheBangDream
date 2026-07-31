@@ -58,6 +58,8 @@ public class Moonlight() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
             {
                 allDamage += tracker.GetTurnDamageResults(i + 1).Sum(x => x.TotalDamage);
             }
+
+            return allDamage;
         }
 
         return ctx.BaseValue;

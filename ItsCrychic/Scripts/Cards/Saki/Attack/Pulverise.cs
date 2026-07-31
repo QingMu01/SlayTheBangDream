@@ -1,9 +1,12 @@
 using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Features.Rule;
 using BangDreamLib.Scripts.Interfaces.CardAugment;
+using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
+using STS2RitsuLib.Cards.DynamicVars;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
@@ -20,8 +23,20 @@ public class Pulverise() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Damage.Create(8),
         QuickVar.Energy.Create(1),
+        ModCardVars.Int("FixedDamage", 4),
+        ComputedDynamicVarHelper.CreateDamageVar("CalcDamage", 8m, ctx =>
+        {
+            if (ctx.IsInCombat() && ctx.ActiveCard.DynamicVars.TryGetValue("FixedDamage", out var fixedDamage))
+            {
+                if (LingeredResourcesRule.IsSufficient(ctx.ActiveCard))
+                {
+                    return fixedDamage.IntValue + ctx.BaseValue;
+                }
+            }
+
+            return ctx.BaseValue;
+        })
     ];
 
 
@@ -33,28 +48,26 @@ public class Pulverise() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
         {
             var energyToGain = energyToCost + (IsUpgraded ? 1 : 0);
 
-            var attackCommand = await DamageCmd.Attack(DynamicVars.Damage.BaseValue * ResolveEnergyXValue())
+            var attackCommand = await DamageCmd.Attack(DynamicVars.ComputedValue("CalcDamage"))
                 .FromCard(this, play)
                 .Targeting(play.Target)
                 .WithHitFx("vfx/vfx_attack_slash")
                 .Execute(choiceContext);
 
-            // 检查是否斩杀
             if (energyToGain > 0)
             {
+                // 检查是否斩杀
                 if (attackCommand.Results.SelectMany(r => r).Any(result => result.WasTargetKilled))
                 {
                     await PlayerCmd.GainEnergy(energyToGain, Owner);
+                    await CardPileCmd.Add(this, PileType.Hand);
                 }
             }
         }
     }
 
-    public async Task OnSubside(PlayerChoiceContext choiceContext, CardPlay play)
+    public Task OnSubside(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        if (play.Resources.EnergySpent > 0)
-        {
-            await CardPileCmd.Add(this, PileType.Hand);
-        }
+        return Task.CompletedTask;
     }
 }

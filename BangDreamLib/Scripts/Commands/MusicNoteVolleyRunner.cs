@@ -49,6 +49,7 @@ internal sealed class MusicNoteVolleyRunner(MusicNoteVolleyRequest request)
             return;
 
         var combatState = request.Dealer.CombatState!;
+        using var resolutionLease = CombatResolutionBarrier.Acquire(combatState);
         RegisterVolley(combatState);
         try
         {

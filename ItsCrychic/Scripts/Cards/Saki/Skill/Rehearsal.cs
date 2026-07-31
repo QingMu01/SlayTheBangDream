@@ -1,6 +1,5 @@
 using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
-using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
@@ -26,19 +25,20 @@ public class Rehearsal() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        var manager = Owner.AttachedData().PerformManager;
-        var cards = BangDreamConst.PerformPile.GetPile(Owner).Cards.ToList()
-            .OrderByDescending(card => manager.CardContexts.GetOrCreate(card).SlotIndex)
-            .Take(DynamicVars.Cards.IntValue)
-            .ToList();
-        foreach (var card in cards)
+        ArgumentNullException.ThrowIfNull(CombatState);
+
+        var cards = BangDreamConst.PerformPile.GetPile(Owner).Cards.ToList();
+
+        var cardModel = CombatState.RunState.Rng.CombatCardSelection.NextItem(cards);
+
+        if (cardModel != null)
         {
-            await CardPileCmd.Add(card, PileType.Hand);
+            await Owner.AttachedData().PerformManager.PerformCard(cardModel);
         }
     }
 
     protected override void OnUpgrade()
     {
-        DynamicVars.Cards.UpgradeValueBy(1);
+        AddKeyword(CardKeyword.Innate);
     }
 }

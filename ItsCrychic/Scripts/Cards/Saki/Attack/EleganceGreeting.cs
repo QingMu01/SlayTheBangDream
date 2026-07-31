@@ -10,7 +10,7 @@ namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
 public class EleganceGreeting() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget)
 {
-    private const int CustomCost = 1;
+    private const int CustomCost = 0;
     private const CardType CustomType = CardType.Attack;
     private const CardRarity CustomRarity = CardRarity.Common;
     private const TargetType CustomTarget = TargetType.AnyEnemy;
@@ -36,17 +36,15 @@ public class EleganceGreeting() : AbstractSakikoCard(CustomCost, CustomType, Cus
     {
         ArgumentNullException.ThrowIfNull(play.Target);
 
-        var attackCommand = await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
+        await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
             .FromCard(this, play)
             .Targeting(play.Target)
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
 
-        var damageResult = attackCommand.Results.SelectMany(r => r).FirstOrDefault();
-        if (damageResult is { Receiver.IsHittable: true })
+        if (play.Target is { IsHittable: true })
         {
-            var debuff = QuickVar.Buff.GetVar(this).IntValue;
-            await PowerCmd.Apply<WeakPower>(choiceContext, damageResult.Receiver, debuff,
+            await PowerCmd.Apply<WeakPower>(choiceContext, play.Target, QuickVar.Buff.GetVar(this).IntValue,
                 Owner.Creature, this);
         }
     }

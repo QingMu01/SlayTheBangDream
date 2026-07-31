@@ -34,7 +34,7 @@ public class BandPractice() : AbstractSakikoCard(CustomCost, CustomType, CustomR
         {
             NCombatRoom.Instance?.Ui.Hand.Remove(selectedCard);
 
-            await CardPileCmd.Add(selectedCard, BangDreamConst.ExtraDraw, skipVisuals: true);
+            await CardPileCmd.Add(selectedCard, BangDreamConst.ExtraDraw, CardPilePosition.Top, skipVisuals: true);
 
             var transformResult = await CardCmd.TransformTo<MelodyFragments>(selectedCard);
 

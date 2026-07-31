@@ -27,6 +27,7 @@ public class BestRegards() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
         await CreatureCmd.GainBlock(Owner.Creature, DynamicVars.Block, play);
+        await CardPileCmd.Draw(choiceContext, DynamicVars.Cards.BaseValue, Owner);
     }
 
     public async Task OnSubside(PlayerChoiceContext choiceContext, CardPlay play)
@@ -36,7 +37,6 @@ public class BestRegards() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
 
     protected override void OnUpgrade()
     {
-        DynamicVars.Block.UpgradeValueBy(2m);
-        DynamicVars.Cards.UpgradeValueBy(1m);
+        DynamicVars.Block.UpgradeValueBy(3m);
     }
 }

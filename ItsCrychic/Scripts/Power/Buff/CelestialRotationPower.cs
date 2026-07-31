@@ -24,7 +24,7 @@ public class CelestialRotationPower : BandPowerModel
         var selectedCards = await CardSelectCmd.FromCombatPile(choiceContext,
             performPile,
             player,
-            CardSelectorPrompt.ToHand.GetFixedPrefs(Math.Min(Amount, performPile.Cards.Count)));
+            CardSelectorPrompt.ToHand.GetLimitedPrefs(Math.Min(Amount, performPile.Cards.Count), true, true));
 
         foreach (var selectedCard in selectedCards)
         {

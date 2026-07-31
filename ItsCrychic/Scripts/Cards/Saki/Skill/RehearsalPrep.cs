@@ -9,13 +9,14 @@ namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
 public class RehearsalPrep() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget)
 {
-    private const int CustomCost = 1;
+    private const int CustomCost = 0;
     private const CardType CustomType = CardType.Skill;
     private const CardRarity CustomRarity = CardRarity.Common;
     private const TargetType CustomTarget = TargetType.Self;
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
+        CardKeyword.Exhaust,
         BangDreamConst.Lingered
     ];
 
@@ -33,6 +34,6 @@ public class RehearsalPrep() : AbstractSakikoCard(CustomCost, CustomType, Custom
 
     protected override void OnUpgrade()
     {
-        EnergyCost.UpgradeBy(-1);
+        AddKeyword(CardKeyword.Retain);
     }
 }

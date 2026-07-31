@@ -1,10 +1,10 @@
+using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
 using ItsCrychic.Scripts.Power.Temporary;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using STS2RitsuLib.Cards.DynamicVars;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
@@ -22,17 +22,17 @@ public class Resonance() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        ModCardVars.Int("AddedDamage", 2)
+        QuickVar.Buff.Create(2)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        await PowerCmd.Apply<ResonancePower>(choiceContext, Owner.Creature, DynamicVars["AddedDamage"].IntValue,
+        await PowerCmd.Apply<ResonancePower>(choiceContext, Owner.Creature, QuickVar.Buff.GetVar(this).IntValue,
             Owner.Creature, this);
     }
 
     protected override void OnUpgrade()
     {
-        DynamicVars["AddedDamage"].UpgradeValueBy(1);
+        QuickVar.Buff.GetVar(this).UpgradeValueBy(1);
     }
 }

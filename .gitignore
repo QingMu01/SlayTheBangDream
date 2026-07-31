@@ -2,6 +2,7 @@
 .idea
 .run
 bin
+src
 
 **/.godot
 

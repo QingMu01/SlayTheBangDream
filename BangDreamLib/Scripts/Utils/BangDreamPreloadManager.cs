@@ -31,7 +31,8 @@ public static class BangDreamPreloadManager
         { PreloadKey.CharacterSelector, "res://BangDreamLib/scenes/character_selector/character_selector.tscn" },
         { PreloadKey.CharacterButton, "res://BangDreamLib/scenes/character_selector/character_button.tscn" },
         { PreloadKey.AscensionPanel, "res://BangDreamLib/scenes/character_selector/ascension_panel.tscn" },
-        { PreloadKey.SkinSelector, "res://BangDreamLib/scenes/character_selector/skin_selector.tscn" }
+        { PreloadKey.SkinSelector, "res://BangDreamLib/scenes/character_selector/skin_selector.tscn" },
+        { PreloadKey.HeadTip, "res://BangDreamLib/scenes/head_tip.tscn" },
     };
 
     private static readonly HashSet<PreloadKey> MainMenuSceneKeys =
@@ -393,6 +394,7 @@ public enum PreloadKey
     CharacterButton,
     AscensionPanel,
     SkinSelector,
+    HeadTip
 }
 
 public static class PreloadKeyExtensions

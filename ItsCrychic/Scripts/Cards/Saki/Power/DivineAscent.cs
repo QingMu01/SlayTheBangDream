@@ -23,13 +23,13 @@ public class DivineAscent() : AbstractSakikoCard(CustomCost, CustomType, CustomR
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Buff.Create(1)
+        QuickVar.Energy.Create(1)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
         await PowerCmd.Apply<DivineAscentPower>(choiceContext, Owner.Creature,
-            QuickVar.Buff.GetVar(this).IntValue, Owner.Creature, this);
+            QuickVar.Energy.GetVar(this).IntValue, Owner.Creature, this);
     }
 
     protected override void OnUpgrade()

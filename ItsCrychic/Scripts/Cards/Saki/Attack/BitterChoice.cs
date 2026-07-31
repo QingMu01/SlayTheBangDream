@@ -5,7 +5,6 @@ using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using STS2RitsuLib.Combat.SecondaryResources;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
@@ -29,6 +28,8 @@ public class BitterChoice()
         QuickVar.Damage.Create(20)
     ];
 
+    private bool _isSubside;
+
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
         ArgumentNullException.ThrowIfNull(play.Target);
@@ -38,15 +39,27 @@ public class BitterChoice()
             .Targeting(play.Target)
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
+    }
 
-        var payment = play.SecondaryResources();
-        var triggeredSubside = payment.HasLines && payment.Shortfall(BangDreamConst.LingeredResource) == 0;
-        if (!triggeredSubside)
+    public Task OnSubside(PlayerChoiceContext choiceContext, CardPlay play)
+    {
+        _isSubside = true;
+        return Task.CompletedTask;
+    }
+
+    public override async Task AfterCardPlayedLate(PlayerChoiceContext choiceContext, CardPlay play)
+    {
+        if (!_isSubside)
         {
             var cards = Owner.AttachedData().PerformManager.PerformPile.Cards.ToList();
             await CardPileCmd.Add(cards, BangDreamConst.ExtraDraw, CardPilePosition.Random);
         }
+
+        _isSubside = false;
     }
 
-    public Task OnSubside(PlayerChoiceContext choiceContext, CardPlay play) => Task.CompletedTask;
+    protected override void OnUpgrade()
+    {
+        DynamicVars.Damage.UpgradeValueBy(6m);
+    }
 }

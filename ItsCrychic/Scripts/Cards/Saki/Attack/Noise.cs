@@ -1,8 +1,10 @@
 using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
+using ItsCrychic.Scripts.Cards.Token;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
@@ -14,13 +16,26 @@ public class Noise() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, 
     private const CardRarity CustomRarity = CardRarity.Common;
     private const TargetType CustomTarget = TargetType.AnyEnemy;
 
-    protected override IEnumerable<CardKeyword> CardKeywords => [BangDreamConst.PerformArea];
+    protected override IEnumerable<IHoverTip> CardHoverTips =>
+    [
+        HoverTipFactory.FromCard<MelodyFragments>()
+    ];
 
-    protected override IEnumerable<DynamicVar> CardVars => [QuickVar.Damage.Create(8)];
+    protected override IEnumerable<CardKeyword> CardKeywords =>
+    [
+        BangDreamConst.PerformArea
+    ];
+
+    protected override IEnumerable<DynamicVar> CardVars =>
+    [
+        QuickVar.Damage.Create(8),
+        QuickVar.Cards.Create(1)
+    ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
         ArgumentNullException.ThrowIfNull(play.Target);
+        ArgumentNullException.ThrowIfNull(CombatState);
 
         await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
             .FromCard(this, play)
@@ -28,18 +43,14 @@ public class Noise() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, 
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
 
-        var manager = Owner.AttachedData().PerformManager;
-        var topCard = manager.PerformPile.Cards
-            .OrderBy(card => manager.CardContexts.GetOrCreate(card).SlotIndex)
-            .FirstOrDefault();
-        if (topCard != null)
+        for (var i = 0; i < DynamicVars.Cards.IntValue; i++)
         {
-            await CardPileCmd.Add(topCard, BangDreamConst.ExtraDraw, CardPilePosition.Bottom);
+            await CardPileCmd.Add(CombatState.CreateCard<MelodyFragments>(Owner), BangDreamConst.ExtraDraw);
         }
     }
 
     protected override void OnUpgrade()
     {
-        DynamicVars.Damage.UpgradeValueBy(3);
+        DynamicVars.Cards.UpgradeValueBy(1m);
     }
 }
