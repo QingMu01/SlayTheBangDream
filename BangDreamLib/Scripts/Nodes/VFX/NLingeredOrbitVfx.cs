@@ -99,6 +99,7 @@ public sealed partial class NLingeredOrbitVfx : Node2D
         }
 
         var frameDelta = (float)delta;
+        SyncLayersToCreature();
         _orbitPhase = Mathf.PosMod(_orbitPhase + OrbitAngularSpeed * frameDelta, Mathf.Tau);
 
         UpdatePreviewCleanup(frameDelta);
@@ -136,6 +137,7 @@ public sealed partial class NLingeredOrbitVfx : Node2D
         _gatherBatch = null;
         _explosionBatch = null;
         UpdateCreatureBoundsMetrics();
+        SyncLayersToCreature();
         ClearEffectLayer();
         SetAmountImmediately(Math.Max(0, initialAmount));
         SetProcess(true);
@@ -799,6 +801,34 @@ public sealed partial class NLingeredOrbitVfx : Node2D
             Mathf.Clamp(boundsSize.X * 0.36f, 56f, 200f),
             Mathf.Clamp(boundsSize.Y * 0.13f, 24f, 72f));
         _previewHeight = Mathf.Clamp(boundsSize.Y * 0.6f + 32f, 108f, 280f);
+    }
+
+    private void SyncLayersToCreature()
+    {
+        if (_creature == null || !IsInstanceValid(_creature))
+        {
+            return;
+        }
+
+        var scale = _creature.Visuals.Scale;
+        var position = _creature.VfxSpawnPosition;
+        if (_backLayer != null && IsInstanceValid(_backLayer))
+        {
+            _backLayer.Scale = scale;
+            _backLayer.GlobalPosition = position;
+        }
+
+        if (_frontLayer != null && IsInstanceValid(_frontLayer))
+        {
+            _frontLayer.Scale = scale;
+            _frontLayer.GlobalPosition = position;
+        }
+
+        if (_effectLayer != null && IsInstanceValid(_effectLayer))
+        {
+            _effectLayer.Scale = scale;
+            _effectLayer.GlobalPosition = position;
+        }
     }
 
     private void AttachVisualLayersToCreature()
