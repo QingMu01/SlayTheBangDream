@@ -11,34 +11,33 @@ public class PreloadPatches : IModPatches
 {
     public static void AddTo(ModPatcher patcher)
     {
-        patcher.RegisterPatch<PreloadCommonPatch>();
+        patcher.RegisterPatch<InjectModAssetSetsPatch>();
         patcher.RegisterPatch<PrepareCombatAssetsPatch>();
-        patcher.RegisterPatch<PreloadCombatPatch>();
     }
 }
 
-internal class PreloadCommonPatch : IPatchMethod
+internal class InjectModAssetSetsPatch : IPatchMethod
 {
-    public static string PatchId => "add_mod_extra_common_asset_to_preload_manager";
+    public static string PatchId => "inject_mod_assets_into_vanilla_asset_sets";
     public static bool IsCritical => false;
 
     public static ModPatchTarget[] GetTargets()
     {
         return
         [
-            new ModPatchTarget(typeof(PreloadManager), nameof(PreloadManager.LoadCommonAndMainMenuAssets))
+            new ModPatchTarget(typeof(PreloadManager), "LoadAssetSets", [typeof(string), typeof(IEnumerable<string>[])])
         ];
     }
 
-    public static void Postfix(ref Task __result)
+    public static void Prefix(string name, ref IEnumerable<string>[] assetSets)
     {
-        __result = LoadCommonAssetsAfter(__result);
-    }
+        var modAssets = BangDreamPreloadManager.GetAssetsForSession(name);
+        if (modAssets.Count == 0)
+        {
+            return;
+        }
 
-    private static async Task LoadCommonAssetsAfter(Task originalPreload)
-    {
-        await originalPreload;
-        await BangDreamPreloadManager.LoadCommonAssets();
+        assetSets = [.. assetSets, modAssets];
     }
 }
 
@@ -59,30 +58,5 @@ internal class PrepareCombatAssetsPatch : IPatchMethod
     public static void Prefix(RunState runState)
     {
         BangDreamPreloadManager.PrepareCombatAssets(runState.Players);
-    }
-}
-
-internal class PreloadCombatPatch : IPatchMethod
-{
-    public static string PatchId => "add_mod_combat_assets_to_preload_manager";
-    public static bool IsCritical => false;
-
-    public static ModPatchTarget[] GetTargets()
-    {
-        return
-        [
-            new ModPatchTarget(typeof(PreloadManager), nameof(PreloadManager.LoadRunAssets))
-        ];
-    }
-
-    public static void Postfix(ref Task __result)
-    {
-        __result = LoadCombatAssetsAfter(__result);
-    }
-
-    private static async Task LoadCombatAssetsAfter(Task originalPreload)
-    {
-        await originalPreload;
-        await BangDreamPreloadManager.LoadPreparedCombatAssets();
     }
 }
