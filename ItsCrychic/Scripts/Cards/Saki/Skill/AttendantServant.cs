@@ -1,10 +1,8 @@
 using ItsCrychic.Scripts.Cards.Token;
-using ItsCrychic.Scripts.Character.CardPools;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.HoverTips;
-using MegaCrit.Sts2.Core.Models;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
@@ -25,30 +23,21 @@ public class AttendantServant() : AbstractSakikoCard(CustomCost, CustomType, Cus
         HoverTipFactory.FromCard<SakikoShield>(IsUpgraded)
     ];
 
-    private bool _returnToHand;
-
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        _returnToHand = false;
         var selectedCard = Owner.RunState.Rng.CombatCardSelection.NextItem(Owner.PlayerCombatState?.Hand.Cards ?? []);
-        if (selectedCard == null) return;
-
-        var belongsToSakiko = selectedCard.Pool != ModelDb.CardPool<SakikoStandardCardPool>() ||
-                              selectedCard.Pool != ModelDb.CardPool<SakikoMusicalCardPool>();
-
-        _returnToHand = !belongsToSakiko;
-
-        var transformResult = await CardCmd.TransformTo<SakikoShield>(selectedCard);
-        if (IsUpgraded && transformResult is { success: true })
+        if (selectedCard != null)
         {
-            CardCmd.Upgrade(transformResult.Value.cardAdded);
-        }
-    }
+            var transformResult = await CardCmd.TransformTo<SakikoShield>(selectedCard);
+            if (IsUpgraded && transformResult is { success: true })
+            {
+                CardCmd.Upgrade(transformResult.Value.cardAdded);
+            }
 
-    protected override CardLocation GetResultLocationForCardPlay()
-    {
-        return _returnToHand
-            ? new CardLocation(Owner, PileType.Hand, CardPilePosition.Bottom)
-            : base.GetResultLocationForCardPlay();
+            if (selectedCard.DeckVersion == null)
+            {
+                await CardPileCmd.Add(this, PileType.Hand);
+            }
+        }
     }
 }

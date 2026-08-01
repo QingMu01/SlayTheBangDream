@@ -22,15 +22,18 @@ public class OblivionFormPower : BandPowerModel
 
     public override async Task BeforeCardPlayed(CardPlay cardPlay)
     {
-        if (Owner.Player != null)
+        var player = Owner.Player;
+        if (player == null || cardPlay.Card.Owner != player || cardPlay.Card.Type != CardType.Attack)
         {
-            var drawPileCards = BangDreamConst.ExtraDraw.GetPile(Owner.Player).Cards.ToList();
-            var cardModel = Owner.Player.RunState.Rng.CombatCardSelection.NextItem(drawPileCards);
-            if (cardModel != null)
-            {
-                await CardCmd.Exhaust(new BlockingPlayerChoiceContext(), cardModel);
-                _shouldMultiply = true;
-            }
+            return;
+        }
+
+        var drawPileCards = BangDreamConst.ExtraDraw.GetPile(player).Cards.ToList();
+        var cardModel = player.RunState.Rng.CombatCardSelection.NextItem(drawPileCards);
+        if (cardModel != null)
+        {
+            await CardCmd.Exhaust(new BlockingPlayerChoiceContext(), cardModel);
+            _shouldMultiply = true;
         }
     }
 
@@ -43,11 +46,25 @@ public class OblivionFormPower : BandPowerModel
     public override decimal ModifyDamageMultiplicative(Creature? target, decimal amount, ValueProp props,
         Creature? dealer, CardModel? cardSource, CardPlay? cardPlay)
     {
-        if (dealer == Owner && props.IsPoweredAttack() && cardSource is { Type: CardType.Attack } && _shouldMultiply)
+        if (dealer != Owner || !props.IsPoweredAttack() || cardSource is not { Type: CardType.Attack })
         {
-            return Multiplier;
+            return 1m;
         }
 
-        return 1m;
+        if (cardSource.Pile?.Type == PileType.Play)
+        {
+            return _shouldMultiply && (cardPlay == null || cardPlay.Card == cardSource)
+                ? Multiplier
+                : 1m;
+        }
+
+        if (cardPlay != null || Owner.Player == null)
+        {
+            return 1m;
+        }
+
+        return BangDreamConst.ExtraDraw.GetPile(Owner.Player).Cards.Count > 0
+            ? Multiplier
+            : 1m;
     }
 }

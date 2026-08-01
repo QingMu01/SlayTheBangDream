@@ -27,14 +27,10 @@ public class CherishedMemories() : AbstractSakikoCard(CustomCost, CustomType, Cu
     {
         ArgumentNullException.ThrowIfNull(CombatState);
 
-        var hand = PileType.Hand.GetPile(Owner);
-        var handCards = hand.Cards.ToList();
+        var handCards = PileType.Hand.GetPile(Owner).Cards.ToList();
         var discardedCount = handCards.Count;
 
-        foreach (var card in handCards)
-        {
-            await CardPileCmd.Add(card, PileType.Discard);
-        }
+        await CardCmd.Discard(choiceContext, handCards);
 
         var generatedCards = new List<CardModel>();
         for (var i = 0; i < discardedCount; i++)

@@ -25,13 +25,15 @@ public class Pulverise() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
     [
         QuickVar.Energy.Create(1),
         ModCardVars.Int("FixedDamage", 4),
+        ModCardVars.Int("Cost", 0),
         ComputedDynamicVarHelper.CreateDamageVar("CalcDamage", 8m, ctx =>
         {
             if (ctx.IsInCombat() && ctx.ActiveCard.DynamicVars.TryGetValue("FixedDamage", out var fixedDamage))
             {
-                if (LingeredResourcesRule.IsSufficient(ctx.ActiveCard))
+                if (LingeredResourcesRule.IsSufficient(ctx.ActiveCard) &&
+                    ctx.ActiveCard.DynamicVars.TryGetValue("Cost", out var cost) && cost.IntValue > 0)
                 {
-                    return fixedDamage.IntValue + ctx.BaseValue;
+                    return (fixedDamage.IntValue + ctx.BaseValue) * cost.IntValue;
                 }
             }
 
@@ -48,6 +50,7 @@ public class Pulverise() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
         {
             var energyToGain = energyToCost + (IsUpgraded ? 1 : 0);
 
+            DynamicVars["Cost"].BaseValue = energyToCost;
             var attackCommand = await DamageCmd.Attack(DynamicVars.ComputedValue("CalcDamage"))
                 .FromCard(this, play)
                 .Targeting(play.Target)
@@ -64,6 +67,8 @@ public class Pulverise() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
                 }
             }
         }
+
+        DynamicVars["Cost"].BaseValue = 0;
     }
 
     public Task OnSubside(PlayerChoiceContext choiceContext, CardPlay play)
