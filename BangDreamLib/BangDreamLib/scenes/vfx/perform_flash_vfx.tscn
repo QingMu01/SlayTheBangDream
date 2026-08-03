@@ -1,0 +1,113 @@
+[gd_scene load_steps=16 format=3 uid="uid://bpod2aeovhlw"]
+
+[ext_resource type="Script" uid="uid://dtfxyyc7kbuu6" path="res://Scripts/Nodes/VFX/PerformFlashVfx.cs" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://ddg1bga84moge" path="res://BangDreamLib/images/vfx/icon_music_note.png" id="3_note"]
+[ext_resource type="Texture2D" uid="uid://dtgv5vokmg1c1" path="res://BangDreamLib/images/vfx/star_269.png" id="4_star"]
+[ext_resource type="Shader" uid="uid://btb56526d8at2" path="res://BangDreamLib/shaders/parallelogram_center_sweep.gdshader" id="5_sweep"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_sweep"]
+shader = ExtResource("5_sweep")
+shader_parameter/slant_slope = 0.3
+shader_parameter/edge_softness = 0.0
+shader_parameter/sweep_band_width = 18.0
+shader_parameter/sweep_edge_glow = 8.0
+
+[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_note"]
+blend_mode = 1
+particles_animation = true
+particles_anim_h_frames = 3
+particles_anim_v_frames = 3
+particles_anim_loop = true
+
+[sub_resource type="Curve" id="Curve_note_alpha"]
+_data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(0.7, 0.85), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
+point_count = 3
+
+[sub_resource type="CurveTexture" id="CurveTexture_note_alpha"]
+curve = SubResource("Curve_note_alpha")
+
+[sub_resource type="Curve" id="Curve_note_scale"]
+_data = [Vector2(0, 0.85), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="CurveTexture" id="CurveTexture_note_scale"]
+curve = SubResource("Curve_note_scale")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_note"]
+particle_flag_disable_z = true
+emission_shape = 3
+emission_box_extents = Vector3(80, 25, 1)
+angle_min = -179.99998
+angle_max = 180.00002
+spread = 0.0
+angular_velocity_min = -120.0
+angular_velocity_max = 120.0
+radial_velocity_min = 60.0
+radial_velocity_max = 180.0
+gravity = Vector3(0, -60, 0)
+scale_min = 0.3
+scale_max = 0.45
+scale_curve = SubResource("CurveTexture_note_scale")
+alpha_curve = SubResource("CurveTexture_note_alpha")
+anim_offset_max = 1.0
+
+[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_star"]
+blend_mode = 1
+
+[sub_resource type="Curve" id="Curve_star_alpha"]
+_data = [Vector2(0, 0), 0.0, 0.0, 0, 0, Vector2(0.15, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
+point_count = 3
+
+[sub_resource type="CurveTexture" id="CurveTexture_star_alpha"]
+curve = SubResource("Curve_star_alpha")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_star"]
+particle_flag_disable_z = true
+emission_shape = 3
+emission_box_extents = Vector3(80, 25, 1)
+angle_min = -179.99998
+angle_max = 180.00002
+spread = 0.0
+angular_velocity_min = -240.0
+angular_velocity_max = 240.0
+radial_velocity_min = 120.0
+radial_velocity_max = 260.0
+gravity = Vector3(0, 0, 0)
+scale_min = 0.5
+alpha_curve = SubResource("CurveTexture_star_alpha")
+hue_variation_min = -0.1
+hue_variation_max = 0.1
+
+[node name="PerformFlashVfx" type="Node2D"]
+script = ExtResource("1_script")
+
+[node name="SweepLight" type="ColorRect" parent="."]
+material = SubResource("ShaderMaterial_sweep")
+instance_shader_parameters/rect_size = Vector2(160, 50)
+instance_shader_parameters/reveal_progress = 0.0
+offset_left = -80.0
+offset_top = -25.0
+offset_right = 80.0
+offset_bottom = 25.0
+mouse_filter = 2
+color = Color(1, 1, 1, 0.55)
+
+[node name="MusicNoteParticles" type="GPUParticles2D" parent="."]
+material = SubResource("CanvasItemMaterial_note")
+emitting = false
+amount = 16
+texture = ExtResource("3_note")
+lifetime = 0.7
+one_shot = true
+explosiveness = 0.9
+process_material = SubResource("ParticleProcessMaterial_note")
+
+[node name="StarParticles" type="GPUParticles2D" parent="."]
+material = SubResource("CanvasItemMaterial_star")
+emitting = false
+amount = 24
+texture = ExtResource("4_star")
+lifetime = 0.5
+one_shot = true
+explosiveness = 0.95
+process_material = SubResource("ParticleProcessMaterial_star")

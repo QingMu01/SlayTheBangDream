@@ -260,6 +260,8 @@ public static class BangDreamLibCore
                 }
             }
         });
+
+        // 处理组件战斗初始化时的订阅，确保战斗状态正确生成
         RitsuLibFramework.SubscribeLifecycle<CombatStartingEvent>(ctx =>
         {
             if (ctx.CombatState?.Players != null)
@@ -271,6 +273,8 @@ public static class BangDreamLibCore
                 }
             }
         });
+
+        // 处理组件战斗结束的订阅，确保战斗状态正确销毁
         RitsuLibFramework.SubscribeLifecycle<CombatEndedEvent>(ctx =>
         {
             if (ctx.CombatState?.Players != null)

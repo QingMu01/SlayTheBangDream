@@ -39,7 +39,8 @@ public static class BangDreamPreloadManager
     [
         PreloadKey.PerformItem,
         PreloadKey.PerformArea,
-        PreloadKey.LingeredOrbitVfx
+        PreloadKey.LingeredOrbitVfx,
+        PreloadKey.HeadTip
     ];
 
     private static readonly HashSet<string> CombatAssets =
@@ -54,7 +55,8 @@ public static class BangDreamPreloadManager
         "res://BangDreamLib/scenes/vfx/music_wave.tscn",
         "res://BangDreamLib/scenes/vfx/music_hit_vfx.tscn",
         "res://BangDreamLib/scenes/vfx/music_flash_vfx.tscn",
-        "res://BangDreamLib/scenes/vfx/music_equalizer_vfx.tscn"
+        "res://BangDreamLib/scenes/vfx/music_equalizer_vfx.tscn",
+        "res://BangDreamLib/scenes/vfx/perform_flash_vfx.tscn"
     ];
 
     internal static void PrepareCombatAssets(IEnumerable<Player> players)

@@ -3,8 +3,11 @@ using BangDreamLib.Scripts.Interfaces;
 using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
 using BangDreamLib.Scripts.Nodes;
+using BangDreamLib.Scripts.Nodes.SubNode;
+using BangDreamLib.Scripts.Nodes.VFX;
 using BangDreamLib.Scripts.Utils;
 using BangDreamLib.Scripts.Utils.Infos;
+using Godot;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -27,6 +30,7 @@ public class PerformManager : SingletonModel, IInCombatManager, ISecondaryResour
     private const string MessagePrefix = "BANG_DREAM_LIB_PERFORM_MANAGER";
     private const string ZeroCapacityPostfix = ".zreo_capacity";
     private const string FullCapacityPostfix = ".full_capacity";
+    private const string PerformFlashVfxPath = "res://BangDreamLib/scenes/vfx/perform_flash_vfx.tscn";
 
     private static readonly LocString EmptyThink = new(LocTable, MessagePrefix + ZeroCapacityPostfix);
     private static readonly LocString MaxSizeThink = new(LocTable, MessagePrefix + FullCapacityPostfix);
@@ -287,9 +291,24 @@ public class PerformManager : SingletonModel, IInCombatManager, ISecondaryResour
     {
         ArgumentNullException.ThrowIfNull(cardModel.CombatState);
 
+        PlayPerformFlashVfx(cardModel, performCard);
+
         await BangDreamHook.RunPerformHookAction(cardModel.CombatState, cardModel, performCard.OnPerform);
 
         await BangDreamHook.OnCardPerform(cardModel.CombatState, CardContexts.GetOrCreate(cardModel), cardModel);
+    }
+
+    private void PlayPerformFlashVfx(CardModel cardModel, IPerformCard performCard)
+    {
+        if (!PerformArea.IsInsideTree()) return;
+        if (!PerformArea.TryGetCardSlotCenter(cardModel, out var slotCenter)) return;
+
+        var vfx = BangDreamPreloadManager.GetScene(PerformFlashVfxPath).Instantiate<PerformFlashVfx>();
+        vfx.FlashColor = NPerformItem.GetSlotColor(performCard);
+        vfx.Scale = Vector2.One * PerformArea.ItemScale;
+
+        PerformArea.AddChildSafely(vfx);
+        vfx.GlobalPosition = slotCenter;
     }
 
     /// <summary>

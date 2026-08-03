@@ -30,6 +30,7 @@ public partial class NPerformItem : NClickableControl
     private const float ItemHeight = 50f;
     private const float BackgroundWidthExtension = 5f;
     private const float TitleHorizontalPadding = 48f;
+    private const float PortraitSweepAlpha = 0.75f;
 
     private NCard? _card;
     private NPerformArea? _parent;
@@ -39,6 +40,7 @@ public partial class NPerformItem : NClickableControl
     private Control? _cardContainer;
     private TextureRect? _cardPortrait;
     private ColorRect? _cardOverlay;
+    private ColorRect? _portraitSweepLight;
     private Label? _cardTitle;
 
     private Vector2 _backgroundSize;
@@ -102,12 +104,18 @@ public partial class NPerformItem : NClickableControl
         return item;
     }
 
+    public static Color GetSlotColor(IPerformCard performCard)
+    {
+        return performCard.IsInstant ? InstantColor : PerformColor;
+    }
+
     public override void _Ready()
     {
         _background = GetNode<ColorRect>("%Background");
         _cardContainer = GetNode<Control>("MarginContainer");
         _cardPortrait = GetNode<TextureRect>("%Portrait");
         _cardOverlay = GetNode<ColorRect>("%Overlay");
+        _portraitSweepLight = GetNode<ColorRect>("%SweepLight");
         _cardTitle = GetNode<Label>("%Title");
 
         _backgroundSize = _background.Size;
@@ -117,10 +125,12 @@ public partial class NPerformItem : NClickableControl
         _background.ItemRectChanged += OnBackgroundRectChanged;
         _cardPortrait.Resized += UpdatePortraitShaderSize;
         _cardOverlay.Resized += UpdateOverlayShaderSize;
+        _portraitSweepLight.Resized += UpdatePortraitSweepShaderSize;
 
         UpdateBackgroundShaderSize();
         UpdatePortraitShaderSize();
         UpdateOverlayShaderSize();
+        UpdatePortraitSweepShaderSize();
         RefreshVisuals();
         SetPortraitRevealProgress(_portraitRevealProgress);
         ApplyHintHighlightImmediately();
@@ -142,6 +152,7 @@ public partial class NPerformItem : NClickableControl
         if (_background != null) _background.ItemRectChanged -= OnBackgroundRectChanged;
         if (_cardPortrait != null) _cardPortrait.Resized -= UpdatePortraitShaderSize;
         if (_cardOverlay != null) _cardOverlay.Resized -= UpdateOverlayShaderSize;
+        if (_portraitSweepLight != null) _portraitSweepLight.Resized -= UpdatePortraitSweepShaderSize;
 
         Model = null;
         Context = null;
@@ -249,6 +260,7 @@ public partial class NPerformItem : NClickableControl
         _portraitRevealProgress = Math.Clamp(progress, 0f, 1f);
         _cardPortrait?.SetInstanceShaderParameter(RevealProgressShaderParameter, _portraitRevealProgress);
         _cardOverlay?.SetInstanceShaderParameter(RevealProgressShaderParameter, _portraitRevealProgress);
+        _portraitSweepLight?.SetInstanceShaderParameter(RevealProgressShaderParameter, _portraitRevealProgress);
     }
 
     public void SetHintHighlighted(bool highlighted, bool immediately = false)
@@ -325,6 +337,11 @@ public partial class NPerformItem : NClickableControl
         _cardOverlay?.SetInstanceShaderParameter(RectSizeShaderParameter, _cardOverlay.Size);
     }
 
+    private void UpdatePortraitSweepShaderSize()
+    {
+        _portraitSweepLight?.SetInstanceShaderParameter(RectSizeShaderParameter, _portraitSweepLight.Size);
+    }
+
     private void RefreshVisuals()
     {
         if (_cardPortrait != null)
@@ -344,7 +361,7 @@ public partial class NPerformItem : NClickableControl
         {
             if (Model is IPerformCard performCard)
             {
-                _background.Modulate = performCard.IsInstant ? InstantColor : PerformColor;
+                _background.Modulate = GetSlotColor(performCard);
             }
             else
             {
@@ -354,6 +371,13 @@ public partial class NPerformItem : NClickableControl
             var dotColor = _background.Modulate;
             dotColor.A = 0.3f;
             _cardOverlay?.SetInstanceShaderParameter(DotColorShaderParameter, dotColor);
+
+            if (_portraitSweepLight != null)
+            {
+                var sweepColor = _background.Modulate.Lightened(0.45f);
+                sweepColor.A = PortraitSweepAlpha;
+                _portraitSweepLight.Color = sweepColor;
+            }
         }
     }
 
@@ -387,6 +411,7 @@ public partial class NPerformItem : NClickableControl
         UpdateBackgroundShaderSize();
         UpdatePortraitShaderSize();
         UpdateOverlayShaderSize();
+        UpdatePortraitSweepShaderSize();
     }
 
     protected override void OnFocus()
