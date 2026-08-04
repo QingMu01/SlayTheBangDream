@@ -1,3 +1,4 @@
+using BangDreamLib.Scripts.Features.AsyncDamage;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Players;
@@ -9,7 +10,6 @@ namespace BangDreamLib.Scripts.Commands;
 public static class MusicNoteCmd
 {
     private const string DefaultPath = "res://ItsCrychic/scenes/vfx/flying_music_note_default.tscn";
-
     public static Task FromCard(CardModel source, int baseCount, int bounceCount = 0, decimal baseDamage = 1m,
         Creature? target = null)
     {
@@ -43,17 +43,22 @@ public static class MusicNoteCmd
         var capturedDamageAdditive = shot > 0
             ? BangDreamHook.CaptureMusicNoteDamageAdditive(dealer.CombatState, dealer, source)
             : 0m;
-        var request = new MusicNoteVolleyRequest(
-            dealer,
-            Math.Max(0, shot),
-            Math.Max(0, bounce),
-            baseDamage,
-            capturedDamageAdditive,
+        var effect = new MusicNoteAsyncDamageEffect(
             GetMusicNoteVfxPath(dealer.Player),
-            visualDealer,
-            target,
-            source);
-        TaskHelper.RunSafely(new MusicNoteVolleyRunner(request).RunAsync());
+            baseDamage,
+            capturedDamageAdditive);
+        var request = new AsyncDamageBatchRequest
+        {
+            Dealer = dealer,
+            Count = Math.Max(0, shot),
+            Effect = effect,
+            ChainCount = Math.Max(0, bounce),
+            InitialVisualSource = visualDealer,
+            FixedTarget = target,
+            Source = source,
+            TargetPolicy = AsyncDamageTargetPolicy.AvoidReservedLethal
+        };
+        TaskHelper.RunSafely(CombatAsyncDamageManager.Shared.SubmitAsync(request));
     }
 
     private static string GetMusicNoteVfxPath(Player player)
