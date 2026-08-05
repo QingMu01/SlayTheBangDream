@@ -8,7 +8,7 @@
   "BANG_DREAM_LIB_KEYWORD_PERFORM_AREA.title": "歌单",
   "BANG_DREAM_LIB_KEYWORD_PERFORM_AREA.description": "歌单是带有容量限制且存在顺序的特殊牌堆。[gold]音乐[/gold]牌只有在歌单中才能进行演奏。",
   "BANG_DREAM_LIB_KEYWORD_LINGERED.title": "余音",
-  "BANG_DREAM_LIB_KEYWORD_LINGERED.description": "打出卡牌后，根据其耗能等量生成。\n获得[blue]7[/blue]点后，将[gold]曲库[/gold]顶部的[blue]1[/blue]张牌放入[gold]歌单[/gold]，然后失去所有余音。",
+  "BANG_DREAM_LIB_KEYWORD_LINGERED.description": "卡牌使用{energyPrefix:energyIcons(1)}后等量生成。\n获得[blue]7[/blue]点后，将[gold]曲库[/gold]顶部的[blue]1[/blue]张牌放入[gold]歌单[/gold]，然后清空余音。",
   "BANG_DREAM_LIB_KEYWORD_MUSIC_NOTE.title": "音符",
   "BANG_DREAM_LIB_KEYWORD_MUSIC_NOTE.description": "对随机目标造成基础为[blue]1[/blue]的伤害。"
 }

@@ -10,6 +10,7 @@ namespace BangDreamLib.Scripts.Commands;
 public static class MusicNoteCmd
 {
     private const string DefaultPath = "res://ItsCrychic/scenes/vfx/flying_music_note_default.tscn";
+
     public static Task FromCard(CardModel source, int baseCount, int bounceCount = 0, decimal baseDamage = 1m,
         Creature? target = null)
     {
@@ -28,6 +29,13 @@ public static class MusicNoteCmd
         Creature? target = null)
     {
         Submit(source.Owner.Creature, baseCount, bounceCount, baseDamage, null, target, source);
+        return Task.CompletedTask;
+    }
+
+    public static Task CustomShot(Creature dealer, int baseCount, int bounceCount = 0, decimal baseDamage = 1m,
+        Creature? target = null)
+    {
+        Submit(dealer, baseCount, bounceCount, baseDamage, null, target);
         return Task.CompletedTask;
     }
 

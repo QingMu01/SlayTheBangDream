@@ -32,22 +32,18 @@ public static class ComputedDynamicVarHelper
         bool runHooks, ValueProp prop, bool isDamage,
         Func<BangDreamComputedVar.ComputedVarsContext, decimal> calc)
     {
-        if (ctx.IsInCombat())
-        {
-            var calcValue = calc(ctx);
-            if (runHooks)
-            {
-                return isDamage
-                    ? Hook.ModifyDamage(ctx.ActiveRunState, ctx.ActiveCombatState, ctx.Target,
-                        ctx.ActiveCard.Owner.Creature, calcValue, prop, ctx.ActiveCard, null,
-                        ModifyDamageHookType.All, mode, out _)
-                    : Hook.ModifyBlock(ctx.ActiveCombatState, ctx.ActiveCard.Owner.Creature, calcValue, prop,
-                        ctx.ActiveCard, null, out _);
-            }
+        var calcValue = ctx.IsInCombat() ? calc(ctx) : ctx.BaseValue;
 
-            return calcValue;
+        if (runHooks)
+        {
+            return isDamage
+                ? Hook.ModifyDamage(ctx.ActiveRunState, ctx.ActiveCombatState, ctx.Target,
+                    ctx.ActiveCard.Owner.Creature, calcValue, prop, ctx.ActiveCard, null,
+                    ModifyDamageHookType.All, mode, out _)
+                : Hook.ModifyBlock(ctx.ActiveCombatState, ctx.ActiveCard.Owner.Creature, calcValue, prop,
+                    ctx.ActiveCard, null, out _);
         }
 
-        return ctx.BaseValue;
+        return calcValue;
     }
 }

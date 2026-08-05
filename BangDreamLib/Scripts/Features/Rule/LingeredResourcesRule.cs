@@ -73,14 +73,13 @@ public sealed class LingeredResourcesRule() : HookedSingletonModel(HookType.Comb
         {
             while (SecondaryResourceCmd.Get(context.Player, BangDreamConst.LingeredResource) >= HardMaxAmount)
             {
-                var extraDraw = BangDreamConst.ExtraDraw.GetPile(context.Player);
-                var topCardInPile = extraDraw.Cards.FirstOrDefault();
-                if (topCardInPile == null) break;
+                var topCardInPile = BangDreamConst.ExtraDraw.GetPile(context.Player).Cards.FirstOrDefault();
+                if (topCardInPile != null)
+                {
+                    await CardPileCmd.Add(topCardInPile, BangDreamConst.PerformPile);
+                    await Cmd.CustomScaledWait(0.05f, 0.1f);
+                }
 
-                var result = await CardPileCmd.Add(topCardInPile, BangDreamConst.PerformPile);
-                if (!result.success) break;
-
-                await Cmd.CustomScaledWait(0.05f, 0.1f);
                 await SecondaryResourceCmd.Lose(context.Player, BangDreamConst.LingeredResource, HardMaxAmount,
                     this);
             }
