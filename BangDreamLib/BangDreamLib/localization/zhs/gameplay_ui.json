@@ -5,6 +5,7 @@
   "BANG_DREAM_LIB_PERFORM_PLAY_TEXT": "[gold]奏响[/gold]：{Description}",
   "BANG_DREAM_LIB_SUBSIDE_PLAY_TEXT": "[gold]休止[/gold]：{Description}",
   "BANG_DREAM_LIB_REWARD_MUSIC_CARD_REWARD": "将一张音乐牌添加到你的额外牌组。",
+  "BANG_DREAM_LIB_EXTRA_DECK_HISTORY.header": "额外卡组（{totalCards}）：",
   "BANG_DREAM_LIB_CHARACTER_CANT_SELECT_0.message": "在做了，在做了！",
   "BANG_DREAM_LIB_CHARACTER_CANT_SELECT_1.message": "新建文件夹中！",
   "BANG_DREAM_LIB_CHARACTER_CANT_SELECT_2.message": "锐意制作中！"

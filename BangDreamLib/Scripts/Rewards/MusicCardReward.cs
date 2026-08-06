@@ -207,6 +207,9 @@ public class MusicCardReward : ModCustomReward
                 if (cardPileAddResult.success)
                 {
                     obtainedCard = cardPileAddResult.cardAdded;
+                    obtainedCard.FloorAddedToDeck = Player.RunState.TotalFloor;
+                    Player.RunState.CurrentMapPointHistoryEntry?.GetEntry(Player.NetId).CardsGained
+                        .Add(obtainedCard.ToSerializable());
                     chosenCardIds.Add(obtainedCard);
                     _musicCards.RemoveAll(c => c.Card == obtainedCard);
                     var cardNode = cardHolder?.CardNode;

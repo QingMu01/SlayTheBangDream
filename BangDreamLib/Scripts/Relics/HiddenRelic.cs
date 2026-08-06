@@ -10,4 +10,6 @@ public abstract class HiddenRelic : BandRelicModel, IModRelicVisibility
     public override LocString Title => new("gameplay_ui", "BANG_DREAM_LIB_EMPTY_LOC_STRING");
 
     public bool IsRelicVisible => false;
+
+    public override bool IsUsedUp => true;
 }

@@ -1,0 +1,44 @@
+[gd_scene load_steps=5 format=3 uid="uid://cqbvf8pfv2rkh"]
+
+[ext_resource type="Script" uid="uid://dwrvq1uw1ab6m" path="res://Scripts/Nodes/MainMenu/MainMenuEnvironmentCharacter.cs" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://bhtvg1tdhgntx" path="res://BangDreamLib/images/sceneui/sakiko_day.png" id="3_ogha2"]
+[ext_resource type="Shader" uid="uid://b5cr7jqxj6wvs" path="res://BangDreamLib/shaders/main_menu_environment_multiply.gdshader" id="3_shader"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_environment"]
+resource_local_to_scene = true
+shader = ExtResource("3_shader")
+shader_parameter/sample_uv_a = Vector2(0.35, 0.35)
+shader_parameter/sample_uv_b = Vector2(0.65, 0.75)
+shader_parameter/gradient_start_uv = Vector2(0.5, 0)
+shader_parameter/gradient_end_uv = Vector2(0.5, 1)
+shader_parameter/sample_radius_pixels = 4.0
+shader_parameter/multiply_strength = 0.3
+shader_parameter/minimum_tint = 0.12
+
+[node name="MainMenuEnvironmentCharacter" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_script")
+
+[node name="EnvironmentBackBufferCopy" type="BackBufferCopy" parent="."]
+copy_mode = 2
+
+[node name="Character" type="Sprite2D" parent="."]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_environment")
+position = Vector2(225, 855)
+scale = Vector2(0.55, 0.55)
+texture = ExtResource("3_ogha2")
+
+[node name="GradientSampleA" type="Marker2D" parent="."]
+unique_name_in_owner = true
+position = Vector2(756, 213)
+
+[node name="GradientSampleB" type="Marker2D" parent="."]
+unique_name_in_owner = true
+position = Vector2(661, 604)

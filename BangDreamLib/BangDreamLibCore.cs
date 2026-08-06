@@ -85,9 +85,14 @@ public static class BangDreamLibCore
             throw new InvalidOperationException("input event hook patches failed.");
         }
 
+        var runHistoryPatcher = RitsuLibFramework.CreatePatcher(BangDreamConst.ModId, "run_history_extra_deck");
+        runHistoryPatcher.RegisterPatches<ExtraDeckRunHistoryPatches>();
+        runHistoryPatcher.PatchAll();
+
         var commonPatcher = RitsuLibFramework.CreatePatcher(BangDreamConst.ModId, "common_patch");
         commonPatcher.RegisterPatch<CardHoverTipPatch>();
         commonPatcher.RegisterPatch<WaitForCombatResolutionPatch>();
+        commonPatcher.RegisterPatch<MainMenuEnvironmentCharacterPatch>();
         commonPatcher.PatchAll();
 
         // 注册持久化数据

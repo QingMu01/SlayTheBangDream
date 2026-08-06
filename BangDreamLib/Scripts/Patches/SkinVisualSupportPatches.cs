@@ -323,6 +323,9 @@ internal class MusicCardFramePatch : IPatchMethod
         if (__instance.Model is IPerformCard && __instance.Model is
                 { IsMutable: true, Owner.Character: ISkinSupportCharacter })
         {
+            if (__instance.Model.Owner.RunState is not RunState)
+                return;
+
             var path = BangDreamConst.PlayerSkin.Get(__instance.Model.Owner).GetSkin()?.SkinTemplate.Ui.MusicCardFrame;
             if (path != null)
             {
@@ -347,6 +350,9 @@ internal class MusicCardFrameMaterialPatch : IPatchMethod
         if (__instance.Model is IPerformCard && __instance.Model is
                 { IsMutable: true, Owner.Character: ISkinSupportCharacter })
         {
+            if (__instance.Model.Owner.RunState is not RunState)
+                return;
+
             var path = BangDreamConst.PlayerSkin.Get(__instance.Model.Owner).GetSkin()?.SkinTemplate.Ui.MusicCardFrame;
             if (path != null)
             {
