@@ -1,0 +1,157 @@
+[gd_scene load_steps=10 format=3 uid="uid://dglakadnof6vm"]
+
+[ext_resource type="Script" uid="uid://b8ll880lwpf2n" path="res://src/Core/Nodes/Screens/Shops/NMerchantInventory.cs" id="1_inventory"]
+[ext_resource type="Texture2D" uid="uid://bsosi3fox1pp0" path="res://BangDreamLib/images/sceneui/shop_rug-xz.png" id="2_a2rew"]
+[ext_resource type="PackedScene" uid="uid://rdkoq04iuuhe" path="res://scenes/merchant/merchant_card.tscn" id="3_card"]
+[ext_resource type="PackedScene" uid="uid://ca1bm16oq4u5v" path="res://scenes/merchant/merchant_card_removal.tscn" id="4_removal"]
+[ext_resource type="PackedScene" uid="uid://bl4mbjqjfffa3" path="res://scenes/ui/back_button.tscn" id="5_back"]
+[ext_resource type="SpineSkeletonDataResource" uid="uid://cf07xueehrjqk" path="res://animations/backgrounds/merchant_room/hand/merchant_hand_skel_data.tres" id="6_hand"]
+[ext_resource type="Script" uid="uid://p34nsajneq80" path="res://src/Core/Nodes/Screens/Shops/NMerchantHand.cs" id="7_hand_script"]
+[ext_resource type="PackedScene" uid="uid://slvrtr0urml" path="res://scenes/merchant/merchant_rug_dialogue.tscn" id="8_dialogue"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_construction"]
+bg_color = Color(0.035, 0.12, 0.17, 0.72)
+border_width_left = 8
+border_width_top = 8
+border_width_right = 8
+border_width_bottom = 8
+border_color = Color(0.05, 0.62, 0.92, 0.95)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[node name="ExtraCardMerchantInventory" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_inventory")
+
+[node name="Backstop" type="ColorRect" parent="."]
+modulate = Color(1, 1, 1, 0)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 1)
+
+[node name="SlotsContainer" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -842.0
+offset_top = -1635.0
+offset_right = 905.0
+offset_bottom = -657.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_a2rew")
+expand_mode = 1
+
+[node name="CharacterCards" type="Control" parent="SlotsContainer"]
+unique_name_in_owner = true
+anchors_preset = 0
+offset_left = 355.0
+offset_top = 303.0
+offset_right = 355.0
+offset_bottom = 303.0
+
+[node name="MerchantCardHolder" parent="SlotsContainer/CharacterCards" instance=ExtResource("3_card")]
+layout_mode = 0
+offset_left = -13.0
+offset_right = 287.0
+
+[node name="MerchantCardHolder2" parent="SlotsContainer/CharacterCards" instance=ExtResource("3_card")]
+layout_mode = 0
+offset_left = 300.0
+offset_right = 600.0
+
+[node name="MerchantCardHolder3" parent="SlotsContainer/CharacterCards" instance=ExtResource("3_card")]
+layout_mode = 0
+offset_left = 613.0
+offset_right = 913.0
+
+[node name="MerchantCardHolder4" parent="SlotsContainer/CharacterCards" instance=ExtResource("3_card")]
+layout_mode = 0
+offset_left = 926.0
+offset_right = 1226.0
+
+[node name="ConstructionArea" type="Panel" parent="SlotsContainer"]
+layout_mode = 0
+offset_left = 220.0
+offset_top = 505.0
+offset_right = 1240.0
+offset_bottom = 870.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_construction")
+
+[node name="ConstructionLabel" type="Label" parent="SlotsContainer/ConstructionArea"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.74, 0.91, 1, 1)
+theme_override_colors/font_outline_color = Color(0.015, 0.04, 0.07, 1)
+theme_override_constants/outline_size = 10
+theme_override_font_sizes/font_size = 54
+text = "正在施工区域"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="MerchantCardRemoval" parent="SlotsContainer" instance=ExtResource("4_removal")]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 1370.0
+offset_top = 678.0
+offset_right = 1588.0
+offset_bottom = 896.0
+
+[node name="BackButton" parent="." instance=ExtResource("5_back")]
+unique_name_in_owner = true
+layout_mode = 1
+
+[node name="MerchantHandContainer" type="SpineSprite" parent="."]
+skeleton_data_res = ExtResource("6_hand")
+preview_skin = "Default"
+preview_animation = "-- Empty --"
+preview_frame = false
+preview_time = 0.0
+position = Vector2(234, -54)
+scale = Vector2(0.4, 0.4)
+
+[node name="MerchantHand" type="Node" parent="MerchantHandContainer"]
+unique_name_in_owner = true
+script = ExtResource("7_hand_script")
+metadata/_custom_type_script = "uid://p34nsajneq80"
+
+[node name="Dialogue" parent="." instance=ExtResource("8_dialogue")]
+unique_name_in_owner = true
+position = Vector2(1410, 271)
+
+[node name="InputBlocker" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_neighbor_left = NodePath(".")
+focus_neighbor_top = NodePath(".")
+focus_neighbor_right = NodePath(".")
+focus_neighbor_bottom = NodePath(".")
+focus_mode = 2
+mouse_filter = 2

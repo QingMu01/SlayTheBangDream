@@ -85,6 +85,13 @@ public static class BangDreamLibCore
             throw new InvalidOperationException("input event hook patches failed.");
         }
 
+        var merchantPatcher = RitsuLibFramework.CreatePatcher(BangDreamConst.ModId, "sakiko_merchant");
+        merchantPatcher.RegisterPatches<ExtraCardMerchantPatches>();
+        if (!merchantPatcher.PatchAll())
+        {
+            throw new InvalidOperationException("sakiko merchant patch failed.");
+        }
+
         var runHistoryPatcher = RitsuLibFramework.CreatePatcher(BangDreamConst.ModId, "run_history_extra_deck");
         runHistoryPatcher.RegisterPatches<ExtraDeckRunHistoryPatches>();
         runHistoryPatcher.PatchAll();
@@ -107,6 +114,14 @@ public static class BangDreamLibCore
                 {
                     WritePolicy = RunSavedDataWritePolicy.AlwaysWhenRegistered,
                     SyncLobbyOnChange = true
+                });
+
+            BangDreamConst.ExtraCardMerchant = store.RegisterPerPlayer(
+                key: BangDreamConst.RunDataKeyExtraCardMerchant,
+                defaultFactory: () => new ExtraCardMerchantData(),
+                options: new RunSavedDataOptions
+                {
+                    WritePolicy = RunSavedDataWritePolicy.AlwaysWhenRegistered
                 });
         }
 

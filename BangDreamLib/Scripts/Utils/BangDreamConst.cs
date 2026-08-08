@@ -9,6 +9,7 @@ public static class BangDreamConst
 {
     public const string ModId = "BangDreamLib";
     public const string RunDataKeySkin = "RunSkin";
+    public const string RunDataKeyExtraCardMerchant = "ExtraCardMerchant";
 
     private static PlayerRunSavedData<PlayerSkinData>? _playerSkin;
 
@@ -16,6 +17,15 @@ public static class BangDreamConst
     {
         get => _playerSkin ?? throw new InvalidOperationException("PlayerRunSavedData.PlayerSkin is not BangDreamTools.Initialized.");
         internal set => BangDreamTools.Init(ref _playerSkin, value, nameof(PlayerSkin));
+    }
+
+    private static PlayerRunSavedData<ExtraCardMerchantData>? _extraCardMerchant;
+
+    public static PlayerRunSavedData<ExtraCardMerchantData> ExtraCardMerchant
+    {
+        get => _extraCardMerchant ?? throw new InvalidOperationException(
+            "PlayerRunSavedData.ExtraCardMerchant is not BangDreamTools.Initialized.");
+        internal set => BangDreamTools.Init(ref _extraCardMerchant, value, nameof(ExtraCardMerchant));
     }
 
     private static PileType? _extraDeck;

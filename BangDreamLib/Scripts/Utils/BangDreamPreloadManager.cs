@@ -48,7 +48,8 @@ public static class BangDreamPreloadManager
     private static readonly HashSet<string> CombatAssets =
     [
         "res://BangDreamLib/images/sceneui/default_portrait.png",
-        "res://BangDreamLib/shaders/color_overlay.gdshader"
+        "res://BangDreamLib/shaders/color_overlay.gdshader",
+        "res://BangDreamLib/scenes/merchant/extra_card_merchant_inventory.tscn"
     ];
 
     internal static readonly HashSet<string> VfxAssets =

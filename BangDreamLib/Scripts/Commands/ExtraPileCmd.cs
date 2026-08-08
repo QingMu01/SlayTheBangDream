@@ -13,12 +13,75 @@ using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Multiplayer.Game;
 using MegaCrit.Sts2.Core.Nodes.Screens.CardSelection;
+using MegaCrit.Sts2.Core.Nodes.Screens.Overlays;
 using MegaCrit.Sts2.Core.Runs;
 
 namespace BangDreamLib.Scripts.Commands;
 
 public static class ExtraPileCmd
 {
+    public static async Task<IEnumerable<CardModel>> FromExtraDeckForRemoval(Player player,
+        CardSelectorPrefs prefs)
+    {
+        var cards = BangDreamConst.ExtraDeck.GetPile(player).Cards
+            .Where(card => card.IsRemovable)
+            .ToList();
+        if (cards.Count == 0)
+        {
+            return [];
+        }
+
+        if (!prefs.RequireManualConfirmation && cards.Count <= prefs.MinSelect)
+        {
+            return cards;
+        }
+
+        if (CardSelectCmd.Selector != null)
+        {
+            return await CardSelectCmd.Selector.GetSelectedCards(cards, prefs.MinSelect, prefs.MaxSelect);
+        }
+
+        var choiceId = RunManager.Instance.PlayerChoiceSynchronizer.ReserveChoiceId(player);
+        IEnumerable<CardModel> selected;
+        if (LocalContext.IsMe(player) && RunManager.Instance.NetService.Type != NetGameType.Replay)
+        {
+            if (CardSelectCmd.LocalSelector != null)
+            {
+                selected = await CardSelectCmd.LocalSelector.GetSelectedCards(cards, prefs.MinSelect, prefs.MaxSelect);
+            }
+            else
+            {
+                var screen = NDeckCardSelectScreen.Create(cards, prefs);
+                NOverlayStack.Instance!.Push(screen);
+                selected = await screen.CardsSelected();
+                RunManager.Instance.PlayerChoiceSynchronizer.SyncLocalChoice(
+                    player, choiceId,
+                    PlayerChoiceResult.FromIndexes(selected.Select(card => cards.IndexOf(card)).ToList()));
+            }
+        }
+        else
+        {
+            selected = (await RunManager.Instance.PlayerChoiceSynchronizer.WaitForRemoteChoice(player, choiceId))
+                .AsIndexes()
+                .Where(index => index >= 0 && index < cards.Count)
+                .Select(index => cards[index])
+                .ToList();
+        }
+
+        return selected;
+    }
+
+    public static async Task RemoveFromExtraDeck(CardModel card)
+    {
+        if (card.Pile?.Type != BangDreamConst.ExtraDeck)
+        {
+            throw new InvalidOperationException("You cannot remove a card that is not in the extra deck.");
+        }
+
+        await Hook.BeforeCardRemoved(card.Owner.RunState, card);
+        card.RemoveFromState();
+    }
+
     public static async Task<IEnumerable<CardModel>> FromExtraDeckForUpgrade(Player player, CardSelectorPrefs prefs)
     {
         var upgradableCards = BangDreamConst.ExtraDeck.GetPile(player).Cards
