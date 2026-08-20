@@ -1,4 +1,5 @@
 ﻿using BangDreamLib.Scripts.Enums;
+using BangDreamLib.Scripts.Utils.Infos;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 
@@ -26,5 +27,5 @@ public interface IPerformCard
     /// </summary>
     CardLocation StopPerformanceNextPile();
 
-    Task OnPerform(PlayerChoiceContext choiceContext);
+    Task OnPerform(PlayerChoiceContext choiceContext, CardPerform perform);
 }

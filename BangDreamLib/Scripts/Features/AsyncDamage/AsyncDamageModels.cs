@@ -5,23 +5,15 @@ using MegaCrit.Sts2.Core.Models;
 
 namespace BangDreamLib.Scripts.Features.AsyncDamage;
 
-public enum AsyncDamageTargetPolicy
-{
-    AllowOverkill,
-    AvoidReservedLethal,
-    RetargetOnInvalid
-}
-
 public enum AsyncDamageAnimationResult
 {
     Triggered,
-    Cancelled,
     CombatEnded
 }
 
 /// <summary>
-/// 表示一个已经脱手运行的动画。Impact 决定何时结算伤害，Completion 决定何时释放整批效果。
-/// 两个任务可以来自 VFX 信号、Tween、计时器或任意异步动画流程。
+/// 表示一个已经脱手运行的表现动画。Impact 仅描述表现层命中时刻，不能驱动玩法状态；
+/// Completion 用于观察动画生命周期和记录异常。
 /// </summary>
 public sealed class AsyncDamageAnimationHandle(
     Task<AsyncDamageAnimationResult> impact,
@@ -58,7 +50,6 @@ public sealed record AsyncDamageBatchRequest
     public AbstractModel? Source { get; init; }
     public int ChainCount { get; init; }
     public bool ExcludePreviousTargetFromChain { get; init; } = true;
-    public AsyncDamageTargetPolicy TargetPolicy { get; init; } = AsyncDamageTargetPolicy.AvoidReservedLethal;
 }
 
 public sealed record AsyncDamagePreparationContext(

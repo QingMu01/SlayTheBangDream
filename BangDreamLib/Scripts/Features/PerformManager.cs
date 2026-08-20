@@ -1,4 +1,6 @@
+using System.Text.Json;
 using BangDreamLib.Scripts.Enums;
+using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Interfaces;
 using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
@@ -10,15 +12,20 @@ using BangDreamLib.Scripts.Utils.Infos;
 using Godot;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
+using MegaCrit.Sts2.Core.Context;
 using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.Entities.Multiplayer;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Multiplayer.Game;
 using MegaCrit.Sts2.Core.Nodes.Cards;
 using MegaCrit.Sts2.Core.Nodes.Combat;
+using MegaCrit.Sts2.Core.Runs;
 using STS2RitsuLib.Combat.SecondaryResources;
+using STS2RitsuLib.Networking.ManagedActions;
 using STS2RitsuLib.Scaffolding.Godot.NodeAttachments;
 using STS2RitsuLib.Utils;
 
@@ -26,9 +33,113 @@ namespace BangDreamLib.Scripts.Features;
 
 public class PerformManager : SingletonModel, IInCombatManager, ISecondaryResourceHookListener
 {
+    private enum PerformNetworkActionKind
+    {
+        Enter,
+        Leave,
+        Trigger
+    }
+
+    private sealed record PerformNetworkActionPayload(
+        PerformNetworkActionKind Kind,
+        uint? CardIndex,
+        int SlotIndex,
+        bool IsSubsideTriggered);
+
+    private static readonly RitsuLibManagedNetActionDescriptor<PerformNetworkActionPayload> PerformNetworkAction = new(
+        "BangDreamLib", "perform_lifecycle",
+        static payload => JsonSerializer.SerializeToUtf8Bytes(payload),
+        static bytes => JsonSerializer.Deserialize<PerformNetworkActionPayload>(bytes) ??
+                        throw new InvalidOperationException("Invalid perform lifecycle payload."),
+        static context => ExecuteNetworkPerformAction(context), GameActionType.Combat);
+
+    internal static void InitializeNetwork()
+    {
+        RitsuLibManagedNetActions.Register(PerformNetworkAction);
+    }
+
+    /// <summary>
+    /// 在原版同步战斗开始 Hook 内将牌加入歌单并完成进入结算，不跨初始化边界另排网络 Action。
+    /// </summary>
+    public async Task AddInitialCard(CardModel cardModel)
+    {
+        ArgumentNullException.ThrowIfNull(cardModel);
+        var combatState = Player.Creature.CombatState;
+        if (combatState == null) return;
+
+        _initialPerformAreaAdditions.Add(cardModel);
+        try
+        {
+            await CardPileCmd.Add(cardModel, BangDreamConst.PerformPile);
+            if (cardModel.Pile != PerformPile) return;
+
+            var context = CardContexts.GetOrCreate(cardModel);
+            context.Manager = this;
+            _pendingPerformAreaAdditions.Add(cardModel);
+            await BangDreamHook.RunPerformHookAction(
+                combatState,
+                cardModel,
+                choiceContext => HandleCardAddedInternal(choiceContext, cardModel));
+        }
+        finally
+        {
+            _initialPerformAreaAdditions.Remove(cardModel);
+        }
+    }
+
+    private static Task ExecuteNetworkPerformAction(
+        RitsuLibManagedNetActionContext<PerformNetworkActionPayload> context)
+    {
+        var manager = context.Player.AttachedData().PerformManager;
+        return manager.ExecuteNetworkPerformAction(context.Message, context.PlayerChoiceContext);
+    }
+
+    private async Task ExecuteNetworkPerformAction(
+        PerformNetworkActionPayload payload,
+        PlayerChoiceContext choiceContext)
+    {
+        var combatState = Player.Creature.CombatState;
+        if (combatState == null) return;
+        if (payload.Kind == PerformNetworkActionKind.Trigger)
+        {
+            await TryPerformInternal(payload.SlotIndex, payload.IsSubsideTriggered, choiceContext);
+            return;
+        }
+
+        if (!payload.CardIndex.HasValue) return;
+        var card = NetCombatCard.ForTesting(payload.CardIndex.Value).ToCardModelOrNull();
+        if (card == null) return;
+        var change = new PerformAreaChange(card,
+            payload.Kind == PerformNetworkActionKind.Enter
+                ? PerformAreaChangeType.Added
+                : PerformAreaChangeType.Removed);
+        await HandlePerformAreaChange(choiceContext, change);
+    }
+
+    private async Task ExecuteLocalPerformAction(PerformNetworkActionPayload payload)
+    {
+        var combatState = Player.Creature.CombatState;
+        if (combatState == null) return;
+        if (payload.Kind == PerformNetworkActionKind.Trigger)
+        {
+            await TryPerformInternal(payload.SlotIndex, payload.IsSubsideTriggered);
+            return;
+        }
+
+        if (!payload.CardIndex.HasValue) return;
+        var card = NetCombatCard.ForTesting(payload.CardIndex.Value).ToCardModelOrNull();
+        if (card == null) return;
+        var change = new PerformAreaChange(card,
+            payload.Kind == PerformNetworkActionKind.Enter
+                ? PerformAreaChangeType.Added
+                : PerformAreaChangeType.Removed);
+        await BangDreamHook.RunPerformHookAction(
+            combatState, card, choiceContext => HandlePerformAreaChange(choiceContext, change));
+    }
+
     private const string LocTable = "combat_messages";
     private const string MessagePrefix = "BANG_DREAM_LIB_PERFORM_MANAGER";
-    private const string ZeroCapacityPostfix = ".zreo_capacity";
+    private const string ZeroCapacityPostfix = ".zero_capacity";
     private const string FullCapacityPostfix = ".full_capacity";
     private const string PerformFlashVfxPath = "res://BangDreamLib/scenes/vfx/perform_flash_vfx.tscn";
 
@@ -42,14 +153,13 @@ public class PerformManager : SingletonModel, IInCombatManager, ISecondaryResour
     private Player? _player;
     private CardPile? _pile;
 
-    private readonly Lock _performAreaChangeQueueLock = new();
-
     private readonly Queue<CardModel> _cardsAwaitingArrival = [];
     private readonly HashSet<CardModel> _cardsWithArrivalVisual = [];
-    private readonly Queue<PerformAreaChange> _performAreaChanges = [];
-    private readonly Dictionary<CardModel, int> _pendingPerformAreaAdditions = [];
+    private readonly HashSet<CardModel> _cardsPendingArrival = [];
+    private readonly HashSet<CardModel> _pendingPerformAreaAdditions = [];
+    private readonly HashSet<CardModel> _initialPerformAreaAdditions = [];
+    private readonly HashSet<CardModel> _instantPerformedCards = [];
 
-    private bool _isProcessingPerformAreaChanges;
 
     public Player Player
     {
@@ -126,13 +236,31 @@ public class PerformManager : SingletonModel, IInCombatManager, ISecondaryResour
 
     private void OnCardAdded(CardModel cardModel)
     {
-        if (NCard.FindOnTable(cardModel) != null)
+        if (!CombatManager.Instance.IsInProgress)
+            return;
+
+        if (Capacity > 0)
+        {
+            var context = CardContexts.GetOrCreate(cardModel);
+            context.Manager = this;
+            _pendingPerformAreaAdditions.Add(cardModel);
+        }
+
+        if (HasCardArrivalVisual(cardModel))
         {
             _cardsAwaitingArrival.Enqueue(cardModel);
             _cardsWithArrivalVisual.Add(cardModel);
+            _cardsPendingArrival.Add(cardModel);
         }
 
+        if (_initialPerformAreaAdditions.Contains(cardModel)) return;
         QueuePerformAreaChange(cardModel, PerformAreaChangeType.Added);
+    }
+
+    private static bool HasCardArrivalVisual(CardModel cardModel)
+    {
+        return NCard.FindOnTable(cardModel, PileType.Play) != null ||
+               NCard.FindOnTable(cardModel, PileType.Hand) != null;
     }
 
     private void OnCardAddFinished()
@@ -143,11 +271,22 @@ public class PerformManager : SingletonModel, IInCombatManager, ISecondaryResour
         {
             PerformArea.PlayCardArrivalBounce(cardModel);
         }
+
+        QueuePerformAreaChange(cardModel, PerformAreaChangeType.Arrived);
     }
 
     private void OnCardRemoved(CardModel cardModel)
     {
+        if (!CombatManager.Instance.IsInProgress)
+            return;
+
         PerformArea.RemoveItem(cardModel);
+        RemoveAwaitingArrival(cardModel);
+        _cardsWithArrivalVisual.Remove(cardModel);
+        if (_cardsPendingArrival.Remove(cardModel))
+        {
+            CompletePendingPerformAreaAddition(cardModel);
+        }
 
         if (cardModel.CombatState == null && Player.Creature.CombatState == null)
         {
@@ -158,6 +297,18 @@ public class PerformManager : SingletonModel, IInCombatManager, ISecondaryResour
         QueuePerformAreaChange(cardModel, PerformAreaChangeType.Removed);
     }
 
+    private void RemoveAwaitingArrival(CardModel cardModel)
+    {
+        if (!_cardsAwaitingArrival.Contains(cardModel)) return;
+
+        var remainingCards = _cardsAwaitingArrival.Where(card => card != cardModel).ToList();
+        _cardsAwaitingArrival.Clear();
+        foreach (var remainingCard in remainingCards)
+        {
+            _cardsAwaitingArrival.Enqueue(remainingCard);
+        }
+    }
+
     private async Task RemoveOverflowItems()
     {
         if (Capacity <= 0)
@@ -166,11 +317,7 @@ public class PerformManager : SingletonModel, IInCombatManager, ISecondaryResour
             return;
         }
 
-        HashSet<CardModel> pendingAdditions;
-        lock (_performAreaChangeQueueLock)
-        {
-            pendingAdditions = _pendingPerformAreaAdditions.Keys.ToHashSet();
-        }
+        HashSet<CardModel> pendingAdditions = [.. _pendingPerformAreaAdditions];
 
         var overflowItems = from cardModel in PerformPile.Cards
             let performContext = CardContexts.GetOrCreate(cardModel)
@@ -189,12 +336,10 @@ public class PerformManager : SingletonModel, IInCombatManager, ISecondaryResour
     {
         ArgumentNullException.ThrowIfNull(cardModel.CombatState);
 
-        if (!PerformPile.Cards.Contains(cardModel)) return;
-
         if (Capacity == 0)
         {
             ThinkCmd.Play(EmptyThink, Player.Creature, 1.5f);
-            await MoveCardInternal(cardModel);
+            if (PerformPile.Cards.Contains(cardModel)) await MoveCardInternal(cardModel);
             return;
         }
 
@@ -204,19 +349,40 @@ public class PerformManager : SingletonModel, IInCombatManager, ISecondaryResour
         if (enqueuePlan == null)
         {
             ThinkCmd.Play(MaxSizeThink, Player.Creature, 1.5f);
-            await MoveCardInternal(cardModel);
+            if (PerformPile.Cards.Contains(cardModel)) await MoveCardInternal(cardModel);
             return;
         }
 
-        await ApplyEnqueuePlan(enqueuePlan, performContext);
+        try
+        {
+            await ApplyEnqueuePlan(enqueuePlan, performContext);
 
-        PerformArea.AddItem(cardModel, performContext, _cardsWithArrivalVisual.Contains(cardModel));
+            if (!_cardsPendingArrival.Contains(cardModel) && PerformPile.Cards.Contains(cardModel))
+                PerformArea.AddItem(cardModel, performContext, _cardsWithArrivalVisual.Contains(cardModel));
 
-        await TryInstantInternal(cardModel);
+            await TryInstantInternal(cardModel, choiceContext);
 
-        await BangDreamHook.OnCardEnterPerformArea(choiceContext, cardModel.CombatState, cardModel);
+            await BangDreamHook.OnCardEnterPerformArea(choiceContext, cardModel.CombatState, cardModel);
 
-        await RemoveOverflowItems();
+            await RemoveOverflowItems();
+        }
+        finally
+        {
+            CompletePendingPerformAreaAddition(cardModel);
+        }
+    }
+
+    private Task HandleCardArrivedInternal(CardModel cardModel)
+    {
+        _cardsPendingArrival.Remove(cardModel);
+
+        if (!PerformPile.Cards.Contains(cardModel) || cardModel.CombatState == null) return Task.CompletedTask;
+
+        var performContext = CardContexts.GetOrCreate(cardModel);
+        if (performContext.Manager != this || !IsValidSlot(performContext.SlotIndex)) return Task.CompletedTask;
+
+        PerformArea.AddItem(cardModel, performContext, waitForCardArrival: false);
+        return Task.CompletedTask;
     }
 
     private async Task HandleCardRemovedInternal(PlayerChoiceContext choiceContext, CardModel cardModel)
@@ -240,21 +406,24 @@ public class PerformManager : SingletonModel, IInCombatManager, ISecondaryResour
         await RemoveOverflowItems();
     }
 
-    private async Task TryPerformInternal(int slotIndex, bool isSubsideTriggered = false)
+    private async Task TryPerformInternal(
+        int slotIndex,
+        bool isSubsideTriggered = false,
+        PlayerChoiceContext? choiceContext = null)
     {
-        var lingeredHitCard = (from pileCard in PerformPile.Cards
+        var slotCard = (from pileCard in PerformPile.Cards
             let performContext = CardContexts.GetOrCreate(pileCard)
             where performContext.SlotIndex == slotIndex
             select pileCard).FirstOrDefault();
 
-        if (lingeredHitCard is IPerformCard { IsInstant: false } performCard)
+        if (slotCard is IPerformCard { IsInstant: false } performCard)
         {
-            var performContext = CardContexts.GetOrCreate(lingeredHitCard);
+            var performContext = CardContexts.GetOrCreate(slotCard);
             var previousSubsideState = performContext.IsSubsideTriggered;
             performContext.IsSubsideTriggered = isSubsideTriggered;
             try
             {
-                await PerformCard(lingeredHitCard, performCard);
+                await PerformCard(slotCard, performCard, true, choiceContext);
             }
             finally
             {
@@ -262,40 +431,73 @@ public class PerformManager : SingletonModel, IInCombatManager, ISecondaryResour
             }
 
             BangDreamLibCore.Logger.Info(
-                $"Player {Player.Character} ({Player.NetId}) Perform : {lingeredHitCard.Title}");
+                $"Player {Player.Character} ({Player.NetId}) Perform : {slotCard.Title}");
         }
     }
 
-    private async Task TryInstantInternal(CardModel cardModel)
+    private async Task TryInstantInternal(CardModel cardModel, PlayerChoiceContext? choiceContext = null)
     {
         ArgumentNullException.ThrowIfNull(cardModel.CombatState);
 
         if (cardModel is IPerformCard { IsInstant: true } performCard)
         {
-            await PerformCard(cardModel, performCard);
+            if (!_instantPerformedCards.Add(cardModel))
+            {
+#if DEBUG
+                BangDreamLibCore.Logger.Info(
+                    $"Ignored duplicate instant perform: player={Player.NetId} card={cardModel.Id} instance={cardModel.GetHashCode()}");
+#endif
+                return;
+            }
+
+            await PerformCard(cardModel, performCard, true, choiceContext);
 
             BangDreamLibCore.Logger.Info(
                 $"Player {Player.Character} ({Player.NetId}) Instant Perform : {cardModel.Title}");
         }
     }
 
-    public async Task PerformCard(CardModel cardModel)
+    public async Task PerformCard(CardModel cardModel, bool isAutoPerform = false)
     {
         if (cardModel is IPerformCard performCard)
         {
-            await PerformCard(cardModel, performCard);
+            await PerformCard(cardModel, performCard, isAutoPerform);
         }
     }
 
-    private async Task PerformCard(CardModel cardModel, IPerformCard performCard)
+    private async Task PerformCard(
+        CardModel cardModel,
+        IPerformCard performCard,
+        bool isAutoPerform,
+        PlayerChoiceContext? choiceContext = null)
     {
         ArgumentNullException.ThrowIfNull(cardModel.CombatState);
 
         PlayPerformFlashVfx(cardModel, performCard);
 
-        await BangDreamHook.RunPerformHookAction(cardModel.CombatState, cardModel, performCard.OnPerform);
+        var performContext = CardContexts.GetOrCreate(cardModel);
+        var perform = new CardPerform
+        {
+            Card = cardModel,
+            Player = Player,
+            SlotIndex = performContext.SlotIndex,
+            IsAutoPerform = isAutoPerform,
+            IsInstant = performCard.IsInstant,
+            IsSubsideTriggered = performContext.IsSubsideTriggered
+        };
 
-        await BangDreamHook.OnCardPerform(cardModel.CombatState, CardContexts.GetOrCreate(cardModel), cardModel);
+        if (choiceContext == null)
+        {
+            await BangDreamHook.RunPerformHookAction(
+                cardModel.CombatState, cardModel, context => performCard.OnPerform(context, perform));
+            await BangDreamHook.OnCardPerform(cardModel.CombatState, perform);
+        }
+        else
+        {
+            await BangDreamHook.RunPerformHookAction(
+                choiceContext, cardModel, context => performCard.OnPerform(context, perform));
+            await BangDreamHook.OnCardPerform(choiceContext, cardModel.CombatState, perform);
+        }
     }
 
     private void PlayPerformFlashVfx(CardModel cardModel, IPerformCard performCard)
@@ -309,45 +511,6 @@ public class PerformManager : SingletonModel, IInCombatManager, ISecondaryResour
 
         PerformArea.AddChildSafely(vfx);
         vfx.GlobalPosition = slotCenter;
-    }
-
-    /// <summary>
-    /// 将当前管理的歌单卡牌移动到指定槽位。若目标槽位已被占用，则交换两张卡牌的位置。
-    /// 此操作不会触发卡牌进入或离开歌单的 Hook。
-    /// </summary>
-    /// <returns>卡牌和目标槽位均有效时返回 <see langword="true"/>，否则返回 <see langword="false"/>。</returns>
-    public bool TryMoveCardToSlot(CardModel cardModel, int targetSlotIndex)
-    {
-        ArgumentNullException.ThrowIfNull(cardModel);
-
-        if (cardModel.Pile != PerformPile || !IsValidSlot(targetSlotIndex))
-        {
-            return false;
-        }
-
-        var cardContext = CardContexts.GetOrCreate(cardModel);
-        if (cardContext.Manager != this || !IsValidSlot(cardContext.SlotIndex))
-        {
-            return false;
-        }
-
-        var sourceSlotIndex = cardContext.SlotIndex;
-        if (sourceSlotIndex == targetSlotIndex)
-        {
-            return true;
-        }
-
-        var cardInTargetSlot = PerformPile.Cards.FirstOrDefault(card =>
-            card != cardModel && CardContexts.GetOrCreate(card).SlotIndex == targetSlotIndex);
-
-        cardContext.SlotIndex = targetSlotIndex;
-        if (cardInTargetSlot != null)
-        {
-            CardContexts.GetOrCreate(cardInTargetSlot).SlotIndex = sourceSlotIndex;
-        }
-
-        PerformArea.RefreshItemLayout();
-        return true;
     }
 
     /// <summary>
@@ -385,11 +548,6 @@ public class PerformManager : SingletonModel, IInCombatManager, ISecondaryResour
     public int GetExpectedSlotIndex(CardModel cardModel)
     {
         return CreateEnqueuePlan(cardModel)?.SlotIndex ?? -1;
-    }
-
-    public CardModel? GetCardDisplacedBy(CardModel incomingCard)
-    {
-        return CreateEnqueuePlan(incomingCard)?.DisplacedCard;
     }
 
     private async Task ApplyEnqueuePlan(EnqueuePlan plan, PerformContext incomingContext)
@@ -531,11 +689,21 @@ public class PerformManager : SingletonModel, IInCombatManager, ISecondaryResour
 
     public async Task AfterSecondaryResourceChanged(SecondaryResourceChangeContext ctx)
     {
+        if (!CombatManager.Instance.IsInProgress)
+            return;
+
         if (ctx.Player == _player && ctx.Definition.Id.Equals(BangDreamConst.LingeredResource))
         {
             if (ctx.NewAmount > 0 && ctx.NewAmount <= Capacity)
             {
-                await TryPerformInternal(ctx.NewAmount, ctx.Reason == SecondaryResourceChangeReason.Spend);
+                if (LocalContext.IsMe(Player))
+                {
+                    var payload = new PerformNetworkActionPayload(
+                        PerformNetworkActionKind.Trigger, null, ctx.NewAmount,
+                        ctx.Reason == SecondaryResourceChangeReason.Spend);
+                    if (!RitsuLibManagedNetActions.Request(null, PerformNetworkAction, payload, Player.NetId))
+                        await HandleRejectedNetworkAction(payload);
+                }
             }
         }
     }
@@ -583,7 +751,10 @@ public class PerformManager : SingletonModel, IInCombatManager, ISecondaryResour
         PerformPile.CardRemoved += OnCardRemoved;
         _cardsAwaitingArrival.Clear();
         _cardsWithArrivalVisual.Clear();
+        _cardsPendingArrival.Clear();
+        _initialPerformAreaAdditions.Clear();
         ClearPerformAreaChanges();
+        _instantPerformedCards.Clear();
         CardContexts.Clear();
     }
 
@@ -594,7 +765,10 @@ public class PerformManager : SingletonModel, IInCombatManager, ISecondaryResour
         PerformPile.CardRemoved -= OnCardRemoved;
         _cardsAwaitingArrival.Clear();
         _cardsWithArrivalVisual.Clear();
+        _cardsPendingArrival.Clear();
+        _initialPerformAreaAdditions.Clear();
         ClearPerformAreaChanges();
+        _instantPerformedCards.Clear();
         CardContexts.Clear();
     }
 
@@ -634,69 +808,31 @@ public class PerformManager : SingletonModel, IInCombatManager, ISecondaryResour
             return;
         }
 
-        var shouldStartProcessing = false;
-        lock (_performAreaChangeQueueLock)
+        if (type == PerformAreaChangeType.Arrived)
         {
-            _performAreaChanges.Enqueue(new PerformAreaChange(combatState, cardModel, type));
-            if (type == PerformAreaChangeType.Added)
-            {
-                _pendingPerformAreaAdditions.TryGetValue(cardModel, out var pendingCount);
-                _pendingPerformAreaAdditions[cardModel] = pendingCount + 1;
-            }
-
-            if (!_isProcessingPerformAreaChanges)
-            {
-                _isProcessingPerformAreaChanges = true;
-                shouldStartProcessing = true;
-            }
+            TaskHelper.RunSafely(HandleCardArrivedInternal(cardModel));
+            return;
         }
 
-        if (shouldStartProcessing)
-        {
-            TaskHelper.RunSafely(ProcessPerformAreaChanges());
-        }
+        if (!LocalContext.IsMe(Player)) return;
+        var index = NetCombatCard.FromModel(cardModel).CombatCardIndex;
+        var payload = new PerformNetworkActionPayload(
+            type == PerformAreaChangeType.Added ? PerformNetworkActionKind.Enter : PerformNetworkActionKind.Leave,
+            index,
+            0,
+            false);
+        if (!RitsuLibManagedNetActions.Request(null, PerformNetworkAction, payload, Player.NetId))
+            TaskHelper.RunSafely(HandleRejectedNetworkAction(payload));
     }
 
-    private async Task ProcessPerformAreaChanges()
+    private Task HandleRejectedNetworkAction(PerformNetworkActionPayload payload)
     {
-        while (TryDequeuePerformAreaChange(out var change))
-        {
-            try
-            {
-                await BangDreamHook.RunPerformHookAction(
-                    change.CombatState,
-                    change.CardModel,
-                    choiceContext => HandlePerformAreaChange(choiceContext, change));
-            }
-            catch (Exception exception)
-            {
-                BangDreamLibCore.Logger.Error(
-                    $"Failed to process perform area {change.Type} hook for {change.CardModel.Title}: {exception}");
-            }
-            finally
-            {
-                if (change.Type == PerformAreaChangeType.Added)
-                {
-                    CompletePendingPerformAreaAddition(change.CardModel);
-                }
-            }
-        }
-    }
+        if (RunManager.Instance.NetService.Type == NetGameType.Singleplayer)
+            return ExecuteLocalPerformAction(payload);
 
-    private bool TryDequeuePerformAreaChange(out PerformAreaChange change)
-    {
-        lock (_performAreaChangeQueueLock)
-        {
-            if (_performAreaChanges.Count > 0)
-            {
-                change = _performAreaChanges.Dequeue();
-                return true;
-            }
-
-            _isProcessingPerformAreaChanges = false;
-            change = default;
-            return false;
-        }
+        BangDreamLibCore.Logger.Error(
+            $"Perform action was rejected by the Sidecar action queue: player={Player.NetId} kind={payload.Kind}.");
+        return Task.CompletedTask;
     }
 
     private Task HandlePerformAreaChange(PlayerChoiceContext choiceContext, PerformAreaChange change)
@@ -705,40 +841,26 @@ public class PerformManager : SingletonModel, IInCombatManager, ISecondaryResour
         {
             PerformAreaChangeType.Added => HandleCardAddedInternal(choiceContext, change.CardModel),
             PerformAreaChangeType.Removed => HandleCardRemovedInternal(choiceContext, change.CardModel),
+            PerformAreaChangeType.Arrived => HandleCardArrivedInternal(change.CardModel),
             _ => throw new ArgumentOutOfRangeException(nameof(change), $"Unknown change type: {change.Type}")
         };
     }
 
     private void CompletePendingPerformAreaAddition(CardModel cardModel)
     {
-        lock (_performAreaChangeQueueLock)
-        {
-            if (!_pendingPerformAreaAdditions.TryGetValue(cardModel, out var pendingCount)) return;
-
-            if (pendingCount <= 1)
-            {
-                _pendingPerformAreaAdditions.Remove(cardModel);
-            }
-            else
-            {
-                _pendingPerformAreaAdditions[cardModel] = pendingCount - 1;
-            }
-        }
+        _pendingPerformAreaAdditions.Remove(cardModel);
     }
 
     private void ClearPerformAreaChanges()
     {
-        lock (_performAreaChangeQueueLock)
-        {
-            _performAreaChanges.Clear();
-            _pendingPerformAreaAdditions.Clear();
-        }
+        _pendingPerformAreaAdditions.Clear();
     }
 
     private enum PerformAreaChangeType
     {
         Added,
-        Removed
+        Removed,
+        Arrived
     }
 
     private sealed record OccupiedSlot(CardModel Card, PerformContext Context);
@@ -748,7 +870,6 @@ public class PerformManager : SingletonModel, IInCombatManager, ISecondaryResour
     private sealed record EnqueuePlan(int SlotIndex, CardModel? DisplacedCard, IReadOnlyList<SlotChange> SlotChanges);
 
     private readonly record struct PerformAreaChange(
-        ICombatState CombatState,
         CardModel CardModel,
         PerformAreaChangeType Type);
 }

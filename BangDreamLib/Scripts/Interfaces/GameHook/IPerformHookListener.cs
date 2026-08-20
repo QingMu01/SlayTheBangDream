@@ -19,5 +19,5 @@ public interface IPerformHookListener
     /// <summary>
     /// 有卡牌被演奏时点
     /// </summary>
-    Task OnCardPerform(PlayerChoiceContext choiceContext, PerformContext ctx, CardModel cardModel) => Task.CompletedTask;
+    Task OnCardPerform(PlayerChoiceContext choiceContext, CardPerform perform) => Task.CompletedTask;
 }

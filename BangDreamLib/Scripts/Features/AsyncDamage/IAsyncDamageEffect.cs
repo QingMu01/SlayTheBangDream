@@ -22,7 +22,7 @@ public interface IAsyncDamageEffect
     Task<AsyncDamageAnimationHandle> StartAnimationAsync(AsyncDamageSpawnContext context);
 
     /// <summary>
-    /// 当动画句柄的 Impact 完成后，由统一结算队列调用。
+    /// 动画启动后立即由当前同步 Action 调用，不等待表现层 Impact。
     /// </summary>
     Task ResolveDamageAsync(AsyncDamageHitContext context);
 

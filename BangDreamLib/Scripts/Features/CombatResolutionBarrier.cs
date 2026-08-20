@@ -73,16 +73,6 @@ public static class CombatResolutionBarrier
             : completion;
     }
 
-    public static bool HasPendingResolutions(ICombatState combatState)
-    {
-        ArgumentNullException.ThrowIfNull(combatState);
-
-        lock (BarrierLock)
-        {
-            return States.ContainsKey(combatState);
-        }
-    }
-
     private static void Release(ICombatState combatState)
     {
         TaskCompletionSource<bool>? completion = null;

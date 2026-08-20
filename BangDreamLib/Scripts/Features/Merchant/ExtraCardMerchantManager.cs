@@ -65,14 +65,7 @@ internal static class ExtraCardMerchantManager
             }
         }
 
-        var merchantScene = BangDreamPreloadManager.GetScene(MerchantButtonScenePath);
-        if (merchantScene == null)
-        {
-            BangDreamLibCore.Logger.Error($"Unable to load extra card merchant scene: {MerchantButtonScenePath}");
-            return;
-        }
-
-        var merchantButton = merchantScene.Instantiate<NMerchantButton>();
+        var merchantButton = BangDreamPreloadManager.GetScene(MerchantButtonScenePath).Instantiate<NMerchantButton>();
         merchantButton.Name = "ExtraCardMerchantButton";
         merchantButton.Position -= new Vector2(430f, 0f);
         merchantButton.IsLocalPlayerDead = supportsExtraCardPool && player.Creature.IsDead;

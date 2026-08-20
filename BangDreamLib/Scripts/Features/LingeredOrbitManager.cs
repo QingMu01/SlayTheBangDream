@@ -4,6 +4,7 @@ using BangDreamLib.Scripts.Interfaces.CharacterAugment;
 using BangDreamLib.Scripts.Nodes.VFX;
 using BangDreamLib.Scripts.Utils;
 using Godot;
+using MegaCrit.Sts2.Core.Context;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Nodes.Combat;
@@ -36,7 +37,7 @@ public class LingeredOrbitManager : SingletonModel, IInCombatManager
     {
         UnsubscribeResourceChanges();
         _previewCard = null;
-        if (Player.Character is not ILingeredResourceCharacter)
+        if (!LocalContext.IsMe(Player) || Player.Character is not ILingeredResourceCharacter)
         {
             OrbitVfx = null;
             return;

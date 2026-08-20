@@ -1,4 +1,4 @@
 ﻿{
-  "BANG_DREAM_LIB_PERFORM_MANAGER.zreo_capacity": "我的歌单容量为[blue]0[/blue]，因此不能将牌放入。",
+  "BANG_DREAM_LIB_PERFORM_MANAGER.zero_capacity": "我的歌单容量为[blue]0[/blue]，因此不能将牌放入。",
   "BANG_DREAM_LIB_PERFORM_MANAGER.full_capacity": "我的歌单容量已达最大。"
 }

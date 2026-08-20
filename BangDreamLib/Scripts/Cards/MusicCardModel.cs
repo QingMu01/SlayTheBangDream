@@ -1,6 +1,7 @@
 ﻿using BangDreamLib.Scripts.Enums;
 using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Utils;
+using BangDreamLib.Scripts.Utils.Infos;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 
@@ -17,7 +18,7 @@ public abstract class MusicCardModel(
     public virtual int AspirationSlot => 0;
     public virtual PerformEnqueueStrategy Strategy => PerformEnqueueStrategy.Default;
 
-    public virtual Task OnPerform(PlayerChoiceContext choiceContext)
+    public virtual Task OnPerform(PlayerChoiceContext choiceContext, CardPerform perform)
     {
         return Task.CompletedTask;
     }

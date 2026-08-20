@@ -104,16 +104,26 @@ public static class BangDreamHook
 
     public static async Task OnCardPerform(
         ICombatState combatState,
-        PerformContext performContext,
-        CardModel cardModel)
+        CardPerform perform)
     {
         await RunPerformHookAction(
             combatState,
-            cardModel,
+            perform.Card,
             choiceContext => DispatchCombatHooks<IPerformHookListener>(
                 choiceContext,
                 combatState,
-                listener => listener.OnCardPerform(choiceContext, performContext, cardModel)));
+                listener => listener.OnCardPerform(choiceContext, perform)));
+    }
+
+    public static Task OnCardPerform(
+        PlayerChoiceContext choiceContext,
+        ICombatState combatState,
+        CardPerform perform)
+    {
+        return DispatchCombatHooks<IPerformHookListener>(
+            choiceContext,
+            combatState,
+            listener => listener.OnCardPerform(choiceContext, perform));
     }
 
     private static async Task DispatchCombatHooks<TListener>(
@@ -184,6 +194,24 @@ public static class BangDreamHook
         await choiceContext.WaitForCompletion();
     }
 
+    public static async Task RunPerformHookAction(
+        PlayerChoiceContext choiceContext,
+        AbstractModel source,
+        Func<PlayerChoiceContext, Task> hook)
+    {
+        if (!CanDispatchCombatHooks()) return;
+
+        choiceContext.PushModel(source);
+        try
+        {
+            await ExecuteTaskThenInvokeExecutionFinished(source, hook(choiceContext));
+        }
+        finally
+        {
+            choiceContext.PopModel(source);
+        }
+    }
+
     private static IEnumerable<AbstractModel> IterateCombatHookListeners(ICombatState combatState)
     {
         if (!CanDispatchCombatHooks())
@@ -197,7 +225,7 @@ public static class BangDreamHook
         }
     }
 
-    private static bool CanDispatchCombatHooks()
+    public static bool CanDispatchCombatHooks()
     {
         return CombatManager.Instance is not { IsOverOrEnding: true, IsStarting: false };
     }

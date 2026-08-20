@@ -1,7 +1,9 @@
 using System.Reflection;
 using BangDreamLib.Scripts.Capability;
 using BangDreamLib.Scripts.Character;
+using BangDreamLib.Scripts.Commands;
 using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Features;
 using BangDreamLib.Scripts.Features.Rule;
 using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
@@ -101,6 +103,9 @@ public static class BangDreamLibCore
         commonPatcher.RegisterPatch<WaitForCombatResolutionPatch>();
         commonPatcher.RegisterPatch<MainMenuEnvironmentCharacterPatch>();
         commonPatcher.PatchAll();
+
+        MusicNoteCmd.InitializeNetwork();
+        PerformManager.InitializeNetwork();
 
         // 注册持久化数据
         using (RitsuLibFramework.BeginModDataRegistration(BangDreamConst.ModId))

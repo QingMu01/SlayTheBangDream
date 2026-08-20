@@ -8,7 +8,6 @@ namespace BangDreamLib.Scripts.Patches;
 public class CardHoverTipPatch : IPatchMethod
 {
     private const float CardPadding = 4f;
-    private const float ViewportMargin = 16f;
 
     public static string PatchId => "batter_card_hover_tips_container_layout";
     
@@ -40,16 +39,6 @@ public class CardHoverTipPatch : IPatchMethod
             return false;
         }
 
-        var viewportRect = __instance.GetViewportRect();
-        var viewportMin = viewportRect.Position + Vector2.One * ViewportMargin;
-        var viewportMax = viewportRect.Position + viewportRect.Size - Vector2.One * ViewportMargin;
-        var availableSize = new Vector2(
-            Mathf.Max(1f, alignment == HoverTipAlignment.Left
-                ? globalStartLocation.X - viewportMin.X
-                : viewportMax.X - globalStartLocation.X),
-            Mathf.Max(1f, viewportMax.Y - globalStartLocation.Y)
-        );
-
         var columns = BuildSquareGrid(tips);
         var columnWidths = columns
             .Select(column => column.Max(tip => tip.Size.X))
@@ -68,20 +57,12 @@ public class CardHoverTipPatch : IPatchMethod
 
         LayoutGrid(columns, columnWidths, rowHeights, contentSize.X, alignment);
 
-        var scale = Mathf.Min(
-            1f,
-            Mathf.Min(
-                availableSize.X / Mathf.Max(1f, contentSize.X),
-                availableSize.Y / Mathf.Max(1f, contentSize.Y)
-            )
-        );
-        __instance.Scale = Vector2.One * scale;
+        __instance.Scale = Vector2.One;
         __instance.Size = contentSize;
 
-        var scaledSize = contentSize * scale;
         __instance.GlobalPosition = new Vector2(
             alignment == HoverTipAlignment.Left
-                ? globalStartLocation.X - scaledSize.X
+                ? globalStartLocation.X - contentSize.X
                 : globalStartLocation.X,
             globalStartLocation.Y
         );

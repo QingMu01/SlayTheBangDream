@@ -7,7 +7,8 @@ using MegaCrit.Sts2.Core.Entities.Creatures;
 namespace BangDreamLib.Scripts.Features.AsyncDamage;
 
 /// <summary>
-/// 统一管理脱手异步伤害动画的目标预留、命中顺序、链式效果和战斗结算生命周期。
+/// 将异步伤害拆分为同步玩法结算和脱手表现层。玩法状态始终在调用方所属的同步 Action 内完成；
+/// 动画启动后独立运行，动画信号不得再修改玩法状态。
 /// </summary>
 public sealed class CombatAsyncDamageManager
 {
@@ -15,9 +16,8 @@ public sealed class CombatAsyncDamageManager
     {
         public Lock SyncRoot { get; } = new();
         public Dictionary<Creature, decimal> ReservedDamage { get; } = new(ReferenceEqualityComparer.Instance);
-        public Task ResolutionTail { get; set; } = Task.CompletedTask;
+        public Task BatchTail { get; set; } = Task.CompletedTask;
         public long NextSequenceId { get; set; }
-        public int ActiveBatches { get; set; }
     }
 
     private sealed class TargetReservation(Creature target, decimal damage, long sequenceId)
@@ -28,20 +28,6 @@ public sealed class CombatAsyncDamageManager
         public bool IsReleased { get; set; }
     }
 
-    private sealed class PendingDamage(
-        AsyncDamageBatchRequest request,
-        AsyncDamageSpawnContext spawnContext,
-        AsyncDamageAnimationHandle animation,
-        TargetReservation reservation)
-    {
-        public AsyncDamageBatchRequest Request { get; } = request;
-        public AsyncDamageSpawnContext SpawnContext { get; } = spawnContext;
-        public AsyncDamageAnimationHandle Animation { get; } = animation;
-        public TargetReservation Reservation { get; set; } = reservation;
-        public Creature? ResolvedTarget { get; set; }
-        public bool ReachedImpact { get; set; }
-    }
-
     private readonly ConditionalWeakTable<ICombatState, CombatSession> _sessions = new();
 
     public static CombatAsyncDamageManager Shared { get; } = new();
@@ -50,102 +36,91 @@ public sealed class CombatAsyncDamageManager
     {
     }
 
-    public async Task SubmitAsync(AsyncDamageBatchRequest request)
+    /// <summary>
+    /// 启动整批动画，并在当前同步 Action 返回前完成全部玩法结算。不会等待动画命中或结束。
+    /// </summary>
+    public Task SubmitAsync(AsyncDamageBatchRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(request.Dealer);
         ArgumentNullException.ThrowIfNull(request.Effect);
 
         if (request.Count <= 0 || !TryGetCombatState(request, out var combatState))
-            return;
+            return Task.CompletedTask;
 
         var session = _sessions.GetValue(combatState, _ => new CombatSession());
-        RegisterBatch(session);
-        using var resolutionLease = CombatResolutionBarrier.Acquire(combatState);
-        try
+        lock (session.SyncRoot)
         {
-            await ResolveBatchAsync(session, combatState, request);
-        }
-        catch (Exception exception)
-        {
-            BangDreamLibCore.Logger.Error($"Async damage batch resolution error: {exception}");
-        }
-        finally
-        {
-            if (UnregisterBatch(session))
-                await CompleteCombatResolutionAsync(session, combatState, request);
+            var batch = ResolveAfterAsync(session.BatchTail, session, combatState, request);
+            session.BatchTail = batch;
+            return batch;
         }
     }
 
-    private async Task ResolveBatchAsync(
+    private static async Task ResolveAfterAsync(
+        Task previousBatch,
         CombatSession session,
         ICombatState combatState,
         AsyncDamageBatchRequest request)
     {
-        var rootAnimations = new List<Task>(request.Count);
+        try
+        {
+            await previousBatch;
+        }
+        catch (Exception exception)
+        {
+            BangDreamLibCore.Logger.Error($"Previous async damage batch error: {exception}");
+        }
+
         VfxContext? lastRootContext = null;
         var launchedCount = 0;
 
-        try
+        for (var index = 0; index < request.Count; index++)
         {
-            for (var index = 0; index < request.Count; index++)
+            if (!CanResolveCombat(combatState, request))
+                break;
+
+            await request.Effect.BeforeSpawnAsync(new AsyncDamagePreparationContext(
+                combatState, request, index, request.Count));
+
+            var root = await ResolveHitAsync(
+                session, combatState, request, request.FixedTarget, excludedTarget: null,
+                request.InitialVisualSource, index, request.Count, isChain: false, chainDepth: 0);
+            if (root == null)
+                break;
+
+            lastRootContext = root.Value.Context;
+            launchedCount++;
+
+            var previousTarget = root.Value.Target;
+            for (var chainDepth = 1; chainDepth <= Math.Max(0, request.ChainCount); chainDepth++)
             {
                 if (!CanResolveCombat(combatState, request))
                     break;
 
-                await request.Effect.BeforeSpawnAsync(new AsyncDamagePreparationContext(
-                    combatState,
-                    request,
-                    index,
-                    request.Count));
-
-                var launch = await CreateAnimationAsync(
-                    session,
-                    combatState,
-                    request,
-                    request.FixedTarget,
-                    excludedTarget: null,
-                    visualSource: request.InitialVisualSource,
-                    index,
-                    request.Count,
-                    isChain: false,
-                    chainDepth: 0);
-                if (launch == null)
+                var chain = await ResolveHitAsync(
+                    session, combatState, request, fixedTarget: null,
+                    request.ExcludePreviousTargetFromChain ? previousTarget : null,
+                    visualSource: previousTarget, index: 0, total: 1,
+                    isChain: true, chainDepth);
+                if (chain == null)
                     break;
 
-                lastRootContext = launch.Value.Animation.Context;
-                launchedCount++;
-                rootAnimations.Add(RunAnimationAsync(
-                    session,
-                    combatState,
-                    request,
-                    launch.Value,
-                    Math.Max(0, request.ChainCount)));
+                previousTarget = chain.Value.Target;
             }
         }
-        catch (Exception exception)
+
+        if (lastRootContext != null && CanResolveCombat(combatState, request))
         {
-            BangDreamLibCore.Logger.Error($"Async damage animation launch error: {exception}");
+            await request.Effect.AfterBatchAsync(new AsyncDamageBatchContext(
+                combatState, request, lastRootContext, launchedCount));
         }
-
-        if (rootAnimations.Count == 0)
-            return;
-
-        await Task.WhenAll(rootAnimations);
 
         if (CanResolveCombat(combatState, request))
-        {
-            var batchContext = new AsyncDamageBatchContext(
-                combatState,
-                request,
-                lastRootContext,
-                launchedCount);
-            await CombatEffectQueue.Shared.Enqueue(() => request.Effect.AfterBatchAsync(batchContext));
-        }
+            await CombatManager.Instance.CheckWinCondition();
     }
 
-    private async Task<(AsyncDamageAnimationHandle Animation, AsyncDamageSpawnContext SpawnContext,
-        TargetReservation Reservation)?> CreateAnimationAsync(
+    private static async Task<(Creature Target, VfxContext? Context)?> ResolveHitAsync(
         CombatSession session,
         ICombatState combatState,
         AsyncDamageBatchRequest request,
@@ -162,182 +137,49 @@ public sealed class CombatAsyncDamageManager
             return null;
 
         var spawnContext = new AsyncDamageSpawnContext(
-            combatState,
-            request,
-            reservation.Target,
-            visualSource,
-            reservation.SequenceId,
-            index,
-            total,
-            isChain,
-            chainDepth);
+            combatState, request, reservation.Target, visualSource,
+            reservation.SequenceId, index, total, isChain, chainDepth);
 
         try
         {
             var animation = await request.Effect.StartAnimationAsync(spawnContext);
             ArgumentNullException.ThrowIfNull(animation);
-            return (animation, spawnContext, reservation);
-        }
-        catch
-        {
-            ReleaseReservation(session, reservation);
-            throw;
-        }
-    }
+            _ = ObserveAnimationAsync(animation, reservation.SequenceId);
 
-    private async Task RunAnimationAsync(
-        CombatSession session,
-        ICombatState combatState,
-        AsyncDamageBatchRequest request,
-        (AsyncDamageAnimationHandle Animation, AsyncDamageSpawnContext SpawnContext,
-            TargetReservation Reservation) launch,
-        int remainingChains)
-    {
-        var pending = new PendingDamage(request, launch.SpawnContext, launch.Animation, launch.Reservation);
-        await ScheduleResolution(session, combatState, pending);
-
-        try
-        {
-            await launch.Animation.Completion;
-        }
-        catch (Exception exception)
-        {
-            BangDreamLibCore.Logger.Warn($"Async damage animation completion error: {exception}");
-        }
-
-        if (remainingChains <= 0 || !pending.ReachedImpact || !CanResolveCombat(combatState, request))
-            return;
-
-        var previousTarget = pending.ResolvedTarget ?? launch.Reservation.Target;
-        var excludedTarget = request.ExcludePreviousTargetFromChain ? previousTarget : null;
-        var chainLaunch = await CreateAnimationAsync(
-            session,
-            combatState,
-            request,
-            fixedTarget: null,
-            excludedTarget,
-            visualSource: previousTarget,
-            index: 0,
-            total: 1,
-            isChain: true,
-            chainDepth: launch.SpawnContext.ChainDepth + 1);
-        if (chainLaunch == null)
-            return;
-
-        await RunAnimationAsync(
-            session,
-            combatState,
-            request,
-            chainLaunch.Value,
-            remainingChains - 1);
-    }
-
-    private Task ScheduleResolution(
-        CombatSession session,
-        ICombatState combatState,
-        PendingDamage pending)
-    {
-        lock (session.SyncRoot)
-        {
-            var previous = session.ResolutionTail;
-            var resolution = ResolveAfterAsync(previous, session, combatState, pending);
-            session.ResolutionTail = resolution;
-            return resolution;
-        }
-    }
-
-    private async Task ResolveAfterAsync(
-        Task previous,
-        CombatSession session,
-        ICombatState combatState,
-        PendingDamage pending)
-    {
-        try
-        {
-            await previous;
-        }
-        catch (Exception exception)
-        {
-            BangDreamLibCore.Logger.Error($"Previous async damage resolution error: {exception}");
-        }
-
-        try
-        {
-            var animationResult = await pending.Animation.Impact;
-            if (animationResult != AsyncDamageAnimationResult.Triggered ||
-                !CanResolveCombat(combatState, pending.Request))
+            if (reservation.Target.IsHittable && CanResolveCombat(combatState, request))
             {
-                return;
+                await request.Effect.ResolveDamageAsync(new AsyncDamageHitContext(
+                    combatState, request, animation.Context, reservation.Target,
+                    reservation.SequenceId, reservation.Damage, isChain, chainDepth));
             }
 
-            pending.ReachedImpact = true;
-            await CombatEffectQueue.Shared.Enqueue(async () =>
-            {
-                if (!CanResolveCombat(combatState, pending.Request))
-                    return;
-
-                var target = pending.Reservation.Target;
-                if (!target.IsHittable)
-                {
-                    if (pending.Request.TargetPolicy != AsyncDamageTargetPolicy.RetargetOnInvalid)
-                        return;
-
-                    var replacement = ReplaceReservation(session, combatState, pending, target);
-                    if (replacement == null)
-                        return;
-
-                    target = replacement.Target;
-                }
-
-                pending.ResolvedTarget = target;
-                var hitContext = new AsyncDamageHitContext(
-                    combatState,
-                    pending.Request,
-                    pending.Animation.Context,
-                    target,
-                    pending.Reservation.SequenceId,
-                    pending.Reservation.Damage,
-                    pending.SpawnContext.IsChain,
-                    pending.SpawnContext.ChainDepth);
-                await pending.Request.Effect.ResolveDamageAsync(hitContext);
-            });
-        }
-        catch (Exception exception)
-        {
-            BangDreamLibCore.Logger.Error($"Async damage impact resolution error: {exception}");
+            return (reservation.Target, animation.Context);
         }
         finally
         {
-            ReleaseReservation(session, pending.Reservation);
+            ReleaseReservation(session, reservation);
         }
     }
 
-    private TargetReservation? ReplaceReservation(
-        CombatSession session,
-        ICombatState combatState,
-        PendingDamage pending,
-        Creature excludedTarget)
+    private static async Task ObserveAnimationAsync(AsyncDamageAnimationHandle animation, long sequenceId)
     {
-        ReleaseReservation(session, pending.Reservation);
-        var replacement = ReserveTarget(
-            session,
-            combatState,
-            pending.Request,
-            fixedTarget: null,
-            excludedTarget: excludedTarget,
-            sequenceId: pending.Reservation.SequenceId);
-        if (replacement != null)
-            pending.Reservation = replacement;
-        return replacement;
+        try
+        {
+            await animation.Completion;
+        }
+        catch (Exception exception)
+        {
+            BangDreamLibCore.Logger.Warn(
+                $"Detached async damage animation #{sequenceId} completion error: {exception}");
+        }
     }
 
-    private TargetReservation? ReserveTarget(
+    private static TargetReservation? ReserveTarget(
         CombatSession session,
         ICombatState combatState,
         AsyncDamageBatchRequest request,
         Creature? fixedTarget,
-        Creature? excludedTarget,
-        long? sequenceId = null)
+        Creature? excludedTarget)
     {
         lock (session.SyncRoot)
         {
@@ -350,7 +192,7 @@ public sealed class CombatAsyncDamageManager
                 {
                     target = fixedTarget;
                 }
-                else if (request.TargetPolicy != AsyncDamageTargetPolicy.RetargetOnInvalid)
+                else
                 {
                     return null;
                 }
@@ -364,20 +206,15 @@ public sealed class CombatAsyncDamageManager
                 if (candidates.Count == 0)
                     return null;
 
-                var selectable = candidates;
-                if (request.TargetPolicy != AsyncDamageTargetPolicy.AllowOverkill)
+                var selectable = candidates.Where(candidate =>
                 {
-                    selectable = candidates.Where(candidate =>
-                    {
-                        var targetContext = new AsyncDamageTargetContext(combatState, request, candidate);
-                        var capacity = Math.Max(0m, request.Effect.GetTargetEffectiveHealth(targetContext));
-                        session.ReservedDamage.TryGetValue(candidate, out var reservedDamage);
-                        return capacity - reservedDamage > 0m;
-                    }).ToList();
-
-                    if (selectable.Count == 0)
-                        selectable = candidates;
-                }
+                    var targetContext = new AsyncDamageTargetContext(combatState, request, candidate);
+                    var capacity = Math.Max(0m, request.Effect.GetTargetEffectiveHealth(targetContext));
+                    session.ReservedDamage.TryGetValue(candidate, out var reservedDamage);
+                    return capacity - reservedDamage > 0m;
+                }).ToList();
+                if (selectable.Count == 0)
+                    selectable = candidates;
 
                 target = request.Dealer.Player?.RunState.Rng.CombatTargets.NextItem(selectable);
             }
@@ -389,7 +226,7 @@ public sealed class CombatAsyncDamageManager
             var estimatedDamage = Math.Max(0m, request.Effect.EstimateDamage(context));
             session.ReservedDamage.TryGetValue(target, out var currentReservation);
             session.ReservedDamage[target] = currentReservation + estimatedDamage;
-            return new TargetReservation(target, estimatedDamage, sequenceId ?? session.NextSequenceId++);
+            return new TargetReservation(target, estimatedDamage, session.NextSequenceId++);
         }
     }
 
@@ -412,46 +249,9 @@ public sealed class CombatAsyncDamageManager
         }
     }
 
-    private static void RegisterBatch(CombatSession session)
-    {
-        lock (session.SyncRoot)
-        {
-            session.ActiveBatches++;
-        }
-    }
-
-    private static bool UnregisterBatch(CombatSession session)
-    {
-        lock (session.SyncRoot)
-        {
-            session.ActiveBatches = Math.Max(0, session.ActiveBatches - 1);
-            return session.ActiveBatches == 0;
-        }
-    }
-
-    private static bool HasActiveBatches(CombatSession session)
-    {
-        lock (session.SyncRoot)
-        {
-            return session.ActiveBatches > 0;
-        }
-    }
-
-    private static async Task CompleteCombatResolutionAsync(
-        CombatSession session,
-        ICombatState combatState,
-        AsyncDamageBatchRequest request)
-    {
-        await CombatEffectQueue.Shared.Enqueue(async () =>
-        {
-            if (!CanResolveCombat(combatState, request) || HasActiveBatches(session))
-                return;
-
-            await CombatManager.Instance.CheckWinCondition();
-        });
-    }
-
-    private static bool TryGetCombatState(AsyncDamageBatchRequest request, [MaybeNullWhen(false)] out ICombatState combatState)
+    private static bool TryGetCombatState(
+        AsyncDamageBatchRequest request,
+        [MaybeNullWhen(false)] out ICombatState combatState)
     {
         combatState = request.Dealer.CombatState;
         return combatState != null && CanResolveCombat(combatState, request);

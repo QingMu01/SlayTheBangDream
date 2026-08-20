@@ -88,6 +88,13 @@ internal sealed class MusicNoteAsyncDamageEffect(
             return;
 
         var damage = GetDamage(context.CombatState, context.Request, context.Target);
+
+#if DEBUG
+        // desync 对比日志：联机双端各自记录后 diff，SequenceId/目标/数值任一不一致即为分歧点
+        BangDreamLibCore.Logger.Info(
+            $"MusicNote #{context.SequenceId} chain={context.IsChain} target={context.Target} damage={damage}");
+#endif
+
         var results = await CreatureCmd.Damage(
             choiceContext: new BlockingPlayerChoiceContext(),
             target: context.Target,
@@ -153,6 +160,7 @@ internal sealed class MusicNoteAsyncDamageEffect(
             ModifyDamageHookType.All);
     }
 
+    // 除 CombatEnded 外一律视为 Triggered 结算：VFX 被取消或节点被移除时伤害不丢失。
     private static async Task<AsyncDamageAnimationResult> MapImpactResultAsync(Task<VfxResult> arrival)
     {
         var result = await arrival;
