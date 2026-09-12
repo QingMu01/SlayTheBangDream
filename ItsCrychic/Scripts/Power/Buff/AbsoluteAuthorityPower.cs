@@ -25,7 +25,7 @@ public class AbsoluteAuthorityPower : BandPowerModel
         ValueProp props,
         Creature? dealer, CardModel? cardSource)
     {
-        if (target == Owner && dealer != Owner && result.UnblockedDamage > 0)
+        if (target == Owner && result.UnblockedDamage > 0)
         {
             _willTriggerNextTurn = true;
         }

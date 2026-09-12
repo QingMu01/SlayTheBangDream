@@ -1,3 +1,5 @@
+using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
@@ -11,7 +13,7 @@ namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
 public class Improvisation() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget)
 {
-    private const int CustomCost = 1;
+    private const int CustomCost = 2;
     private const CardType CustomType = CardType.Skill;
     private const CardRarity CustomRarity = CardRarity.Uncommon;
     private const TargetType CustomTarget = TargetType.None;
@@ -22,11 +24,18 @@ public class Improvisation() : AbstractSakikoCard(CustomCost, CustomType, Custom
         BangDreamConst.Music
     ];
 
-    protected override IEnumerable<DynamicVar> CardVars => [];
+    public override bool GainsBlock => true;
+
+    protected override IEnumerable<DynamicVar> CardVars =>
+    [
+        QuickVar.Block.Create(13)
+    ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
         ArgumentNullException.ThrowIfNull(CombatState);
+
+        await CreatureCmd.GainBlock(Owner.Creature, DynamicVars.Block, play);
 
         var musicCards = new List<CardModel>();
         if (Owner.Character is IPerformableCharacter character && character.ExtraCardPool.AllCards.Any())
@@ -40,7 +49,9 @@ public class Improvisation() : AbstractSakikoCard(CustomCost, CustomType, Custom
                 .SelectMany(item => item.ExtraCardPool.AllCards));
         }
 
-        var cardList = CardFactory.FilterForCombat(musicCards);
+        var cardList = CardFactory.FilterForCombat(musicCards)
+            .Where(card => card is IPerformCard { IsInstant: true })
+            .ToList();
         var cardModel = Owner.RunState.Rng.CombatCardGeneration.NextItem(cardList);
         if (cardModel != null)
         {
@@ -51,6 +62,6 @@ public class Improvisation() : AbstractSakikoCard(CustomCost, CustomType, Custom
 
     protected override void OnUpgrade()
     {
-        EnergyCost.UpgradeBy(-1);
+        DynamicVars.Block.UpgradeValueBy(3);
     }
 }

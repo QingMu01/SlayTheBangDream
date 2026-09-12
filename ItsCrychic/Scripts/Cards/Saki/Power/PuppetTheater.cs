@@ -22,7 +22,7 @@ public class PuppetTheater() : AbstractSakikoCard(CustomCost, CustomType, Custom
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Buff.Create(4)
+        QuickVar.Buff.Create(5)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
@@ -33,6 +33,6 @@ public class PuppetTheater() : AbstractSakikoCard(CustomCost, CustomType, Custom
 
     protected override void OnUpgrade()
     {
-        QuickVar.Buff.GetVar(this).UpgradeValueBy(2);
+        QuickVar.Buff.GetVar(this).UpgradeValueBy(3);
     }
 }

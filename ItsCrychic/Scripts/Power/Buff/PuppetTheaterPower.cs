@@ -20,10 +20,11 @@ public class PuppetTheaterPower : BandPowerModel, ISubsideHookListener
         if (play.Card.Owner != Owner.Player || Owner.CombatState == null) return;
 
         Flash();
-        foreach (var enemy in Owner.CombatState.Enemies.Where(enemy => enemy.IsHittable))
+        var hittableCreatures = Owner.CombatState.Enemies.Where(enemy => enemy.IsHittable).ToList();
+        foreach (var enemy in hittableCreatures)
         {
-            await CreatureCmd.Damage(choiceContext, enemy,
-                new DamageVar(Amount, ValueProp.Unpowered | ValueProp.Unblockable | ValueProp.SkipHurtAnim), Owner);
+            var damage = new DamageVar(Amount, ValueProp.Unpowered | ValueProp.Unblockable | ValueProp.SkipHurtAnim);
+            await CreatureCmd.Damage(choiceContext, enemy, damage, Owner);
         }
     }
 }

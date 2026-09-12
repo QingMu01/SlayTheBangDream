@@ -1,4 +1,7 @@
 using BangDreamLib.Scripts.Utils;
+using BangDreamLib.Scripts.Utils.Infos;
+using ItsCrychic.Scripts.Power.Buff;
+using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
@@ -9,9 +12,7 @@ namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
 public class Face() : AbstractSakikoMusicCard(CardRarity.Uncommon, TargetType.None)
 {
-    private const int TargetLingered = 3;
-
-    public override bool IsInstant => !IsUpgraded;
+    public override bool IsInstant => true;
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
@@ -20,16 +21,17 @@ public class Face() : AbstractSakikoMusicCard(CardRarity.Uncommon, TargetType.No
 
     protected override IEnumerable<DynamicVar> CardVars => [];
 
-    public override async Task OnPerform(PlayerChoiceContext choiceContext)
+    public override async Task OnPerform(PlayerChoiceContext choiceContext, CardPerform perform)
     {
-        var current = SecondaryResourceCmd.Get(Owner, BangDreamConst.LingeredResource);
-        if (current < TargetLingered)
+        while (SecondaryResourceCmd.Get(Owner, BangDreamConst.LingeredResource) > 0)
         {
-            await SecondaryResourceCmd.Gain(Owner, BangDreamConst.LingeredResource, TargetLingered - current, this);
+            await SecondaryResourceCmd.Spend(Owner, BangDreamConst.LingeredResource, 1, this);
         }
-        else if (current > TargetLingered)
+
+        if (IsUpgraded)
         {
-            await SecondaryResourceCmd.Spend(Owner, BangDreamConst.LingeredResource, current - TargetLingered, this);
+            await PowerCmd.Apply<NextTurnLingeredPower>(choiceContext, Owner.Creature, 1,
+                Owner.Creature, this);
         }
     }
 

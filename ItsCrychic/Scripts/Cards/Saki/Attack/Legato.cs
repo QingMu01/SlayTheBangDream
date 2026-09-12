@@ -17,12 +17,12 @@ public class Legato() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity,
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.Lingered
+        BangDreamConst.PerformArea
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Damage.Create(4),
+        QuickVar.Damage.Create(5),
         ComputedDynamicVarHelper.CreateBaseVar("RepeatCount", 1m,
             ctx => ctx.IsInCombat()
                 ? BangDreamConst.PerformPile.GetPile(ctx.ActiveCard.Owner).Cards.Count + ctx.BaseValue

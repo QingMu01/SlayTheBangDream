@@ -1,5 +1,5 @@
+using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
-using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Relics;
 using MegaCrit.Sts2.Core.HoverTips;
@@ -25,7 +25,7 @@ public class SwordOfLord : AbstractSakikoRelic
             if (selectedCard != null)
             {
                 Flash();
-                await CardPileCmd.Add(selectedCard, BangDreamConst.PerformPile);
+                await Owner.AttachedData().PerformManager.AddInitialCard(selectedCard);
             }
         }
     }

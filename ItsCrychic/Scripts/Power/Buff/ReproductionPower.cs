@@ -28,7 +28,7 @@ public class ReproductionPower : BandPowerModel
         ValueProp props,
         Creature? dealer, CardModel? cardSource)
     {
-        if (dealer == Owner && props.HasFlag(ValueProp.Unpowered) && !props.HasFlag(ValueProp.Move) &&
+        if (dealer == Owner && !props.IsPoweredAttack() &&
             result.Receiver != Owner && result.TotalDamage + result.OverkillDamage > 0)
         {
             Flash();

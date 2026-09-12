@@ -1,5 +1,6 @@
-﻿using BangDreamLib.Scripts.Extensions;
-using BangDreamLib.Scripts.Interfaces.CardAugment;
+using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Utils;
+using ItsCrychic.Scripts.Power.Buff;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
@@ -7,20 +8,19 @@ using MegaCrit.Sts2.Core.Localization.DynamicVars;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
-public class DejaVu() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget),
-    ISubsideCard
+public class StringEmpowerment() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget)
 {
-    private const int CustomCost = 0;
+    private const int CustomCost = 2;
     private const CardType CustomType = CardType.Attack;
-    private const CardRarity CustomRarity = CardRarity.Common;
+    private const CardRarity CustomRarity = CardRarity.Uncommon;
     private const TargetType CustomTarget = TargetType.AnyEnemy;
 
-    public int LingeredResourceCost => 2;
+    protected override IEnumerable<CardKeyword> CardKeywords => [BangDreamConst.Lingered];
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Damage.Create(3),
-        QuickVar.Repeat.Create(2),
+        QuickVar.Damage.Create(15),
+        QuickVar.Energy.Create(1)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
@@ -29,23 +29,16 @@ public class DejaVu() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity,
 
         await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
             .FromCard(this, play)
-            .WithHitCount(DynamicVars.Repeat.IntValue)
             .Targeting(play.Target)
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
 
-        DynamicVars.Repeat.UpgradeValueBy(1m);
-        EnergyCost.AddThisCombat(1);
-    }
-
-    public Task OnSubside(PlayerChoiceContext choiceContext, CardPlay play)
-    {
-        EnergyCost.AddThisCombat(-1, true);
-        return Task.CompletedTask;
+        await PowerCmd.Apply<LingeredReductionEnergyPower>(choiceContext, Owner.Creature,
+            DynamicVars.Energy.IntValue, Owner.Creature, this);
     }
 
     protected override void OnUpgrade()
     {
-        DynamicVars.Damage.UpgradeValueBy(1m);
+        DynamicVars.Damage.UpgradeValueBy(3);
     }
 }

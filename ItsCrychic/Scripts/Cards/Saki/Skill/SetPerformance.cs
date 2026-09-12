@@ -36,7 +36,7 @@ public class SetPerformance() : AbstractSakikoCard(CustomCost, CustomType, Custo
     {
         await PowerCmd.Apply<IntangiblePower>(choiceContext, Owner.Creature, 1, Owner.Creature, this);
         await PowerCmd.Apply<MutedLingeredPower>(choiceContext, Owner.Creature,
-            DynamicVars.Cards.IntValue, Owner.Creature, this);
+            QuickVar.Buff.GetVar(this).IntValue, Owner.Creature, this);
     }
 
     protected override void OnUpgrade()

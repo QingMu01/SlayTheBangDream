@@ -10,7 +10,7 @@ namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
 public class DivineWrath() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget)
 {
-    private const int CustomCost = 1;
+    private const int CustomCost = 2;
     private const CardType CustomType = CardType.Attack;
     private const CardRarity CustomRarity = CardRarity.Uncommon;
     private const TargetType CustomTarget = TargetType.AnyEnemy;
@@ -22,7 +22,7 @@ public class DivineWrath() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Damage.Create(9)
+        QuickVar.Damage.Create(15)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
@@ -45,6 +45,6 @@ public class DivineWrath() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
 
     protected override void OnUpgrade()
     {
-        DynamicVars.Damage.UpgradeValueBy(3m);
+        DynamicVars.Damage.UpgradeValueBy(5m);
     }
 }

@@ -1,32 +1,46 @@
-using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Utils;
+using BangDreamLib.Scripts.Utils.Infos;
+using ItsCrychic.Scripts.Cards.Token;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using MegaCrit.Sts2.Core.Localization.DynamicVars;
+using MegaCrit.Sts2.Core.Models;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
 public class WonderfulWorld() : AbstractSakikoMusicCard(CardRarity.Uncommon, TargetType.None)
 {
-    protected override IEnumerable<DynamicVar> CardVars =>
+    public override bool IsInstant => IsUpgraded;
+
+    protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        QuickVar.Cards.Create(1)
+        CardKeyword.Exhaust
     ];
 
-    public override async Task OnPerform(PlayerChoiceContext choiceContext)
+    public override async Task OnPerform(PlayerChoiceContext choiceContext, CardPerform perform)
     {
-        ArgumentNullException.ThrowIfNull(Owner.PlayerCombatState);
-        var cardModel = Owner.RunState.Rng.CombatCardSelection.NextItem(Owner.PlayerCombatState.Hand.Cards);
-        if (cardModel != null)
+        ArgumentNullException.ThrowIfNull(CombatState);
+
+        var existingHope = Owner.PlayerCombatState!.AllCards
+            .Concat(BangDreamConst.ExtraDraw.GetPile(Owner).Cards)
+            .Concat(BangDreamConst.PerformPile.GetPile(Owner).Cards)
+            .Concat(PileType.Hand.GetPile(Owner).Cards)
+            .Where(card => card is Hope)
+            .Distinct()
+            .FirstOrDefault();
+
+        if (existingHope != null)
         {
-            var result = await CardCmd.TransformToRandom(cardModel, Owner.RunState.Rng.CombatCardGeneration);
-            if (result.success)
+            if (existingHope.Pile?.Type != PileType.Hand)
             {
-                if (IsUpgraded)
-                {
-                    result.cardAdded.AddKeyword(CardKeyword.Exhaust);
-                }
+                await CardPileCmd.Add(existingHope, PileType.Hand);
             }
+
+            existingHope.DynamicVars.Cards.BaseValue += 1;
+            return;
         }
+
+        var generatedCard = CombatState.CreateCard(ModelDb.Card<Hope>(), Owner);
+        await CardPileCmd.AddGeneratedCardToCombat(generatedCard, PileType.Hand, Owner);
     }
 }

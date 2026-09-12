@@ -1,6 +1,6 @@
-using BangDreamLib.Scripts.Commands;
 using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Interfaces.CardAugment;
+using BangDreamLib.Scripts.Mechanics.MusicNote;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -14,7 +14,7 @@ public class CrescentAwakening() : AbstractSakikoCard(CustomCost, CustomType, Cu
 {
     private const int CustomCost = 0;
     private const CardType CustomType = CardType.Skill;
-    private const CardRarity CustomRarity = CardRarity.Common;
+    private const CardRarity CustomRarity = CardRarity.Uncommon;
     private const TargetType CustomTarget = TargetType.None;
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [

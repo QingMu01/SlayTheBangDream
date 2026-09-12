@@ -1,4 +1,5 @@
 using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Utils.Infos;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Factories;
@@ -14,7 +15,7 @@ public class Sophie() : AbstractSakikoMusicCard(CardRarity.Uncommon, TargetType.
         QuickVar.Cards.Create(1)
     ];
 
-    public override async Task OnPerform(PlayerChoiceContext choiceContext)
+    public override async Task OnPerform(PlayerChoiceContext choiceContext, CardPerform perform)
     {
         ArgumentNullException.ThrowIfNull(CombatState);
         var powerCards = Owner.Character.CardPool.AllCards.Where(card => card.Type == CardType.Power).ToList();
@@ -23,11 +24,12 @@ public class Sophie() : AbstractSakikoMusicCard(CardRarity.Uncommon, TargetType.
         if (selectedCard != null)
         {
             var generatedCard = CombatState.CreateCard(selectedCard, Owner);
-            generatedCard.AddKeyword(CardKeyword.Ethereal);
-            if (IsUpgraded)
+            if (IsUpgraded && generatedCard.IsUpgradable)
             {
-                generatedCard.EnergyCost.AddThisTurn(-1, true);
+                CardCmd.Upgrade(generatedCard);
             }
+
+            generatedCard.AddKeyword(CardKeyword.Ethereal);
 
             await CardPileCmd.AddGeneratedCardToCombat(generatedCard, PileType.Hand, Owner);
         }

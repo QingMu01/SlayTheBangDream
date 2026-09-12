@@ -1,5 +1,6 @@
 using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Interfaces.GameHook;
+using BangDreamLib.Scripts.Utils.Infos;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.HoverTips;
@@ -22,7 +23,7 @@ public class AveMujica() : AbstractSakikoMusicCard(CustomRarity, CustomTarget), 
 
     protected override IEnumerable<DynamicVar> CardVars => [QuickVar.Repeat.Create(1)];
 
-    public override Task OnPerform(PlayerChoiceContext choiceContext)
+    public override Task OnPerform(PlayerChoiceContext choiceContext, CardPerform perform)
     {
         ArgumentNullException.ThrowIfNull(Owner.PlayerCombatState);
 

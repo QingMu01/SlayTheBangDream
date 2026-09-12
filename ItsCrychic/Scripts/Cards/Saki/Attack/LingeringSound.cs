@@ -8,6 +8,7 @@ using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models.Powers;
 using STS2RitsuLib.Combat.SecondaryResources;
+using STS2RitsuLib.Scaffolding.Characters;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
@@ -34,9 +35,15 @@ public class LingeringSound()
     protected override IEnumerable<DynamicVar> CardVars =>
     [
         QuickVar.Damage.Create(1),
-        ComputedDynamicVarHelper.CreateBaseVar("RepeatCount", 0m, ctx => ctx.IsInCombat()
-            ? SecondaryResourceCmd.Get(ctx.ActiveCard.Owner, BangDreamConst.LingeredResource)
-            : ctx.BaseValue)
+        ComputedDynamicVarHelper.CreateBaseVar("RepeatAttack", 1, ctx =>
+        {
+            if (ctx.IsInCombat())
+            {
+                return ctx.BaseValue + ctx.ActiveCard.Owner.GetEnergy();
+            }
+
+            return ctx.BaseValue;
+        })
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
@@ -44,15 +51,12 @@ public class LingeringSound()
         ArgumentNullException.ThrowIfNull(play.Target);
 
         var computedValue = play.SecondaryResources().Value(BangDreamConst.LingeredResource);
-        if (computedValue > 0)
-        {
-            await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
-                .FromCard(this, play)
-                .Targeting(play.Target)
-                .WithHitCount(computedValue)
-                .WithHitFx("vfx/vfx_attack_slash")
-                .Execute(choiceContext);
-        }
+        await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
+            .FromCard(this, play)
+            .Targeting(play.Target)
+            .WithHitCount(1 + computedValue)
+            .WithHitFx("vfx/vfx_attack_slash")
+            .Execute(choiceContext);
     }
 
     public async Task OnSubside(PlayerChoiceContext choiceContext, CardPlay play)

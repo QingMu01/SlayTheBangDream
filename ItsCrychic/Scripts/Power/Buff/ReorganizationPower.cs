@@ -1,5 +1,5 @@
-using BangDreamLib.Scripts.Commands;
 using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Mechanics.ExtraDeck;
 using BangDreamLib.Scripts.Powers;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -41,7 +41,7 @@ public class ReorganizationPower : BandPowerModel
             Flash();
             var card = player.RunState.Rng.CombatCardSelection.NextItem(cards);
             if (card == null) break;
-            await CardPileCmd.Add(card, PileType.Discard);
+            await CardCmd.Discard(choiceContext, card);
         }
     }
 }

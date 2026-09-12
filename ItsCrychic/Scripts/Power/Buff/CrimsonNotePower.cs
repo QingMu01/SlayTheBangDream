@@ -1,4 +1,4 @@
-using BangDreamLib.Scripts.Commands;
+using BangDreamLib.Scripts.Mechanics.MusicNote;
 using BangDreamLib.Scripts.Powers;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Powers;
@@ -17,7 +17,7 @@ public class CrimsonNotePower : BandPowerModel
     public override async Task AfterDamageReceived(PlayerChoiceContext choiceContext, Creature target,
         DamageResult result, ValueProp props, Creature? dealer, CardModel? cardSource)
     {
-        if (target == Owner && dealer != Owner && result.UnblockedDamage >= 0)
+        if (target == Owner && dealer != Owner && props.IsPoweredAttack())
         {
             await MusicNoteCmd.FromPower(this, Amount);
         }

@@ -1,5 +1,6 @@
 using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
+using BangDreamLib.Scripts.Utils.Infos;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
@@ -24,7 +25,7 @@ public class SymbolIii() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
         QuickVar.Block.Create(10)
     ];
 
-    public override async Task OnPerform(PlayerChoiceContext choiceContext)
+    public override async Task OnPerform(PlayerChoiceContext choiceContext, CardPerform perform)
     {
         await CreatureCmd.GainBlock(Owner.Creature, DynamicVars.Block, null);
     }

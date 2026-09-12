@@ -1,4 +1,5 @@
 using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Utils.Infos;
 using ItsCrychic.Scripts.Character;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -11,12 +12,19 @@ namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
 public class FutatsuNoTsuki() : AbstractSakikoMusicCard(CardRarity.Rare, TargetType.None)
 {
+    public override bool IsInstant => true;
+
+    protected override IEnumerable<CardKeyword> CardKeywords =>
+    [
+        CardKeyword.Exhaust
+    ];
+
     protected override IEnumerable<DynamicVar> CardVars =>
     [
         QuickVar.Cards.Create(1)
     ];
 
-    public override async Task OnPerform(PlayerChoiceContext choiceContext)
+    public override async Task OnPerform(PlayerChoiceContext choiceContext, CardPerform perform)
     {
         ArgumentNullException.ThrowIfNull(CombatState);
 

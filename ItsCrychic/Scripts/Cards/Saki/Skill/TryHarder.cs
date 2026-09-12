@@ -1,11 +1,12 @@
 using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Interfaces.CardAugment;
+using BangDreamLib.Scripts.Utils;
 using ItsCrychic.Scripts.Cards.Token;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.HoverTips;
-using MegaCrit.Sts2.Core.Localization.DynamicVars;
+using MegaCrit.Sts2.Core.Models;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
@@ -16,21 +17,12 @@ public class TryHarder() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
     private const CardRarity CustomRarity = CardRarity.Rare;
     private const TargetType CustomTarget = TargetType.None;
 
-    protected override IEnumerable<CardKeyword> CardKeywords =>
-    [
-        CardKeyword.Exhaust
-    ];
+    protected override IEnumerable<CardKeyword> CardKeywords => [CardKeyword.Exhaust];
 
     protected override IEnumerable<IHoverTip> CardHoverTips =>
     [
-        HoverTipFactory.FromCard<GiantNote>(IsUpgraded)
+        HoverTipFactory.FromCard<BasicScale>(IsUpgraded)
     ];
-
-    protected override IEnumerable<DynamicVar> CardVars =>
-    [
-        QuickVar.Buff.Create(1)
-    ];
-
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
@@ -38,35 +30,26 @@ public class TryHarder() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
         ArgumentNullException.ThrowIfNull(Owner.PlayerCombatState);
 
         var manager = Owner.AttachedData().PerformManager;
-        manager.AddCapacity(QuickVar.Buff.GetVar(this).IntValue);
+        manager.AddCapacity(Math.Max(0, 7 - manager.Capacity));
 
         var musicCards = Owner.PlayerCombatState.AllCards
-            .Where(card => card is IPerformCard)
+            .Where(card => card.Pile?.Type != PileType.Exhaust)
+            .Concat(manager.PerformPile.Cards)
+            .Concat(BangDreamConst.ExtraDraw.GetPile(Owner).Cards)
+            .OfType<IPerformCard>()
+            .Cast<CardModel>()
+            .Distinct()
             .ToList();
 
-        foreach (var card in musicCards)
+        var needAdd = new List<CardModel>();
+        foreach (var musicCard in musicCards)
         {
-            var giantNote = CombatState.CreateCard<GiantNote>(Owner);
-            if (IsUpgraded) CardCmd.Upgrade(giantNote);
-            if (manager.PerformPile.Cards.Contains(card))
-            {
-                var originalContext = manager.CardContexts.GetOrCreate(card);
-                var replacementContext = manager.CardContexts.GetOrCreate(giantNote);
-                replacementContext.Manager = manager;
-                replacementContext.SlotIndex = originalContext.SlotIndex;
-                var result = await CardCmd.Transform(card, giantNote);
-                if (result is not { success: true })
-                    manager.CardContexts.Remove(giantNote);
-            }
-            else
-            {
-                await CardCmd.Transform(card, giantNote);
-            }
+            await CardPileCmd.Add(musicCard, PileType.Exhaust);
+            var scale = CombatState.CreateCard<BasicScale>(Owner);
+            if (IsUpgraded) CardCmd.Upgrade(scale);
+            needAdd.Add(scale);
         }
-    }
 
-    protected override void OnUpgrade()
-    {
-        QuickVar.Buff.GetVar(this).UpgradeValueBy(1);
+        await CardPileCmd.AddGeneratedCardsToCombat(needAdd, BangDreamConst.PerformPile, Owner);
     }
 }

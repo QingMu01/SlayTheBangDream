@@ -1,5 +1,6 @@
 using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
+using BangDreamLib.Scripts.Utils.Infos;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
@@ -31,7 +32,7 @@ public class SymbolI() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
         QuickVar.Buff.Create(5)
     ];
 
-    public override async Task OnPerform(PlayerChoiceContext choiceContext)
+    public override async Task OnPerform(PlayerChoiceContext choiceContext, CardPerform perform)
     {
         await PowerCmd.Apply<VigorPower>(choiceContext, Owner.Creature, QuickVar.Buff.GetVar(this).BaseValue,
             Owner.Creature, this);

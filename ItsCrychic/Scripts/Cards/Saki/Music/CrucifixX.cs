@@ -1,62 +1,41 @@
 using BangDreamLib.Scripts.Extensions;
-using BangDreamLib.Scripts.Interfaces.GameHook;
 using BangDreamLib.Scripts.Utils.Infos;
+using ItsCrychic.Scripts.Power.Debuff;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using MegaCrit.Sts2.Core.Models;
-using MegaCrit.Sts2.Core.Models.Powers;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
-public class CrucifixX() : AbstractSakikoMusicCard(CardRarity.Uncommon, TargetType.None), IPerformHookListener
+public class CrucifixX() : AbstractSakikoMusicCard(CardRarity.Uncommon, TargetType.None)
 {
-    private bool _isRepeatingSubsidePerform;
+    public override bool IsInstant => true;
 
     protected override IEnumerable<IHoverTip> CardHoverTips =>
     [
-        HoverTipFactory.FromPower<VulnerablePower>(),
-        HoverTipFactory.FromPower<WeakPower>()
+        HoverTipFactory.FromPower<CrucifixXPower>()
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Buff.Create(1)
+        QuickVar.Buff.Create(10)
     ];
 
-    public override async Task OnPerform(PlayerChoiceContext choiceContext)
+    public override async Task OnPerform(PlayerChoiceContext choiceContext, CardPerform perform)
     {
         ArgumentNullException.ThrowIfNull(CombatState);
 
-        var targets = IsUpgraded
-            ? CombatState.HittableEnemies.ToList()
-            : Owner.RunState.Rng.CombatTargets.NextItem(CombatState.HittableEnemies) is { } randomTarget
-                ? [randomTarget]
-                : [];
-        var buff = QuickVar.Buff.GetVar(this);
-        foreach (var target in targets)
+        foreach (var target in CombatState.HittableEnemies)
         {
-            await PowerCmd.Apply<VulnerablePower>(choiceContext, target, buff.IntValue,
-                Owner.Creature, this);
-            await PowerCmd.Apply<WeakPower>(choiceContext, target, buff.IntValue,
-                Owner.Creature, this);
+            await PowerCmd.Apply<CrucifixXPower>(choiceContext, target,
+                QuickVar.Buff.GetVar(this).BaseValue, Owner.Creature, this);
         }
     }
 
-    public async Task OnCardPerform(PlayerChoiceContext choiceContext, PerformContext ctx, CardModel cardModel)
+    protected override void OnUpgrade()
     {
-        if (cardModel != this || !ctx.IsSubsideTriggered || _isRepeatingSubsidePerform) return;
-
-        _isRepeatingSubsidePerform = true;
-        try
-        {
-            await Owner.AttachedData().PerformManager.PerformCard(this);
-        }
-        finally
-        {
-            _isRepeatingSubsidePerform = false;
-        }
+        QuickVar.Buff.GetVar(this).UpgradeValueBy(10);
     }
 }

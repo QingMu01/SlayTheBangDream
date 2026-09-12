@@ -1,8 +1,10 @@
 using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Utils;
+using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
+using MegaCrit.Sts2.Core.Models.Powers;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
@@ -35,10 +37,13 @@ public class Rehearsal() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
         {
             await Owner.AttachedData().PerformManager.PerformCard(cardModel);
         }
+
+        await PowerCmd.Apply<DrawCardsNextTurnPower>(choiceContext, Owner.Creature,
+            DynamicVars.Cards.IntValue, Owner.Creature, this);
     }
 
     protected override void OnUpgrade()
     {
-        AddKeyword(CardKeyword.Innate);
+        DynamicVars.Cards.UpgradeValueBy(1);
     }
 }

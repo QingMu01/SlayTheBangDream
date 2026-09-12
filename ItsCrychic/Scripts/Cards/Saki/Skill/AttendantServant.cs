@@ -25,18 +25,22 @@ public class AttendantServant() : AbstractSakikoCard(CustomCost, CustomType, Cus
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        var selectedCard = Owner.RunState.Rng.CombatCardSelection.NextItem(Owner.PlayerCombatState?.Hand.Cards ?? []);
-        if (selectedCard != null)
+        var handCards = Owner.PlayerCombatState?.Hand.Cards.Where(card => card is not SakikoShield);
+        if (handCards != null)
         {
-            var transformResult = await CardCmd.TransformTo<SakikoShield>(selectedCard);
-            if (IsUpgraded && transformResult is { success: true })
+            var selectedCard = Owner.RunState.Rng.CombatCardSelection.NextItem(handCards);
+            if (selectedCard != null)
             {
-                CardCmd.Upgrade(transformResult.Value.cardAdded);
-            }
+                var transformResult = await CardCmd.TransformTo<SakikoShield>(selectedCard);
+                if (IsUpgraded && transformResult is { success: true })
+                {
+                    CardCmd.Upgrade(transformResult.Value.cardAdded);
+                }
 
-            if (selectedCard.DeckVersion == null)
-            {
-                await CardPileCmd.Add(this, PileType.Hand);
+                if (selectedCard.DeckVersion == null)
+                {
+                    await CardPileCmd.Add(this, PileType.Hand);
+                }
             }
         }
     }

@@ -7,8 +7,5 @@
   "ITS_CRYCHIC_RELIC_ROLAND_KEYBOARD.flavor": "",
   "ITS_CRYCHIC_RELIC_SWORD_OF_LORD.title": "君王之剑",
   "ITS_CRYCHIC_RELIC_SWORD_OF_LORD.description": "战斗开始时，随机将一张你[gold]曲库[/gold]的牌放入[gold]歌单[/gold]。",
-  "ITS_CRYCHIC_RELIC_SWORD_OF_LORD.flavor": "",
-  "ITS_CRYCHIC_RELIC_ANON_CHAN.title": "爱音的信物",
-  "ITS_CRYCHIC_RELIC_ANON_CHAN.description": "[color=#FF8899]小爱音[/color]会在战斗中陪伴你。（只是陪伴！）",
-  "ITS_CRYCHIC_RELIC_ANON_CHAN.flavor": ""
+  "ITS_CRYCHIC_RELIC_SWORD_OF_LORD.flavor": ""
 }

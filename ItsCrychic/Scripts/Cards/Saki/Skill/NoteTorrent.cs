@@ -1,5 +1,5 @@
-using BangDreamLib.Scripts.Commands;
 using BangDreamLib.Scripts.Interfaces.CardAugment;
+using BangDreamLib.Scripts.Mechanics.MusicNote;
 using BangDreamLib.Scripts.Utils;
 using ItsCrychic.Scripts.Character;
 using MegaCrit.Sts2.Core.Entities.Cards;

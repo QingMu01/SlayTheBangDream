@@ -1,4 +1,3 @@
-using BangDreamLib.Scripts.Commands;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
@@ -20,27 +19,24 @@ public class Tremolo() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        new DamageVar(7m, ValueProp.Move)
+        new DamageVar(5m, ValueProp.Move)
     ];
 
     private readonly List<Creature> _enemiesSnapshot = [];
-    private readonly HashSet<Creature> _hitEnemies = [];
+    private bool _isFinalBlast;
 
-    public async Task BeforeAttackHit(AttackHitContext context)
+    public Task BeforeAttackHit(AttackHitContext context)
     {
-        if (context.CardSource == this)
+        if (context.CardSource == this && !_isFinalBlast)
         {
             var nextTarget = GetNextTarget(_enemiesSnapshot, context.HitIndex);
             if (nextTarget != null)
             {
-                if (_hitEnemies.Add(nextTarget))
-                {
-                    await ExtraPileCmd.Draw(context.ChoiceContext, 1, Owner);
-                }
-
                 context.Targets = new List<Creature> { nextTarget };
             }
         }
+
+        return Task.CompletedTask;
     }
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
@@ -56,12 +52,31 @@ public class Tremolo() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity
 
             if (_enemiesSnapshot.Count > 0)
             {
-                await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
+                var attack = await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
                     .FromCard(this, play)
                     .TargetingAllOpponents(CombatState)
                     .WithHitCount(hitCount)
                     .WithHitFx("vfx/vfx_attack_slash")
                     .Execute(choiceContext);
+
+                var unblockedDamage = attack.Results.SelectMany(results => results)
+                    .Sum(result => result.UnblockedDamage);
+                if (unblockedDamage > 0)
+                {
+                    _isFinalBlast = true;
+                    try
+                    {
+                        await DamageCmd.Attack(unblockedDamage)
+                            .FromCard(this, play)
+                            .TargetingAllOpponents(CombatState)
+                            .WithHitFx("vfx/vfx_attack_slash")
+                            .Execute(choiceContext);
+                    }
+                    finally
+                    {
+                        _isFinalBlast = false;
+                    }
+                }
             }
         }
     }
@@ -87,6 +102,7 @@ public class Tremolo() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity
             currentIndex %= enemies.Count;
             if (enemies[currentIndex].IsHittable)
                 return enemies[currentIndex];
+            currentIndex++;
             searchCount++;
         }
 

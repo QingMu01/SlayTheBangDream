@@ -17,7 +17,8 @@ public class Audition() : AbstractSakikoCard(CustomCost, CustomType, CustomRarit
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.PerformArea
+        BangDreamConst.PerformArea,
+        BangDreamConst.Music
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>

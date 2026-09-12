@@ -9,4 +9,7 @@ namespace ItsCrychic.Scripts.Cards.Mutsumi;
 public abstract class AbstractMutsumiMusicCard(int baseCost, CardRarity rarity, TargetType target)
     : MusicCardModel(baseCost, rarity, target)
 {
+    protected AbstractMutsumiMusicCard(CardRarity rarity, TargetType target) : this(0, rarity, target)
+    {
+    }
 }

@@ -1,6 +1,7 @@
 using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Utils;
+using ItsCrychic.Scripts.Power.Buff;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
@@ -8,7 +9,7 @@ using MegaCrit.Sts2.Core.Localization.DynamicVars;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
-public class BitterChoice()
+public class RewindImpact()
     : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget), ISubsideCard
 {
     private const int CustomCost = 2;
@@ -20,15 +21,14 @@ public class BitterChoice()
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.Lingered
+        BangDreamConst.Lingered,
+        BangDreamConst.PerformArea
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Damage.Create(20)
+        QuickVar.Damage.Create(14)
     ];
-
-    private bool _isSubside;
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
@@ -39,23 +39,15 @@ public class BitterChoice()
             .Targeting(play.Target)
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
+
+        var cards = Owner.AttachedData().PerformManager.PerformPile.Cards.ToList();
+        await CardPileCmd.Add(cards, BangDreamConst.ExtraDraw, CardPilePosition.Random);
     }
 
     public Task OnSubside(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        _isSubside = true;
-        return Task.CompletedTask;
-    }
-
-    public override async Task AfterCardPlayedLate(PlayerChoiceContext choiceContext, CardPlay play)
-    {
-        if (!_isSubside)
-        {
-            var cards = Owner.AttachedData().PerformManager.PerformPile.Cards.ToList();
-            await CardPileCmd.Add(cards, BangDreamConst.ExtraDraw, CardPilePosition.Random);
-        }
-
-        _isSubside = false;
+        return PowerCmd.Apply<NextTurnLingeredPower>(choiceContext, Owner.Creature, 18,
+            Owner.Creature, this);
     }
 
     protected override void OnUpgrade()

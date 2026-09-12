@@ -19,6 +19,11 @@ public class PathDependence() : AbstractSakikoCard(CustomCost, CustomType, Custo
 
     public override bool GainsBlock => true;
 
+    protected override IEnumerable<CardKeyword> CardKeywords =>
+    [
+        BangDreamConst.PerformArea
+    ];
+
     protected override IEnumerable<IHoverTip> CardHoverTips =>
     [
         HoverTipFactory.FromPower<DexterityPower>()

@@ -36,12 +36,14 @@ public class MemoryPuzzle() : BandCardModel(CustomCost, CustomType, CustomRarity
     {
         await CreatureCmd.GainBlock(Owner.Creature, DynamicVars.Block, play);
 
-        await SecondaryResourceCmd.Gain(Owner, BangDreamConst.LingeredResource,
+        await SecondaryResourceCmd.Spend(Owner, BangDreamConst.LingeredResource,
             QuickVar.LingeredResource.GetVar(this).IntValue, this);
 
-        if (IsUpgraded)
-        {
-            await CardPileCmd.Draw(choiceContext, DynamicVars.Cards.BaseValue, Owner);
-        }
+        await CardPileCmd.Draw(choiceContext, DynamicVars.Cards.BaseValue, Owner);
+    }
+
+    protected override void OnUpgrade()
+    {
+        DynamicVars.Block.UpgradeValueBy(2);
     }
 }

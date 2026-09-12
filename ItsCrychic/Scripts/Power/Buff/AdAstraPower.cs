@@ -5,7 +5,6 @@ using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Powers;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using MegaCrit.Sts2.Core.Models;
 
 namespace ItsCrychic.Scripts.Power.Buff;
 
@@ -22,9 +21,9 @@ public class AdAstraPower : BandPowerModel, IPerformHookListener, IMusicNoteModi
         await PowerCmd.Apply<NextShotNoteIncreasePower>(choiceContext, Owner, Amount, Owner, null);
     }
 
-    public async Task OnCardPerform(PlayerChoiceContext choiceContext, PerformContext ctx, CardModel cardModel)
+    public async Task OnCardPerform(PlayerChoiceContext choiceContext, CardPerform perform)
     {
-        if (cardModel.Owner != Owner.Player) return;
+        if (perform.Card.Owner != Owner.Player) return;
 
         await PowerCmd.Apply<NextShotNoteIncreasePower>(choiceContext, Owner, Amount, Owner, null);
     }

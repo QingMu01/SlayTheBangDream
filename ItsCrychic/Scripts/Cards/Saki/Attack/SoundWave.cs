@@ -1,5 +1,7 @@
 using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Interfaces.GameHook;
 using BangDreamLib.Scripts.Utils;
+using BangDreamLib.Scripts.Utils.Infos;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
@@ -8,12 +10,14 @@ using MegaCrit.Sts2.Core.Models;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
-public class SoundWave() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget)
+public class SoundWave() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget), IPerformHookListener
 {
     private const int CustomCost = 4;
     private const CardType CustomType = CardType.Attack;
     private const CardRarity CustomRarity = CardRarity.Uncommon;
     private const TargetType CustomTarget = TargetType.AllEnemies;
+
+    private int _performDiscount;
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
@@ -27,6 +31,8 @@ public class SoundWave() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
+        _performDiscount = 0;
+
         ArgumentNullException.ThrowIfNull(CombatState);
 
         await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
@@ -41,6 +47,12 @@ public class SoundWave() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
         DynamicVars.Damage.UpgradeValueBy(4m);
     }
 
+    public Task OnCardPerform(PlayerChoiceContext choiceContext, CardPerform perform)
+    {
+        _performDiscount++;
+        return Task.CompletedTask;
+    }
+
     public override bool TryModifyEnergyCostInCombat(CardModel card, decimal originalCost, out decimal modifiedCost)
     {
         if (card != this)
@@ -49,8 +61,7 @@ public class SoundWave() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
             return false;
         }
 
-        var performCardCount = BangDreamConst.PerformPile.GetPile(Owner).Cards.Count;
-        modifiedCost = Math.Max(0m, originalCost - performCardCount);
+        modifiedCost = Math.Max(0m, originalCost - _performDiscount);
         return modifiedCost != originalCost;
     }
 }

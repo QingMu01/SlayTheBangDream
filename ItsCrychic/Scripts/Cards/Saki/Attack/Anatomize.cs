@@ -9,16 +9,14 @@ namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
 public class Anatomize() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget)
 {
-    private const int CustomCost = 2;
+    private const int CustomCost = 1;
     private const CardType CustomType = CardType.Attack;
     private const CardRarity CustomRarity = CardRarity.Rare;
     private const TargetType CustomTarget = TargetType.AnyEnemy;
 
-    protected override IEnumerable<CardKeyword> CardKeywords => [CardKeyword.Exhaust];
-
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        ComputedDynamicVarHelper.CreateDamageVar("CalcDamage", 18m, ctx =>
+        ComputedDynamicVarHelper.CreateDamageVar("CalcDamage", 12m, ctx =>
         {
             if (ctx.IsInCombat() && ctx.Target != null)
             {
@@ -33,7 +31,7 @@ public class Anatomize() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
     {
         ArgumentNullException.ThrowIfNull(play.Target);
 
-        await DamageCmd.Attack(DynamicVars.ComputedValue("CalcDamage"))
+        await DamageCmd.Attack(DynamicVars.ComputedValue("CalcDamage", play.Target))
             .FromCard(this, play)
             .Targeting(play.Target)
             .WithHitFx("vfx/vfx_attack_slash")
@@ -42,6 +40,6 @@ public class Anatomize() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
 
     protected override void OnUpgrade()
     {
-        DynamicVars["CalcDamage"].UpgradeValueBy(8m);
+        DynamicVars["CalcDamage"].UpgradeValueBy(4m);
     }
 }

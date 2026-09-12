@@ -43,6 +43,6 @@ public class TouchKeyShadowless() : AbstractSakikoCard(CustomCost, CustomType, C
 
     protected override void OnUpgrade()
     {
-        DynamicVars.Damage.UpgradeValueBy(3m);
+        DynamicVars.Damage.UpgradeValueBy(2m);
     }
 }

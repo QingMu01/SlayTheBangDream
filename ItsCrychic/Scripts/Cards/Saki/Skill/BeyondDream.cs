@@ -10,7 +10,7 @@ namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
 public class BeyondDream() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget)
 {
-    private const int CustomCost = 0;
+    private const int CustomCost = 1;
     private const CardType CustomType = CardType.Skill;
     private const CardRarity CustomRarity = CardRarity.Rare;
     private const TargetType CustomTarget = TargetType.Self;
@@ -76,13 +76,12 @@ public class BeyondDream() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
 
     private IEnumerable<CardModel>? GetCandidates()
     {
-        if (IsMutable && Owner is { RunState: not null })
+        if (BangDreamTools.CardIsInCombat(this))
         {
             return Owner.RunState.MapPointHistory
                 .Reverse()
                 .SelectMany(act => act.Reverse())
-                .Where(mapPoint => mapPoint.HasRoomOfType(RoomType.Monster) || mapPoint.HasRoomOfType(RoomType.Elite) ||
-                                   mapPoint.HasRoomOfType(RoomType.Boss))
+                .Where(mapPoint => mapPoint.HasRoomOfType(RoomType.Monster) || mapPoint.HasRoomOfType(RoomType.Elite) || mapPoint.HasRoomOfType(RoomType.Boss))
                 .Select(entries => entries.GetEntry(Owner.NetId).CardChoices)
                 .FirstOrDefault(choices => choices.Count > 0)?
                 .Where(entry => !entry.wasPicked && entry.Card.Id != null)

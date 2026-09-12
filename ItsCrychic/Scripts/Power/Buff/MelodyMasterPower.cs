@@ -4,7 +4,6 @@ using BangDreamLib.Scripts.Utils.Infos;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Powers;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using MegaCrit.Sts2.Core.Models;
 
 namespace ItsCrychic.Scripts.Power.Buff;
 
@@ -14,9 +13,9 @@ public class MelodyMasterPower : BandPowerModel, IPerformHookListener
 
     public override PowerStackType StackType => PowerStackType.Counter;
 
-    public async Task OnCardPerform(PlayerChoiceContext choiceContext, PerformContext ctx, CardModel cardModel)
+    public async Task OnCardPerform(PlayerChoiceContext choiceContext, CardPerform perform)
     {
-        if (cardModel.Owner != Owner.Player) return;
+        if (perform.Card.Owner != Owner.Player) return;
 
         Flash();
         await CardPileCmd.Draw(choiceContext, Amount, Owner.Player);

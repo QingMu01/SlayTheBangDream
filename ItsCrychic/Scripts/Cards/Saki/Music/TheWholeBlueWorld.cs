@@ -1,4 +1,5 @@
 using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Utils.Infos;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
@@ -13,20 +14,17 @@ public class TheWholeBlueWorld() : AbstractSakikoMusicCard(CardRarity.Uncommon, 
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Block.Create(3),
-        QuickVar.Repeat.Create(2)
+        QuickVar.Repeat.Create(5)
     ];
 
-    public override async Task OnPerform(PlayerChoiceContext choiceContext)
+    public override async Task OnPerform(PlayerChoiceContext choiceContext, CardPerform perform)
     {
-        await CreatureCmd.GainBlock(Owner.Creature, DynamicVars.Block, null);
         await PowerCmd.Apply<BlockNextTurnPower>(choiceContext, Owner.Creature,
             DynamicVars.Repeat.IntValue, Owner.Creature, this);
     }
 
     protected override void OnUpgrade()
     {
-        DynamicVars.Block.UpgradeValueBy(1);
-        DynamicVars.Repeat.UpgradeValueBy(1);
+        DynamicVars.Repeat.UpgradeValueBy(2);
     }
 }

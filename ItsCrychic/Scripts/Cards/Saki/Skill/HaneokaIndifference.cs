@@ -33,20 +33,22 @@ public class HaneokaIndifference() : AbstractSakikoCard(CustomCost, CustomType, 
 
         await CreatureCmd.GainBlock(Owner.Creature, DynamicVars.Block, play);
 
-        var selectedCards = await CardSelectCmd.FromCombatPile(choiceContext,
-            BangDreamConst.PerformPile.GetPile(Owner),
+        var pileCards = PileType.Draw.GetPile(Owner).Cards.ToList();
+        if (IsUpgraded)
+        {
+            pileCards.AddRange(BangDreamConst.ExtraDeck.GetPile(Owner).Cards.ToList());
+        }
+
+        var selectedCards = await CardSelectCmd.FromSimpleGrid(choiceContext,
+            pileCards,
             Owner,
-            CardSelectorPrompt.ToHand.GetLimitedPrefs(DynamicVars.Cards.IntValue, reqConfirm: true)
+            CardSelectorPrompt.ToHand.GetFixedPrefs(DynamicVars.Cards.IntValue)
         );
 
         foreach (var selectedCard in selectedCards)
         {
-            await CardPileCmd.Add(selectedCard, PileType.Hand);
+            var cloneCard = CombatState.RunState.CloneCard(selectedCard.ToMutable());
+            await CardPileCmd.AddGeneratedCardToCombat(cloneCard, PileType.Hand, Owner);
         }
-    }
-
-    protected override void OnUpgrade()
-    {
-        DynamicVars.Cards.UpgradeValueBy(1m);
     }
 }

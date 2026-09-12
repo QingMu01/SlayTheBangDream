@@ -12,7 +12,7 @@ public class SetTheStage() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
 {
     private const int CustomCost = 1;
     private const CardType CustomType = CardType.Skill;
-    private const CardRarity CustomRarity = CardRarity.Common;
+    private const CardRarity CustomRarity = CardRarity.Uncommon;
     private static readonly TargetType CustomTarget = CustomTargetType.Anyone;
 
     protected override IEnumerable<IHoverTip> CardHoverTips =>

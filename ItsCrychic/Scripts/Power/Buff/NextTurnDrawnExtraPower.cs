@@ -1,4 +1,4 @@
-﻿using BangDreamLib.Scripts.Commands;
+﻿using BangDreamLib.Scripts.Mechanics.ExtraDeck;
 using BangDreamLib.Scripts.Powers;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Players;

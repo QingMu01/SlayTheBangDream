@@ -1,4 +1,5 @@
 using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -14,25 +15,11 @@ public class FinishTimes() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
     private const CardRarity CustomRarity = CardRarity.Rare;
     private const TargetType CustomTarget = TargetType.AnyEnemy;
 
-    protected override IEnumerable<CardKeyword> CardKeywords =>
-    [
-        BangDreamConst.PerformArea
-    ];
+    protected override IEnumerable<CardKeyword> CardKeywords => [BangDreamConst.PerformArea];
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        ComputedDynamicVarHelper.CreateDamageVar("CalcDamage", 7m, ctx =>
-        {
-            if (ctx.IsInCombat())
-            {
-                var performanceCards = BangDreamConst.PerformPile.GetPile(ctx.ActiveCard.Owner).Cards.ToList();
-                if (performanceCards.GroupBy(card => card.Type).Any(group => group.Count() >= 3))
-                {
-                    return ctx.BaseValue * 2m;
-                }
-            }
-            return ctx.BaseValue;
-        }),
+        QuickVar.Damage.Create(7),
         QuickVar.Repeat.Create(3)
     ];
 
@@ -40,7 +27,23 @@ public class FinishTimes() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
     {
         ArgumentNullException.ThrowIfNull(play.Target);
 
-        await DamageCmd.Attack(DynamicVars.ComputedValue("CalcDamage"))
+        var performPile = BangDreamConst.PerformPile.GetPile(Owner);
+        var hasBonus = performPile.Cards.Count >= 3;
+        if (hasBonus)
+        {
+            var discarded = Owner.RunState.Rng.CombatCardSelection.NextItem(performPile.Cards);
+            if (discarded is IPerformCard performCard)
+            {
+                var location = performCard.StopPerformanceNextPile();
+                await CardPileCmd.Add(discarded, location.pileType, location.position);
+            }
+            else if (discarded != null)
+            {
+                await CardPileCmd.Add(discarded, PileType.Discard);
+            }
+        }
+
+        await DamageCmd.Attack(DynamicVars.Damage.BaseValue * (hasBonus ? 2 : 1))
             .FromCard(this, play)
             .WithHitCount(DynamicVars.Repeat.IntValue)
             .Targeting(play.Target)

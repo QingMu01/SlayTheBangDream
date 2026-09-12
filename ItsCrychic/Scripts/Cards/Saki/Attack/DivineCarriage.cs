@@ -4,6 +4,8 @@ using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
+using STS2RitsuLib.Cards.DynamicVars;
+using STS2RitsuLib.Combat.SecondaryResources;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
@@ -14,19 +16,26 @@ public class DivineCarriage() : AbstractSakikoCard(CustomCost, CustomType, Custo
     private const CardRarity CustomRarity = CardRarity.Rare;
     private const TargetType CustomTarget = TargetType.AllEnemies;
 
-    protected override bool IsPlayable =>
-        BangDreamConst.ExtraDraw.GetPile(Owner).Cards.Count > Owner.PlayerCombatState!.DrawPile.Cards.Count;
-
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Damage.Create(30)
+        ModCardVars.Int("LingeredPenalty", 5),
+        ComputedDynamicVarHelper.CreateDamageVar("CalcDamage", 25m, ctx =>
+        {
+            if (ctx.IsInCombat() && ctx.ActiveCard.DynamicVars.TryGetValue("LingeredPenalty", out var penalty))
+            {
+                var lingered = SecondaryResourceCmd.Get(ctx.ActiveCard.Owner, BangDreamConst.LingeredResource);
+                return Math.Max(0, ctx.BaseValue - lingered * penalty.BaseValue);
+            }
+
+            return ctx.BaseValue;
+        })
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
         ArgumentNullException.ThrowIfNull(CombatState);
 
-        await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
+        await DamageCmd.Attack(DynamicVars.ComputedValue("CalcDamage"))
             .FromCard(this, play)
             .TargetingAllOpponents(CombatState)
             .WithHitFx("vfx/vfx_attack_slash")
@@ -35,6 +44,6 @@ public class DivineCarriage() : AbstractSakikoCard(CustomCost, CustomType, Custo
 
     protected override void OnUpgrade()
     {
-        DynamicVars.Damage.UpgradeValueBy(10m);
+        DynamicVars["CalcDamage"].UpgradeValueBy(5m);
     }
 }

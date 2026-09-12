@@ -1,6 +1,7 @@
-using BangDreamLib.Scripts.Commands;
 using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Mechanics.MusicNote;
 using BangDreamLib.Scripts.Utils;
+using BangDreamLib.Scripts.Utils.Infos;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
@@ -17,7 +18,7 @@ public class Divine() : AbstractSakikoMusicCard(CardRarity.Uncommon, TargetType.
         QuickVar.Repeat.Create("SlotMultiplier", 2)
     ];
 
-    public override async Task OnPerform(PlayerChoiceContext choiceContext)
+    public override async Task OnPerform(PlayerChoiceContext choiceContext, CardPerform perform)
     {
         var slot = Owner.AttachedData().PerformManager.CardContexts.GetOrCreate(this).SlotIndex;
         await MusicNoteCmd.FromCard(this, DynamicVars.Repeat.IntValue + Math.Max(0, slot) *
@@ -26,6 +27,6 @@ public class Divine() : AbstractSakikoMusicCard(CardRarity.Uncommon, TargetType.
 
     protected override void OnUpgrade()
     {
-        DynamicVars.Repeat.UpgradeValueBy(3);
+        DynamicVars["SlotMultiplier"].UpgradeValueBy(1);
     }
 }

@@ -1,8 +1,8 @@
 using BangDreamLib.Scripts.Powers;
 using BangDreamLib.Scripts.Utils;
-using MegaCrit.Sts2.Core.Entities.Players;
+using MegaCrit.Sts2.Core.Combat;
+using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Powers;
-using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using STS2RitsuLib.Combat.SecondaryResources;
 
 namespace ItsCrychic.Scripts.Power.Buff;
@@ -13,9 +13,10 @@ public class LessonLearnedPower : BandPowerModel
 
     public override PowerStackType StackType => PowerStackType.Counter;
 
-    public override async Task AfterPlayerTurnStart(PlayerChoiceContext choiceContext, Player player)
+    public override async Task AfterSideTurnStart(CombatSide side, IReadOnlyList<Creature> participants,
+        ICombatState combatState)
     {
-        if (player == Owner.Player)
+        if (Owner.Player != null && participants.Contains(Owner))
         {
             await SecondaryResourceCmd.Gain(Owner.Player, BangDreamConst.LingeredResource, Amount, this);
         }

@@ -8,6 +8,7 @@ using ItsCrychic.Scripts.Character.RelicPools;
 using ItsCrychic.Scripts.Utils;
 using MegaCrit.Sts2.Core.Animation;
 using MegaCrit.Sts2.Core.Bindings.MegaSpine;
+using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Models;
 
 namespace ItsCrychic.Scripts.Character;
@@ -57,7 +58,7 @@ public sealed class TogawaSakiko() : BandMemberModel<SakikoStandardCardPool, Sak
     public override string CustomCharacterSelectTransitionPath =>
         "res://ItsCrychic/themes/sakiko_transition.tres";
 
-    public override CreatureAnimator GenerateAnimator(MegaSprite controller)
+    public override CreatureAnimator GenerateAnimator(MegaSprite controller, Creature creature)
     {
         var start = new AnimState("Start");
         var idle = new AnimState("Idle", true);

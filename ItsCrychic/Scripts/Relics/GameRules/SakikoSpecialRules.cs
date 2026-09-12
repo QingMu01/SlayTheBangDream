@@ -1,7 +1,6 @@
 ﻿using BangDreamLib.Scripts.Interfaces.CharacterAugment;
+using BangDreamLib.Scripts.Mechanics.ExtraDeck;
 using BangDreamLib.Scripts.Relics;
-using BangDreamLib.Scripts.RestSiteOption;
-using BangDreamLib.Scripts.Rewards;
 using BangDreamLib.Scripts.Utils;
 using ItsCrychic.Scripts.Character;
 using MegaCrit.Sts2.Core.Entities.Players;

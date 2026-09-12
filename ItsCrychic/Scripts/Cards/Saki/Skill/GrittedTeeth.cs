@@ -17,6 +17,8 @@ public class GrittedTeeth() : AbstractSakikoCard(CustomCost, CustomType, CustomR
     private const CardRarity CustomRarity = CardRarity.Uncommon;
     private const TargetType CustomTarget = TargetType.Self;
 
+    private bool _returnNextTurn;
+
     public override bool GainsBlock => true;
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
@@ -37,13 +39,24 @@ public class GrittedTeeth() : AbstractSakikoCard(CustomCost, CustomType, CustomR
             QuickVar.LingeredResource.GetVar(this).IntValue, this);
     }
 
+    public override Task AfterCardPlayedLate(PlayerChoiceContext choiceContext, CardPlay play)
+    {
+        if (play.Card == this)
+        {
+            _returnNextTurn = true;
+        }
+
+        return Task.CompletedTask;
+    }
+
     public override async Task BeforeHandDraw(Player player, PlayerChoiceContext choiceContext,
         ICombatState combatState)
     {
-        if (player != Owner || CombatManager.Instance.History.CardPlaysFinished.All(item => item.CardPlay.Card != this))
-            return;
-        if (Pile is { Type: PileType.Hand })
-            return;
+        if (player != Owner || !_returnNextTurn) return;
+
+        _returnNextTurn = false;
+        if (Pile is { Type: PileType.Hand }) return;
+
         await CardPileCmd.Add(this, PileType.Hand);
     }
 

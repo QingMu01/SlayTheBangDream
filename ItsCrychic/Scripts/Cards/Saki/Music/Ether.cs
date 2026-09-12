@@ -1,6 +1,6 @@
-using BangDreamLib.Scripts.Extensions;
-using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Utils;
+using BangDreamLib.Scripts.Utils.Infos;
+using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.HoverTips;
@@ -22,25 +22,38 @@ public class Ether() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
         }
     }
 
-    protected override IEnumerable<CardKeyword> CardKeywords =>
-    [
-        CardKeyword.Exhaust
-    ];
-
-    public override async Task OnPerform(PlayerChoiceContext choiceContext)
+    public override async Task OnPerform(PlayerChoiceContext choiceContext, CardPerform perform)
     {
-        var symbolCards = BangDreamConst.PerformPile.GetPile(Owner).Cards
-            .Where(cardModel => cardModel.Tags.Contains(BangDreamConst.SymbolCard) && cardModel is IPerformCard)
+        ArgumentNullException.ThrowIfNull(CombatState);
+
+        var symbolCards = Owner.PlayerCombatState!.AllCards
+            .Concat(BangDreamConst.ExtraDraw.GetPile(Owner).Cards)
+            .Concat(BangDreamConst.PerformPile.GetPile(Owner).Cards)
+            .Where(card => card.Tags.Contains(BangDreamConst.SymbolCard))
+            .Distinct()
             .ToList();
-        var manager = Owner.AttachedData().PerformManager;
-        foreach (var symbolCard in symbolCards)
-        {
-            await manager.PerformCard(symbolCard);
-        }
-    }
 
-    protected override void OnUpgrade()
-    {
-        RemoveKeyword(CardKeyword.Exhaust);
+        if (symbolCards.Count > 0)
+        {
+            var selectedCard = Owner.RunState.Rng.CombatCardSelection.NextItem(symbolCards);
+            if (selectedCard != null)
+            {
+                await CardPileCmd.Add(selectedCard, PileType.Hand);
+            }
+
+            return;
+        }
+
+        var prototypes = ModelDb.AllCards
+            .Where(card => card.Tags.Contains(BangDreamConst.SymbolCard))
+            .ToList();
+        var prototype = Owner.RunState.Rng.CombatCardGeneration.NextItem(prototypes);
+        if (prototype != null)
+        {
+            var generatedCard = CombatState.CreateCard(prototype, Owner);
+            await CardPileCmd.AddGeneratedCardToCombat(generatedCard,
+                IsUpgraded ? PileType.Hand : BangDreamConst.ExtraDraw, Owner,
+                IsUpgraded ? CardPilePosition.Bottom : CardPilePosition.Random);
+        }
     }
 }

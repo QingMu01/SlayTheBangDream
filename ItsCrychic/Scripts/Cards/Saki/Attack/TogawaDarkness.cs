@@ -20,7 +20,7 @@ public class TogawaDarkness() : AbstractSakikoCard(CustomCost, CustomType, Custo
         ModCardVars.Int("GoldReq", 15),
         ComputedDynamicVarHelper.CreateDamageVar("CalcDamage", 9m,
             ctx => ctx.IsInCombat() && ctx.ActiveCard.DynamicVars.TryGetValue("GoldReq", out var goldReq)
-                ? ctx.BaseValue + Math.Round(ctx.ActiveCard.Owner.Gold / goldReq.BaseValue)
+                ? ctx.BaseValue + Math.Floor(ctx.ActiveCard.Owner.Gold / goldReq.BaseValue)
                 : ctx.BaseValue
         )
     ];

@@ -1,6 +1,6 @@
-using BangDreamLib.Scripts.Commands;
 using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Interfaces.CardAugment;
+using BangDreamLib.Scripts.Mechanics.MusicNote;
 using BangDreamLib.Scripts.Utils;
 using ItsCrychic.Scripts.Power.Temporary;
 using MegaCrit.Sts2.Core.Commands;
@@ -19,7 +19,7 @@ public class WaningMoonEcho()
     private const CardRarity CustomRarity = CardRarity.Rare;
     private const TargetType CustomTarget = TargetType.AnyEnemy;
 
-    public int LingeredResourceCost => 2;
+    public int LingeredResourceCost => 3;
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
@@ -30,7 +30,7 @@ public class WaningMoonEcho()
     [
         QuickVar.Damage.Create(10),
         QuickVar.Repeat.Create(6),
-        ModCardVars.Int("DamageMultiplier", 4)
+        ModCardVars.Int("DamageMultiplier", 2)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
@@ -55,7 +55,6 @@ public class WaningMoonEcho()
 
     protected override void OnUpgrade()
     {
-        DynamicVars.Damage.UpgradeValueBy(2m);
-        DynamicVars.Repeat.UpgradeValueBy(2);
+        DynamicVars["DamageMultiplier"].UpgradeValueBy(1);
     }
 }

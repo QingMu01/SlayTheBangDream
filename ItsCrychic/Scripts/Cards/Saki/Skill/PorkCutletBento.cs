@@ -4,6 +4,7 @@ using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Models.Cards;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
@@ -17,6 +18,13 @@ public class PorkCutletBento() : AbstractSakikoCard(CustomCost, CustomType, Cust
     public override bool GainsBlock => true;
 
     public override bool CanBeGeneratedInCombat => false;
+
+    protected override bool IsPlayable => PileType.Hand.GetPile(Owner).Cards.All(card => card is not Enthralled);
+
+    protected override IEnumerable<CardKeyword> CardKeywords =>
+    [
+        CardKeyword.Exhaust
+    ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
@@ -32,11 +40,22 @@ public class PorkCutletBento() : AbstractSakikoCard(CustomCost, CustomType, Cust
 
     public override bool ShouldPlay(CardModel card, AutoPlayType autoPlayType)
     {
-        if (card.Owner != Owner || card is PorkCutletBento || Pile?.Type != PileType.Hand)
+        if (card.Owner != Owner)
+        {
             return true;
+        }
 
-        var playerState = Owner.PlayerCombatState;
-        return playerState == null || !IsPlayable || !playerState.HasEnoughResourcesFor(this, out _);
+        if (Pile is not { Type: PileType.Hand })
+        {
+            return true;
+        }
+
+        if (card is PorkCutletBento or Enthralled)
+        {
+            return true;
+        }
+
+        return autoPlayType != AutoPlayType.None;
     }
 
     protected override void OnUpgrade()

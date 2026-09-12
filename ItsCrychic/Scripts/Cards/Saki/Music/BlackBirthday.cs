@@ -1,3 +1,4 @@
+using BangDreamLib.Scripts.Utils.Infos;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Factories;
@@ -9,7 +10,7 @@ namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
 public class BlackBirthday() : AbstractSakikoMusicCard(CardRarity.Rare, TargetType.None)
 {
-    public override async Task OnPerform(PlayerChoiceContext choiceContext)
+    public override async Task OnPerform(PlayerChoiceContext choiceContext, CardPerform perform)
     {
         ArgumentNullException.ThrowIfNull(CombatState);
 
@@ -17,13 +18,18 @@ public class BlackBirthday() : AbstractSakikoMusicCard(CardRarity.Rare, TargetTy
             ModelDb.CardPool<ColorlessCardPool>()
                 .GetUnlockedCards(Owner.UnlockState, Owner.RunState.CardMultiplayerConstraint)
         );
-        var prototype = Owner.RunState.Rng.CombatCardSelection.NextItem(cardModels);
+        if (!IsUpgraded)
+        {
+            cardModels = cardModels.Where(card => card.EnergyCost.Canonical == 0);
+        }
+
+        var prototype = Owner.RunState.Rng.CombatCardSelection.NextItem(cardModels.ToList());
         if (prototype != null)
         {
             var generatedCard = CombatState.CreateCard(prototype, Owner);
             if (IsUpgraded)
             {
-                generatedCard.EnergyCost.AddThisTurn(-1, true);
+                generatedCard.EnergyCost.SetThisTurn(0, true);
             }
 
             await CardPileCmd.AddGeneratedCardToCombat(generatedCard, PileType.Hand, Owner);

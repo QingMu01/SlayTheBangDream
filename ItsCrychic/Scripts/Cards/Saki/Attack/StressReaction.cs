@@ -15,7 +15,7 @@ public class StressReaction() : AbstractSakikoCard(CustomCost, CustomType, Custo
 {
     private const int CustomCost = 1;
     private const CardType CustomType = CardType.Attack;
-    private const CardRarity CustomRarity = CardRarity.Common;
+    private const CardRarity CustomRarity = CardRarity.Uncommon;
     private const TargetType CustomTarget = TargetType.AnyEnemy;
 
     protected override IEnumerable<IHoverTip> CardHoverTips =>

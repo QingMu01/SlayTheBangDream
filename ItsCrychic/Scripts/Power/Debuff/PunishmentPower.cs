@@ -11,6 +11,8 @@ namespace ItsCrychic.Scripts.Power.Debuff;
 
 public class PunishmentPower : BandPowerModel
 {
+    private bool _isTriggering;
+
     public override PowerType Type => PowerType.Debuff;
 
     public override PowerStackType StackType => PowerStackType.Counter;
@@ -18,12 +20,19 @@ public class PunishmentPower : BandPowerModel
     public override async Task AfterDamageReceived(PlayerChoiceContext choiceContext, Creature target,
         DamageResult result, ValueProp props, Creature? dealer, CardModel? cardSource)
     {
-        if (target == Owner && !props.HasFlag(ValueProp.Move) &&
-            !props.HasFlag(ValueProp.Unpowered | ValueProp.Unblockable | ValueProp.SkipHurtAnim) &&
-            result.TotalDamage > 0)
+        if (target == Owner && !_isTriggering && !props.IsPoweredAttack() && result.UnblockedDamage > 0)
         {
-            await CreatureCmd.Damage(choiceContext, target,
-                new DamageVar(Amount, ValueProp.Unpowered | ValueProp.Unblockable | ValueProp.SkipHurtAnim), Owner);
+            _isTriggering = true;
+            try
+            {
+                await CreatureCmd.Damage(choiceContext, target,
+                    new DamageVar(Amount, ValueProp.Unpowered | ValueProp.Unblockable | ValueProp.SkipHurtAnim),
+                    Owner);
+            }
+            finally
+            {
+                _isTriggering = false;
+            }
         }
     }
 }

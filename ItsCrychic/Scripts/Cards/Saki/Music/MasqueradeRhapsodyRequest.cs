@@ -1,4 +1,5 @@
 using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Utils.Infos;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
@@ -10,8 +11,6 @@ namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
 public class MasqueradeRhapsodyRequest() : AbstractSakikoMusicCard(CardRarity.Uncommon, TargetType.None)
 {
-    public override bool GainsBlock => true;
-
     protected override IEnumerable<IHoverTip> CardHoverTips =>
     [
         HoverTipFactory.FromPower<PlatingPower>()
@@ -19,13 +18,11 @@ public class MasqueradeRhapsodyRequest() : AbstractSakikoMusicCard(CardRarity.Un
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Block.Create(5),
-        QuickVar.Buff.Create(1)
+        QuickVar.Buff.Create(2)
     ];
 
-    public override async Task OnPerform(PlayerChoiceContext choiceContext)
+    public override async Task OnPerform(PlayerChoiceContext choiceContext, CardPerform perform)
     {
-        await CreatureCmd.GainBlock(Owner.Creature, DynamicVars.Block, null);
         await PowerCmd.Apply<PlatingPower>(choiceContext, Owner.Creature,
             QuickVar.Buff.GetVar(this).BaseValue, Owner.Creature, this);
     }

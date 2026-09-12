@@ -25,7 +25,7 @@ public class Glissando() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Block.Create(1),
+        QuickVar.Block.Create(2),
         QuickVar.Cards.Create(1)
     ];
 
@@ -43,6 +43,6 @@ public class Glissando() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
 
     protected override void OnUpgrade()
     {
-        DynamicVars.Block.UpgradeValueBy(1m);
+        DynamicVars.Block.UpgradeValueBy(2m);
     }
 }

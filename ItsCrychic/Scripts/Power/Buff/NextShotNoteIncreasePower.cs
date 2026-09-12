@@ -23,6 +23,9 @@ public class NextShotNoteIncreasePower : BandPowerModel, IMusicNoteModifyHookLis
 
     public async Task AfterShot(VfxContext context, Player player)
     {
-        await PowerCmd.Remove(this);
+        if (player == Owner.Player)
+        {
+            await PowerCmd.Remove(this);
+        }
     }
 }

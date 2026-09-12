@@ -47,7 +47,7 @@ public class Surge() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, 
         ArgumentNullException.ThrowIfNull(CombatState);
 
         _enemiesSnapshot.Clear();
-        _enemiesSnapshot.AddRange(CombatState.HittableEnemies.ToList());
+        _enemiesSnapshot.AddRange(CombatState.HittableEnemies);
 
         if (_enemiesSnapshot.Count > 0)
         {

@@ -11,7 +11,7 @@ namespace ItsCrychic.Scripts.Cards.Saki.Power;
 
 public class AutoSampler() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget)
 {
-    private const int CustomCost = 2;
+    private const int CustomCost = 1;
     private const CardType CustomType = CardType.Power;
     private const CardRarity CustomRarity = CardRarity.Uncommon;
     private const TargetType CustomTarget = TargetType.Self;

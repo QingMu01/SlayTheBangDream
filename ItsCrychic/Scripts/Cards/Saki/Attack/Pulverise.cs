@@ -1,12 +1,13 @@
 using BangDreamLib.Scripts.Extensions;
-using BangDreamLib.Scripts.Features.Rule;
 using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using MegaCrit.Sts2.Core.Hooks;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using STS2RitsuLib.Cards.DynamicVars;
+using MegaCrit.Sts2.Core.ValueProps;
+using STS2RitsuLib.Scaffolding.Characters;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
@@ -17,62 +18,65 @@ public class Pulverise() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
     private const CardRarity CustomRarity = CardRarity.Rare;
     private const TargetType CustomTarget = TargetType.AnyEnemy;
 
-    public int LingeredResourceCost => 3;
+    private int _resolvedEnergyX;
+
+    public int LingeredResourceCost => 5;
 
     protected override bool HasEnergyCostX => true;
 
+    protected override IEnumerable<CardKeyword> CardKeywords => [BangDreamConst.Lingered];
+
     protected override IEnumerable<DynamicVar> CardVars =>
     [
+        QuickVar.Damage.Create(10),
         QuickVar.Energy.Create(1),
-        ModCardVars.Int("FixedDamage", 4),
-        ModCardVars.Int("Cost", 0),
-        ComputedDynamicVarHelper.CreateDamageVar("CalcDamage", 8m, ctx =>
+        ComputedDynamicVarHelper.CreateDamageVar("CalcDamage", 0, ctx =>
         {
-            if (ctx.IsInCombat() && ctx.ActiveCard.DynamicVars.TryGetValue("FixedDamage", out var fixedDamage))
+            if (ctx.IsInCombat() && ctx.ActiveCard.DynamicVars.TryGetValue(DamageVar.defaultName, out var damageVar))
             {
-                if (LingeredResourcesRule.IsSufficient(ctx.ActiveCard) &&
-                    ctx.ActiveCard.DynamicVars.TryGetValue("Cost", out var cost) && cost.IntValue > 0)
-                {
-                    return (fixedDamage.IntValue + ctx.BaseValue) * cost.IntValue;
-                }
+                Hook.ModifyDamage(ctx.ActiveRunState, ctx.ActiveCombatState,
+                    ctx.Target, ctx.ActiveCard.Owner.Creature,
+                    damageVar.BaseValue, ValueProp.Move, ctx.ActiveCard,
+                    null,
+                    ModifyDamageHookType.All, CardPreviewMode.Normal,
+                    out _);
+                return damageVar.BaseValue * ctx.ActiveCard.Owner.GetEnergy();
             }
 
             return ctx.BaseValue;
         })
     ];
 
-
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
         ArgumentNullException.ThrowIfNull(play.Target);
-        var energyToCost = ResolveEnergyXValue();
-        if (energyToCost > 0)
+
+        _resolvedEnergyX = ResolveEnergyXValue();
+        if (_resolvedEnergyX <= 0) return;
+
+        var attack = await DamageCmd.Attack(DynamicVars.Damage.BaseValue * _resolvedEnergyX)
+            .FromCard(this, play)
+            .Targeting(play.Target)
+            .WithHitFx("vfx/vfx_attack_slash")
+            .Execute(choiceContext);
+
+        if (attack.Results.SelectMany(results => results).Any(result => result.WasTargetKilled))
         {
-            var energyToGain = energyToCost + (IsUpgraded ? 1 : 0);
-
-            DynamicVars["Cost"].BaseValue = energyToCost;
-            var attackCommand = await DamageCmd.Attack(DynamicVars.ComputedValue("CalcDamage"))
-                .FromCard(this, play)
-                .Targeting(play.Target)
-                .WithHitFx("vfx/vfx_attack_slash")
-                .Execute(choiceContext);
-
-            if (energyToGain > 0)
-            {
-                // 检查是否斩杀
-                if (attackCommand.Results.SelectMany(r => r).Any(result => result.WasTargetKilled))
-                {
-                    await PlayerCmd.GainEnergy(energyToGain, Owner);
-                    await CardPileCmd.Add(this, PileType.Hand);
-                }
-            }
+            await PlayerCmd.GainEnergy(_resolvedEnergyX + (IsUpgraded ? 1 : 0), Owner);
+            await CardPileCmd.Add(this, PileType.Hand);
         }
-
-        DynamicVars["Cost"].BaseValue = 0;
     }
 
     public Task OnSubside(PlayerChoiceContext choiceContext, CardPlay play)
     {
+        return _resolvedEnergyX > 0
+            ? PlayerCmd.GainEnergy(_resolvedEnergyX, Owner)
+            : Task.CompletedTask;
+    }
+
+    public override Task AfterCardPlayedLate(PlayerChoiceContext choiceContext, CardPlay play)
+    {
+        if (play.Card == this) _resolvedEnergyX = 0;
         return Task.CompletedTask;
     }
 }

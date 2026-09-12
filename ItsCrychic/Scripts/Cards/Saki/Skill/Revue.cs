@@ -14,7 +14,8 @@ public class Revue() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, 
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        BangDreamConst.PerformArea
+        BangDreamConst.PerformArea,
+        CardKeyword.Exhaust
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
@@ -30,6 +31,6 @@ public class Revue() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, 
 
     protected override void OnUpgrade()
     {
-        AddKeyword(CardKeyword.Retain);
+        RemoveKeyword(CardKeyword.Exhaust);
     }
 }

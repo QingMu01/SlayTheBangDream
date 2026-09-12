@@ -6,11 +6,10 @@ using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using STS2RitsuLib.Cards.DynamicVars;
 
-namespace ItsCrychic.Scripts.Cards.Saki.Attack;
+namespace ItsCrychic.Scripts.Cards.Mutsumi.Attack;
 
-public class Revenge() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget)
+public class Revenge() : AbstractMutsumiCard(CustomCost, CustomType, CustomRarity, CustomTarget)
 {
     private const int CustomCost = 1;
     private const CardType CustomType = CardType.Attack;
@@ -19,17 +18,17 @@ public class Revenge() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        ModCardVars.Int("Multiplier", 2),
-        ComputedDynamicVarHelper.CreateDamageVar("CalcDamage", 7m, ctx =>
+        QuickVar.Damage.Create(4),
+        ComputedDynamicVarHelper.CreateBaseVar("RepeatCount", 2m, ctx =>
         {
-            if (ctx.IsInCombat() && ctx.ActiveCard.DynamicVars.TryGetValue("Multiplier", out var multiplier))
+            if (ctx.IsInCombat() && ctx.Target != null)
             {
-                var hasAttacked = CombatManager.Instance.History.Entries
+                var extraHits = CombatManager.Instance.History.Entries
                     .OfType<CreatureAttackedEntry>()
-                    .Where(e => e.Actor == ctx.Target)
-                    .SelectMany(e => e.DamageResults)
-                    .Any(r => r.Receiver == ctx.ActiveCard.Owner.Creature && r.TotalDamage > 0);
-                return hasAttacked ? ctx.BaseValue * multiplier.BaseValue : ctx.BaseValue;
+                    .Where(entry => entry.Actor == ctx.Target)
+                    .SelectMany(entry => entry.DamageResults)
+                    .Count(result => result.Receiver == ctx.ActiveCard.Owner.Creature && result.UnblockedDamage > 0);
+                return ctx.BaseValue + extraHits;
             }
 
             return ctx.BaseValue;
@@ -40,8 +39,9 @@ public class Revenge() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity
     {
         ArgumentNullException.ThrowIfNull(play.Target);
 
-        await DamageCmd.Attack(DynamicVars.ComputedValue("CalcDamage", play.Target))
+        await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
             .FromCard(this, play)
+            .WithHitCount((int)DynamicVars.ComputedValue("RepeatCount", play.Target))
             .Targeting(play.Target)
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
@@ -49,6 +49,6 @@ public class Revenge() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity
 
     protected override void OnUpgrade()
     {
-        DynamicVars["Multiplier"].UpgradeValueBy(1);
+        DynamicVars.Damage.UpgradeValueBy(1);
     }
 }

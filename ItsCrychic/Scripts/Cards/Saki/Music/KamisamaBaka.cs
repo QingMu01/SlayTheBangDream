@@ -1,5 +1,6 @@
 using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Interfaces.CardAugment;
+using BangDreamLib.Scripts.Utils.Infos;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
@@ -14,13 +15,13 @@ public class KamisamaBaka() : AbstractSakikoMusicCard(CardRarity.Rare, TargetTyp
         QuickVar.Repeat.Create(1)
     ];
 
-    public override async Task OnPerform(PlayerChoiceContext choiceContext)
+    public override async Task OnPerform(PlayerChoiceContext choiceContext, CardPerform perform)
     {
         var performCandidates = Owner.AttachedData().PerformManager.PerformPile.Cards
             .Where(card => card != this && !card.IsUpgraded && card is IPerformCard)
             .ToList();
         var performCard = Owner.RunState.Rng.CombatCardSelection.NextItem(performCandidates);
-        if (performCard == null) return;
+        if (performCard is null or KamisamaBaka) return;
 
         CardCmd.Upgrade(performCard);
         for (var repeat = 0; repeat < DynamicVars.Repeat.IntValue; repeat++)

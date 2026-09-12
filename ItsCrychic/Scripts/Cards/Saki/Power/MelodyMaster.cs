@@ -1,5 +1,4 @@
 using BangDreamLib.Scripts.Extensions;
-using BangDreamLib.Scripts.Utils;
 using ItsCrychic.Scripts.Power.Buff;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -17,8 +16,7 @@ public class MelodyMaster() : AbstractSakikoCard(CustomCost, CustomType, CustomR
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        CardKeyword.Innate,
-        BangDreamConst.PerformArea
+        CardKeyword.Innate
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
