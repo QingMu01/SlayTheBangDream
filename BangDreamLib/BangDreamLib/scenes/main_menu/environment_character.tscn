@@ -42,3 +42,12 @@ position = Vector2(756, 213)
 [node name="GradientSampleB" type="Marker2D" parent="."]
 unique_name_in_owner = true
 position = Vector2(661, 604)
+
+[node name="ClickArea" type="Control" parent="."]
+unique_name_in_owner = true
+anchors_preset = 0
+offset_left = -3.25
+offset_top = 626.75
+offset_right = 453.25
+offset_bottom = 1083.25
+mouse_filter = 1

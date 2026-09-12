@@ -1,37 +1,18 @@
 using System.Reflection;
-using BangDreamLib.Scripts.Capability;
 using BangDreamLib.Scripts.Character;
-using BangDreamLib.Scripts.Commands;
-using BangDreamLib.Scripts.Extensions;
-using BangDreamLib.Scripts.Features;
-using BangDreamLib.Scripts.Features.Rule;
-using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
+using BangDreamLib.Scripts.Mechanics;
 using BangDreamLib.Scripts.Multiplayer.RunData;
-using BangDreamLib.Scripts.Nodes;
-using BangDreamLib.Scripts.Nodes.VFX;
 using BangDreamLib.Scripts.Patches;
-using BangDreamLib.Scripts.Rewards;
 using BangDreamLib.Scripts.Utils;
 using BangDreamLib.Scripts.Utils.Infos;
-using Godot;
-using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Modding;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Relics;
-using MegaCrit.Sts2.Core.Nodes.Combat;
-using MegaCrit.Sts2.Core.Runs;
 using STS2RitsuLib;
-using STS2RitsuLib.CardPiles;
-using STS2RitsuLib.CardTags;
-using STS2RitsuLib.Combat.Rewards;
-using STS2RitsuLib.Combat.SecondaryResources;
 using STS2RitsuLib.Interop;
-using STS2RitsuLib.Keywords;
-using STS2RitsuLib.Models.Capabilities;
 using STS2RitsuLib.Patching.Core;
 using STS2RitsuLib.RunData;
-using STS2RitsuLib.Scaffolding.Godot.NodeAttachments;
 using Logger = MegaCrit.Sts2.Core.Logging.Logger;
 
 namespace BangDreamLib;
@@ -47,224 +28,40 @@ public static class BangDreamLibCore
         RitsuLibFramework.EnsureGodotScriptsRegistered(executingAssembly, Logger);
         ModTypeDiscoveryHub.RegisterModAssembly(BangDreamConst.ModId, executingAssembly);
 
-        var preload = RitsuLibFramework.CreatePatcher(BangDreamConst.ModId, "preload_assets");
-        preload.RegisterPatches<PreloadPatches>();
-        preload.PatchAll();
+        using var runDataRegistration = RitsuLibFramework.BeginModDataRegistration(BangDreamConst.ModId);
+        var runData = RitsuLibFramework.GetRunSavedDataStore(BangDreamConst.ModId);
 
-        var deckSupport = RitsuLibFramework.CreatePatcher(BangDreamConst.ModId, "extra_deck_support");
-        deckSupport.RegisterPatches<MusicCardSupportPatches>();
-        if (!deckSupport.PatchAll())
-        {
-            throw new InvalidOperationException("music card patches failed.");
-        }
-
-        var vfxManager = RitsuLibFramework.CreatePatcher(BangDreamConst.ModId, "async_attack_vfx_manager");
-        vfxManager.RegisterPatches<VfxManagerPatches>();
-        if (!vfxManager.PatchAll())
-        {
-            throw new InvalidOperationException("bang dream combat vfx container patches failed.");
-        }
-
-        var submenuSupport = RitsuLibFramework.CreatePatcher(BangDreamConst.ModId, "character_selector_submenu");
-        submenuSupport.RegisterPatches<GroupableCharacterSelectorPatches>();
-        if (!submenuSupport.PatchAll())
-        {
-            throw new InvalidOperationException("character selector submenu patches failed.");
-        }
-
-        var skinSupport = RitsuLibFramework.CreatePatcher(BangDreamConst.ModId, "skin_support");
-        skinSupport.RegisterPatches<SkinVisualSupportPatches>();
-        skinSupport.RegisterPatches<SkinStartingContentPopulatePatches>();
-        if (!skinSupport.PatchAll())
-        {
-            throw new InvalidOperationException("skins support patches failed.");
-        }
-
-        var inputEventPatcher = RitsuLibFramework.CreatePatcher(BangDreamConst.ModId, "input_event_hook_patch");
-        inputEventPatcher.RegisterPatches<LingeredOrbitCardDragPatches>();
-        if (!inputEventPatcher.PatchAll())
-        {
-            throw new InvalidOperationException("input event hook patches failed.");
-        }
-
-        var merchantPatcher = RitsuLibFramework.CreatePatcher(BangDreamConst.ModId, "sakiko_merchant");
-        merchantPatcher.RegisterPatches<ExtraCardMerchantPatches>();
-        if (!merchantPatcher.PatchAll())
-        {
-            throw new InvalidOperationException("sakiko merchant patch failed.");
-        }
-
-        var runHistoryPatcher = RitsuLibFramework.CreatePatcher(BangDreamConst.ModId, "run_history_extra_deck");
-        runHistoryPatcher.RegisterPatches<ExtraDeckRunHistoryPatches>();
-        runHistoryPatcher.PatchAll();
-
-        var commonPatcher = RitsuLibFramework.CreatePatcher(BangDreamConst.ModId, "common_patch");
-        commonPatcher.RegisterPatch<CardHoverTipPatch>();
-        commonPatcher.RegisterPatch<WaitForCombatResolutionPatch>();
-        commonPatcher.RegisterPatch<MainMenuEnvironmentCharacterPatch>();
-        commonPatcher.PatchAll();
-
-        MusicNoteCmd.InitializeNetwork();
-        PerformManager.InitializeNetwork();
-
-        // 注册持久化数据
-        using (RitsuLibFramework.BeginModDataRegistration(BangDreamConst.ModId))
-        {
-            var store = RitsuLibFramework.GetRunSavedDataStore(BangDreamConst.ModId);
-
-            BangDreamConst.PlayerSkin = store.RegisterPerPlayer(
-                key: BangDreamConst.RunDataKeySkin,
-                defaultFactory: () => new PlayerSkinData(),
-                options: new RunSavedDataOptions
-                {
-                    WritePolicy = RunSavedDataWritePolicy.AlwaysWhenRegistered,
-                    SyncLobbyOnChange = true
-                });
-
-            BangDreamConst.ExtraCardMerchant = store.RegisterPerPlayer(
-                key: BangDreamConst.RunDataKeyExtraCardMerchant,
-                defaultFactory: () => new ExtraCardMerchantData(),
-                options: new RunSavedDataOptions
-                {
-                    WritePolicy = RunSavedDataWritePolicy.AlwaysWhenRegistered
-                });
-        }
-
-        // 注册关键字
-        var keywords = RitsuLibFramework.GetKeywordRegistry(BangDreamConst.ModId);
-        BangDreamConst.Music = RegisterKeyword(keywords, "Music");
-        BangDreamConst.Lingered = RegisterKeyword(keywords, "Lingered");
-        BangDreamConst.Instant = RegisterKeyword(keywords, "Instant");
-        BangDreamConst.MusicNote = RegisterKeyword(keywords, "MusicNote");
-        BangDreamConst.Perform = RegisterKeyword(keywords, "Perform");
-        BangDreamConst.PerformArea = RegisterKeyword(keywords, "PerformArea");
-
-        // 注册自定义标签
-        var cardTagRegistry = ModCardTagRegistry.For(BangDreamConst.ModId);
-        BangDreamConst.SymbolCard = RegisterCardTag(cardTagRegistry, "Symbol");
-
-        //注册自定义奖励
-        var customReward = ModRewardRegistry.For(BangDreamConst.ModId);
-        BangDreamConst.RewardMusic = customReward.RegisterOwned("MusicCardReward",
-            (save, player, _) => new MusicCardReward(
-                new CardCreationOptions(save.CardPoolIds.Select(ModelDb.GetById<CardPoolModel>),
-                    save.Source, save.RarityOdds),
-                save.OptionCount, player)).RewardType;
-
-        // 注册自定义牌堆
-        var customPile = ModCardPileRegistry.For(BangDreamConst.ModId);
-        BangDreamConst.ExtraDeck = customPile.RegisterOwned("ExtraDeck", new ModCardPileSpec
-        {
-            Scope = ModCardPileScope.RunPersistent,
-            Style = ModCardPileUiStyle.TopBarDeck,
-            IconPath = "res://BangDreamLib/images/sceneui/extra_deck.png",
-            VisibleWhen = context =>
+        // 玩家皮肤属于跨机制的通用基础设施，保留在核心注册。
+        BangDreamConst.PlayerSkin = runData.RegisterPerPlayer(
+            key: BangDreamConst.RunDataKeySkin,
+            defaultFactory: () => new PlayerSkinData(),
+            options: new RunSavedDataOptions
             {
-                if (context.Player?.Character is IExtraDeckSupportCharacter { ShouldAlwaysShowExtraDeck: true })
-                {
-                    return true;
-                }
+                WritePolicy = RunSavedDataWritePolicy.AlwaysWhenRegistered,
+                SyncLobbyOnChange = true
+            });
 
-                return context.Pile?.Cards.Any() ?? false;
-            }
-        }).PileType;
-
-        BangDreamConst.ExtraDraw = customPile.RegisterOwned("ExtraDraw", new ModCardPileSpec
+        // 机制模块：发现 -> 内容注册 -> 补丁注入。新增机制无需改动本文件。
+        BangDreamMechanicRegistry.Discover(executingAssembly);
+        var context = new BangDreamMechanicContext(BangDreamConst.ModId, runData);
+        foreach (var mechanic in BangDreamMechanicRegistry.Mechanics)
         {
-            Scope = ModCardPileScope.CombatOnly,
-            Style = ModCardPileUiStyle.BottomLeft,
-            Anchor = ModCardPileAnchor.AtPosition(new Vector2(15f, 800f)),
-            IconPath = "res://BangDreamLib/images/sceneui/music_draw.png",
-            VisibleWhen = context =>
+            mechanic.RegisterContent(context);
+
+            var patcher = RitsuLibFramework.CreatePatcher(BangDreamConst.ModId, mechanic.Id);
+            mechanic.RegisterPatches(patcher);
+            if (!patcher.PatchAll())
             {
-                if (context.Player?.Character is IExtraDeckSupportCharacter { ShouldAlwaysShowExtraPile: true })
-                {
-                    return true;
-                }
-
-                return context.Player?.PlayerCombatState?.AllCards.Any(card => card is IPerformCard) ?? false;
+                throw new InvalidOperationException($"mechanic '{mechanic.Id}' patches failed.");
             }
-        }).PileType;
+        }
 
-        BangDreamConst.PerformPile = customPile.RegisterOwned("Perform", new ModCardPileSpec
-        {
-            Scope = ModCardPileScope.CombatOnly,
-            Style = ModCardPileUiStyle.Headless,
-            FlightStartPositionResolver = ctx => ResolvePerformPileFlightPosition(ctx.CardModel),
-            FlightTargetPositionResolver = ctx => ResolvePerformPileFlightPosition(ctx.CardModel)
-        }).PileType;
-
-        // 注册余音资源
-        var resourceContent = RitsuLibFramework.GetSecondaryResourceRegistry(BangDreamConst.ModId);
-
-        BangDreamConst.LingeredResource = resourceContent.Register("Lingered", new SecondaryResourceDefinition(
-            defaultAmount: 0,
-            baseMaxAmount: 7,
-            turnStartPolicy: SecondaryResourceTurnStartPolicy.None,
-            persistencePolicy: SecondaryResourcePersistencePolicy.None,
-            locTable: "card_keywords",
-            titleKey: "BANG_DREAM_LIB_KEYWORD_LINGERED.title",
-            descriptionKey: "BANG_DREAM_LIB_KEYWORD_LINGERED.description",
-            smallIconPath: "res://BangDreamLib/images/sceneui/xz-energy_lingered_small.png",
-            largeIconPath: "res://BangDreamLib/images/sceneui/xz-energy_lingered.png"
-        )
-        {
-            DefaultInsufficientPayment = SecondaryResourceInsufficientPayment.AllowPlay(spendAvailable: false)
-        }).Id;
-        resourceContent.RegisterCardUi<NSecondaryResourceCardCostUi>("LingeredCardUi", nCard =>
-        {
-            var ui = NSecondaryResourceCardCostUi.Create(BangDreamConst.LingeredResource,
-                new SecondaryResourceCardCostUiStyle
-                {
-                    SlotSize = new Vector2(58f, 58f),
-                    IconSize = new Vector2(48f, 48f),
-                    LabelOffset = new Vector2(-5f, 0f),
-                    FontSize = 24,
-                    OutlineSize = 10,
-                    ReserveVanillaStarCostSlot = true,
-                    AffordableOutlineColor = new Color("#664531")
-                });
-            var energyIcon = nCard.GetNode<TextureRect>("%StarIcon");
-            ui.Position = energyIcon.Position + new Vector2(5f, 5f);
-            return ui;
-        }, ctx => { ctx.Node.Refresh(ctx); });
-
-        // 玩家Node附加节点
-        ModNodeAttachmentRegistry.For(BangDreamConst.ModId)
-            .RegisterReadyChild<NCreature, NPerformArea>(
-                "perform_area",
-                static creature => NPerformArea.Create(creature.Entity.Player),
-                static (creature, area) =>
-                {
-                    area.Visible = creature.Entity.Player is
-                        { Character: IPerformableCharacter { GetDefaultCapacity: > 0 } };
-                    area.GlobalPosition = creature.VfxSpawnPosition + Vector2.Left * (creature.Hitbox.Size.X / 2 + 50f);
-                },
-                new NodeAttachmentOptions
-                {
-                    Name = "PerformArea",
-                    Order = 10,
-                    DuplicatePolicy = NodeAttachmentDuplicatePolicy.ReplaceExistingByName,
-                    SetupTiming = NodeAttachmentSetupTiming.AfterAdd,
-                });
-        ModNodeAttachmentRegistry.For(BangDreamConst.ModId)
-            .RegisterReadyChild<NCreature, NLingeredOrbitVfx>(
-                NLingeredOrbitVfx.AttachmentId,
-                static creature => NLingeredOrbitVfx.Create(creature),
-                new NodeAttachmentOptions
-                {
-                    Name = NLingeredOrbitVfx.AttachmentName,
-                    Order = 20,
-                    DuplicatePolicy = NodeAttachmentDuplicatePolicy.ReplaceExistingByName,
-                    SetupTiming = NodeAttachmentSetupTiming.AfterAdd,
-                });
+        RegisterInfrastructurePatches();
 
         // 注册公共内容
         var commonContent = RitsuLibFramework.GetContentRegistry(BangDreamConst.ModId);
         commonContent.RegisterCharacter<GroupCharacterPlaceholder>();
         commonContent.RegisterCharacterStarterRelic<GroupCharacterPlaceholder, Circlet>();
-
-        commonContent.RegisterSingleton<LingeredResourcesRule>();
 
         // 预加载皮肤资源
         RitsuLibFramework.SubscribeLifecycle<ModelPreloadingCompletedEvent>(_ =>
@@ -286,88 +83,62 @@ public static class BangDreamLibCore
             }
         });
 
-        // 处理组件战斗初始化时的订阅，确保战斗状态正确生成
+        // 机制战斗生命周期订阅
         RitsuLibFramework.SubscribeLifecycle<CombatStartingEvent>(ctx =>
         {
-            if (ctx.CombatState?.Players != null)
+            if (ctx.CombatState?.Players == null) return;
+
+            foreach (var player in ctx.CombatState.Players)
             {
-                foreach (var player in ctx.CombatState.Players)
-                {
-                    player.AttachedData().PerformManager.SubmitCombatState();
-                    player.AttachedData().LingeredOrbitManager.SubmitCombatState();
-                }
+                BangDreamMechanicRegistry.SubmitCombatState(player);
             }
         });
 
-        // 处理组件战斗结束的订阅，确保战斗状态正确销毁
         RitsuLibFramework.SubscribeLifecycle<CombatEndedEvent>(ctx =>
         {
-            if (ctx.CombatState?.Players != null)
+            if (ctx.CombatState?.Players == null) return;
+
+            foreach (var player in ctx.CombatState.Players)
             {
-                foreach (var player in ctx.CombatState.Players)
-                {
-                    player.AttachedData().PerformManager.UnsubscribeCombatState();
-                    player.AttachedData().LingeredOrbitManager.UnsubscribeCombatState();
-                }
+                BangDreamMechanicRegistry.UnsubscribeCombatState(player);
             }
         });
 
-        // 设置初始组件
-        RitsuLibFramework.SubscribeLifecycle<ModelRegistryInitializedEvent>(_ =>
-        {
-            foreach (var cardModel in ModelDb.AllCards)
-            {
-                if (cardModel is ISubsideCard subsideCard)
-                {
-                    if (subsideCard.LingeredResourceCost == -1)
-                    {
-                        cardModel.SecondaryCosts()
-                            .Set(BangDreamConst.LingeredResource, SecondaryResourceCost.X());
-                    }
-                    else
-                    {
-                        cardModel.SecondaryCosts()
-                            .Set(BangDreamConst.LingeredResource, subsideCard.LingeredResourceCost);
-                    }
-
-                    cardModel.GetOrCreateCapability<SubsideCapability>();
-                }
-                else if (cardModel is IPerformCard)
-                {
-                    cardModel.GetOrCreateCapability<PerformCapability>();
-                }
-            }
-        });
-
-        ModHelper.SubscribeForCombatStateHooks("ExtraSubscribe", state =>
-        {
-            var subscribeModels = new List<AbstractModel>();
-            subscribeModels.AddRange(state.Players.Select(player => player.AttachedData().PerformManager));
-            subscribeModels.AddRange(state.Players.Select(player => player.AttachedData().MusicNoteDamageTracker));
-            return subscribeModels;
-        });
+        ModHelper.SubscribeForCombatStateHooks("ExtraSubscribe",
+            state => BangDreamMechanicRegistry.GetCombatHookModels(state.Players).ToList());
     }
 
-    private static Vector2? ResolvePerformPileFlightPosition(CardModel? cardModel)
+    /// <summary>
+    /// 注册与具体玩法机制无关的基础设施补丁：资源预加载、角色选择器、皮肤视觉与初始内容、历史记录等。
+    /// </summary>
+    private static void RegisterInfrastructurePatches()
     {
-        if (cardModel == null) return null;
+        var preload = RitsuLibFramework.CreatePatcher(BangDreamConst.ModId, "preload_assets");
+        preload.RegisterPatches<PreloadPatches>();
+        preload.PatchAll();
 
-        var performArea = cardModel.Owner.AttachedData().PerformManager.PerformArea;
-        if (GodotObject.IsInstanceValid(performArea) && performArea.TryGetCardSlotCenter(cardModel, out var slotCenter))
+        var submenuSupport = RitsuLibFramework.CreatePatcher(BangDreamConst.ModId, "character_selector_submenu");
+        submenuSupport.RegisterPatches<GroupableCharacterSelectorPatches>();
+        if (!submenuSupport.PatchAll())
         {
-            return slotCenter;
+            throw new InvalidOperationException("character selector submenu patches failed.");
         }
 
-        return cardModel.Owner.Creature.GetCreatureNode()?.VfxSpawnPosition;
-    }
+        var skinSupport = RitsuLibFramework.CreatePatcher(BangDreamConst.ModId, "skin_support");
+        skinSupport.RegisterPatches<SkinVisualSupportPatches>();
+        skinSupport.RegisterPatches<SkinStartingContentPopulatePatches>();
+        if (!skinSupport.PatchAll())
+        {
+            throw new InvalidOperationException("skins support patches failed.");
+        }
 
-    private static CardKeyword RegisterKeyword(ModKeywordRegistry registry, string keyword)
-    {
-        return registry.RegisterCardKeywordOwnedByLocNamespace(keyword).CardKeywordValue;
-    }
+        var runHistoryPatcher = RitsuLibFramework.CreatePatcher(BangDreamConst.ModId, "run_history_extra_deck");
+        runHistoryPatcher.RegisterPatches<ExtraDeckRunHistoryPatches>();
+        runHistoryPatcher.PatchAll();
 
-    private static CardTag RegisterCardTag(ModCardTagRegistry registry, string tag)
-    {
-        return registry.RegisterOwned(tag).CardTagValue;
+        var commonPatcher = RitsuLibFramework.CreatePatcher(BangDreamConst.ModId, "common_patch");
+        commonPatcher.RegisterPatch<CardHoverTipPatch>();
+        commonPatcher.RegisterPatch<MainMenuEnvironmentCharacterPatch>();
+        commonPatcher.PatchAll();
     }
 }

@@ -1,4 +1,4 @@
-using BangDreamLib.Scripts.Features.Rule;
+using BangDreamLib.Scripts.Mechanics.Lingered;
 using BangDreamLib.Scripts.Utils;
 using Godot;
 using MegaCrit.Sts2.Core.Models;

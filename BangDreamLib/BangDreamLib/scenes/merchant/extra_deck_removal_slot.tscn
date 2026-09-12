@@ -1,0 +1,137 @@
+[gd_scene load_steps=15 format=3 uid="uid://bxfp13jdk2utc"]
+
+[ext_resource type="Script" uid="uid://oncwg2tfyjii" path="res://Scripts/Nodes/Merchant/NExtraDeckRemovalSlot.cs" id="1_slot"]
+[ext_resource type="Script" uid="uid://bry8aaeikvcb3" path="res://src/Core/Nodes/GodotExtensions/NClickableControl.cs" id="2_ltd50"]
+[ext_resource type="Texture2D" uid="uid://b6yimphpcu43e" path="res://BangDreamLib/images/sceneui/card_removal_00-1.png" id="3_c5ruu"]
+[ext_resource type="Texture2D" uid="uid://dqc1hmdhvd3f5" path="res://BangDreamLib/images/sceneui/card_removal_01-1.png" id="4_urqjs"]
+[ext_resource type="Texture2D" uid="uid://0lntd02mk5j2" path="res://BangDreamLib/images/sceneui/card_removal_02.png" id="5_yugch"]
+[ext_resource type="Texture2D" uid="uid://bv8v6d4q2uvt3" path="res://BangDreamLib/images/sceneui/card_removal_04-1.png" id="6_yvo72"]
+[ext_resource type="Texture2D" uid="uid://bippqbk4c55w6" path="res://BangDreamLib/images/sceneui/card_removal_05-1.png" id="7_361pj"]
+[ext_resource type="Texture2D" uid="uid://jqn0hv" path="res://images/atlases/ui_atlas.sprites/top_bar/top_bar_gold.tres" id="8_6mx3w"]
+[ext_resource type="FontVariation" uid="uid://ciql5khgewwbm" path="res://themes/kreon_bold_glyph_space_two.tres" id="9_iwyus"]
+[ext_resource type="Script" uid="uid://cr26tfi6bv8im" path="res://Scripts/Nodes/MegeScript/BangDreamLabel.cs" id="11_urqjs"]
+
+[sub_resource type="Animation" id="Animation_0dimg"]
+resource_name = "Available"
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Visual:texture")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [ExtResource("3_c5ruu")]
+}
+
+[sub_resource type="Animation" id="Animation_8a8lb"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Visual:texture")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [ExtResource("3_c5ruu")]
+}
+
+[sub_resource type="Animation" id="Animation_bw0pc"]
+resource_name = "Used"
+step = 0.0666667
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Visual:texture")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.466667, 0.533333, 0.6, 0.666667, 0.733333),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [ExtResource("3_c5ruu"), ExtResource("3_c5ruu"), ExtResource("4_urqjs"), ExtResource("5_yugch"), ExtResource("6_yvo72"), ExtResource("7_361pj")]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_y0fag"]
+_data = {
+&"Available": SubResource("Animation_0dimg"),
+&"RESET": SubResource("Animation_8a8lb"),
+&"Used": SubResource("Animation_bw0pc")
+}
+
+[node name="ExtraDeckRemovalSlot" type="Control"]
+custom_minimum_size = Vector2(122, 112)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 389.0
+offset_bottom = 357.0
+scale = Vector2(0.65, 0.65)
+size_flags_horizontal = 3
+size_flags_vertical = 3
+focus_mode = 2
+mouse_filter = 2
+script = ExtResource("1_slot")
+
+[node name="Visual" type="Sprite2D" parent="."]
+unique_name_in_owner = true
+position = Vector2(1.53845, -1.53851)
+scale = Vector2(0.559943, 0.559943)
+texture = ExtResource("3_c5ruu")
+
+[node name="Visual2" type="Sprite2D" parent="Visual"]
+unique_name_in_owner = true
+modulate = Color(0, 0, 0, 0.25)
+show_behind_parent = true
+texture = ExtResource("3_c5ruu")
+offset = Vector2(16, 16)
+
+[node name="Animation" type="AnimationPlayer" parent="."]
+unique_name_in_owner = true
+libraries = {
+&"": SubResource("AnimationLibrary_y0fag")
+}
+
+[node name="Hitbox" type="Control" parent="."]
+unique_name_in_owner = true
+anchors_preset = 0
+offset_left = -157.0
+offset_top = -126.0
+offset_right = 154.0
+offset_bottom = 174.0
+pivot_offset = Vector2(56, 56)
+script = ExtResource("2_ltd50")
+
+[node name="Cost" type="HBoxContainer" parent="."]
+layout_mode = 0
+offset_left = -147.692
+offset_top = 176.923
+offset_right = 149.308
+offset_bottom = 230.923
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="TextureRect" type="TextureRect" parent="Cost"]
+custom_minimum_size = Vector2(54, 54)
+layout_mode = 2
+texture = ExtResource("8_6mx3w")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="CostLabel" type="Label" parent="Cost"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_shadow_color = Color(0.223529, 0.223529, 0.223529, 0)
+theme_override_colors/font_outline_color = Color(0.0666667, 0, 0, 0.431373)
+theme_override_constants/line_spacing = 0
+theme_override_constants/outline_size = 15
+theme_override_constants/shadow_outline_size = 0
+theme_override_fonts/font = ExtResource("9_iwyus")
+theme_override_font_sizes/font_size = 39
+text = "99"
+script = ExtResource("11_urqjs")
+MinFontSize = 40

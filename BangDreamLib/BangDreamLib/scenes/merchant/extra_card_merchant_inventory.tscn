@@ -1,13 +1,14 @@
-[gd_scene load_steps=10 format=3 uid="uid://dglakadnof6vm"]
+[gd_scene load_steps=12 format=3 uid="uid://dglakadnof6vm"]
 
 [ext_resource type="Script" uid="uid://b8ll880lwpf2n" path="res://src/Core/Nodes/Screens/Shops/NMerchantInventory.cs" id="1_inventory"]
-[ext_resource type="Texture2D" uid="uid://bsosi3fox1pp0" path="res://BangDreamLib/images/sceneui/shop_rug-xz.png" id="2_a2rew"]
-[ext_resource type="PackedScene" uid="uid://rdkoq04iuuhe" path="res://scenes/merchant/merchant_card.tscn" id="3_card"]
-[ext_resource type="PackedScene" uid="uid://ca1bm16oq4u5v" path="res://scenes/merchant/merchant_card_removal.tscn" id="4_removal"]
-[ext_resource type="PackedScene" uid="uid://bl4mbjqjfffa3" path="res://scenes/ui/back_button.tscn" id="5_back"]
-[ext_resource type="SpineSkeletonDataResource" uid="uid://cf07xueehrjqk" path="res://animations/backgrounds/merchant_room/hand/merchant_hand_skel_data.tres" id="6_hand"]
-[ext_resource type="Script" uid="uid://p34nsajneq80" path="res://src/Core/Nodes/Screens/Shops/NMerchantHand.cs" id="7_hand_script"]
-[ext_resource type="PackedScene" uid="uid://slvrtr0urml" path="res://scenes/merchant/merchant_rug_dialogue.tscn" id="8_dialogue"]
+[ext_resource type="Texture2D" uid="uid://csi2681amk4ke" path="res://BangDreamLib/images/sceneui/shop_rug-xz.png" id="2_a2rew"]
+[ext_resource type="PackedScene" uid="uid://0ffkpuhkymgw" path="res://BangDreamLib/scenes/merchant/music_card_slot.tscn" id="3_music"]
+[ext_resource type="PackedScene" uid="uid://rdkoq04iuuhe" path="res://scenes/merchant/merchant_card.tscn" id="4_card"]
+[ext_resource type="PackedScene" uid="uid://bxfp13jdk2utc" path="res://BangDreamLib/scenes/merchant/extra_deck_removal_slot.tscn" id="5_removal"]
+[ext_resource type="PackedScene" uid="uid://bl4mbjqjfffa3" path="res://scenes/ui/back_button.tscn" id="6_back"]
+[ext_resource type="SpineSkeletonDataResource" uid="uid://cf07xueehrjqk" path="res://animations/backgrounds/merchant_room/hand/merchant_hand_skel_data.tres" id="7_hand"]
+[ext_resource type="Script" uid="uid://p34nsajneq80" path="res://src/Core/Nodes/Screens/Shops/NMerchantHand.cs" id="8_hand_script"]
+[ext_resource type="PackedScene" uid="uid://slvrtr0urml" path="res://scenes/merchant/merchant_rug_dialogue.tscn" id="9_dialogue"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_construction"]
 bg_color = Color(0.035, 0.12, 0.17, 0.72)
@@ -20,6 +21,18 @@ corner_radius_top_left = 16
 corner_radius_top_right = 16
 corner_radius_bottom_right = 16
 corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_placeholder"]
+bg_color = Color(0.05, 0.1, 0.15, 0.55)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.05, 0.45, 0.68, 0.6)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
 
 [node name="ExtraCardMerchantInventory" type="Control"]
 layout_mode = 3
@@ -58,44 +71,41 @@ grow_vertical = 2
 texture = ExtResource("2_a2rew")
 expand_mode = 1
 
-[node name="CharacterCards" type="Control" parent="SlotsContainer"]
+[node name="MusicCards" type="Control" parent="SlotsContainer"]
 unique_name_in_owner = true
 anchors_preset = 0
-offset_left = 355.0
+offset_left = 332.0
 offset_top = 303.0
-offset_right = 355.0
+offset_right = 332.0
 offset_bottom = 303.0
 
-[node name="MerchantCardHolder" parent="SlotsContainer/CharacterCards" instance=ExtResource("3_card")]
+[node name="MusicCardHolder" parent="SlotsContainer/MusicCards" instance=ExtResource("3_music")]
 layout_mode = 0
 offset_left = -13.0
 offset_right = 287.0
 
-[node name="MerchantCardHolder2" parent="SlotsContainer/CharacterCards" instance=ExtResource("3_card")]
+[node name="MusicCardHolder2" parent="SlotsContainer/MusicCards" instance=ExtResource("3_music")]
 layout_mode = 0
-offset_left = 300.0
-offset_right = 600.0
+offset_left = 250.0
+offset_right = 550.0
 
-[node name="MerchantCardHolder3" parent="SlotsContainer/CharacterCards" instance=ExtResource("3_card")]
+[node name="MusicCardHolder3" parent="SlotsContainer/MusicCards" instance=ExtResource("3_music")]
 layout_mode = 0
-offset_left = 613.0
-offset_right = 913.0
+offset_left = 511.0
+offset_right = 811.0
 
-[node name="MerchantCardHolder4" parent="SlotsContainer/CharacterCards" instance=ExtResource("3_card")]
+[node name="NotOpenZone1" type="Panel" parent="SlotsContainer"]
+unique_name_in_owner = true
+visible = false
 layout_mode = 0
-offset_left = 926.0
-offset_right = 1226.0
-
-[node name="ConstructionArea" type="Panel" parent="SlotsContainer"]
-layout_mode = 0
-offset_left = 220.0
-offset_top = 505.0
-offset_right = 1240.0
-offset_bottom = 870.0
+offset_left = 319.0
+offset_top = 268.0
+offset_right = 1150.0
+offset_bottom = 503.0
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_construction")
 
-[node name="ConstructionLabel" type="Label" parent="SlotsContainer/ConstructionArea"]
+[node name="NotOpenZone1Label" type="Label" parent="SlotsContainer/NotOpenZone1"]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
@@ -107,11 +117,146 @@ theme_override_colors/font_color = Color(0.74, 0.91, 1, 1)
 theme_override_colors/font_outline_color = Color(0.015, 0.04, 0.07, 1)
 theme_override_constants/outline_size = 10
 theme_override_font_sizes/font_size = 54
+text = "未开放"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ColorlessCards" type="Control" parent="SlotsContainer"]
+unique_name_in_owner = true
+anchors_preset = 0
+offset_left = 1102.0
+offset_top = 303.0
+offset_right = 1102.0
+offset_bottom = 303.0
+
+[node name="ColorlessCardHolder" parent="SlotsContainer/ColorlessCards" instance=ExtResource("4_card")]
+layout_mode = 0
+offset_left = -13.0
+offset_right = 287.0
+
+[node name="ColorlessCardHolder2" parent="SlotsContainer/ColorlessCards" instance=ExtResource("4_card")]
+layout_mode = 0
+offset_left = 261.0
+offset_right = 561.0
+
+[node name="ConstructionArea" type="Panel" parent="SlotsContainer"]
+layout_mode = 0
+offset_left = 279.0
+offset_top = 555.0
+offset_right = 1225.0
+offset_bottom = 858.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_construction")
+
+[node name="ConstructionLabel" type="Label" parent="SlotsContainer/ConstructionArea"]
+unique_name_in_owner = true
+layout_mode = 1
+offset_top = 2.0
+offset_right = 946.0
+offset_bottom = 44.0
+theme_override_colors/font_color = Color(0.74, 0.91, 1, 1)
+theme_override_colors/font_outline_color = Color(0.015, 0.04, 0.07, 1)
+theme_override_constants/outline_size = 8
+theme_override_font_sizes/font_size = 30
 text = "正在施工区域"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="MerchantCardRemoval" parent="SlotsContainer" instance=ExtResource("4_removal")]
+[node name="EnchantRow" type="Control" parent="SlotsContainer/ConstructionArea"]
+anchors_preset = 0
+offset_left = 68.0
+offset_top = 70.0
+offset_right = 68.0
+offset_bottom = 70.0
+mouse_filter = 2
+
+[node name="EnchantPlaceholder" type="Panel" parent="SlotsContainer/ConstructionArea/EnchantRow"]
+layout_mode = 0
+offset_right = 130.0
+offset_bottom = 90.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_placeholder")
+
+[node name="EnchantPlaceholder2" type="Panel" parent="SlotsContainer/ConstructionArea/EnchantRow"]
+layout_mode = 0
+offset_left = 170.0
+offset_right = 300.0
+offset_bottom = 90.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_placeholder")
+
+[node name="EnchantPlaceholder3" type="Panel" parent="SlotsContainer/ConstructionArea/EnchantRow"]
+layout_mode = 0
+offset_left = 340.0
+offset_right = 470.0
+offset_bottom = 90.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_placeholder")
+
+[node name="EnchantPlaceholder4" type="Panel" parent="SlotsContainer/ConstructionArea/EnchantRow"]
+layout_mode = 0
+offset_left = 510.0
+offset_right = 640.0
+offset_bottom = 90.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_placeholder")
+
+[node name="EnchantPlaceholder5" type="Panel" parent="SlotsContainer/ConstructionArea/EnchantRow"]
+layout_mode = 0
+offset_left = 680.0
+offset_right = 810.0
+offset_bottom = 90.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_placeholder")
+
+[node name="StickerRow" type="Control" parent="SlotsContainer/ConstructionArea"]
+anchors_preset = 0
+offset_left = 68.0
+offset_top = 190.0
+offset_right = 68.0
+offset_bottom = 190.0
+mouse_filter = 2
+
+[node name="StickerPlaceholder" type="Panel" parent="SlotsContainer/ConstructionArea/StickerRow"]
+layout_mode = 0
+offset_right = 130.0
+offset_bottom = 90.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_placeholder")
+
+[node name="StickerPlaceholder2" type="Panel" parent="SlotsContainer/ConstructionArea/StickerRow"]
+layout_mode = 0
+offset_left = 170.0
+offset_right = 300.0
+offset_bottom = 90.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_placeholder")
+
+[node name="StickerPlaceholder3" type="Panel" parent="SlotsContainer/ConstructionArea/StickerRow"]
+layout_mode = 0
+offset_left = 340.0
+offset_right = 470.0
+offset_bottom = 90.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_placeholder")
+
+[node name="StickerPlaceholder4" type="Panel" parent="SlotsContainer/ConstructionArea/StickerRow"]
+layout_mode = 0
+offset_left = 510.0
+offset_right = 640.0
+offset_bottom = 90.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_placeholder")
+
+[node name="StickerPlaceholder5" type="Panel" parent="SlotsContainer/ConstructionArea/StickerRow"]
+layout_mode = 0
+offset_left = 680.0
+offset_right = 810.0
+offset_bottom = 90.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_placeholder")
+
+[node name="ExtraDeckRemoval" parent="SlotsContainer" instance=ExtResource("5_removal")]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 1370.0
@@ -119,12 +264,39 @@ offset_top = 678.0
 offset_right = 1588.0
 offset_bottom = 896.0
 
-[node name="BackButton" parent="." instance=ExtResource("5_back")]
+[node name="NotOpenZone4" type="Panel" parent="SlotsContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 0
+offset_left = 1370.0
+offset_top = 678.0
+offset_right = 1588.0
+offset_bottom = 896.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_construction")
+
+[node name="NotOpenZone4Label" type="Label" parent="SlotsContainer/NotOpenZone4"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.74, 0.91, 1, 1)
+theme_override_colors/font_outline_color = Color(0.015, 0.04, 0.07, 1)
+theme_override_constants/outline_size = 8
+theme_override_font_sizes/font_size = 40
+text = "未开放"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BackButton" parent="." instance=ExtResource("6_back")]
 unique_name_in_owner = true
 layout_mode = 1
 
 [node name="MerchantHandContainer" type="SpineSprite" parent="."]
-skeleton_data_res = ExtResource("6_hand")
+skeleton_data_res = ExtResource("7_hand")
 preview_skin = "Default"
 preview_animation = "-- Empty --"
 preview_frame = false
@@ -134,10 +306,10 @@ scale = Vector2(0.4, 0.4)
 
 [node name="MerchantHand" type="Node" parent="MerchantHandContainer"]
 unique_name_in_owner = true
-script = ExtResource("7_hand_script")
+script = ExtResource("8_hand_script")
 metadata/_custom_type_script = "uid://p34nsajneq80"
 
-[node name="Dialogue" parent="." instance=ExtResource("8_dialogue")]
+[node name="Dialogue" parent="." instance=ExtResource("9_dialogue")]
 unique_name_in_owner = true
 position = Vector2(1410, 271)
 
