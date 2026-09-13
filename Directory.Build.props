@@ -21,7 +21,26 @@
 
     <ItemGroup>
         <Reference Include="sts2" HintPath="$(DebugSts2DataDir)\sts2.dll" Private="True"/>
-        <Reference Include="0Harmony" HintPath="$(Sts2DataDir)\0Harmony.dll" Private="False"/>
+        <Reference Include="0Harmony" HintPath="$(Sts2DataDir)\0Harmony.dll" Private="True"/>
+    </ItemGroup>
+
+    <!-- sts2.dll 的第三方运行时依赖。Godot 编辑器加载模组程序集时会一并加载 sts2.dll，
+         而 sts2.dll 的模块初始化器（SentryAutoInit）会立即初始化 Sentry；若这些程序集
+         不在编辑器输出目录且未登记进 .deps.json，模块初始化器即抛异常，导致所有 C# 脚本
+         类无法注册（表现为 [Export] 不显示、始终提示需要 build）。故必须显式引用并 CopyLocal。
+         它们只复制到构建输出目录，不会随模组 DLL 进入游戏 mods 目录。 -->
+    <ItemGroup>
+        <Reference Include="Sentry" HintPath="$(Sts2DataDir)\Sentry.dll" Private="True"/>
+        <Reference Include="Sentry.Godot" HintPath="$(Sts2DataDir)\Sentry.Godot.dll" Private="True"/>
+        <Reference Include="SharpGen.Runtime" HintPath="$(Sts2DataDir)\SharpGen.Runtime.dll" Private="True"/>
+        <Reference Include="SharpGen.Runtime.COM" HintPath="$(Sts2DataDir)\SharpGen.Runtime.COM.dll" Private="True"/>
+        <Reference Include="SmartFormat" HintPath="$(Sts2DataDir)\SmartFormat.dll" Private="True"/>
+        <Reference Include="SmartFormat.ZString" HintPath="$(Sts2DataDir)\SmartFormat.ZString.dll" Private="True"/>
+        <Reference Include="Steamworks.NET" HintPath="$(Sts2DataDir)\Steamworks.NET.dll" Private="True"/>
+        <Reference Include="System.IO.Hashing" HintPath="$(Sts2DataDir)\System.IO.Hashing.dll" Private="True"/>
+        <Reference Include="Vortice.DXGI" HintPath="$(Sts2DataDir)\Vortice.DXGI.dll" Private="True"/>
+        <Reference Include="Vortice.DirectX" HintPath="$(Sts2DataDir)\Vortice.DirectX.dll" Private="True"/>
+        <Reference Include="Vortice.Mathematics" HintPath="$(Sts2DataDir)\Vortice.Mathematics.dll" Private="True"/>
     </ItemGroup>
 
     <ItemGroup>

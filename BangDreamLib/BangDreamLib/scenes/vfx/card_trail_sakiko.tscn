@@ -1,9 +1,9 @@
 [gd_scene load_steps=20 format=3 uid="uid://bsnkklguqcjg"]
 
-[ext_resource type="Script" uid="uid://c1jqlsvsjptpe" path="res://Scripts/Nodes/MegeScript/CardTrailVfx.cs" id="1_fvy3m"]
+[ext_resource type="Script" uid="uid://c1jqlsvsjptpe" path="res://Scripts/Nodes/MegeScript/BangDreamCardTrailVfx.cs" id="1_fvy3m"]
 [ext_resource type="Texture2D" uid="uid://b7vqn8f75qh4x" path="res://images/packed/vfx/trail.png" id="2_qwb02"]
 [ext_resource type="Texture2D" uid="uid://co4rdu87x6mcr" path="res://images/packed/vfx/trail2.png" id="4_ipfil"]
-[ext_resource type="Script" uid="uid://cj4l6wy07qqqo" path="res://Scripts/Nodes/MegeScript/CardTrail.cs" id="4_qt7ox"]
+[ext_resource type="Script" uid="uid://cj4l6wy07qqqo" path="res://Scripts/Nodes/MegeScript/BangDreamCardTrail.cs" id="4_qt7ox"]
 [ext_resource type="Texture2D" uid="uid://bexbor35725ag" path="res://images/vfx/vfx_ghostly_power_up/sparkle.png" id="6_hwp8s"]
 [ext_resource type="Texture2D" uid="uid://ddg1bga84moge" path="res://BangDreamLib/images/vfx/icon_music_note.png" id="6_jp2pl"]
 [ext_resource type="Texture2D" uid="uid://bk4gpfmy1awke" path="res://images/packed/vfx/small_card_silhouette.png" id="7_toy7j"]

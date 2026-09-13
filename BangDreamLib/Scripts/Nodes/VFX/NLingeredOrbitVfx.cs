@@ -3,9 +3,11 @@ using Godot;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Random;
 using Environment = Godot.Environment;
+using Timer = Godot.Timer;
 
 namespace BangDreamLib.Scripts.Nodes.VFX;
 
+[Tool]
 public sealed partial class NLingeredOrbitVfx : Node2D
 {
     public const string AttachmentId = "lingered_orbit_vfx";
@@ -56,12 +58,80 @@ public sealed partial class NLingeredOrbitVfx : Node2D
     private float _previewHeight = 138f;
     private bool _initialized;
     private bool _isExiting;
+    private Timer? _previewDemoTimer;
+    private int _previewDemoAmount = 3;
+
+    /// <summary>预览时展示的音符数量。</summary>
+    [Export(PropertyHint.Range, "0,12,1")]
+    public int PreviewAmount { get; set; } = 3;
+
+    /// <summary>预览时周期性触发一次增减演示（展示聚集/爆散动画）。游戏内无效。</summary>
+    [Export] public bool LoopPreview { get; set; } = true;
+
+    /// <summary>勾选即重播一次预览（自动复位，便于反复触发）。</summary>
+    [Export]
+    public bool Play
+    {
+        get => false;
+        set
+        {
+            if (value)
+                BeginPreview();
+        }
+    }
 
     public static NLingeredOrbitVfx Create(NCreature creature)
     {
         var vfx = PreloadKey.LingeredOrbitVfx.GetScene().Instantiate<NLingeredOrbitVfx>();
         vfx._creature = creature;
         return vfx;
+    }
+
+    /// <summary>
+    /// 单独预览入口：无 Creature 时按缺省轨道参数初始化，并驱动一次展示。
+    /// 游戏内由 LingeredOrbitManager 通过 Initialize/SubmitResourceAmount 驱动，不经过此处。
+    /// </summary>
+    public void BeginPreview()
+    {
+        if (!IsNodeReady())
+            return;
+
+        // 预览时摆到视口中心。游戏内由绑定生物的位置决定，不进入此分支。
+        VfxPreviewSupport.CenterForPreview(this);
+
+        Initialize(PreviewAmount);
+        _previewDemoAmount = PreviewAmount;
+
+        if (!LoopPreview)
+        {
+            StopPreviewDemo();
+            return;
+        }
+
+        if (_previewDemoTimer != null)
+            return;
+
+        // 用独立的 Timer 驱动增减演示，避免改动本类原有的逐帧动画循环。
+        _previewDemoTimer = new Timer { WaitTime = 2.5f, Autostart = true };
+        _previewDemoTimer.Timeout += OnPreviewDemoTick;
+        AddChild(_previewDemoTimer);
+    }
+
+    private void StopPreviewDemo()
+    {
+        if (_previewDemoTimer == null)
+            return;
+
+        _previewDemoTimer.Timeout -= OnPreviewDemoTick;
+        _previewDemoTimer.QueueFree();
+        _previewDemoTimer = null;
+    }
+
+    private void OnPreviewDemoTick()
+    {
+        // 在 1 与 PreviewAmount 之间来回变化，展示聚集与爆散两种动画。
+        _previewDemoAmount = _previewDemoAmount > 1 ? 1 : PreviewAmount;
+        SubmitResourceAmount(_previewDemoAmount, _previewDemoAmount);
     }
 
     public override void _Ready()
@@ -92,11 +162,16 @@ public sealed partial class NLingeredOrbitVfx : Node2D
         {
             Initialize(initialAmount);
         }
+
+        // 仅在「F6 单独运行预览」时自行驱动一次展示；游戏内由管理器驱动，不进入此分支。
+        if (VfxPreviewSupport.IsPreviewRun(this))
+            CallDeferred(nameof(BeginPreview));
     }
 
     public override void _ExitTree()
     {
         _isExiting = true;
+        StopPreviewDemo();
         _pendingChanges.Clear();
         _previewNotes.Clear();
         _activeChange = null;

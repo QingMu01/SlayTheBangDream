@@ -1,4 +1,5 @@
 using BangDreamLib.Scripts.Enums;
+using BangDreamLib.Scripts.Utils;
 using BangDreamLib.Scripts.Utils.Infos;
 using Godot;
 using MegaCrit.Sts2.Core.Helpers;
@@ -66,9 +67,13 @@ public abstract partial class NBangDreamFlyingVfx : Node2D
 
     private void Destroy()
     {
-        if (IsInstanceValid(this) && Context.Lifecycle == VfxLifecycle.Finish)
-        {
-            this.QueueFreeSafely();
-        }
+        if (!IsInstanceValid(this) || Context.Lifecycle != VfxLifecycle.Finish)
+            return;
+
+        // 编辑器 / 单独预览时不销毁自身，否则节点会从被编辑的场景里消失。
+        if (!VfxPreviewSupport.ShouldSelfFree(this))
+            return;
+
+        this.QueueFreeSafely();
     }
 }

@@ -1,6 +1,6 @@
 [gd_scene load_steps=14 format=3 uid="uid://r3e6mea37phd"]
 
-[ext_resource type="Script" uid="uid://c61vw8opw6r7u" path="res://Scripts/Nodes/MegeScript/BangDreamAscensionPanel.cs" id="1_yhgpx"]
+[ext_resource type="Script" uid="uid://c61vw8opw6r7u" path="res://Scripts/Nodes/BangDreamAscensionPanel.cs" id="1_yhgpx"]
 [ext_resource type="Script" uid="uid://bfud75nlnqvyj" path="res://Scripts/Nodes/MegeScript/BangDreamGoldArrowButton.cs" id="2_gas87"]
 [ext_resource type="Shader" uid="uid://c66gb6g7tup3n" path="res://shaders/hsv.gdshader" id="3_2vicy"]
 [ext_resource type="Texture2D" uid="uid://b4ffylh" path="res://images/atlases/ui_atlas.sprites/settings_tiny_left_arrow.tres" id="3_m8tgv"]

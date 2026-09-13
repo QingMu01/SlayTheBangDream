@@ -21,7 +21,7 @@ window/size/viewport_height=1080
 
 [dotnet]
 
-project/assembly_name="BangDreamInSpire"
+project/assembly_name="BangDreamLib"
 project/solution_directory="../"
 
 [editor]
