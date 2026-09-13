@@ -1,4 +1,4 @@
-namespace BangDreamLib.Scripts.Mechanics.MusicNote;
+namespace BangDreamLib.Scripts.Mechanics.AsyncDamage;
 
 /// <summary>
 /// 定义任意“启动动画后脱手，并在命中时刻结算伤害”的效果。
@@ -8,6 +8,7 @@ public interface IAsyncDamageEffect
 {
     /// <summary>
     /// 在每个根动画启动前执行，用于播放施法动作或控制批次生成间隔。
+    /// 运行在脱手的表现泵内，不占用同步 Action。
     /// </summary>
     Task BeforeSpawnAsync(AsyncDamagePreparationContext context)
     {
@@ -27,7 +28,7 @@ public interface IAsyncDamageEffect
     Task<AsyncDamageAnimationHandle> StartAnimationAsync(AsyncDamageSpawnContext context);
 
     /// <summary>
-    /// 在动画抵达目标后由当前同步 Action 调用，施加 <see cref="AsyncDamageHitContext.LockedDamage" />。
+    /// 在动画抵达目标后由独立的同步结算 Action 调用，施加 <see cref="AsyncDamageHitContext.LockedDamage" />。
     /// </summary>
     Task ResolveDamageAsync(AsyncDamageHitContext context);
 

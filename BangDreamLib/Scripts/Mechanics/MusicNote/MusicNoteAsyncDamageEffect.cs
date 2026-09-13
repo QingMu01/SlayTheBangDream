@@ -1,4 +1,5 @@
 using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Mechanics.AsyncDamage;
 using BangDreamLib.Scripts.Nodes.VFX;
 using BangDreamLib.Scripts.Utils;
 using BangDreamLib.Scripts.Utils.Builder;
@@ -67,12 +68,11 @@ internal sealed class MusicNoteAsyncDamageEffect(
                 var start = sourceNode.VfxSpawnPosition;
                 var end = targetNode.VfxSpawnPosition;
                 vfx.SetPath(start, end);
-                // 音符按「进度 = Speed * delta / 直线距离」推进，故抵达耗时恰为 距离 / 速度；
-                // 据此启动命中计时，使玩法结算与音符落地严格同拍。
-                var travelSeconds = start.DistanceTo(end) / (float)vfx.Speed;
+                // 命中时刻由音符真实命中信号（HitTriggered → VfxHandle.Arrived）驱动，
+                // 不再用「距离 / 速度」推算，避免与表现层的 Speed / 缓动耦合。
                 var handle = vfxManager.SubmitVfx(vfx);
                 return Task.FromResult(new AsyncDamageAnimationHandle(
-                    MusicNoteTiming.WaitAsync(travelSeconds),
+                    handle.Arrived,
                     handle.Finished,
                     handle.Context));
             }

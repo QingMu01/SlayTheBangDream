@@ -3,18 +3,18 @@ using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Models;
 
-namespace BangDreamLib.Scripts.Mechanics.MusicNote;
+namespace BangDreamLib.Scripts.Mechanics.AsyncDamage;
 
 /// <summary>
 /// 表示一个已经脱手运行的表现动画。Landing 是动画抵达目标的时刻，玩法结算等待它以保证伤害与命中同拍；
-/// 动画本身不驱动玩法状态，结算始终发生在发起该批次的同步动作内。
+/// 动画本身不驱动玩法状态，结算始终发生在入队后的同步结算 Action 内。
 /// </summary>
 public sealed class AsyncDamageAnimationHandle(
     Task landing,
     Task completion,
     VfxContext? context = null)
 {
-    /// <summary>动画抵达目标的时刻。玩法结算等待此任务，使伤害在音符命中时才生效。</summary>
+    /// <summary>动画抵达目标的时刻。命中信号驱动此任务，使伤害在音符命中时才结算。</summary>
     public Task Landing { get; } = landing ?? throw new ArgumentNullException(nameof(landing));
 
     /// <summary>动画整体结束的时刻，仅用于观察生命周期与记录异常，不驱动玩法状态。</summary>
@@ -31,6 +31,7 @@ public sealed class AsyncDamageAnimationHandle(
 
 /// <summary>
 /// 一批共享来源、伤害实现和目标策略的脱手异步伤害动画。
+/// 目标与伤害在发射时刻一次性锁定，飞行期间不再读取可变状态。
 /// </summary>
 public sealed record AsyncDamageBatchRequest
 {

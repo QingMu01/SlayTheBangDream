@@ -1,4 +1,5 @@
 using System.Text.Json;
+using BangDreamLib.Scripts.Mechanics.AsyncDamage;
 using BangDreamLib.Scripts.Utils;
 using MegaCrit.Sts2.Core.Context;
 using MegaCrit.Sts2.Core.Entities.Creatures;
@@ -152,7 +153,7 @@ public static class MusicNoteCmd
             FixedTarget = target,
             Source = source
         };
-        return CombatAsyncDamageManager.Shared.SubmitAsync(request);
+        return CombatAsyncDamageManager.Shared.LaunchAsync(request);
     }
 
     private static AbstractModel? ResolveSource(MusicNoteRequestPayload payload, Creature dealer)
