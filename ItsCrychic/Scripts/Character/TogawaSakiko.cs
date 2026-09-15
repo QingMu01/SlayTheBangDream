@@ -2,6 +2,7 @@
 using BangDreamLib.Scripts.Enums;
 using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
+using BangDreamLib.Scripts.Mechanics.Perform.Schemes;
 using ItsCrychic.Scripts.Character.CardPools;
 using ItsCrychic.Scripts.Character.PotionPools;
 using ItsCrychic.Scripts.Character.RelicPools;
@@ -23,7 +24,7 @@ public sealed class TogawaSakiko() : BandMemberModel<SakikoStandardCardPool, Sak
     public override string MemberNameRoman => CrychicMemberEnum.Sakiko.GetMemberNameRoman();
     public override string MemberClass => BangDreamClass.Keyboard.GetBandClass();
 
-    public int GetDefaultCapacity => 3;
+    public IPerformScheme CreatePerformScheme() => new SakikoPerformScheme();
 
     public bool AutoGenerateSubsideResource => true;
 

@@ -30,7 +30,7 @@ public class TryHarder() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
         ArgumentNullException.ThrowIfNull(Owner.PlayerCombatState);
 
         var manager = Owner.AttachedData().PerformManager;
-        manager.AddCapacity(Math.Max(0, 7 - manager.Capacity));
+        manager.AddCapacity(Math.Max(0, manager.MaxCapacity - manager.Capacity));
 
         var musicCards = Owner.PlayerCombatState.AllCards
             .Where(card => card.Pile?.Type != PileType.Exhaust)

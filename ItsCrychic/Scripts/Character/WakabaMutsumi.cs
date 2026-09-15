@@ -2,6 +2,7 @@
 using BangDreamLib.Scripts.Enums;
 using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
+using BangDreamLib.Scripts.Mechanics.Perform.Schemes;
 using ItsCrychic.Scripts.Character.CardPools;
 using ItsCrychic.Scripts.Character.PotionPools;
 using ItsCrychic.Scripts.Character.RelicPools;
@@ -24,9 +25,7 @@ public sealed class WakabaMutsumi()
     public override string MemberNameRoman => CrychicMemberEnum.Mutsumi.GetMemberNameRoman();
     public override string MemberClass => BangDreamClass.Guitar.GetBandClass();
 
-    public override bool AllowSelect => false;
-
-    public int GetDefaultCapacity => 1;
+    public IPerformScheme CreatePerformScheme() => new MutsumiPerformScheme();
 
     public bool ShouldAlwaysShowExtraDeck => true;
     public bool ShouldAlwaysShowExtraPile => true;

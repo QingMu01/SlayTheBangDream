@@ -21,8 +21,7 @@ public class KamisamaBaka() : AbstractSakikoMusicCard(CardRarity.Rare, TargetTyp
             .Where(card => card != this && !card.IsUpgraded && card is IPerformCard)
             .ToList();
         var performCard = Owner.RunState.Rng.CombatCardSelection.NextItem(performCandidates);
-        if (performCard is null or KamisamaBaka) return;
-
+        if (performCard == null || (performCard != this && performCard is KamisamaBaka)) return;
         CardCmd.Upgrade(performCard);
         for (var repeat = 0; repeat < DynamicVars.Repeat.IntValue; repeat++)
         {

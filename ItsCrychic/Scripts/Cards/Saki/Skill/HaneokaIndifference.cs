@@ -18,7 +18,7 @@ public class HaneokaIndifference() : AbstractSakikoCard(CustomCost, CustomType, 
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
-        CardKeyword.Ethereal
+        CardKeyword.Exhaust
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
@@ -33,7 +33,7 @@ public class HaneokaIndifference() : AbstractSakikoCard(CustomCost, CustomType, 
 
         await CreatureCmd.GainBlock(Owner.Creature, DynamicVars.Block, play);
 
-        var pileCards = PileType.Draw.GetPile(Owner).Cards.ToList();
+        var pileCards = PileType.Deck.GetPile(Owner).Cards.ToList();
         if (IsUpgraded)
         {
             pileCards.AddRange(BangDreamConst.ExtraDeck.GetPile(Owner).Cards.ToList());
@@ -47,7 +47,7 @@ public class HaneokaIndifference() : AbstractSakikoCard(CustomCost, CustomType, 
 
         foreach (var selectedCard in selectedCards)
         {
-            var cloneCard = CombatState.RunState.CloneCard(selectedCard.ToMutable());
+            var cloneCard = CombatState.CloneCard(selectedCard);
             await CardPileCmd.AddGeneratedCardToCombat(cloneCard, PileType.Hand, Owner);
         }
     }

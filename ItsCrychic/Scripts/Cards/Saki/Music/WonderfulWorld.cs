@@ -4,6 +4,7 @@ using ItsCrychic.Scripts.Cards.Token;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Models;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
@@ -11,6 +12,11 @@ namespace ItsCrychic.Scripts.Cards.Saki.Music;
 public class WonderfulWorld() : AbstractSakikoMusicCard(CardRarity.Uncommon, TargetType.None)
 {
     public override bool IsInstant => IsUpgraded;
+
+    protected override IEnumerable<IHoverTip> CardHoverTips =>
+    [
+        HoverTipFactory.FromCard<Hope>()
+    ];
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
