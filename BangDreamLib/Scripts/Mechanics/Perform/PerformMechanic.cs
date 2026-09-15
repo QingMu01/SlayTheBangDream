@@ -1,5 +1,6 @@
 using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
+using BangDreamLib.Scripts.Mechanics.Perform.Chord;
 using BangDreamLib.Scripts.Nodes;
 using BangDreamLib.Scripts.Utils;
 using Godot;
@@ -56,9 +57,8 @@ public sealed class PerformMechanic : IBangDreamMechanic
             static creature => NPerformArea.Create(creature.Entity.Player),
             static (creature, area) =>
             {
-                area.Visible = creature.Entity.Player is
-                    { Character: IPerformableCharacter { GetDefaultCapacity: > 0 } };
-                area.GlobalPosition = creature.VfxSpawnPosition + Vector2.Left * (creature.Hitbox.Size.X / 2 + 50f);
+                area.Visible = BangDreamCapabilities.HasPerform(creature.Entity.Player);
+                area.GlobalPosition = ResolvePerformAreaPosition(creature);
             },
             new NodeAttachmentOptions
             {
@@ -69,6 +69,7 @@ public sealed class PerformMechanic : IBangDreamMechanic
             });
 
         PerformManager.InitializeNetwork();
+        PerformChordStore.EnsureRegistered();
 
         context.SubscribeLifecycle<ModelRegistryInitializedEvent>(_ =>
         {
@@ -110,5 +111,23 @@ public sealed class PerformMechanic : IBangDreamMechanic
         }
 
         return cardModel.Owner.Creature.GetCreatureNode()?.VfxSpawnPosition;
+    }
+
+    /// <summary>
+    /// 按角色演奏方案给出的摆放规则定位演奏区域。
+    /// </summary>
+    private static Vector2 ResolvePerformAreaPosition(NCreature creature)
+    {
+        var scheme = creature.Entity.Player?.Character is IPerformableCharacter performable
+            ? performable.CreatePerformScheme()
+            : null;
+        var placement = scheme?.AreaPlacement ?? new PerformAreaPlacement(PerformAreaAnchor.LeftOfHitbox, 50f);
+
+        return placement.Anchor switch
+        {
+            PerformAreaAnchor.HitboxCenter => creature.Hitbox.GlobalPosition + creature.Hitbox.Size / 2f,
+            _ => creature.VfxSpawnPosition +
+                 Vector2.Left * (creature.Hitbox.Size.X / 2 + placement.HorizontalMargin)
+        };
     }
 }

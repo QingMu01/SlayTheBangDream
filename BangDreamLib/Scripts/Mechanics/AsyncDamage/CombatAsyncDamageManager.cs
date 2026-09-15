@@ -142,7 +142,7 @@ public sealed class CombatAsyncDamageManager
         NoteState? note;
         lock (session.Gate)
         {
-            if (!session.Batches.TryGetValue(batchId, out var batch) ||
+            if (!session.Batches.TryGetValue(batchId, out _) ||
                 !session.Notes.TryGetValue(noteId, out note) ||
                 note.Resolved)
                 return;
@@ -190,7 +190,7 @@ public sealed class CombatAsyncDamageManager
             lock (session.Gate)
             {
                 batches = session.Batches.Values
-                    .Where(batch => !batch.Finished && batch.PendingNotes > 0)
+                    .Where(batch => batch is { Finished: false, PendingNotes: > 0 })
                     .OrderBy(batch => batch.BatchId)
                     .ToArray();
             }
@@ -223,7 +223,7 @@ public sealed class CombatAsyncDamageManager
                 next.Resolved = true;
             }
 
-            await SpawnForInlineResolutionAsync(session, next);
+            await SpawnForInlineResolutionAsync(next);
             await AdvanceAsync(session, next, spawnChains: false);
         }
 
@@ -233,7 +233,7 @@ public sealed class CombatAsyncDamageManager
     /// <summary>
     /// 无交互模式下的退化表现：仍走一次动画启动以获得上下文（保证批末回调语义不变），但不等待命中，立即结算。
     /// </summary>
-    private static async Task SpawnForInlineResolutionAsync(Session session, NoteState note)
+    private static async Task SpawnForInlineResolutionAsync(NoteState note)
     {
         var batch = note.Batch;
         var request = batch.Request;

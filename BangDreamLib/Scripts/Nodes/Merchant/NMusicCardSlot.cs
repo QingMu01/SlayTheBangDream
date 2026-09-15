@@ -62,11 +62,6 @@ public partial class NMusicCardSlot : NMerchantSlot
 
     protected override void UpdateVisual()
     {
-        if (_entry == null)
-        {
-            return;
-        }
-
         base.UpdateVisual();
         var creationResult = _entry.CreationResult;
         if (creationResult == null)
@@ -162,9 +157,9 @@ public partial class NMusicCardSlot : NMerchantSlot
             return;
         }
 
-        SceneTreeTimer source = GetTree().CreateTimer(0.4);
+        var source = GetTree().CreateTimer(0.4);
         await source.AwaitSignal(SceneTreeTimer.SignalName.Timeout, this);
-        foreach (RelicModel modifyingRelic in creationResult.ModifyingRelics)
+        foreach (var modifyingRelic in creationResult.ModifyingRelics)
         {
             modifyingRelic.Flash();
             _cardNode?.FlashRelicOnCard(modifyingRelic);
@@ -175,10 +170,6 @@ public partial class NMusicCardSlot : NMerchantSlot
     {
         base._ExitTree();
         _cardNode?.QueueFreeSafely();
-        if (_entry == null)
-        {
-            return;
-        }
 
         _entry.EntryUpdated -= UpdateVisual;
         _entry.PurchaseFailed -= OnPurchaseFailed;

@@ -1,4 +1,6 @@
 using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Interfaces.CharacterAugment;
+using BangDreamLib.Scripts.Mechanics.Perform;
 using BangDreamLib.Scripts.Nodes.SubNode;
 using BangDreamLib.Scripts.Utils;
 using BangDreamLib.Scripts.Utils.Infos;
@@ -11,12 +13,18 @@ using STS2RitsuLib.Combat.SecondaryResources;
 
 namespace BangDreamLib.Scripts.Nodes;
 
+/// <summary>
+/// 歌单演奏区域节点。槽位数量与布局拓扑由角色的演奏方案提供，本节点只负责
+/// 像素换算、可见性与缓动。
+/// </summary>
 public partial class NPerformArea : Control
 {
-    private const int MaxCapacity = 7;
     private const float ItemHeight = 64f;
     private const float ItemSpacing = 70f;
     private const float ItemApproachSpacing = 25f;
+
+    /// <summary>四角槽位与命中框边界之间的水平间距。</summary>
+    private const float SlotHitboxGap = 10f;
 
     private const float LayoutDuration = 0.25f;
     private const float SlotEntranceDuration = 0.3f;
@@ -41,17 +49,20 @@ public partial class NPerformArea : Control
     private Control? _itemContainer;
     private TextureRect? _hint;
     private Player? _player;
+    private IPerformScheme? _scheme;
 
     private readonly List<NPerformItem> _items = [];
     private readonly List<NPerformItem> _pendingEntranceSlots = [];
     private readonly List<SlotEntranceState> _enteringSlots = [];
+    private readonly HashSet<int> _activeSlots = [];
+    private readonly List<int> _newlyActiveSlots = [];
     private readonly Dictionary<CardModel, Vector2> _lastCardSlotCenters = [];
     private readonly HashSet<CardModel> _pendingArrivalBounces = [];
 
     private RunningTween? _layoutTween;
     private RunningTween? _slotEntranceTween;
     private RunningTween? _hintTween;
-    private int _capacity;
+    private int _slotCount;
     private int _displayedHintAmount;
     private int _targetHintAmount;
     private NPerformItem? _hintHighlightedSlot;
@@ -77,6 +88,14 @@ public partial class NPerformArea : Control
         return area;
     }
 
+    /// <summary>
+    /// 绑定角色的演奏方案。必须在 <see cref="SyncSlots" /> 之前调用。
+    /// </summary>
+    public void SubmitScheme(IPerformScheme scheme)
+    {
+        _scheme = scheme;
+    }
+
     public override void _Ready()
     {
         _itemContainer = GetNode<Control>("%ItemContainer");
@@ -84,11 +103,11 @@ public partial class NPerformArea : Control
         _hintPositionX = _hint.Position.X;
         _items.AddRange(_itemContainer.GetChildren().OfType<NPerformItem>());
 
-        Visible = _capacity > 0;
+        Visible = _slotCount > 0;
         EnsureSlotCount();
         ApplyItemScale();
         ApplyLayoutImmediately();
-        SetHintTarget(GetLingeredResourceAmount(), true);
+        SetHintTarget(GetHintAmount(), true);
         Callable.From(ApplyDeferredLayout).CallDeferred();
     }
 
@@ -97,6 +116,11 @@ public partial class NPerformArea : Control
         if (_player == null)
         {
             throw new InvalidOperationException("player is null.");
+        }
+
+        if (_scheme is not { UsesSlotHint: true })
+        {
+            return;
         }
 
         SecondaryResourceStateStore.Get(_player).Changed += OnSecondaryResourceChanged;
@@ -118,15 +142,33 @@ public partial class NPerformArea : Control
         _pendingArrivalBounces.Clear();
     }
 
-    public void SetCapacity(int capacity)
+    /// <summary>
+    /// 同步演奏区域的总槽位数与已激活槽位集合。总槽位数决定节点数量，
+    /// 激活集合决定哪些槽位可见并参与布局。
+    /// </summary>
+    public void SyncSlots(int totalSlotCount, IReadOnlyCollection<int> activeSlots)
     {
-        var normalizedCapacity = Math.Clamp(capacity, 0, MaxCapacity);
-        Visible = normalizedCapacity > 0;
-        if (_capacity == normalizedCapacity) return;
+        var nextSlotCount = Math.Max(0, totalSlotCount);
+        var nextActiveSlots = activeSlots.ToHashSet();
+        var changed = _slotCount != nextSlotCount || !_activeSlots.SetEquals(nextActiveSlots);
 
-        var previousCapacity = _capacity;
-        _capacity = normalizedCapacity;
-        TaskHelper.RunSafely(ApplyCapacityChanged(previousCapacity));
+        _slotCount = nextSlotCount;
+        Visible = _slotCount > 0 && nextActiveSlots.Count > 0;
+
+        // 场景预置的槽位不经过 EnsureSlotCount 的新建路径，镜像状态需在此每次重算。
+        ApplyItemScale();
+
+        if (!changed) return;
+
+        foreach (var slotIndex in nextActiveSlots.Where(slotIndex => !_activeSlots.Contains(slotIndex)))
+        {
+            _newlyActiveSlots.Add(slotIndex);
+        }
+
+        _activeSlots.Clear();
+        _activeSlots.UnionWith(nextActiveSlots);
+
+        TaskHelper.RunSafely(ApplySlotSync());
     }
 
     public void AddItem(CardModel cardModel, PerformContext context, bool waitForCardArrival)
@@ -196,7 +238,7 @@ public partial class NPerformArea : Control
         if (_player == cardModel.Owner)
         {
             var slotIndex = _player.AttachedData().PerformManager.GetExpectedSlotIndex(cardModel);
-            if (slotIndex >= 1 && slotIndex <= _items.Count)
+            if (slotIndex >= 1 && slotIndex <= _items.Count && _activeSlots.Contains(slotIndex))
             {
                 center = _items[slotIndex - 1].GetSlotGlobalCenter();
                 _lastCardSlotCenters[cardModel] = center;
@@ -213,20 +255,28 @@ public partial class NPerformArea : Control
     public void RefreshItemLayout()
     {
         ReassignItemsToSlots();
+        ApplyItemVisibility();
         TaskHelper.RunSafely(AnimateLayout());
     }
 
-    private async Task ApplyCapacityChanged(int previousCapacity)
+    private async Task ApplySlotSync()
     {
         EnsureSlotCount();
-        await AnimateCapacityChanged(previousCapacity, _capacity);
-        await AnimateLayout();
-        SetHintTarget(GetLingeredResourceAmount(), false, true);
-    }
 
-    private Task AnimateCapacityChanged(int previousCapacity, int capacity)
-    {
-        return capacity > previousCapacity ? AnimatePendingSlotEntrances() : Task.CompletedTask;
+        foreach (var slotIndex in _newlyActiveSlots)
+        {
+            if (slotIndex >= 1 && slotIndex <= _items.Count && !_pendingEntranceSlots.Contains(_items[slotIndex - 1]))
+            {
+                _pendingEntranceSlots.Add(_items[slotIndex - 1]);
+            }
+        }
+
+        _newlyActiveSlots.Clear();
+        ApplyItemVisibility();
+
+        await AnimatePendingSlotEntrances();
+        await AnimateLayout();
+        SetHintTarget(GetHintAmount(), false, true);
     }
 
     private Task AnimateLayout()
@@ -235,19 +285,21 @@ public partial class NPerformArea : Control
 
         CancelSlotEntranceTween(true);
         CancelLayoutTween();
-        var orderedItems = GetOrderedItems();
-        if (orderedItems.Count == 0) return Task.CompletedTask;
+        var orderedSlotIndexes = _items.Count == 0
+            ? []
+            : Enumerable.Range(1, _items.Count).Where(_activeSlots.Contains).ToList();
+        if (orderedSlotIndexes.Count == 0) return Task.CompletedTask;
 
         var tween = CreateTween();
         tween.SetParallel();
         tween.SetPauseMode(Tween.TweenPauseMode.Process);
 
-        for (var index = 0; index < orderedItems.Count; index++)
+        foreach (var slotIndex in orderedSlotIndexes)
         {
-            var item = orderedItems[index];
+            var item = _items[slotIndex - 1];
             if (!item.IsInsideTree()) continue;
 
-            tween.TweenProperty(item, "position", GetItemPosition(index), LayoutDuration)
+            tween.TweenProperty(item, "position", GetItemPosition(slotIndex), LayoutDuration)
                 .SetTrans(Tween.TransitionType.Quad)
                 .SetEase(Tween.EaseType.InOut);
         }
@@ -271,30 +323,43 @@ public partial class NPerformArea : Control
     {
         if (_itemContainer == null) return;
 
-        var orderedItems = GetOrderedItems();
-        for (var index = 0; index < orderedItems.Count; index++)
+        ApplyItemVisibility();
+        for (var slotIndex = 1; slotIndex <= _items.Count; slotIndex++)
         {
-            orderedItems[index].Position = GetItemPosition(index);
+            if (!_activeSlots.Contains(slotIndex)) continue;
+            _items[slotIndex - 1].Position = GetItemPosition(slotIndex);
         }
 
         UpdateHintPosition();
+    }
+
+    private void ApplyItemVisibility()
+    {
+        for (var index = 0; index < _items.Count; index++)
+        {
+            _items[index].Visible = _activeSlots.Contains(index + 1);
+        }
     }
 
     private void EnsureSlotCount()
     {
         if (_itemContainer == null) return;
 
-        while (_items.Count < _capacity)
+        while (_items.Count < _slotCount)
         {
+            var slotIndex = _items.Count + 1;
             var slot = NPerformItem.Create(this);
-            slot.Position = GetItemPosition(_items.Count);
-            slot.Scale = Vector2.One * _itemScale;
+            slot.Position = GetItemPosition(slotIndex);
+            ApplySlotScale(slot, slotIndex);
             _items.Add(slot);
             _itemContainer.AddChild(slot);
-            _pendingEntranceSlots.Add(slot);
+            if (_activeSlots.Contains(slotIndex))
+            {
+                _pendingEntranceSlots.Add(slot);
+            }
         }
 
-        while (_items.Count > _capacity)
+        while (_items.Count > _slotCount)
         {
             var slot = _items[^1];
             if (slot.Context != null)
@@ -321,13 +386,15 @@ public partial class NPerformArea : Control
 
         foreach (var slot in _pendingEntranceSlots.ToList())
         {
-            var index = _items.IndexOf(slot);
-            if (index < 0 || !slot.IsInsideTree()) continue;
+            var slotIndex = _items.IndexOf(slot) + 1;
+            if (slotIndex < 1 || !slot.IsInsideTree()) continue;
 
-            var targetPosition = GetItemPosition(index);
+            var targetPosition = GetItemPosition(slotIndex);
             var targetAlpha = slot.Modulate.A;
             _enteringSlots.Add(new SlotEntranceState(slot, targetPosition, targetAlpha));
-            slot.Position = targetPosition + Vector2.Left * SlotEntranceHorizontalOffset;
+            // 自命中框外侧滑入：左侧槽位自左、右侧槽位自右。
+            var outward = IsMirroredCorner(GetCorner(slotIndex)) ? Vector2.Right : Vector2.Left;
+            slot.Position = targetPosition + outward * SlotEntranceHorizontalOffset;
             SetItemAlpha(slot, 0f);
         }
 
@@ -389,10 +456,11 @@ public partial class NPerformArea : Control
 
     private void ApplyItemScale()
     {
-        var scale = Vector2.One * _itemScale;
-        foreach (var item in _items)
+        for (var index = 0; index < _items.Count; index++)
         {
-            item.Scale = scale;
+            var item = _items[index];
+            ApplySlotScale(item, index + 1);
+            item.RefreshSlotColor();
         }
     }
 
@@ -429,19 +497,66 @@ public partial class NPerformArea : Control
         }
     }
 
-    private List<NPerformItem> GetOrderedItems()
-    {
-        return _items.ToList();
-    }
-
-    private Vector2 GetItemPosition(int index)
+    /// <summary>
+    /// 计算全局槽位的像素位置。拓扑来自角色的演奏方案，像素换算留在本节点。
+    /// </summary>
+    /// <remarks>
+    /// 返回的是槽位节点的原点。物品原点（未镜像时）位于物品右边缘中点、物品向左延展，
+    /// 因此命中框左侧的槽位以右边缘贴住命中框左边界；右侧的槽位经水平镜像后原点位于
+    /// 物品左边缘中点、以左边缘贴住命中框右边界。两侧因此呈镜像对称，且
+    /// <see cref="SlotHitboxGap" /> 间距与物品的自适应宽度无关。
+    /// 四角槽位不使用水平靠近偏移，否则会破坏该间距。
+    /// </remarks>
+    private Vector2 GetItemPosition(int slotIndex)
     {
         if (_itemContainer == null) return Vector2.Zero;
 
+        var anchor = _scheme?.GetSlotAnchor(slotIndex) ??
+                     new PerformSlotAnchor(PerformSlotCorner.BottomCenter, slotIndex - 1);
+        var stack = anchor.Offset * ItemSpacing * _itemScale;
+        var approach = anchor.Offset * ItemApproachSpacing * _itemScale;
         var bottom = GetHitboxBottomY() - _itemContainer.Position.Y;
-        var distanceFromBottom = index * ItemSpacing * _itemScale;
-        var distanceTowardsPlayer = index * ItemApproachSpacing * _itemScale;
-        return new Vector2(distanceTowardsPlayer, bottom - ItemHeight / 2f - distanceFromBottom);
+
+        return anchor.Corner switch
+        {
+            PerformSlotCorner.TopLeft => new Vector2(
+                GetHitboxLeftX() - SlotHitboxGap, GetHitboxTopY() + ItemHeight / 2f + stack),
+            PerformSlotCorner.BottomLeft => new Vector2(
+                GetHitboxLeftX() - SlotHitboxGap, bottom - ItemHeight / 2f - stack),
+            PerformSlotCorner.TopRight => new Vector2(
+                GetHitboxRightX() + SlotHitboxGap, GetHitboxTopY() + ItemHeight / 2f + stack),
+            PerformSlotCorner.BottomRight => new Vector2(
+                GetHitboxRightX() + SlotHitboxGap, bottom - ItemHeight / 2f - stack),
+            _ => new Vector2(approach, bottom - ItemHeight / 2f - stack)
+        };
+    }
+
+    private PerformSlotCorner GetCorner(int slotIndex)
+    {
+        return (_scheme?.GetSlotAnchor(slotIndex) ??
+                new PerformSlotAnchor(PerformSlotCorner.BottomCenter, slotIndex - 1)).Corner;
+    }
+
+    /// <summary>命中框右侧的槽位以水平镜像排布，使其与左侧槽位互为镜像。</summary>
+    private static bool IsMirroredCorner(PerformSlotCorner corner)
+    {
+        return corner is PerformSlotCorner.TopRight or PerformSlotCorner.BottomRight;
+    }
+
+    private void ApplySlotScale(NPerformItem item, int slotIndex)
+    {
+        item.ApplyLayoutScale(_itemScale, IsMirroredCorner(GetCorner(slotIndex)));
+    }
+
+    /// <summary>
+    /// 取指定槽位的显示颜色，配色依据由角色的演奏方案决定。
+    /// </summary>
+    internal Color GetSlotColor(NPerformItem item, CardModel? card)
+    {
+        var slotIndex = _items.IndexOf(item) + 1;
+        return slotIndex >= 1 && _scheme != null
+            ? _scheme.GetSlotColor(slotIndex, card)
+            : PerformSlotColors.Default;
     }
 
     private float GetHitboxBottomY()
@@ -452,25 +567,58 @@ public partial class NPerformArea : Control
             : (GetGlobalTransform().AffineInverse() * creatureNode.GetBottomOfHitbox()).Y;
     }
 
+    /// <summary>
+    /// 把命中框角点的全局坐标换算到 <see cref="_itemContainer" /> 的本地坐标。
+    /// </summary>
+    private Vector2 ToContainerPoint(Vector2 hitboxGlobalPoint)
+    {
+        if (_itemContainer == null) return Vector2.Zero;
+        return GetGlobalTransform().AffineInverse() * hitboxGlobalPoint - _itemContainer.Position;
+    }
+
+    private float GetHitboxLeftX()
+    {
+        var creatureNode = _player?.Creature.GetCreatureNode();
+        return creatureNode == null ? 0f : ToContainerPoint(creatureNode.Hitbox.GlobalPosition).X;
+    }
+
+    private float GetHitboxRightX()
+    {
+        var creatureNode = _player?.Creature.GetCreatureNode();
+        return creatureNode == null
+            ? 0f
+            : ToContainerPoint(creatureNode.Hitbox.GlobalPosition + new Vector2(creatureNode.Hitbox.Size.X, 0f)).X;
+    }
+
+    private float GetHitboxTopY()
+    {
+        var creatureNode = _player?.Creature.GetCreatureNode();
+        return creatureNode == null ? 0f : ToContainerPoint(creatureNode.Hitbox.GlobalPosition).Y;
+    }
+
     private void ApplyDeferredLayout()
     {
         if (_isExiting) return;
 
         ApplyLayoutImmediately();
-        SetHintTarget(GetLingeredResourceAmount(), true);
+        SetHintTarget(GetHintAmount(), true);
         TaskHelper.RunSafely(AnimatePendingSlotEntrances());
     }
 
     private void OnSecondaryResourceChanged(SecondaryResourceChangedEvent changedEvent)
     {
-        if (!changedEvent.Definition.Id.Equals(BangDreamConst.LingeredResource)) return;
+        if (_scheme is not { UsesSlotHint: true }) return;
 
-        SetHintTarget(changedEvent.NewAmount);
+        SetHintTarget(GetHintAmount());
     }
 
-    private int GetLingeredResourceAmount()
+    private int GetHintAmount()
     {
-        return _player == null ? 0 : SecondaryResourceCmd.Get(_player, BangDreamConst.LingeredResource);
+        return _scheme is { UsesSlotHint: true } scheme &&
+               _player != null &&
+               scheme.TryGetHintAmount(_player, out var amount)
+            ? amount
+            : 0;
     }
 
     private int NormalizeHintAmount(int amount)
@@ -556,8 +704,7 @@ public partial class NPerformArea : Control
 
     private void UpdateHintPosition()
     {
-        if (_hint == null || _itemContainer == null || _displayedHintAmount < 1 ||
-            _displayedHintAmount > _items.Count)
+        if (_hint == null || _itemContainer == null || !IsHintAmountVisible(_displayedHintAmount))
         {
             return;
         }
@@ -569,9 +716,13 @@ public partial class NPerformArea : Control
         );
     }
 
+    /// <summary>
+    /// 提示仅指向当前已激活的槽位。祥子的激活槽位恰为 <c>1..Capacity</c>，
+    /// 与提示按容量裁剪的既有表现一致。
+    /// </summary>
     private bool IsHintAmountVisible(int amount)
     {
-        return amount >= 1 && amount <= _items.Count;
+        return amount >= 1 && _activeSlots.Contains(amount);
     }
 
     private void UpdateHintSlotHighlight(bool immediately = false)

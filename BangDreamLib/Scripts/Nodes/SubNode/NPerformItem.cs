@@ -1,4 +1,4 @@
-using BangDreamLib.Scripts.Interfaces.CardAugment;
+using BangDreamLib.Scripts.Mechanics.Perform;
 using BangDreamLib.Scripts.Utils;
 using BangDreamLib.Scripts.Utils.Infos;
 using Godot;
@@ -16,9 +16,7 @@ public partial class NPerformItem : NClickableControl
     private static readonly StringName RevealProgressShaderParameter = "reveal_progress";
     private static readonly StringName DotColorShaderParameter = "dot_color";
 
-    private static readonly Color DefaultColor = new("#9d9d9d");
-    private static readonly Color InstantColor = new("#63a5ff");
-    private static readonly Color PerformColor = new("#d30150");
+    private static readonly Color DefaultColor = PerformSlotColors.Default;
 
     private const float HintHighlightExtension = 15f;
     private const float HintHighlightDuration = 0.18f;
@@ -51,6 +49,7 @@ public partial class NPerformItem : NClickableControl
     private bool _isCardEnterBouncePending;
     private bool _isPortraitRevealPending;
     private bool _isWaitingForCardArrival;
+    private bool _isMirrored;
     private float _portraitRevealProgress = 1f;
     private Vector2 _cardContainerBasePosition;
 
@@ -104,11 +103,6 @@ public partial class NPerformItem : NClickableControl
         return item;
     }
 
-    public static Color GetSlotColor(IPerformCard performCard)
-    {
-        return performCard.IsInstant ? InstantColor : PerformColor;
-    }
-
     public override void _Ready()
     {
         _background = GetNode<ColorRect>("%Background");
@@ -126,12 +120,14 @@ public partial class NPerformItem : NClickableControl
         _cardPortrait.Resized += UpdatePortraitShaderSize;
         _cardOverlay.Resized += UpdateOverlayShaderSize;
         _portraitSweepLight.Resized += UpdatePortraitSweepShaderSize;
+        _cardTitle.Resized += ApplyTitleMirror;
 
         UpdateBackgroundShaderSize();
         UpdatePortraitShaderSize();
         UpdateOverlayShaderSize();
         UpdatePortraitSweepShaderSize();
         RefreshVisuals();
+        ApplyTitleMirror();
         SetPortraitRevealProgress(_portraitRevealProgress);
         ApplyHintHighlightImmediately();
         ConnectSignals();
@@ -153,6 +149,7 @@ public partial class NPerformItem : NClickableControl
         if (_cardPortrait != null) _cardPortrait.Resized -= UpdatePortraitShaderSize;
         if (_cardOverlay != null) _cardOverlay.Resized -= UpdateOverlayShaderSize;
         if (_portraitSweepLight != null) _portraitSweepLight.Resized -= UpdatePortraitSweepShaderSize;
+        if (_cardTitle != null) _cardTitle.Resized -= ApplyTitleMirror;
 
         Model = null;
         Context = null;
@@ -173,6 +170,28 @@ public partial class NPerformItem : NClickableControl
 
         var localCenter = _cardContainerBasePosition + _cardContainer.Size / 2f;
         return GetGlobalTransform() * localCenter;
+    }
+
+    /// <summary>
+    /// 应用槽位缩放与水平镜像。演奏区域位于命中框右侧时使用镜像，使左右两侧的槽位
+    /// 互为镜像（节点的负水平缩放会一并翻转形状、揭示方向与弹跳方向）。
+    /// </summary>
+    public void ApplyLayoutScale(float itemScale, bool mirrored)
+    {
+        _isMirrored = mirrored;
+        Scale = new Vector2(mirrored ? -itemScale : itemScale, itemScale);
+        ApplyTitleMirror();
+    }
+
+    /// <summary>
+    /// 抵消镜像对标题文字的影响：文字所在节点再翻转一次，使其保持正读。
+    /// </summary>
+    private void ApplyTitleMirror()
+    {
+        if (_cardTitle == null) return;
+
+        _cardTitle.Scale = _isMirrored ? new Vector2(-1f, 1f) : Vector2.One;
+        _cardTitle.PivotOffset = _isMirrored ? _cardTitle.Size / 2f : Vector2.Zero;
     }
 
     public void PlayCardEnterBounce()
@@ -356,28 +375,33 @@ public partial class NPerformItem : NClickableControl
         }
 
         UpdateAdaptiveWidth();
+        ApplySlotColor();
+    }
 
-        if (_background != null)
+    /// <summary>
+    /// 重新按演奏方案取色。演奏区域在绑定方案后调用，用于修正早于方案绑定就已就绪的槽位。
+    /// </summary>
+    public void RefreshSlotColor()
+    {
+        ApplySlotColor();
+    }
+
+    private void ApplySlotColor()
+    {
+        if (_background == null) return;
+
+        // 槽位配色由角色的演奏方案决定，本节点只负责呈现。
+        _background.Modulate = _parent?.GetSlotColor(this, Model) ?? DefaultColor;
+
+        var dotColor = _background.Modulate;
+        dotColor.A = 0.3f;
+        _cardOverlay?.SetInstanceShaderParameter(DotColorShaderParameter, dotColor);
+
+        if (_portraitSweepLight != null)
         {
-            if (Model is IPerformCard performCard)
-            {
-                _background.Modulate = GetSlotColor(performCard);
-            }
-            else
-            {
-                _background.Modulate = DefaultColor;
-            }
-
-            var dotColor = _background.Modulate;
-            dotColor.A = 0.3f;
-            _cardOverlay?.SetInstanceShaderParameter(DotColorShaderParameter, dotColor);
-
-            if (_portraitSweepLight != null)
-            {
-                var sweepColor = _background.Modulate.Lightened(0.45f);
-                sweepColor.A = PortraitSweepAlpha;
-                _portraitSweepLight.Color = sweepColor;
-            }
+            var sweepColor = _background.Modulate.Lightened(0.45f);
+            sweepColor.A = PortraitSweepAlpha;
+            _portraitSweepLight.Color = sweepColor;
         }
     }
 

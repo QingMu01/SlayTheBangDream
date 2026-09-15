@@ -82,12 +82,14 @@ public static class BangDreamHook
     public static async Task OnCardEnterPerformArea(
         PlayerChoiceContext choiceContext,
         ICombatState combatState,
-        CardModel cardModel)
+        CardModel cardModel,
+        AbstractModel? additionalListenerModel = null)
     {
         await DispatchCombatHooks<IPerformHookListener>(
             choiceContext,
             combatState,
-            listener => listener.OnCardEnterPerformArea(choiceContext, cardModel));
+            listener => listener.OnCardEnterPerformArea(choiceContext, cardModel),
+            additionalListenerModel);
     }
 
     public static async Task OnCardLeavePerformArea(
@@ -100,6 +102,28 @@ public static class BangDreamHook
             combatState,
             listener => listener.OnCardLeavePerformArea(choiceContext, cardModel),
             cardModel);
+    }
+
+    /// <summary>
+    /// 有卡牌进入歌单、且进出结算完成时点。由角色规则（<see cref="IPerformTriggerListener" />）
+    /// 决定是否演奏该牌。
+    /// </summary>
+    /// <remarks>
+    /// 与 <see cref="DispatchCombatHooks{TListener}" /> 不同，本方法不把监听者压入
+    /// <paramref name="choiceContext" /> 的模型栈，以免改变远端展示的
+    /// <see cref="PlayerChoiceContext.LastInvolvedModel" />。
+    /// </remarks>
+    public static async Task OnCardTriggeredPerform(
+        PlayerChoiceContext? choiceContext,
+        ICombatState combatState,
+        CardModel cardModel)
+    {
+        foreach (var model in IterateCombatHookListeners(combatState).Where(model => model is IPerformTriggerListener).ToList())
+        {
+            await ExecuteTaskThenInvokeExecutionFinished(
+                model,
+                ((IPerformTriggerListener)model).OnCardTriggeredPerform(choiceContext, cardModel));
+        }
     }
 
     public static async Task OnCardPerform(

@@ -23,8 +23,8 @@ public class PerformContext(
     public NPerformItem? Slot { get; set; } = slot;
 
     /// <summary>
-    /// 插槽索引
-    /// 范围：1-7
+    /// 插槽索引（全局，1 基）
+    /// 取值范围由角色演奏方案的槽位总数决定。
     /// </summary>
     public int SlotIndex { get; set; } = slotIndex;
 

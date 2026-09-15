@@ -15,34 +15,27 @@ namespace BangDreamLib.Scripts.Mechanics.ExtraDeck;
 /// <summary>
 /// 小祥商人售卖的音乐牌：从角色额外卡池中抽卡，购买后加入额外卡组。
 /// </summary>
-public sealed class MusicCardMerchantEntry : MerchantEntry
+public sealed class MusicCardMerchantEntry(
+    Player player,
+    CardPoolModel cardPool,
+    CardRarity rarity,
+    ISet<CardModel> duplicateGuard)
+    : MerchantEntry(player)
 {
     private const float PriceMultiplier = 1.2f;
-
-    private readonly CardPoolModel _cardPool;
-    private readonly CardRarity _rarity;
-    private readonly ISet<CardModel> _duplicateGuard;
 
     public CardCreationResult? CreationResult { get; private set; }
 
     public override bool IsStocked => CreationResult != null;
 
-    public MusicCardMerchantEntry(Player player, CardPoolModel cardPool, CardRarity rarity,
-        ISet<CardModel> duplicateGuard) : base(player)
-    {
-        _cardPool = cardPool;
-        _rarity = rarity;
-        _duplicateGuard = duplicateGuard;
-    }
-
     public void Populate()
     {
-        var options = _cardPool
+        var options = cardPool
             .GetUnlockedCards(_player.UnlockState, _player.RunState.CardMultiplayerConstraint)
-            .Where(card => !_duplicateGuard.Contains(card.CanonicalInstance))
+            .Where(card => !duplicateGuard.Contains(card.CanonicalInstance))
             .ToList();
-        CreationResult = CardFactory.CreateForMerchant(_player, options, _rarity);
-        _duplicateGuard.Add(CreationResult.Card.CanonicalInstance);
+        CreationResult = CardFactory.CreateForMerchant(_player, options, rarity);
+        duplicateGuard.Add(CreationResult.Card.CanonicalInstance);
         var results = new List<CardCreationResult> { CreationResult };
         Hook.ModifyMerchantCardCreationResults(_player.RunState, _player, results);
         CalcCost();

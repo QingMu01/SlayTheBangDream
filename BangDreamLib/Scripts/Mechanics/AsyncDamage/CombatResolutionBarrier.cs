@@ -17,14 +17,9 @@ public static class CombatResolutionBarrier
             new(TaskCreationOptions.RunContinuationsAsynchronously);
     }
 
-    private sealed class BarrierLease : IDisposable
+    private sealed class BarrierLease(ICombatState combatState) : IDisposable
     {
-        private ICombatState? _combatState;
-
-        public BarrierLease(ICombatState combatState)
-        {
-            _combatState = combatState;
-        }
+        private ICombatState? _combatState = combatState;
 
         public void Dispose()
         {

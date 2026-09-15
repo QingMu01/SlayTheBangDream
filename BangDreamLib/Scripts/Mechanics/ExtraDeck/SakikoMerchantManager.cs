@@ -53,7 +53,7 @@ internal static class SakikoMerchantManager
 
         var merchantButton = BangDreamPreloadManager.GetScene(MerchantButtonScenePath).Instantiate<NMerchantButton>();
         merchantButton.Name = "ExtraCardMerchantButton";
-        merchantButton.Position -= new Vector2(430f, 0f);
+        merchantButton.Position -= new Vector2(430f, 100f);
         merchantButton.IsLocalPlayerDead = supportsExtraCardPool && player.Creature.IsDead;
         merchantButton.PlayerDeadLines = MerchantRoom.Dialogue.PlayerDeadLines;
         room.GetNode<Control>("SceneContainer").AddChildSafely(merchantButton);

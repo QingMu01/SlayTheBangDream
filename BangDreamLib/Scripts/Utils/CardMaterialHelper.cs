@@ -2,7 +2,7 @@ using Godot;
 
 namespace BangDreamLib.Scripts.Utils;
 
-public class CardMaterialHelper
+public static class CardMaterialHelper
 {
     private static Shader ColorOverlayShader =>
         BangDreamPreloadManager.GetShader("res://BangDreamLib/shaders/color_overlay.gdshader");

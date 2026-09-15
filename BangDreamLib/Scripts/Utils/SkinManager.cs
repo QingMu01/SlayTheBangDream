@@ -2,7 +2,7 @@
 
 namespace BangDreamLib.Scripts.Utils;
 
-public class SkinManager
+public static class SkinManager
 {
     private static readonly Dictionary<string, SkinInfo> SkinsMap = new();
 

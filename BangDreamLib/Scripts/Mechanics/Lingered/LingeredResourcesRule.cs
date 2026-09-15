@@ -39,7 +39,8 @@ public sealed class LingeredResourcesRule() : HookedSingletonModel(HookType.Comb
     // 自动生成余音资源唯一渠道
     public override async Task AfterCardPlayedLate(PlayerChoiceContext choiceContext, CardPlay cardPlay)
     {
-        if (cardPlay.Card.Owner.Character is ILingeredResourceCharacter { AutoGenerateSubsideResource: false }) return;
+        // 余音为祥子专属：未声明余音能力的角色既不生成余音，也不参与余音溢出归一化。
+        if (cardPlay.Card.Owner.Character is not ILingeredResourceCharacter { AutoGenerateSubsideResource: true }) return;
         var canGenerateRes = true;
         if (cardPlay.Card is ISubsideCard subsideCard)
         {

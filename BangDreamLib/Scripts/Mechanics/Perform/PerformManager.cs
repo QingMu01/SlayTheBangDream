@@ -4,8 +4,8 @@ using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Interfaces;
 using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
+using BangDreamLib.Scripts.Mechanics.Perform.Schemes;
 using BangDreamLib.Scripts.Nodes;
-using BangDreamLib.Scripts.Nodes.SubNode;
 using BangDreamLib.Scripts.Nodes.VFX;
 using BangDreamLib.Scripts.Utils;
 using BangDreamLib.Scripts.Utils.Infos;
@@ -24,27 +24,33 @@ using MegaCrit.Sts2.Core.Multiplayer.Game;
 using MegaCrit.Sts2.Core.Nodes.Cards;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Runs;
-using STS2RitsuLib.Combat.SecondaryResources;
 using STS2RitsuLib.Networking.ManagedActions;
 using STS2RitsuLib.Scaffolding.Godot.NodeAttachments;
 using STS2RitsuLib.Utils;
 
 namespace BangDreamLib.Scripts.Mechanics.Perform;
 
-public class PerformManager : SingletonModel, IInCombatManager, ISecondaryResourceHookListener
+/// <summary>
+/// 歌单管理器。负责歌单的进出规则、演奏一次的结算与网络同步，并提供演奏 API。
+/// 不决定"何时演奏"（由角色的 <see cref="IPerformTriggerListener" /> 规则发起）、
+/// 也不决定"有多少容量、如何摆放"（由角色的 <see cref="IPerformScheme" /> 提供）。
+/// </summary>
+public class PerformManager : SingletonModel, IInCombatManager
 {
     private enum PerformNetworkActionKind
     {
         Enter,
         Leave,
-        Trigger
+        Trigger,
+        Chord
     }
 
     private sealed record PerformNetworkActionPayload(
         PerformNetworkActionKind Kind,
         uint? CardIndex,
         int SlotIndex,
-        bool IsSubsideTriggered);
+        bool IsSubsideTriggered,
+        int ChordMask);
 
     private static readonly RitsuLibManagedNetActionDescriptor<PerformNetworkActionPayload> PerformNetworkAction = new(
         "BangDreamLib", "perform_lifecycle",
@@ -102,7 +108,13 @@ public class PerformManager : SingletonModel, IInCombatManager, ISecondaryResour
         if (combatState == null) return;
         if (payload.Kind == PerformNetworkActionKind.Trigger)
         {
-            await TryPerformInternal(payload.SlotIndex, payload.IsSubsideTriggered, choiceContext);
+            await PerformSlot(payload.SlotIndex, payload.IsSubsideTriggered, choiceContext);
+            return;
+        }
+
+        if (payload.Kind == PerformNetworkActionKind.Chord)
+        {
+            await PerformChordSlots((PerformChord)payload.ChordMask, choiceContext);
             return;
         }
 
@@ -122,7 +134,13 @@ public class PerformManager : SingletonModel, IInCombatManager, ISecondaryResour
         if (combatState == null) return;
         if (payload.Kind == PerformNetworkActionKind.Trigger)
         {
-            await TryPerformInternal(payload.SlotIndex, payload.IsSubsideTriggered);
+            await PerformSlot(payload.SlotIndex, payload.IsSubsideTriggered);
+            return;
+        }
+
+        if (payload.Kind == PerformNetworkActionKind.Chord)
+        {
+            await PerformChordSlots((PerformChord)payload.ChordMask);
             return;
         }
 
@@ -146,12 +164,13 @@ public class PerformManager : SingletonModel, IInCombatManager, ISecondaryResour
     private static readonly LocString EmptyThink = new(LocTable, MessagePrefix + ZeroCapacityPostfix);
     private static readonly LocString MaxSizeThink = new(LocTable, MessagePrefix + FullCapacityPostfix);
 
-    private const int MaxCapacity = 7;
-
     public override bool ShouldReceiveCombatHooks => true;
 
     private Player? _player;
     private CardPile? _pile;
+
+    private IPerformScheme _scheme = EmptyPerformScheme.Instance;
+    private PerformCapacityState _capacity = new(EmptyPerformScheme.Instance);
 
     private readonly Queue<CardModel> _cardsAwaitingArrival = [];
     private readonly HashSet<CardModel> _cardsWithArrivalVisual = [];
@@ -182,7 +201,14 @@ public class PerformManager : SingletonModel, IInCombatManager, ISecondaryResour
         }
     }
 
-    public int Capacity { get; private set; }
+    /// <summary>当前已激活的演奏槽位总数。</summary>
+    public int Capacity => _capacity.ActiveSlotCount;
+
+    /// <summary>全部演奏分组的容量上限之和。</summary>
+    public int MaxCapacity => _capacity.TotalSlotCount;
+
+    /// <summary>角色提供的演奏方案（不可变策略）。</summary>
+    public IPerformScheme Scheme => _scheme;
 
     public NPerformArea PerformArea { get; private set; } = null!;
 
@@ -202,25 +228,41 @@ public class PerformManager : SingletonModel, IInCombatManager, ISecondaryResour
         return new PerformContext(null, null);
     });
 
-    public void AddCapacity(int amount)
+    /// <summary>
+    /// 增加演奏容量。未指定和弦分组时对全部分组生效。
+    /// </summary>
+    public void AddCapacity(int amount, PerformChord? chord = null)
     {
         if (amount <= 0) return;
-        if (Capacity == MaxCapacity)
-        {
-            ThinkCmd.Play(MaxSizeThink, Player.Creature, 1.5d);
-            return;
-        }
 
-        Capacity = Math.Min(MaxCapacity, Capacity + amount);
-        PerformArea.SetCapacity(Capacity);
+        switch (_capacity.Add(amount, chord))
+        {
+            case PerformCapacityChangeResult.Applied:
+                SyncPerformArea();
+                break;
+            case PerformCapacityChangeResult.RejectedAtMax:
+                ThinkCmd.Play(MaxSizeThink, Player.Creature, 1.5d);
+                break;
+            case PerformCapacityChangeResult.Ignored:
+            default:
+                break;
+        }
     }
 
-    public void ReduceCapacity(int amount)
+    /// <summary>
+    /// 减少演奏容量。未指定和弦分组时对全部分组生效。
+    /// </summary>
+    public void ReduceCapacity(int amount, PerformChord? chord = null)
     {
         if (amount <= 0) return;
-        Capacity = Math.Max(0, Capacity - amount);
-        PerformArea.SetCapacity(Capacity);
+        _capacity.Reduce(amount, chord);
+        SyncPerformArea();
         TaskHelper.RunSafely(RemoveOverflowItems());
+    }
+
+    private void SyncPerformArea()
+    {
+        PerformArea.SyncSlots(_capacity.TotalSlotCount, _capacity.ActiveSlots);
     }
 
     public async Task Clean()
@@ -284,6 +326,8 @@ public class PerformManager : SingletonModel, IInCombatManager, ISecondaryResour
         if (!CombatManager.Instance.IsInProgress)
             return;
 
+        // 离开歌单即视为本次入场结束：再次进入时应重新触发即兴演奏与入场效果。
+        _instantPerformedCards.Remove(cardModel);
         PerformArea.RemoveItem(cardModel);
         RemoveAwaitingArrival(cardModel);
         _cardsWithArrivalVisual.Remove(cardModel);
@@ -325,8 +369,7 @@ public class PerformManager : SingletonModel, IInCombatManager, ISecondaryResour
 
         var overflowItems = from cardModel in PerformPile.Cards
             let performContext = CardContexts.GetOrCreate(cardModel)
-            where !pendingAdditions.Contains(cardModel) &&
-                  (performContext.SlotIndex < 1 || performContext.SlotIndex > Capacity)
+            where !pendingAdditions.Contains(cardModel) && !IsValidSlot(performContext.SlotIndex)
             select cardModel;
 
         foreach (var overflowItem in overflowItems.ToList())
@@ -364,9 +407,9 @@ public class PerformManager : SingletonModel, IInCombatManager, ISecondaryResour
             if (!_cardsPendingArrival.Contains(cardModel) && PerformPile.Cards.Contains(cardModel))
                 PerformArea.AddItem(cardModel, performContext, _cardsWithArrivalVisual.Contains(cardModel));
 
-            await TryInstantInternal(cardModel, choiceContext);
+            await BangDreamHook.OnCardTriggeredPerform(choiceContext, cardModel.CombatState, cardModel);
 
-            await BangDreamHook.OnCardEnterPerformArea(choiceContext, cardModel.CombatState, cardModel);
+            await BangDreamHook.OnCardEnterPerformArea(choiceContext, cardModel.CombatState, cardModel, cardModel);
 
             await RemoveOverflowItems();
         }
@@ -410,7 +453,10 @@ public class PerformManager : SingletonModel, IInCombatManager, ISecondaryResour
         await RemoveOverflowItems();
     }
 
-    private async Task TryPerformInternal(
+    /// <summary>
+    /// 演奏指定全局槽位中的卡牌。仅当该槽位存在非即兴牌时生效。
+    /// </summary>
+    public async Task PerformSlot(
         int slotIndex,
         bool isSubsideTriggered = false,
         PlayerChoiceContext? choiceContext = null)
@@ -439,7 +485,22 @@ public class PerformManager : SingletonModel, IInCombatManager, ISecondaryResour
         }
     }
 
-    private async Task TryInstantInternal(CardModel cardModel, PlayerChoiceContext? choiceContext = null)
+    /// <summary>
+    /// 一次性奏响指定和弦掩码内所有分组的全部卡牌。传入 <see langword="null" /> 或
+    /// <see cref="PerformChord.None" /> 时奏响全部分组。
+    /// </summary>
+    public async Task PerformChordSlots(PerformChord? chord = null, PlayerChoiceContext? choiceContext = null)
+    {
+        foreach (var slotIndex in _capacity.GetActiveSlots(chord ?? PerformChord.None))
+        {
+            await PerformSlot(slotIndex, false, choiceContext);
+        }
+    }
+
+    /// <summary>
+    /// 让指定卡牌立即"即兴"演奏。同一张牌在一次入场内只即兴一次。
+    /// </summary>
+    public async Task TryInstant(CardModel cardModel, PlayerChoiceContext? choiceContext = null)
     {
         ArgumentNullException.ThrowIfNull(cardModel.CombatState);
 
@@ -447,10 +508,6 @@ public class PerformManager : SingletonModel, IInCombatManager, ISecondaryResour
         {
             if (!_instantPerformedCards.Add(cardModel))
             {
-#if DEBUG
-                BangDreamLibCore.Logger.Info(
-                    $"Ignored duplicate instant perform: player={Player.NetId} card={cardModel.Id} instance={cardModel.GetHashCode()}");
-#endif
                 return;
             }
 
@@ -459,6 +516,41 @@ public class PerformManager : SingletonModel, IInCombatManager, ISecondaryResour
             BangDreamLibCore.Logger.Info(
                 $"Player {Player.Character} ({Player.NetId}) Instant Perform : {cardModel.Title}");
         }
+    }
+
+    /// <summary>
+    /// 发起一次槽位演奏请求。单机或请求被拒时在本地执行。
+    /// </summary>
+    public void RequestSlotPerform(int slotIndex, bool isSubsideTriggered)
+    {
+        RequestPerformAction(new PerformNetworkActionPayload(
+            PerformNetworkActionKind.Trigger,
+            null,
+            slotIndex,
+            isSubsideTriggered,
+            (int)PerformChord.None));
+    }
+
+    /// <summary>
+    /// 发起一次和弦演奏请求。单机或请求被拒时在本地执行。
+    /// </summary>
+    public void RequestChordPerform(PerformChord chord)
+    {
+        RequestPerformAction(new PerformNetworkActionPayload(
+            PerformNetworkActionKind.Chord,
+            null,
+            0,
+            false,
+            (int)chord));
+    }
+
+    private void RequestPerformAction(PerformNetworkActionPayload payload)
+    {
+        if (!CombatManager.Instance.IsInProgress) return;
+        if (!LocalContext.IsMe(Player)) return;
+
+        if (!RitsuLibManagedNetActions.Request(null, PerformNetworkAction, payload, Player.NetId))
+            TaskHelper.RunSafely(HandleRejectedNetworkAction(payload));
     }
 
     public async Task PerformCard(CardModel cardModel, bool isAutoPerform = false)
@@ -510,7 +602,7 @@ public class PerformManager : SingletonModel, IInCombatManager, ISecondaryResour
         if (!PerformArea.TryGetCardSlotCenter(cardModel, out var slotCenter)) return;
 
         var vfx = BangDreamPreloadManager.GetScene(PerformFlashVfxPath).Instantiate<PerformFlashVfx>();
-        vfx.FlashColor = NPerformItem.GetSlotColor(performCard);
+        vfx.FlashColor = _scheme.GetSlotColor(CardContexts.GetOrCreate(cardModel).SlotIndex, cardModel);
         vfx.Scale = Vector2.One * PerformArea.ItemScale;
 
         PerformArea.AddChildSafely(vfx);
@@ -531,6 +623,12 @@ public class PerformManager : SingletonModel, IInCombatManager, ISecondaryResour
                 nameof(orderedCards));
         }
 
+        // 重排视为"重新加入歌单"：清空本次入场的即兴标记，使即兴牌重新演奏。
+        foreach (var card in orderedCards)
+        {
+            _instantPerformedCards.Remove(card);
+        }
+
         for (var index = 0; index < orderedCards.Count; index++)
         {
             var context = CardContexts.GetOrCreate(orderedCards[index]);
@@ -544,8 +642,8 @@ public class PerformManager : SingletonModel, IInCombatManager, ISecondaryResour
         {
             if (card.Pile != PerformPile || card.CombatState == null) continue;
 
-            await TryInstantInternal(card);
-            await BangDreamHook.OnCardEnterPerformArea(choiceContext, card.CombatState, card);
+            await BangDreamHook.OnCardTriggeredPerform(null, card.CombatState, card);
+            await BangDreamHook.OnCardEnterPerformArea(choiceContext, card.CombatState, card, card);
         }
     }
 
@@ -577,6 +675,10 @@ public class PerformManager : SingletonModel, IInCombatManager, ISecondaryResour
         }
     }
 
+    /// <summary>
+    /// 为入队卡牌生成本次入队规划。槽位算法按"卡牌所属分组的组内序号"运作，
+    /// 再映射回全局槽位索引，因此单分组（祥子）与多分组（睦）共用同一套规则。
+    /// </summary>
     private EnqueuePlan? CreateEnqueuePlan(CardModel incomingCard)
     {
         if (Capacity <= 0) return null;
@@ -587,69 +689,101 @@ public class PerformManager : SingletonModel, IInCombatManager, ISecondaryResour
             return new EnqueuePlan(incomingContext.SlotIndex, null, []);
         }
 
+        var groupSlots = _capacity.GetActiveSlots(_capacity.ResolveGroup(incomingCard));
+        if (groupSlots.Count == 0) return null;
+
+        var groupSlotSet = groupSlots.ToHashSet();
         var occupiedSlots = PerformPile.Cards
             .Where(card => card != incomingCard)
             .Select(card => new OccupiedSlot(card, CardContexts.GetOrCreate(card)))
-            .Where(slot => IsValidSlot(slot.Context.SlotIndex))
+            .Where(slot => groupSlotSet.Contains(slot.Context.SlotIndex))
             .ToDictionary(slot => slot.Context.SlotIndex);
 
-        if (incomingContext.Strategy == PerformEnqueueStrategy.Fixed &&
-            IsValidSlot(incomingContext.AspirationSlot))
+        var aspirationLocal = ToLocalOrdinal(groupSlots, incomingContext.AspirationSlot);
+
+        if (incomingContext.Strategy == PerformEnqueueStrategy.Fixed && aspirationLocal > 0)
         {
-            occupiedSlots.TryGetValue(incomingContext.AspirationSlot, out var displacedSlot);
-            return new EnqueuePlan(incomingContext.AspirationSlot, displacedSlot?.Card, []);
+            var aspirationSlot = groupSlots[aspirationLocal - 1];
+            occupiedSlots.TryGetValue(aspirationSlot, out var displacedSlot);
+            return new EnqueuePlan(aspirationSlot, displacedSlot?.Card, []);
         }
 
         if (incomingContext.Strategy is not (PerformEnqueueStrategy.Default or PerformEnqueueStrategy.Fixed))
         {
-            var aspirationSlot = Math.Clamp(incomingContext.AspirationSlot, 1, Capacity);
-            var availableSlot = EnumerateCandidateSlots(incomingContext.Strategy, aspirationSlot)
-                .FirstOrDefault(slotIndex => !occupiedSlots.ContainsKey(slotIndex));
-            if (availableSlot > 0)
+            var clampedLocal = Math.Clamp(aspirationLocal, 1, groupSlots.Count);
+            var availableLocal = EnumerateCandidateSlots(incomingContext.Strategy, clampedLocal, groupSlots.Count)
+                .FirstOrDefault(local => !occupiedSlots.ContainsKey(groupSlots[local - 1]));
+            if (availableLocal > 0)
             {
-                return new EnqueuePlan(availableSlot, null, []);
+                return new EnqueuePlan(groupSlots[availableLocal - 1], null, []);
             }
         }
 
-        var firstAvailableSlot = Enumerable.Range(1, Capacity)
-            .FirstOrDefault(slotIndex => !occupiedSlots.ContainsKey(slotIndex));
-        if (firstAvailableSlot > 0)
+        var firstAvailableLocal = Enumerable.Range(1, groupSlots.Count)
+            .FirstOrDefault(local => !occupiedSlots.ContainsKey(groupSlots[local - 1]));
+        if (firstAvailableLocal > 0)
         {
+            var targetSlot = groupSlots[firstAvailableLocal - 1];
             var slotChanges = occupiedSlots.Values
-                .Where(slot => slot.Context.SlotIndex < firstAvailableSlot)
-                .Select(slot => new SlotChange(slot.Context, slot.Context.SlotIndex + 1))
+                .Where(slot => slot.Context.SlotIndex < targetSlot)
+                .Select(slot => new SlotChange(slot.Context, ToNextSlot(groupSlots, slot.Context.SlotIndex)))
                 .ToList();
-            return new EnqueuePlan(1, null, slotChanges);
+            return new EnqueuePlan(groupSlots[0], null, slotChanges);
         }
 
-        occupiedSlots.TryGetValue(Capacity, out var overflowSlot);
+        var lastSlot = groupSlots[^1];
+        occupiedSlots.TryGetValue(lastSlot, out var overflowSlot);
         var overflowSlotChanges = occupiedSlots.Values
-            .Where(slot => slot.Context.SlotIndex < Capacity)
-            .Select(slot => new SlotChange(slot.Context, slot.Context.SlotIndex + 1))
+            .Where(slot => slot.Context.SlotIndex < lastSlot)
+            .Select(slot => new SlotChange(slot.Context, ToNextSlot(groupSlots, slot.Context.SlotIndex)))
             .ToList();
-        return new EnqueuePlan(1, overflowSlot?.Card, overflowSlotChanges);
+        return new EnqueuePlan(groupSlots[0], overflowSlot?.Card, overflowSlotChanges);
+    }
+
+    /// <summary>全局槽位索引在组内的 1 基序号；不在该组内时返回 0。</summary>
+    private static int ToLocalOrdinal(IReadOnlyList<int> groupSlots, int slotIndex)
+    {
+        for (var index = 0; index < groupSlots.Count; index++)
+        {
+            if (groupSlots[index] == slotIndex)
+            {
+                return index + 1;
+            }
+        }
+
+        return 0;
+    }
+
+    /// <summary>组内上移一格后的全局槽位索引；已在组末时保持原值。</summary>
+    private static int ToNextSlot(IReadOnlyList<int> groupSlots, int slotIndex)
+    {
+        var localOrdinal = ToLocalOrdinal(groupSlots, slotIndex);
+        return localOrdinal >= 1 && localOrdinal < groupSlots.Count ? groupSlots[localOrdinal] : slotIndex;
     }
 
     private bool IsValidSlot(int slotIndex)
     {
-        return slotIndex >= 1 && slotIndex <= Capacity;
+        return _capacity.IsValidSlot(slotIndex);
     }
 
-    private IEnumerable<int> EnumerateCandidateSlots(PerformEnqueueStrategy strategy, int aspirationSlot)
+    private static IEnumerable<int> EnumerateCandidateSlots(
+        PerformEnqueueStrategy strategy,
+        int aspirationSlot,
+        int slotCount)
     {
         return strategy switch
         {
-            PerformEnqueueStrategy.Bottom => EnumerateBottomFirst(aspirationSlot),
-            PerformEnqueueStrategy.Top => EnumerateTopFirst(aspirationSlot),
-            _ => EnumerateNearbyFirst(aspirationSlot)
+            PerformEnqueueStrategy.Bottom => EnumerateBottomFirst(aspirationSlot, slotCount),
+            PerformEnqueueStrategy.Top => EnumerateTopFirst(aspirationSlot, slotCount),
+            _ => EnumerateNearbyFirst(aspirationSlot, slotCount)
         };
     }
 
-    private IEnumerable<int> EnumerateNearbyFirst(int aspirationSlot)
+    private static IEnumerable<int> EnumerateNearbyFirst(int aspirationSlot, int slotCount)
     {
         yield return aspirationSlot;
 
-        for (var offset = 1; offset < Capacity; offset++)
+        for (var offset = 1; offset < slotCount; offset++)
         {
             var lower = aspirationSlot - offset;
             if (lower >= 1)
@@ -658,16 +792,16 @@ public class PerformManager : SingletonModel, IInCombatManager, ISecondaryResour
             }
 
             var upper = aspirationSlot + offset;
-            if (upper <= Capacity)
+            if (upper <= slotCount)
             {
                 yield return upper;
             }
         }
     }
 
-    private IEnumerable<int> EnumerateTopFirst(int aspirationSlot)
+    private static IEnumerable<int> EnumerateTopFirst(int aspirationSlot, int slotCount)
     {
-        for (var slotIndex = aspirationSlot; slotIndex <= Capacity; slotIndex++)
+        for (var slotIndex = aspirationSlot; slotIndex <= slotCount; slotIndex++)
         {
             yield return slotIndex;
         }
@@ -678,37 +812,16 @@ public class PerformManager : SingletonModel, IInCombatManager, ISecondaryResour
         }
     }
 
-    private IEnumerable<int> EnumerateBottomFirst(int aspirationSlot)
+    private static IEnumerable<int> EnumerateBottomFirst(int aspirationSlot, int slotCount)
     {
         for (var slotIndex = aspirationSlot; slotIndex >= 1; slotIndex--)
         {
             yield return slotIndex;
         }
 
-        for (var slotIndex = aspirationSlot + 1; slotIndex <= Capacity; slotIndex++)
+        for (var slotIndex = aspirationSlot + 1; slotIndex <= slotCount; slotIndex++)
         {
             yield return slotIndex;
-        }
-    }
-
-    public async Task AfterSecondaryResourceChanged(SecondaryResourceChangeContext ctx)
-    {
-        if (!CombatManager.Instance.IsInProgress)
-            return;
-
-        if (ctx.Player == _player && ctx.Definition.Id.Equals(BangDreamConst.LingeredResource))
-        {
-            if (ctx.NewAmount > 0 && ctx.NewAmount <= Capacity)
-            {
-                if (LocalContext.IsMe(Player))
-                {
-                    var payload = new PerformNetworkActionPayload(
-                        PerformNetworkActionKind.Trigger, null, ctx.NewAmount,
-                        ctx.Reason == SecondaryResourceChangeReason.Spend);
-                    if (!RitsuLibManagedNetActions.Request(null, PerformNetworkAction, payload, Player.NetId))
-                        await HandleRejectedNetworkAction(payload);
-                }
-            }
         }
     }
 
@@ -742,12 +855,13 @@ public class PerformManager : SingletonModel, IInCombatManager, ISecondaryResour
             PerformArea = areaNode;
         }
 
-        if (Player.Character is IPerformableCharacter character)
-            Capacity = character.GetDefaultCapacity;
-        else
-            Capacity = 0;
+        _scheme = Player.Character is IPerformableCharacter character
+            ? character.CreatePerformScheme()
+            : EmptyPerformScheme.Instance;
+        _capacity = new PerformCapacityState(_scheme);
 
-        PerformArea.SetCapacity(Capacity);
+        PerformArea.SubmitScheme(_scheme);
+        SyncPerformArea();
         PerformArea.SubmitChanged();
 
         PerformPile.CardAdded += OnCardAdded;
@@ -824,7 +938,8 @@ public class PerformManager : SingletonModel, IInCombatManager, ISecondaryResour
             type == PerformAreaChangeType.Added ? PerformNetworkActionKind.Enter : PerformNetworkActionKind.Leave,
             index,
             0,
-            false);
+            false,
+            (int)PerformChord.None);
         if (!RitsuLibManagedNetActions.Request(null, PerformNetworkAction, payload, Player.NetId))
             TaskHelper.RunSafely(HandleRejectedNetworkAction(payload));
     }

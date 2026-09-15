@@ -23,7 +23,8 @@ public static class BangDreamCapabilities
 
     public static bool HasPerform(CharacterModel? character)
     {
-        return character is IPerformableCharacter { GetDefaultCapacity: > 0 };
+        return character is IPerformableCharacter performable &&
+               performable.CreatePerformScheme().TotalSlotCount > 0;
     }
 
     public static bool HasPerform(Player? player)
