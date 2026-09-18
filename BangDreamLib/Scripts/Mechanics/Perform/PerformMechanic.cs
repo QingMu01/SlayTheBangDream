@@ -83,6 +83,7 @@ public sealed class PerformMechanic : IBangDreamMechanic
     public void RegisterPatches(ModPatcher patcher)
     {
         patcher.RegisterPatch<MusicCardTypePatch>();
+        patcher.RegisterPatch<PerformLifecycleNotPlayerDrivenPatch>();
     }
 
     public IEnumerable<AbstractModel> GetCombatHookModels(Player player)

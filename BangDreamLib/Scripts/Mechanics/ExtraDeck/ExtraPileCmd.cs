@@ -12,6 +12,7 @@ using MegaCrit.Sts2.Core.Hooks;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Multiplayer.Game;
+using MegaCrit.Sts2.Core.Nodes.CommonUi;
 using MegaCrit.Sts2.Core.Nodes.Screens.CardSelection;
 using MegaCrit.Sts2.Core.Nodes.Screens.Overlays;
 using MegaCrit.Sts2.Core.Runs;
@@ -78,8 +79,30 @@ public static class ExtraPileCmd
             throw new InvalidOperationException("You cannot remove a card that is not in the extra deck.");
         }
 
+        card.Owner.RunState.CurrentMapPointHistoryEntry?.GetEntry(card.Owner.NetId).CardsRemoved
+            .Add(card.ToSerializable());
         await Hook.BeforeCardRemoved(card.Owner.RunState, card);
         card.RemoveFromState();
+    }
+
+    /// <summary>
+    /// 升级额外牌组中的牌。原版 <see cref="CardCmd.Upgrade(CardModel, CardPreviewStyle)" /> 只在牌位于
+    /// <see cref="PileType.Deck" /> 时记录 <c>UpgradedCards</c>，额外牌组因此需要在这里补记。
+    /// 所有从额外牌组升级的入口都应经过此方法。
+    /// </summary>
+    public static void UpgradeInExtraDeck(CardModel card, CardPreviewStyle style = CardPreviewStyle.None)
+    {
+        if (card.Pile?.Type != BangDreamConst.ExtraDeck)
+        {
+            throw new InvalidOperationException("You cannot upgrade a card that is not in the extra deck.");
+        }
+
+        if (card.IsUpgradable)
+        {
+            card.Owner.RunState.CurrentMapPointHistoryEntry?.GetEntry(card.Owner.NetId).UpgradedCards.Add(card.Id);
+        }
+
+        CardCmd.Upgrade(card, style);
     }
 
     public static async Task<IEnumerable<CardModel>> FromExtraDeckForUpgrade(Player player, CardSelectorPrefs prefs)

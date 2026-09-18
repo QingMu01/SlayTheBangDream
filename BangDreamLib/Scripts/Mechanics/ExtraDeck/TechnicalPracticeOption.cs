@@ -9,7 +9,6 @@ using MegaCrit.Sts2.Core.Hooks;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Nodes;
-using MegaCrit.Sts2.Core.Nodes.CommonUi;
 using MegaCrit.Sts2.Core.Nodes.Rooms;
 using MegaCrit.Sts2.Core.Nodes.Vfx;
 using STS2RitsuLib.Scaffolding.Content;
@@ -45,7 +44,7 @@ public class TechnicalPracticeOption(Player owner) : ModRestSiteOptionTemplate(o
 
         foreach (var card in selectedCards)
         {
-            CardCmd.Upgrade(card, CardPreviewStyle.None);
+            ExtraPileCmd.UpgradeInExtraDeck(card);
         }
 
         await Hook.AfterRestSiteSmith(Owner.RunState, Owner);

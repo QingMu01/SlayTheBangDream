@@ -4,6 +4,7 @@ using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Interfaces;
 using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
+using BangDreamLib.Scripts.Interfaces.GameHook;
 using BangDreamLib.Scripts.Mechanics.Perform.Schemes;
 using BangDreamLib.Scripts.Nodes;
 using BangDreamLib.Scripts.Nodes.VFX;
@@ -16,6 +17,7 @@ using MegaCrit.Sts2.Core.Context;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Multiplayer;
 using MegaCrit.Sts2.Core.Entities.Players;
+using MegaCrit.Sts2.Core.GameActions;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Localization;
@@ -59,9 +61,20 @@ public class PerformManager : SingletonModel, IInCombatManager
                         throw new InvalidOperationException("Invalid perform lifecycle payload."),
         static context => ExecuteNetworkPerformAction(context), GameActionType.Combat);
 
+    /// <summary>本生命周期动作的稳定操作码，供补丁识别；未注册时为 0。</summary>
+    internal static ulong PerformOpcode { get; private set; }
+
     internal static void InitializeNetwork()
     {
-        RitsuLibManagedNetActions.Register(PerformNetworkAction);
+        PerformOpcode = RitsuLibManagedNetActions.Register(PerformNetworkAction);
+    }
+
+    /// <summary>该 Action 是否为歌单生命周期动作（供 <c>IsGameActionPlayerDriven</c> 补丁使用）。</summary>
+    internal static bool IsPerformLifecycleAction(GameAction action)
+    {
+        return PerformOpcode != 0 &&
+               action is RitsuLibManagedGameAction managed &&
+               managed.DescriptorOpcode == PerformOpcode;
     }
 
     /// <summary>
@@ -569,7 +582,7 @@ public class PerformManager : SingletonModel, IInCombatManager
     {
         ArgumentNullException.ThrowIfNull(cardModel.CombatState);
 
-        PlayPerformFlashVfx(cardModel, performCard);
+        PlayPerformFlashVfx(cardModel);
 
         var performContext = CardContexts.GetOrCreate(cardModel);
         var perform = new CardPerform
@@ -596,7 +609,7 @@ public class PerformManager : SingletonModel, IInCombatManager
         }
     }
 
-    private void PlayPerformFlashVfx(CardModel cardModel, IPerformCard performCard)
+    private void PlayPerformFlashVfx(CardModel cardModel)
     {
         if (!PerformArea.IsInsideTree()) return;
         if (!PerformArea.TryGetCardSlotCenter(cardModel, out var slotCenter)) return;
