@@ -95,9 +95,9 @@ public class SakikoSpecialRules : HiddenRelic, IPerformTriggerListener, ISeconda
 
     public Task OnCardTriggeredPerform(PlayerChoiceContext? choiceContext, CardModel cardModel)
     {
-        if (cardModel.Owner != Owner) return Task.CompletedTask;
-
-        return Owner.AttachedData().PerformManager.TryInstant(cardModel, choiceContext);
+        return cardModel.Owner != Owner
+            ? Task.CompletedTask
+            : Owner.AttachedData().PerformManager.TryInstant(cardModel, choiceContext);
     }
 
     /// <summary>

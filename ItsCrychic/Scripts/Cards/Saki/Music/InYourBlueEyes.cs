@@ -7,7 +7,6 @@ using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models;
-using STS2RitsuLib.Scaffolding.Content;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
@@ -23,7 +22,7 @@ public class InYourBlueEyes() : AbstractSakikoMusicCard(CardRarity.Uncommon, Tar
 
     public override async Task OnPerform(PlayerChoiceContext choiceContext, CardPerform perform)
     {
-        if (_boundCard == null || _boundCard.CombatState == null || _boundCard.Pile == null) return;
+        if (_boundCard?.CombatState == null || _boundCard.Pile == null) return;
 
         await CardPileCmd.Add(_boundCard, PileType.Hand);
     }
@@ -42,6 +41,18 @@ public class InYourBlueEyes() : AbstractSakikoMusicCard(CardRarity.Uncommon, Tar
         );
 
         _boundCard = selectedCards.FirstOrDefault();
-        this.RequestVisualReload();
+
+        if (IsUpgraded && _boundCard != null)
+        {
+            CardCmd.Upgrade(_boundCard);
+        }
+    }
+
+    public Task OnCardLeavePerformArea(PlayerChoiceContext choiceContext, CardModel cardModel)
+    {
+        if (cardModel != this || _boundCard == null) return Task.CompletedTask;
+
+        _boundCard = null;
+        return Task.CompletedTask;
     }
 }

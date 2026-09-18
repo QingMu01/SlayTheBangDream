@@ -2,10 +2,10 @@
 using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Mechanics.MusicNote;
 using BangDreamLib.Scripts.Utils;
-using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
+using STS2RitsuLib.Cards.DynamicVars;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
@@ -27,12 +27,13 @@ public class RisingTone() : AbstractSakikoCard(CustomCost, CustomType, CustomRar
     protected override IEnumerable<DynamicVar> CardVars =>
     [
         QuickVar.Repeat.Create(2),
+        ModCardVars.Int("Count", 0),
         ComputedDynamicVarHelper.CreateBaseVar("CalcNote", 4m, ctx =>
         {
-            if (ctx.IsInCombat() && ctx.ActiveCard.DynamicVars.TryGetValue(RepeatVar.defaultName, out var repeat))
+            if (ctx.IsInCombat() && ctx.ActiveCard.DynamicVars.TryGetValue(RepeatVar.defaultName, out var repeat) &&
+                ctx.ActiveCard.DynamicVars.TryGetValue("Count", out var count))
             {
-                var count = CombatManager.Instance.History.CardPlaysFinished.Count(entry => entry.CardPlay.Card == this);
-                return ctx.BaseValue + repeat.IntValue * count;
+                return ctx.BaseValue + repeat.IntValue * count.IntValue;
             }
 
             return ctx.BaseValue;
@@ -43,6 +44,7 @@ public class RisingTone() : AbstractSakikoCard(CustomCost, CustomType, CustomRar
     {
         await MusicNoteCmd.FromCard(this, (int)DynamicVars.ComputedValue("CalcNote"));
         EnergyCost.AddThisCombat(1);
+        DynamicVars["Count"].BaseValue++;
     }
 
     public Task OnSubside(PlayerChoiceContext choiceContext, CardPlay play)

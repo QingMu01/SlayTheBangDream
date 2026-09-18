@@ -15,21 +15,20 @@ public class ChoirSChoir() : AbstractSakikoMusicCard(CardRarity.Uncommon, Target
 {
     protected override IEnumerable<IHoverTip> CardHoverTips =>
     [
-        HoverTipFactory.FromPower<ChoirFallenPower>(),
-        HoverTipFactory.FromPower<ChoirLockPower>()
+        HoverTipFactory.FromPower<ChoirFallenPower>()
     ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
         QuickVar.Damage.Create(9),
-        QuickVar.Buff.Create(6)
+        QuickVar.Buff.Create(5)
     ];
 
     public override async Task OnPerform(PlayerChoiceContext choiceContext, CardPerform perform)
     {
         ArgumentNullException.ThrowIfNull(CombatState);
         var candidates = CombatState.HittableEnemies.ToList();
-        var locked = candidates.Where(enemy => enemy.GetPower<ChoirLockPower>() != null).ToList();
+        var locked = candidates.Where(enemy => enemy.GetPower<ChoirFallenPower>() != null).ToList();
         var target = Owner.RunState.Rng.CombatTargets.NextItem(locked.Count > 0 ? locked : candidates);
         if (target == null) return;
 
@@ -38,18 +37,11 @@ public class ChoirSChoir() : AbstractSakikoMusicCard(CardRarity.Uncommon, Target
             .Targeting(target)
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
+
         if (target.IsHittable)
         {
-            if (IsUpgraded)
-            {
-                await PowerCmd.Apply<ChoirLockPower>(choiceContext, target,
-                    QuickVar.Buff.GetVar(this).BaseValue, Owner.Creature, this);
-            }
-            else
-            {
-                await PowerCmd.Apply<ChoirFallenPower>(choiceContext, target,
-                    QuickVar.Buff.GetVar(this).BaseValue, Owner.Creature, this);
-            }
+            await PowerCmd.Apply<ChoirFallenPower>(choiceContext, target, QuickVar.Buff.GetVar(this).BaseValue,
+                Owner.Creature, this);
         }
     }
 
