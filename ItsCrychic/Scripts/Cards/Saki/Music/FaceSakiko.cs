@@ -10,8 +10,11 @@ using STS2RitsuLib.Scaffolding.Content;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
-public class Face() : AbstractSakikoMusicCard(CardRarity.Uncommon, TargetType.None)
+public class FaceSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
 {
+    private const CardRarity CustomRarity = CardRarity.Uncommon;
+    private static readonly TargetType CustomTarget = PerformTargetTypes.AnySlot;
+
     public override bool IsInstant => true;
 
     protected override IEnumerable<CardKeyword> CardKeywords =>

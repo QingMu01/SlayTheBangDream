@@ -10,8 +10,11 @@ using MegaCrit.Sts2.Core.Models;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
-public class FutatsuNoTsuki() : AbstractSakikoMusicCard(CardRarity.Rare, TargetType.None)
+public class FutatsuNoTsukiSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
 {
+    private const CardRarity CustomRarity = CardRarity.Rare;
+    private static readonly TargetType CustomTarget = PerformTargetTypes.AnySlot;
+
     public override bool IsInstant => true;
 
     protected override IEnumerable<CardKeyword> CardKeywords =>

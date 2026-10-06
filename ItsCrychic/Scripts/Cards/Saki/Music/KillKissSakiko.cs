@@ -10,8 +10,11 @@ using MegaCrit.Sts2.Core.Models;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
-public class KillKiss() : AbstractSakikoMusicCard(CardRarity.Rare, TargetType.RandomEnemy), IPerformHookListener
+public class KillKissSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTarget), IPerformHookListener
 {
+    private const CardRarity CustomRarity = CardRarity.Rare;
+    private static readonly TargetType CustomTarget = PerformTargetTypes.AnySlot;
+
     protected override bool ShouldGlowGoldInternal
     {
         get

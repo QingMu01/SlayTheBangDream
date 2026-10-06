@@ -12,8 +12,11 @@ using MegaCrit.Sts2.Core.Models.Powers;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
-public class SheetMusicSun() : AbstractSakikoMusicCard(CardRarity.Basic, TargetType.None), IPerformHookListener
+public class SheetMusicSun() : AbstractSakikoMusicCard(CustomRarity, CustomTarget), IPerformHookListener
 {
+    private const CardRarity CustomRarity = CardRarity.Basic;
+    private static readonly TargetType CustomTarget = PerformTargetTypes.AnySlot;
+
     private decimal _grantedAmount;
 
     public override bool IsInstant => true;

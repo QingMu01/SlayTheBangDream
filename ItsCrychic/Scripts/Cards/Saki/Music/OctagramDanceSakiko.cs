@@ -9,9 +9,12 @@ using MegaCrit.Sts2.Core.Models;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
-public class OctagramDance() : AbstractSakikoMusicCard(CardRarity.Uncommon, TargetType.None),
+public class OctagramDanceSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTarget),
     IPerformHookListener
 {
+    private const CardRarity CustomRarity = CardRarity.Uncommon;
+    private static readonly TargetType CustomTarget = PerformTargetTypes.AnySlot;
+
     private bool _isReplayingAdjacent;
 
     protected override IEnumerable<DynamicVar> CardVars => [QuickVar.Cards.Create(2)];
@@ -36,7 +39,7 @@ public class OctagramDance() : AbstractSakikoMusicCard(CardRarity.Uncommon, Targ
             {
                 if (!cardsBySlot.TryGetValue(slot, out var card)) continue;
 
-                if (card is OctagramDance) continue;
+                if (card is OctagramDanceSakiko) continue;
 
                 adjacentCards.Add(card);
                 break;

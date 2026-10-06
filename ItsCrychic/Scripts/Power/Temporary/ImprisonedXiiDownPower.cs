@@ -6,7 +6,7 @@ namespace ItsCrychic.Scripts.Power.Temporary;
 
 public class ImprisonedXiiDownPower : TemporaryStrengthPower
 {
-    public override AbstractModel OriginModel => ModelDb.Card<ImprisonedXii>();
+    public override AbstractModel OriginModel => ModelDb.Card<ImprisonedXiiSakiko>();
 
     protected override bool IsPositive => false;
 }

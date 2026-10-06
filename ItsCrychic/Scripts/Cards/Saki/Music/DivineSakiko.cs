@@ -8,8 +8,11 @@ using MegaCrit.Sts2.Core.Localization.DynamicVars;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
-public class Divine() : AbstractSakikoMusicCard(CardRarity.Uncommon, TargetType.None)
+public class DivineSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
 {
+    private const CardRarity CustomRarity = CardRarity.Uncommon;
+    private static readonly TargetType CustomTarget = PerformTargetTypes.AnySlot;
+
     protected override IEnumerable<CardKeyword> CardKeywords => [BangDreamConst.MusicNote];
 
     protected override IEnumerable<DynamicVar> CardVars =>

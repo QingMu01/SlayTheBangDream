@@ -6,5 +6,5 @@ namespace ItsCrychic.Scripts.Power.Temporary;
 
 public class RhapsodyRequestPower : TemporaryDexterityPower
 {
-    public override AbstractModel OriginModel => ModelDb.Card<MasqueradeRhapsodyRequest>();
+    public override AbstractModel OriginModel => ModelDb.Card<MasqueradeRhapsodyRequestSakiko>();
 }

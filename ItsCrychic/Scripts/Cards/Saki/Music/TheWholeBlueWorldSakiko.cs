@@ -3,32 +3,31 @@ using BangDreamLib.Scripts.Utils.Infos;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models.Powers;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
-public class MasqueradeRhapsodyRequest() : AbstractSakikoMusicCard(CardRarity.Uncommon, TargetType.None)
+public class TheWholeBlueWorldSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
 {
-    protected override IEnumerable<IHoverTip> CardHoverTips =>
-    [
-        HoverTipFactory.FromPower<PlatingPower>()
-    ];
+    private const CardRarity CustomRarity = CardRarity.Uncommon;
+    private static readonly TargetType CustomTarget = PerformTargetTypes.AnySlot;
+
+    public override bool GainsBlock => true;
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Buff.Create(2)
+        QuickVar.Repeat.Create(5)
     ];
 
     public override async Task OnPerform(PlayerChoiceContext choiceContext, CardPerform perform)
     {
-        await PowerCmd.Apply<PlatingPower>(choiceContext, Owner.Creature,
-            QuickVar.Buff.GetVar(this).BaseValue, Owner.Creature, this);
+        await PowerCmd.Apply<BlockNextTurnPower>(choiceContext, Owner.Creature,
+            DynamicVars.Repeat.IntValue, Owner.Creature, this);
     }
 
     protected override void OnUpgrade()
     {
-        QuickVar.Buff.GetVar(this).UpgradeValueBy(1m);
+        DynamicVars.Repeat.UpgradeValueBy(2);
     }
 }

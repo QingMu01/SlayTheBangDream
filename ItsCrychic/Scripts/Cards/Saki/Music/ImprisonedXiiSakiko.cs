@@ -10,8 +10,11 @@ using MegaCrit.Sts2.Core.Models.Powers;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
-public class ImprisonedXii() : AbstractSakikoMusicCard(CardRarity.Uncommon, TargetType.None)
+public class ImprisonedXiiSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
 {
+    private const CardRarity CustomRarity = CardRarity.Uncommon;
+    private static readonly TargetType CustomTarget = PerformTargetTypes.AnySlot;
+
     protected override IEnumerable<IHoverTip> CardHoverTips =>
     [
         HoverTipFactory.FromPower<WeakPower>(),

@@ -17,13 +17,13 @@ public class ChoirFallenPower : BandPowerModel
 
     protected override IEnumerable<IHoverTip> PowerHoverTips =>
     [
-        HoverTipFactory.FromCard<ChoirSChoir>()
+        HoverTipFactory.FromCard<ChoirSChoirSakiko>()
     ];
 
     public override decimal ModifyDamageAdditive(Creature? target, decimal amount, ValueProp props, Creature? dealer,
         CardModel? cardSource, CardPlay? cardPlay)
     {
-        if (target == Owner && cardSource is ChoirSChoir && cardSource.Owner.Creature == dealer)
+        if (target == Owner && cardSource is ChoirSChoirSakiko && cardSource.Owner.Creature == dealer)
         {
             return Amount;
         }

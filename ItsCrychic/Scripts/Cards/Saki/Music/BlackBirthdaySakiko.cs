@@ -8,8 +8,11 @@ using MegaCrit.Sts2.Core.Models.CardPools;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
-public class BlackBirthday() : AbstractSakikoMusicCard(CardRarity.Rare, TargetType.None)
+public class BlackBirthdaySakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
 {
+    private const CardRarity CustomRarity = CardRarity.Rare;
+    private static readonly TargetType CustomTarget = PerformTargetTypes.AnySlot;
+
     public override async Task OnPerform(PlayerChoiceContext choiceContext, CardPerform perform)
     {
         ArgumentNullException.ThrowIfNull(CombatState);

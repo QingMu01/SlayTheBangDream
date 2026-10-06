@@ -9,10 +9,10 @@ using MegaCrit.Sts2.Core.Models;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
-public class AveMujica() : AbstractSakikoMusicCard(CustomRarity, CustomTarget), IPerformHookListener
+public class AveMujicaSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTarget), IPerformHookListener
 {
     private const CardRarity CustomRarity = CardRarity.Rare;
-    private const TargetType CustomTarget = TargetType.None;
+    private static readonly TargetType CustomTarget = PerformTargetTypes.AnySlot;
 
     protected override IEnumerable<IHoverTip> CardHoverTips =>
     [

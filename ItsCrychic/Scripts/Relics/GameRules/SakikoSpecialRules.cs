@@ -102,7 +102,6 @@ public class SakikoSpecialRules : HiddenRelic, IPerformTriggerListener, ISeconda
 
     /// <summary>
     /// 余音数量即目标槽位，据此演奏对应槽位；数量超出当前容量时不演奏。
-    /// 本遗物同时会被睦的皮肤授予（睦的起始配置暂沿用祥子的），故按角色过滤：余音为祥子专属机制。
     /// </summary>
     public Task AfterSecondaryResourceChanged(SecondaryResourceChangeContext context)
     {

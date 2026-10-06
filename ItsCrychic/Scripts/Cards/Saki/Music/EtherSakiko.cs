@@ -8,10 +8,10 @@ using MegaCrit.Sts2.Core.Models;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
-public class Ether() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
+public class EtherSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
 {
     private const CardRarity CustomRarity = CardRarity.Uncommon;
-    private const TargetType CustomTarget = TargetType.None;
+    private static readonly TargetType CustomTarget = PerformTargetTypes.AnySlot;
 
     protected override IEnumerable<IHoverTip> CardHoverTips
     {

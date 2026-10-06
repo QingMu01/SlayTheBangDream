@@ -10,8 +10,11 @@ using STS2RitsuLib.Cards.DynamicVars;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
-public class SoraNoMusica() : AbstractSakikoMusicCard(CardRarity.Rare, TargetType.None), IPerformHookListener
+public class SoraNoMusicaSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTarget), IPerformHookListener
 {
+    private const CardRarity CustomRarity = CardRarity.Rare;
+    private static readonly TargetType CustomTarget = PerformTargetTypes.AnySlot;
+
     private const int BaseNoteCount = 8;
     public override bool IsInstant => true;
 

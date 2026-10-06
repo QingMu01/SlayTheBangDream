@@ -4,14 +4,16 @@ using BangDreamLib.Scripts.Utils.Infos;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
+using MegaCrit.Sts2.Core.Models.Powers;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
-public class SymbolIii() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
+public class SymbolISakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
 {
     private const CardRarity CustomRarity = CardRarity.Uncommon;
-    private const TargetType CustomTarget = TargetType.None;
+    private static readonly TargetType CustomTarget = PerformTargetTypes.AnySlot;
 
     public override bool IsInstant => true;
 
@@ -20,19 +22,24 @@ public class SymbolIii() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
         BangDreamConst.SymbolCard
     ];
 
+    protected override IEnumerable<IHoverTip> CardHoverTips =>
+    [
+        HoverTipFactory.FromPower<VigorPower>()
+    ];
+
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Block.Create(10)
+        QuickVar.Buff.Create(5)
     ];
 
     public override async Task OnPerform(PlayerChoiceContext choiceContext, CardPerform perform)
     {
-        await CreatureCmd.GainBlock(Owner.Creature, DynamicVars.Block, null);
+        await PowerCmd.Apply<VigorPower>(choiceContext, Owner.Creature, QuickVar.Buff.GetVar(this).BaseValue,
+            Owner.Creature, this);
     }
-
 
     protected override void OnUpgrade()
     {
-        DynamicVars.Block.UpgradeValueBy(5m);
+        QuickVar.Buff.GetVar(this).UpgradeValueBy(2m);
     }
 }

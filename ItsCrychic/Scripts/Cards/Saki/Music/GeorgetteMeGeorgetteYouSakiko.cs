@@ -9,9 +9,12 @@ using MegaCrit.Sts2.Core.Localization.DynamicVars;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
-public class GeorgetteMeGeorgetteYou() : AbstractSakikoMusicCard(CardRarity.Uncommon, TargetType.None),
+public class GeorgetteMeGeorgetteYouSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTarget),
     IPerformHookListener
 {
+    private const CardRarity CustomRarity = CardRarity.Uncommon;
+    private static readonly TargetType CustomTarget = PerformTargetTypes.AnySlot;
+
     private bool _isRepeatingPerformance;
 
     protected override IEnumerable<DynamicVar> CardVars =>
@@ -32,7 +35,7 @@ public class GeorgetteMeGeorgetteYou() : AbstractSakikoMusicCard(CardRarity.Unco
     public async Task OnCardPerform(PlayerChoiceContext choiceContext, CardPerform perform)
     {
         if (perform.Card == this || perform.Card.Owner != Owner || Pile?.Type != BangDreamConst.PerformPile ||
-            perform.Card is GeorgetteMeGeorgetteYou || _isRepeatingPerformance) return;
+            perform.Card is GeorgetteMeGeorgetteYouSakiko || _isRepeatingPerformance) return;
 
         _isRepeatingPerformance = true;
         try

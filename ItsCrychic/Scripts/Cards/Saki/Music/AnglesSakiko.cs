@@ -8,8 +8,11 @@ using MegaCrit.Sts2.Core.Localization.DynamicVars;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
-public class Angles() : AbstractSakikoMusicCard(CardRarity.Rare, TargetType.None)
+public class AnglesSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
 {
+    private const CardRarity CustomRarity = CardRarity.Rare;
+    private static readonly TargetType CustomTarget = PerformTargetTypes.AnySlot;
+
     protected override IEnumerable<DynamicVar> CardVars =>
     [
         QuickVar.Cards.Create(1)

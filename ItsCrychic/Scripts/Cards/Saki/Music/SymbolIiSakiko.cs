@@ -8,10 +8,10 @@ using MegaCrit.Sts2.Core.Localization.DynamicVars;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
-public class SymbolIv() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
+public class SymbolIiSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
 {
     private const CardRarity CustomRarity = CardRarity.Uncommon;
-    private const TargetType CustomTarget = TargetType.None;
+    private static readonly TargetType CustomTarget = PerformTargetTypes.AnySlot;
 
     public override bool IsInstant => true;
 
@@ -22,16 +22,16 @@ public class SymbolIv() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Energy.Create(1)
+        QuickVar.Cards.Create(2)
     ];
 
     public override async Task OnPerform(PlayerChoiceContext choiceContext, CardPerform perform)
     {
-        await PlayerCmd.GainEnergy(DynamicVars.Energy.BaseValue, Owner);
+        await CardPileCmd.Draw(choiceContext, DynamicVars.Cards.BaseValue, Owner);
     }
 
     protected override void OnUpgrade()
     {
-        DynamicVars.Energy.UpgradeValueBy(1m);
+        DynamicVars.Cards.UpgradeValueBy(1m);
     }
 }

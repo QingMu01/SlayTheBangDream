@@ -10,8 +10,11 @@ using STS2RitsuLib.Cards.DynamicVars;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
-public class STheWay() : AbstractSakikoMusicCard(CardRarity.Uncommon, TargetType.None)
+public class STheWaySakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
 {
+    private const CardRarity CustomRarity = CardRarity.Uncommon;
+    private static readonly TargetType CustomTarget = PerformTargetTypes.AnySlot;
+
     public override bool IsInstant => true;
 
     // 本场战斗内已累计的同名牌伤害加成，随卡牌实例持续到战斗结束
@@ -23,7 +26,7 @@ public class STheWay() : AbstractSakikoMusicCard(CardRarity.Uncommon, TargetType
     [
         ComputedDynamicVarHelper.CreateDamageVar("CalcDamage", 7m, ctx =>
         {
-            if (ctx.IsInCombat() && ctx.ActiveCard is STheWay self)
+            if (ctx.IsInCombat() && ctx.ActiveCard is STheWaySakiko self)
             {
                 return ctx.BaseValue + self._combatIncrease;
             }
@@ -46,7 +49,7 @@ public class STheWay() : AbstractSakikoMusicCard(CardRarity.Uncommon, TargetType
         // 加成在伤害结算后累加，本次演奏不享受本次提升
         var increase = BangDreamConst.PerformPile.GetPile(Owner).Cards.Count *
             DynamicVars["Increase"].IntValue;
-        foreach (var sameNameCard in EnumerateCombatCards().OfType<STheWay>().Distinct())
+        foreach (var sameNameCard in EnumerateCombatCards().OfType<STheWaySakiko>().Distinct())
         {
             sameNameCard._combatIncrease += increase;
         }

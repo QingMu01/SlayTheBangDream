@@ -13,7 +13,7 @@ namespace ItsCrychic.Scripts.Cards.Saki.Music;
 public class SheetMusicSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
 {
     private const CardRarity CustomRarity = CardRarity.Basic;
-    private const TargetType CustomTarget = TargetType.None;
+    private static readonly TargetType CustomTarget = PerformTargetTypes.AnySlot;
 
     public override bool IsInstant => true;
 

@@ -9,8 +9,11 @@ using MegaCrit.Sts2.Core.Models;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
-public class WonderfulWorld() : AbstractSakikoMusicCard(CardRarity.Uncommon, TargetType.None)
+public class WonderfulWorldSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
 {
+    private const CardRarity CustomRarity = CardRarity.Uncommon;
+    private static readonly TargetType CustomTarget = PerformTargetTypes.AnySlot;
+
     public override bool IsInstant => IsUpgraded;
 
     protected override IEnumerable<IHoverTip> CardHoverTips =>

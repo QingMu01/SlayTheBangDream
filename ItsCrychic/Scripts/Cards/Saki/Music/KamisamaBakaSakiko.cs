@@ -8,8 +8,11 @@ using MegaCrit.Sts2.Core.Localization.DynamicVars;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
-public class KamisamaBaka() : AbstractSakikoMusicCard(CardRarity.Rare, TargetType.None)
+public class KamisamaBakaSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
 {
+    private const CardRarity CustomRarity = CardRarity.Rare;
+    private static readonly TargetType CustomTarget = PerformTargetTypes.AnySlot;
+
     protected override IEnumerable<DynamicVar> CardVars =>
     [
         QuickVar.Repeat.Create(1)
@@ -21,7 +24,7 @@ public class KamisamaBaka() : AbstractSakikoMusicCard(CardRarity.Rare, TargetTyp
             .Where(card => card != this && !card.IsUpgraded && card is IPerformCard)
             .ToList();
         var performCard = Owner.RunState.Rng.CombatCardSelection.NextItem(performCandidates);
-        if (performCard == null || (performCard != this && performCard is KamisamaBaka)) return;
+        if (performCard == null || (performCard != this && performCard is KamisamaBakaSakiko)) return;
         CardCmd.Upgrade(performCard);
         for (var repeat = 0; repeat < DynamicVars.Repeat.IntValue; repeat++)
         {
