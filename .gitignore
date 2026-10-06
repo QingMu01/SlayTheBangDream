@@ -1,11 +1,15 @@
 .codex/**
 .zcode/**
+.build/**
 .idea
 .run
 bin
 src
 
 **/.godot
+
+# 特效录帧与素材导出的临时目录（见 docs/vfx-authoring.md 第 3.1 节）
+/.vfx_staging/
 
 /BangDreamLib/animations
 /BangDreamLib/fonts

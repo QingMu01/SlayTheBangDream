@@ -127,6 +127,8 @@ ffmpeg -y -loglevel error -framerate 60 -i frame%08d.png \
 - 判断「某元素是否按时消失」时，**裁切目视比采样亮度更可靠**——
   中心区域往往同时有粒子/闪光，亮度采样会被污染，得出错误结论。
 - 录制输出目录建议放 `.vfx_staging/`（已在 `.gitignore` 内），不要污染仓库。
+- 若命令在启动阶段就崩在 `RotatedFileLogger::rotate_file()`（沙箱/受限环境写不了
+  `%APPDATA%\Godot`），加 `--log-file <工作区内的路径>` 重定向日志即可绕开。
 
 ## 4. 素材从资产库接入
 

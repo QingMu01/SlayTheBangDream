@@ -27,6 +27,7 @@ C# 代码位于各项目的 `Scripts/` 目录下，Godot 资源（图片、场�
 - 执行修改任务时，先定制修改方案再进行修改工作
 - 每次改动项目后，以表格的形式列举被修改的文件
 - **特效基类默认继承 `Node2D`**；仅当明确需要「飞行道具」或「异步伤害」（即命中时刻要驱动玩法结算）时才继承 `NBangDreamFlyingVfx`。详见 `docs/vfx-authoring.md` 第 2 节；预览机制见 `docs/vfx-preview-mechanism.md`。
+- **新增、修改、重构卡牌**遵循 `docs/card-authoring.md`（规范与验收）；执行流程见 `.codex/skills/card-development/SKILL.md`。
 
 ## 本地化
 
