@@ -1,5 +1,6 @@
 using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Utils;
+using BangDreamLib.Scripts.Utils.Infos;
 using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
@@ -47,6 +48,17 @@ public class PerformCapability : CardCapability, ICardDescriptionContributor, IC
             yield return performCard.IsInstant
                 ? HoverTipFactory.FromKeyword(BangDreamConst.Instant)
                 : HoverTipFactory.FromKeyword(BangDreamConst.Perform);
+
+            // 手动落位卡牌额外说明"出牌时要自己选落位"。
+            switch (PerformTargetTypes.ResolveMode(card.TargetType))
+            {
+                case PerformSlotSelectionMode.Slot:
+                    yield return HoverTipFactory.FromKeyword(BangDreamConst.AnySlot);
+                    break;
+                case PerformSlotSelectionMode.Group:
+                    yield return HoverTipFactory.FromKeyword(BangDreamConst.RequestGroup);
+                    break;
+            }
         }
     }
 }

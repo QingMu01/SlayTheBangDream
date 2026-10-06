@@ -1,8 +1,8 @@
 using BangDreamLib.Scripts.Extensions;
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
-using BangDreamLib.Scripts.Mechanics.Perform.Chord;
 using BangDreamLib.Scripts.Nodes;
 using BangDreamLib.Scripts.Utils;
+using BangDreamLib.Scripts.Utils.Infos;
 using Godot;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;
@@ -42,7 +42,11 @@ public sealed class PerformMechanic : IBangDreamMechanic
         BangDreamConst.Instant = context.RegisterCardKeyword("Instant");
         BangDreamConst.Perform = context.RegisterCardKeyword("Perform");
         BangDreamConst.PerformArea = context.RegisterCardKeyword("PerformArea");
+        BangDreamConst.AnySlot = context.RegisterCardKeyword("AnySlot");
+        BangDreamConst.RequestGroup = context.RegisterCardKeyword("RequestGroup");
         BangDreamConst.SymbolCard = context.RegisterCardTag("Symbol");
+
+        PerformTargetTypes.EnsureRegistered();
 
         BangDreamConst.PerformPile = context.CardPiles.RegisterOwned("Perform", new ModCardPileSpec
         {
@@ -69,7 +73,6 @@ public sealed class PerformMechanic : IBangDreamMechanic
             });
 
         PerformManager.InitializeNetwork();
-        PerformChordStore.EnsureRegistered();
 
         context.SubscribeLifecycle<ModelRegistryInitializedEvent>(_ =>
         {
@@ -84,6 +87,7 @@ public sealed class PerformMechanic : IBangDreamMechanic
     {
         patcher.RegisterPatch<MusicCardTypePatch>();
         patcher.RegisterPatch<PerformLifecycleNotPlayerDrivenPatch>();
+        patcher.RegisterPatches<PerformSlotTargetingPatches>();
     }
 
     public IEnumerable<AbstractModel> GetCombatHookModels(Player player)

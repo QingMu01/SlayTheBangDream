@@ -62,7 +62,7 @@ public readonly record struct PerformAreaPlacement(PerformAreaAnchor Anchor, flo
 /// <param name="BaseSlotIndex">本分组占用的全局槽位块起始索引（1 基）。</param>
 /// <param name="MaxSlots">本分组的容量上限。</param>
 /// <param name="DefaultSlots">本分组在战斗开始时的初始容量。</param>
-/// <param name="IsDefault">无和弦的卡牌是否归入本分组。</param>
+/// <param name="IsDefault">未手动指定分组时，卡牌是否归入本分组（与 <c>DefaultGroup</c> 同义）。</param>
 public readonly record struct PerformGroupDescriptor(
     PerformChord Chord,
     int BaseSlotIndex,
@@ -80,7 +80,9 @@ public interface IPerformScheme
     /// <summary>全部分组，按 <see cref="PerformGroupDescriptor.BaseSlotIndex" /> 升序。</summary>
     IReadOnlyList<PerformGroupDescriptor> Groups { get; }
 
-    /// <summary>无和弦卡牌归入的分组和弦。</summary>
+    /// <summary>
+    /// 未手动指定分组时卡牌归入的分组和弦（和弦本身不参与入组判定）。
+    /// </summary>
     PerformChord DefaultGroup { get; }
 
     /// <summary>全部分组的容量上限之和，即全局槽位索引的取值上界。</summary>

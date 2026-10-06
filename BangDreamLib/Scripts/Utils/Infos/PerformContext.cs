@@ -42,4 +42,10 @@ public class PerformContext(
     /// 当前演奏是否由休止消耗余音触发。
     /// </summary>
     public bool IsSubsideTriggered { get; set; }
+
+    /// <summary>
+    /// 玩家在本次出牌时手动指定的落位覆盖（见 <see cref="PerformTargetTypes" />）。
+    /// 仅在本地玩家选定后写入，随进入歌单的网络动作下发，入队规划消费后清空。
+    /// </summary>
+    public PerformEnqueueRequest Request { get; set; }
 }

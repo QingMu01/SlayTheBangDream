@@ -101,6 +101,22 @@ public static class BangDreamConst
         internal set => BangDreamTools.Init(ref _lingered, value, nameof(Lingered));
     }
 
+    private static CardKeyword? _anySlot;
+
+    public static CardKeyword AnySlot
+    {
+        get => _anySlot ?? throw new InvalidOperationException("CardKeyword.AnySlot is not BangDreamTools.Initialized.");
+        internal set => BangDreamTools.Init(ref _anySlot, value, nameof(AnySlot));
+    }
+
+    private static CardKeyword? _requestGroup;
+
+    public static CardKeyword RequestGroup
+    {
+        get => _requestGroup ?? throw new InvalidOperationException("CardKeyword.RequestGroup is not BangDreamTools.Initialized.");
+        internal set => BangDreamTools.Init(ref _requestGroup, value, nameof(RequestGroup));
+    }
+
     private static RewardType? _rewardMusic;
 
     public static RewardType RewardMusic

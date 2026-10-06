@@ -2,6 +2,7 @@ using BangDreamLib.Scripts.Interfaces.CharacterAugment;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Nodes.Screens.CardLibrary;
+using STS2RitsuLib;
 using STS2RitsuLib.Patching.Core;
 using STS2RitsuLib.Patching.Models;
 
@@ -57,6 +58,8 @@ internal class ExtraPoolConcatToStandardPoolInLibraryPatch : IPatchMethod
         return [new ModPatchTarget(typeof(NCardLibrary), nameof(NCardLibrary._Ready))];
     }
 
+    [HarmonyPriority(Priority.Last)]
+    [HarmonyAfter(Const.ModId + ".framework-character-assets")]
     public static void Postfix(
         Dictionary<NCardPoolFilter, Func<CardModel, bool>> ____poolFilters,
         Dictionary<CharacterModel, NCardPoolFilter> ____cardPoolFilters)

@@ -1,7 +1,5 @@
 using BangDreamLib.Scripts.Enums;
 using BangDreamLib.Scripts.Interfaces.CharacterAugment;
-using BangDreamLib.Scripts.Mechanics.Perform.Chord;
-using MegaCrit.Sts2.Core.Models;
 
 namespace BangDreamLib.Scripts.Mechanics.Perform;
 
@@ -75,25 +73,25 @@ public sealed class PerformCapacityState(IPerformScheme scheme)
     }
 
     /// <summary>
-    /// 解析卡牌所属分组：取卡牌和弦中优先级最高的一个；无和弦的卡牌（含
-    /// <see langword="null" />）归入方案的默认分组。
+    /// 解析未指定分组时的默认分组：方案的 <see cref="IPerformScheme.DefaultGroup" />；
+    /// 该分组不在方案内时退化为首个分组。
+    /// 卡牌和弦不参与入组判定（和弦只用于激活奏响），因此本方法不需要卡牌参数。
     /// </summary>
-    public PerformChord ResolveGroup(CardModel? card)
+    public PerformChord ResolveDefaultGroup()
     {
-        if (card != null)
-        {
-            foreach (var group in PerformChordStore.GetChord(card).EnumerateGroups())
-            {
-                if (_capacityByGroup.ContainsKey(group))
-                {
-                    return group;
-                }
-            }
-        }
-
         return _capacityByGroup.ContainsKey(scheme.DefaultGroup)
             ? scheme.DefaultGroup
             : _capacityByGroup.Keys.FirstOrDefault();
+    }
+
+    /// <summary>
+    /// 判断全局槽位索引是否属于掩码覆盖的分组；掩码为 <see cref="PerformChord.None" /> 时覆盖全部分组。
+    /// 与容量无关：槽位落在分组块内即命中（该槽位是否已激活另由 <see cref="IsValidSlot" /> 判断）。
+    /// </summary>
+    public bool IsSlotInMask(int slotIndex, PerformChord mask)
+    {
+        return TryResolveSlot(slotIndex, out var descriptor, out _) &&
+               (mask == PerformChord.None || mask.HasFlag(descriptor.Chord));
     }
 
     /// <summary>

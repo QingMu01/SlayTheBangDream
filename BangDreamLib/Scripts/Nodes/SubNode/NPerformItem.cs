@@ -10,6 +10,21 @@ using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 
 namespace BangDreamLib.Scripts.Nodes.SubNode;
 
+/// <summary>
+/// 槽位在手动落位选择中的高亮状态。
+/// </summary>
+public enum PerformSlotSelectionState
+{
+    /// <summary>未参与选择。</summary>
+    None,
+
+    /// <summary>候选槽位。</summary>
+    Candidate,
+
+    /// <summary>当前指向的槽位（指定分组时同组槽位同等高亮）。</summary>
+    Hovered
+}
+
 public partial class NPerformItem : NClickableControl
 {
     private static readonly StringName RectSizeShaderParameter = "rect_size";
@@ -29,6 +44,8 @@ public partial class NPerformItem : NClickableControl
     private const float BackgroundWidthExtension = 5f;
     private const float TitleHorizontalPadding = 48f;
     private const float PortraitSweepAlpha = 0.75f;
+    private const float SelectionCandidateLighten = 0.25f;
+    private const float SelectionHoveredLighten = 0.6f;
 
     private NCard? _card;
     private NPerformArea? _parent;
@@ -46,6 +63,7 @@ public partial class NPerformItem : NClickableControl
     private float _backgroundBaseWidth;
     private bool _isAdjustingBackgroundRect;
     private bool _isHintHighlighted;
+    private PerformSlotSelectionState _selectionState = PerformSlotSelectionState.None;
     private bool _isCardEnterBouncePending;
     private bool _isPortraitRevealPending;
     private bool _isWaitingForCardArrival;
@@ -131,6 +149,8 @@ public partial class NPerformItem : NClickableControl
         SetPortraitRevealProgress(_portraitRevealProgress);
         ApplyHintHighlightImmediately();
         ConnectSignals();
+        MouseEntered += OnPointerEntered;
+        MouseExited += OnPointerExited;
 
         if (_isPortraitRevealPending)
         {
@@ -145,6 +165,9 @@ public partial class NPerformItem : NClickableControl
 
     public override void _ExitTree()
     {
+        MouseEntered -= OnPointerEntered;
+        MouseExited -= OnPointerExited;
+
         if (_background != null) _background.ItemRectChanged -= OnBackgroundRectChanged;
         if (_cardPortrait != null) _cardPortrait.Resized -= UpdatePortraitShaderSize;
         if (_cardOverlay != null) _cardOverlay.Resized -= UpdateOverlayShaderSize;
@@ -168,8 +191,75 @@ public partial class NPerformItem : NClickableControl
     {
         if (_cardContainer == null) return GlobalPosition;
 
-        var localCenter = _cardContainerBasePosition + _cardContainer.Size / 2f;
-        return GetGlobalTransform() * localCenter;
+        return GetGlobalTransform() * GetContainerLocalCenter();
+    }
+
+    /// <summary>槽位根节点内，卡片容器中心的局部坐标。</summary>
+    private Vector2 GetContainerLocalCenter()
+    {
+        return _cardContainerBasePosition + (_cardContainer?.Size ?? Vector2.Zero) / 2f;
+    }
+
+    /// <summary>绑定所属演奏区域。场景内置的槽位实例不经 <see cref="Create" />，需在就绪后补绑。</summary>
+    internal void AttachToArea(NPerformArea area)
+    {
+        _parent = area;
+    }
+
+    /// <summary>
+    /// 设置手动落位选择的高亮状态。与余音槽位提示（<see cref="SetHintHighlighted" />）互不干扰：
+    /// 选择高亮只叠加在槽位配色上，由 <see cref="ApplySlotColor" /> 统一呈现。
+    /// </summary>
+    public void SetSelectionState(PerformSlotSelectionState state)
+    {
+        if (_selectionState == state) return;
+
+        _selectionState = state;
+        ApplySlotColor();
+    }
+
+    /// <summary>
+    /// 手动落位选择的命中测试。槽位根节点自身尺寸为 0，且命中框右侧的槽位带负的水平缩放，
+    /// 因此不能使用 <c>GetGlobalRect</c>，改为按"卡片容器的全局中心 + 缩放后的尺寸"判定。
+    /// </summary>
+    /// <param name="globalPoint">待判定的全局坐标（通常为鼠标位置）。</param>
+    /// <param name="padding">额外放宽的命中边距（像素）。</param>
+    public bool TryHitTest(Vector2 globalPoint, float padding = 0f)
+    {
+        return TryHitTest(globalPoint, padding, out _, out _);
+    }
+
+    /// <summary>
+    /// 同 <see cref="TryHitTest(Vector2, float)" />，并回带本次判定使用的中心与半尺寸（用于诊断日志）。
+    /// </summary>
+    public bool TryHitTest(Vector2 globalPoint, float padding, out Vector2 center, out Vector2 halfSize)
+    {
+        var transform = GetGlobalTransform();
+        center = _cardContainer == null ? transform.Origin : transform * GetContainerLocalCenter();
+
+        // 半尺寸按全局变换的基向量长度换算：父级（演奏区/命中框）的缩放一并计入，
+        // 只用本节点的 Scale 会在父级带缩放时把命中框算得过小。
+        var localHalf = _cardContainer == null
+            ? Vector2.Zero
+            : _cardContainer.Size * 0.5f + Vector2.One * padding;
+        halfSize = new Vector2(localHalf.X * transform.X.Length(), localHalf.Y * transform.Y.Length());
+
+        if (_cardContainer == null || !IsVisibleInTree()) return false;
+
+        var delta = globalPoint - center;
+        return Mathf.Abs(delta.X) <= halfSize.X && Mathf.Abs(delta.Y) <= halfSize.Y;
+    }
+
+    /// <summary>鼠标指针进入本槽位（供手动落位选择使用）。</summary>
+    private void OnPointerEntered()
+    {
+        _parent?.NotifySlotPointerEntered(this);
+    }
+
+    /// <summary>鼠标指针离开本槽位（供手动落位选择使用）。</summary>
+    private void OnPointerExited()
+    {
+        _parent?.NotifySlotPointerExited(this);
     }
 
     /// <summary>
@@ -390,8 +480,8 @@ public partial class NPerformItem : NClickableControl
     {
         if (_background == null) return;
 
-        // 槽位配色由角色的演奏方案决定，本节点只负责呈现。
-        _background.Modulate = _parent?.GetSlotColor(this, Model) ?? DefaultColor;
+        // 槽位配色由角色的演奏方案决定，本节点只负责呈现；选择高亮叠加在其上。
+        _background.Modulate = ApplySelectionTint(_parent?.GetSlotColor(this, Model) ?? DefaultColor);
 
         var dotColor = _background.Modulate;
         dotColor.A = 0.3f;
@@ -403,6 +493,17 @@ public partial class NPerformItem : NClickableControl
             sweepColor.A = PortraitSweepAlpha;
             _portraitSweepLight.Color = sweepColor;
         }
+    }
+
+    /// <summary>把手动选择的高亮叠加到槽位配色上。</summary>
+    private Color ApplySelectionTint(Color color)
+    {
+        return _selectionState switch
+        {
+            PerformSlotSelectionState.Hovered => color.Lightened(SelectionHoveredLighten),
+            PerformSlotSelectionState.Candidate => color.Lightened(SelectionCandidateLighten),
+            _ => color
+        };
     }
 
     private void UpdateAdaptiveWidth()

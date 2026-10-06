@@ -1,7 +1,8 @@
 namespace BangDreamLib.Scripts.Enums;
 
 /// <summary>
-/// 演奏和弦。以位掩码表达，一张卡牌可同时带有多个和弦。
+/// 演奏和弦。以位掩码表达，一张卡牌可同时带有多个和弦：打出该卡牌时，其全部和弦对应的
+/// 分组都会奏响。
 /// </summary>
 [Flags]
 public enum PerformChord
@@ -61,8 +62,9 @@ public static class PerformChordExtensions
     }
 
     /// <summary>
-    /// 取掩码中优先级最高的单和弦。多和弦卡牌以它决定入队分组，无和弦时返回
-    /// <see cref="PerformChord.None" />。
+    /// 取掩码中优先级最高的单和弦，用于需要单值语义的场景（例如取一个代表性分组）；
+    /// 无和弦时返回 <see cref="PerformChord.None" />。和弦不参与入组判定，入组见
+    /// <c>PerformTargetTypes.RequestGroup</c> 与 <c>IPerformScheme.DefaultGroup</c>。
     /// </summary>
     public static PerformChord FirstGroup(this PerformChord chord)
     {

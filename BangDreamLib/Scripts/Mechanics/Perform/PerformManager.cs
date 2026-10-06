@@ -25,6 +25,7 @@ using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Multiplayer.Game;
 using MegaCrit.Sts2.Core.Nodes.Cards;
 using MegaCrit.Sts2.Core.Nodes.Combat;
+using MegaCrit.Sts2.Core.Nodes.CommonUi;
 using MegaCrit.Sts2.Core.Runs;
 using STS2RitsuLib.Networking.ManagedActions;
 using STS2RitsuLib.Scaffolding.Godot.NodeAttachments;
@@ -52,7 +53,9 @@ public class PerformManager : SingletonModel, IInCombatManager
         uint? CardIndex,
         int SlotIndex,
         bool IsSubsideTriggered,
-        int ChordMask);
+        int ChordMask,
+        int RequestSlotIndex = 0,
+        int RequestGroupMask = 0);
 
     private static readonly RitsuLibManagedNetActionDescriptor<PerformNetworkActionPayload> PerformNetworkAction = new(
         "BangDreamLib", "perform_lifecycle",
@@ -63,6 +66,21 @@ public class PerformManager : SingletonModel, IInCombatManager
 
     /// <summary>本生命周期动作的稳定操作码，供补丁识别；未注册时为 0。</summary>
     internal static ulong PerformOpcode { get; private set; }
+
+    /// <summary>
+    /// 还原 payload 中携带的落位覆盖。槽位优先级高于分组，两者都为空时表示按卡牌自身规则入队。
+    /// </summary>
+    private static PerformEnqueueRequest ToEnqueueRequest(PerformNetworkActionPayload payload)
+    {
+        if (payload.RequestSlotIndex >= 1)
+        {
+            return PerformEnqueueRequest.Slot(payload.RequestSlotIndex);
+        }
+
+        return payload.RequestGroupMask != 0
+            ? PerformEnqueueRequest.ForGroup((PerformChord)payload.RequestGroupMask)
+            : default;
+    }
 
     internal static void InitializeNetwork()
     {
@@ -98,7 +116,7 @@ public class PerformManager : SingletonModel, IInCombatManager
             await BangDreamHook.RunPerformHookAction(
                 combatState,
                 cardModel,
-                choiceContext => HandleCardAddedInternal(choiceContext, cardModel));
+                choiceContext => HandleCardAddedInternal(choiceContext, cardModel, default));
         }
         finally
         {
@@ -138,7 +156,7 @@ public class PerformManager : SingletonModel, IInCombatManager
             payload.Kind == PerformNetworkActionKind.Enter
                 ? PerformAreaChangeType.Added
                 : PerformAreaChangeType.Removed);
-        await HandlePerformAreaChange(choiceContext, change);
+        await HandlePerformAreaChange(choiceContext, change, ToEnqueueRequest(payload));
     }
 
     private async Task ExecuteLocalPerformAction(PerformNetworkActionPayload payload)
@@ -165,7 +183,7 @@ public class PerformManager : SingletonModel, IInCombatManager
                 ? PerformAreaChangeType.Added
                 : PerformAreaChangeType.Removed);
         await BangDreamHook.RunPerformHookAction(
-            combatState, card, choiceContext => HandlePerformAreaChange(choiceContext, change));
+            combatState, card, choiceContext => HandlePerformAreaChange(choiceContext, change, ToEnqueueRequest(payload)));
     }
 
     private const string LocTable = "combat_messages";
@@ -392,22 +410,28 @@ public class PerformManager : SingletonModel, IInCombatManager
         }
     }
 
-    private async Task HandleCardAddedInternal(PlayerChoiceContext choiceContext, CardModel cardModel)
+    private async Task HandleCardAddedInternal(
+        PlayerChoiceContext choiceContext,
+        CardModel cardModel,
+        PerformEnqueueRequest request)
     {
         ArgumentNullException.ThrowIfNull(cardModel.CombatState);
 
+        var performContext = CardContexts.GetOrCreate(cardModel);
+        performContext.Manager = this;
+
         if (Capacity == 0)
         {
+            performContext.Request = default;
             ThinkCmd.Play(EmptyThink, Player.Creature, 1.5f);
             if (PerformPile.Cards.Contains(cardModel)) await MoveCardInternal(cardModel);
             return;
         }
 
-        var performContext = CardContexts.GetOrCreate(cardModel);
-        performContext.Manager = this;
-        var enqueuePlan = CreateEnqueuePlan(cardModel);
+        var enqueuePlan = CreateEnqueuePlan(cardModel, request);
         if (enqueuePlan == null)
         {
+            performContext.Request = default;
             ThinkCmd.Play(MaxSizeThink, Player.Creature, 1.5f);
             if (PerformPile.Cards.Contains(cardModel)) await MoveCardInternal(cardModel);
             return;
@@ -429,6 +453,9 @@ public class PerformManager : SingletonModel, IInCombatManager
         finally
         {
             CompletePendingPerformAreaAddition(cardModel);
+
+            // 落位覆盖是一次性的：本张牌已处理完毕，避免残留到下一次入场。
+            performContext.Request = default;
         }
     }
 
@@ -499,15 +526,36 @@ public class PerformManager : SingletonModel, IInCombatManager
     }
 
     /// <summary>
-    /// 一次性奏响指定和弦掩码内所有分组的全部卡牌。传入 <see langword="null" /> 或
-    /// <see cref="PerformChord.None" /> 时奏响全部分组。
+    /// 奏响指定和弦掩码覆盖的全部分组中的**所有卡牌**：逐槽位奏响这些分组内已落位卡牌所在的槽位，
+    /// 因此同一分组的每张牌都会奏响（即兴牌由 <see cref="TryInstant" /> 负责，不在此列）。
+    /// 传入 <see langword="null" /> 或 <see cref="PerformChord.None" /> 时覆盖全部分组。
     /// </summary>
     public async Task PerformChordSlots(PerformChord? chord = null, PlayerChoiceContext? choiceContext = null)
     {
-        foreach (var slotIndex in _capacity.GetActiveSlots(chord ?? PerformChord.None))
+        var mask = chord ?? PerformChord.None;
+        var slotIndices = CollectChordSlotIndices(mask);
+        BangDreamLibCore.Logger.Info(
+            $"Player {Player.Character} ({Player.NetId}) Chord perform {mask} : " +
+            $"slots [{string.Join(", ", slotIndices)}]");
+
+        foreach (var slotIndex in slotIndices)
         {
             await PerformSlot(slotIndex, false, choiceContext);
         }
+    }
+
+    /// <summary>
+    /// 取掩码覆盖分组内已落位卡牌的槽位索引，升序去重。
+    /// 以"卡牌实际所在的槽位"为准，而非按当前容量枚举槽位，保证分组内的每张牌都被覆盖。
+    /// </summary>
+    private List<int> CollectChordSlotIndices(PerformChord mask)
+    {
+        return PerformPile.Cards
+            .Select(card => CardContexts.GetOrCreate(card).SlotIndex)
+            .Where(slotIndex => IsValidSlot(slotIndex) && _capacity.IsSlotInMask(slotIndex, mask))
+            .Distinct()
+            .OrderBy(slotIndex => slotIndex)
+            .ToList();
     }
 
     /// <summary>
@@ -545,10 +593,12 @@ public class PerformManager : SingletonModel, IInCombatManager
     }
 
     /// <summary>
-    /// 发起一次和弦演奏请求。单机或请求被拒时在本地执行。
+    /// 发起一次和弦演奏请求：奏响该和弦覆盖的每个分组中的全部卡牌。
+    /// 单机或请求被拒时在本地执行。
     /// </summary>
     public void RequestChordPerform(PerformChord chord)
     {
+        // 和弦演奏不使用槽位字段，目标分组完全由 ChordMask 决定（SlotIndex 仅供 Trigger 种类使用）。
         RequestPerformAction(new PerformNetworkActionPayload(
             PerformNetworkActionKind.Chord,
             null,
@@ -662,7 +712,155 @@ public class PerformManager : SingletonModel, IInCombatManager
 
     public int GetExpectedSlotIndex(CardModel cardModel)
     {
-        return CreateEnqueuePlan(cardModel)?.SlotIndex ?? -1;
+        return CreateEnqueuePlan(cardModel, CardContexts.GetOrCreate(cardModel).Request)?.SlotIndex ?? -1;
+    }
+
+    /// <summary>
+    /// 开始一次手动落位选择：按目标类型计算候选槽位，并让本地演奏区域进入选择态。
+    /// 非手动落位类型、手柄方向导航、无候选槽位（容量为 0 或演奏区域未就绪）、
+    /// 指定分组但只有一个可达分组时都不进入选择态，出牌按卡牌自身的入队规则处理。
+    /// </summary>
+    public void BeginManualSlotSelection(CardModel cardModel)
+    {
+        ArgumentNullException.ThrowIfNull(cardModel);
+
+        var mode = PerformTargetTypes.ResolveMode(cardModel.TargetType);
+        if (mode == PerformSlotSelectionMode.None) return;
+        if (NControllerManager.Instance?.IsUsingDirectionalNavigation == true)
+        {
+            BangDreamLibCore.Logger.Info(
+                $"Manual slot selection skipped for {cardModel.Id.Entry}: controller navigation.");
+            return;
+        }
+
+        if (!TryGetPerformArea(out var performArea))
+        {
+            BangDreamLibCore.Logger.Warn(
+                $"Manual slot selection skipped for {cardModel.Id.Entry}: perform area is not ready.");
+            return;
+        }
+
+        var candidates = BuildSlotCandidates();
+        if (candidates.Count == 0)
+        {
+            BangDreamLibCore.Logger.Warn(
+                $"Manual slot selection skipped for {cardModel.Id.Entry}: no active slot candidate.");
+            return;
+        }
+
+        // 指定分组模式下只有一个可达分组时无从选择，其落位等价于常规规则，直接不进入选择态。
+        if (mode == PerformSlotSelectionMode.Group &&
+            candidates.Select(candidate => candidate.Group).Distinct().Count() <= 1)
+        {
+            BangDreamLibCore.Logger.Info(
+                $"Manual slot selection skipped for {cardModel.Id.Entry}: only one reachable group.");
+            return;
+        }
+
+        performArea.BeginSlotSelection(cardModel, mode, candidates);
+        BangDreamLibCore.Logger.Info(
+            $"Manual slot selection started for {cardModel.Id.Entry} ({mode}) : " +
+            $"slots [{string.Join(", ", candidates.Select(candidate => candidate.SlotIndex))}]");
+    }
+
+    /// <summary>
+    /// 按当前鼠标位置立即刷新一次选择指向（松手瞬间判定用）。
+    /// </summary>
+    public void RefreshManualSlotSelection(CardModel cardModel)
+    {
+        if (TryGetPerformArea(out var performArea) && performArea.SlotSelectionCard == cardModel)
+        {
+            performArea.RefreshSlotSelection();
+        }
+    }
+
+    /// <summary>
+    /// 该牌的手动落位选择当前是否指向候选槽位（判定前先按当前鼠标位置刷新一次指向）。
+    /// </summary>
+    public bool HasManualSlotCandidate(CardModel cardModel)
+    {
+        if (!TryGetPerformArea(out var performArea) || performArea.SlotSelectionCard != cardModel) return false;
+
+        performArea.RefreshSlotSelection();
+        return performArea.HoveredSlotIndex > 0;
+    }
+
+    /// <summary>该卡当前是否正处于手动落位选择态（未进入选择态时出牌走常规规则）。</summary>
+    public bool IsManualSlotSelectionActive(CardModel cardModel)
+    {
+        return TryGetPerformArea(out var performArea) &&
+               performArea.IsSlotSelectionActive &&
+               performArea.SlotSelectionCard == cardModel;
+    }
+
+    /// <summary>
+    /// 结束手动落位选择并取出结果；返回 <see langword="false" /> 表示未命中任何候选槽位。
+    /// 命中时把结果写入该牌的 <see cref="PerformContext.Request" />，供入队规划与网络动作读取。
+    /// </summary>
+    public bool TryConsumeManualSlotSelection(CardModel cardModel, out PerformEnqueueRequest request)
+    {
+        request = default;
+        if (!IsManualSlotSelectionActive(cardModel)) return false;
+
+        var selected = PerformArea.TryConsumeSlotSelection();
+        if (selected.IsEmpty) return false;
+
+        CardContexts.GetOrCreate(cardModel).Request = selected;
+        request = selected;
+        return true;
+    }
+
+    /// <summary>
+    /// 结束选择态与槽位高亮。<paramref name="cardModel" /> 非空时只结束该牌自己的选择：
+    /// 其他卡牌出牌收尾不应打断正在进行的落位选择。
+    /// </summary>
+    public void EndManualSlotSelection(CardModel? cardModel = null)
+    {
+        if (!TryGetPerformArea(out var performArea) || !performArea.IsSlotSelectionActive) return;
+        if (cardModel != null && performArea.SlotSelectionCard != cardModel) return;
+
+        performArea.EndSlotSelection();
+    }
+
+    /// <summary>取消手动落位选择，并清空该牌尚未消费的落位请求。</summary>
+    public void CancelManualSlotSelection(CardModel cardModel)
+    {
+        EndManualSlotSelection(cardModel);
+        CardContexts.GetOrCreate(cardModel).Request = default;
+    }
+
+    /// <summary>选择态诊断文本；该牌不在选择态时返回占位说明。</summary>
+    public string DescribeManualSlotSelection(CardModel cardModel)
+    {
+        return TryGetPerformArea(out var performArea) && performArea.SlotSelectionCard == cardModel
+            ? performArea.DescribeSlotSelection()
+            : "<no active selection for this card>";
+    }
+
+    /// <summary>本角色全部已激活槽位及其所属和弦分组，作为手动选择的候选集合。</summary>
+    private List<PerformSlotCandidate> BuildSlotCandidates()
+    {
+        // 分组和弦为 PerformChord.None 表示"唯一的默认分组"：其落位与常规规则等价，
+        // 且无法用和弦表达落位请求，因此多分组方案下不作为候选（留待常规规则处理）。
+        var skipDefaultGroup = _scheme.Groups.Count > 1;
+        var candidates = new List<PerformSlotCandidate>();
+        foreach (var descriptor in _scheme.Groups)
+        {
+            if (skipDefaultGroup && descriptor.Chord == PerformChord.None) continue;
+
+            foreach (var slotIndex in _capacity.GetActiveSlots(descriptor.Chord))
+            {
+                candidates.Add(new PerformSlotCandidate(slotIndex, descriptor.Chord));
+            }
+        }
+
+        return candidates;
+    }
+
+    private bool TryGetPerformArea(out NPerformArea performArea)
+    {
+        performArea = PerformArea;
+        return GodotObject.IsInstanceValid(performArea);
     }
 
     private async Task ApplyEnqueuePlan(EnqueuePlan plan, PerformContext incomingContext)
@@ -689,20 +887,36 @@ public class PerformManager : SingletonModel, IInCombatManager
     }
 
     /// <summary>
-    /// 为入队卡牌生成本次入队规划。槽位算法按"卡牌所属分组的组内序号"运作，
+    /// 为入队卡牌生成本次入队规划。槽位算法按"目标分组的组内序号"运作，
     /// 再映射回全局槽位索引，因此单分组（祥子）与多分组（睦）共用同一套规则。
+    /// 目标分组取自玩家的手动请求，或方案默认分组；卡牌和弦不参与入组判定。
     /// </summary>
-    private EnqueuePlan? CreateEnqueuePlan(CardModel incomingCard)
+    /// <param name="incomingCard">本次入场的卡牌。</param>
+    /// <param name="request">
+    /// 玩家手动指定的落位覆盖：指定槽位时强制进入该槽位并顶掉占用者；指定分组时只替换分组，
+    /// 其余规则不变。槽位在规划时已失效（例如容量被削减）时回退到卡牌自身规则。
+    /// </param>
+    private EnqueuePlan? CreateEnqueuePlan(CardModel incomingCard, PerformEnqueueRequest request = default)
     {
         if (Capacity <= 0) return null;
 
         var incomingContext = CardContexts.GetOrCreate(incomingCard);
+
+        if (request.SlotIndex is { } requestedSlot && IsValidSlot(requestedSlot))
+        {
+            var occupant = PerformPile.Cards
+                .Where(card => card != incomingCard)
+                .Select(card => new OccupiedSlot(card, CardContexts.GetOrCreate(card)))
+                .FirstOrDefault(slot => slot.Context.SlotIndex == requestedSlot);
+            return new EnqueuePlan(requestedSlot, occupant?.Card, []);
+        }
+
         if (IsValidSlot(incomingContext.SlotIndex))
         {
             return new EnqueuePlan(incomingContext.SlotIndex, null, []);
         }
 
-        var groupSlots = _capacity.GetActiveSlots(_capacity.ResolveGroup(incomingCard));
+        var groupSlots = _capacity.GetActiveSlots(request.Group ?? _capacity.ResolveDefaultGroup());
         if (groupSlots.Count == 0) return null;
 
         var groupSlotSet = groupSlots.ToHashSet();
@@ -947,12 +1161,16 @@ public class PerformManager : SingletonModel, IInCombatManager
 
         if (!LocalContext.IsMe(Player)) return;
         var index = NetCombatCard.FromModel(cardModel).CombatCardIndex;
+        var isEnter = type == PerformAreaChangeType.Added;
+        var request = isEnter ? CardContexts.GetOrCreate(cardModel).Request : default;
         var payload = new PerformNetworkActionPayload(
-            type == PerformAreaChangeType.Added ? PerformNetworkActionKind.Enter : PerformNetworkActionKind.Leave,
+            isEnter ? PerformNetworkActionKind.Enter : PerformNetworkActionKind.Leave,
             index,
             0,
             false,
-            (int)PerformChord.None);
+            (int)PerformChord.None,
+            request.SlotIndex ?? 0,
+            request.Group is { } group ? (int)group : 0);
         if (!RitsuLibManagedNetActions.Request(null, PerformNetworkAction, payload, Player.NetId))
             TaskHelper.RunSafely(HandleRejectedNetworkAction(payload));
     }
@@ -967,11 +1185,14 @@ public class PerformManager : SingletonModel, IInCombatManager
         return Task.CompletedTask;
     }
 
-    private Task HandlePerformAreaChange(PlayerChoiceContext choiceContext, PerformAreaChange change)
+    private Task HandlePerformAreaChange(
+        PlayerChoiceContext choiceContext,
+        PerformAreaChange change,
+        PerformEnqueueRequest request)
     {
         return change.Type switch
         {
-            PerformAreaChangeType.Added => HandleCardAddedInternal(choiceContext, change.CardModel),
+            PerformAreaChangeType.Added => HandleCardAddedInternal(choiceContext, change.CardModel, request),
             PerformAreaChangeType.Removed => HandleCardRemovedInternal(choiceContext, change.CardModel),
             PerformAreaChangeType.Arrived => HandleCardArrivedInternal(change.CardModel),
             _ => throw new ArgumentOutOfRangeException(nameof(change), $"Unknown change type: {change.Type}")

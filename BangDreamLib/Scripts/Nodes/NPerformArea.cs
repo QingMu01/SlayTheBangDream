@@ -33,6 +33,9 @@ public partial class NPerformArea : Control
     private const float HintFadeDuration = 0.12f;
     private const float HintVerticalOffset = 5f;
 
+    /// <summary>手动选择时槽位命中框额外放宽的边距（像素）。</summary>
+    private const float SlotSelectionHitPadding = 8f;
+
     private float _itemScale = 0.7f;
 
     [Export(PropertyHint.Range, "0.1,2.0,0.01")]
@@ -58,6 +61,7 @@ public partial class NPerformArea : Control
     private readonly List<int> _newlyActiveSlots = [];
     private readonly Dictionary<CardModel, Vector2> _lastCardSlotCenters = [];
     private readonly HashSet<CardModel> _pendingArrivalBounces = [];
+    private readonly List<PerformSlotCandidate> _slotSelectionCandidates = [];
 
     private RunningTween? _layoutTween;
     private RunningTween? _slotEntranceTween;
@@ -71,6 +75,11 @@ public partial class NPerformArea : Control
     private bool _isHintAnimating;
     private bool _hintNeedsPositionRefresh;
     private bool _isExiting;
+
+    private CardModel? _slotSelectionCard;
+    private PerformSlotSelectionMode _slotSelectionMode = PerformSlotSelectionMode.None;
+    private int _slotSelectionHoveredSlot;
+    private int _slotSelectionPointerSlot;
 
     private sealed record RunningTween(Tween Tween, TaskCompletionSource Completion);
 
@@ -102,11 +111,16 @@ public partial class NPerformArea : Control
         _hint = GetNode<TextureRect>("%Hint");
         _hintPositionX = _hint.Position.X;
         _items.AddRange(_itemContainer.GetChildren().OfType<NPerformItem>());
+        foreach (var item in _items)
+        {
+            item.AttachToArea(this);
+        }
 
         Visible = _slotCount > 0;
         EnsureSlotCount();
         ApplyItemScale();
         ApplyLayoutImmediately();
+        SetProcess(false);
         SetHintTarget(GetHintAmount(), true);
         Callable.From(ApplyDeferredLayout).CallDeferred();
     }
@@ -126,9 +140,234 @@ public partial class NPerformArea : Control
         SecondaryResourceStateStore.Get(_player).Changed += OnSecondaryResourceChanged;
     }
 
+    /// <summary>该演奏区域当前是否处于手动落位选择态。</summary>
+    public bool IsSlotSelectionActive => _slotSelectionCard != null;
+
+    /// <summary>正在等待玩家指定落位的卡牌；未处于选择态时为 <see langword="null" />。</summary>
+    public CardModel? SlotSelectionCard => _slotSelectionCard;
+
+    /// <summary>当前指向的槽位索引；未指向任何候选槽位时为 0。</summary>
+    public int HoveredSlotIndex => _slotSelectionHoveredSlot;
+
+    /// <summary>
+    /// 进入手动落位选择态：高亮候选槽位，并在后续帧中按鼠标位置更新指向。
+    /// </summary>
+    /// <param name="cardModel">等待指定落位的卡牌。</param>
+    /// <param name="mode">选择模式：指定槽位或指定分组。</param>
+    /// <param name="candidates">候选槽位及其所属分组，按槽位索引升序。</param>
+    public void BeginSlotSelection(
+        CardModel cardModel,
+        PerformSlotSelectionMode mode,
+        IReadOnlyList<PerformSlotCandidate> candidates)
+    {
+        EndSlotSelection();
+        if (mode == PerformSlotSelectionMode.None || candidates.Count == 0) return;
+
+        _slotSelectionCard = cardModel;
+        _slotSelectionMode = mode;
+        _slotSelectionCandidates.AddRange(candidates);
+        SetProcess(true);
+        UpdateSlotSelection(force: true);
+    }
+
+    /// <summary>
+    /// 立即按当前鼠标位置刷新一次指向（用于松手瞬间等需要精确判定的时点）。
+    /// </summary>
+    public void RefreshSlotSelection()
+    {
+        if (_slotSelectionCard == null) return;
+
+        UpdateSlotSelection(force: true);
+    }
+
+    /// <summary>
+    /// 取当前指向的落位结果并结束选择。未指向任何候选槽位时返回空请求。
+    /// </summary>
+    public PerformEnqueueRequest TryConsumeSlotSelection()
+    {
+        var request = BuildSelectedRequest();
+        EndSlotSelection();
+        return request;
+    }
+
+    /// <summary>结束选择态并复位槽位高亮。</summary>
+    public void EndSlotSelection()
+    {
+        _slotSelectionCard = null;
+        _slotSelectionMode = PerformSlotSelectionMode.None;
+        _slotSelectionCandidates.Clear();
+        _slotSelectionHoveredSlot = 0;
+        _slotSelectionPointerSlot = 0;
+        SetProcess(false);
+        ResetSlotSelectionVisuals();
+        PerformTargetingArrow.End();
+    }
+
+    public override void _Process(double delta)
+    {
+        if (_slotSelectionCard == null) return;
+
+        UpdateSlotSelection(force: false);
+    }
+
+    /// <summary>按鼠标位置刷新指向的候选槽位；<paramref name="force" /> 用于进入选择态时立即建立高亮。</summary>
+    private void UpdateSlotSelection(bool force)
+    {
+        RefreshHoveredSlot(force);
+    }
+
+    /// <summary>
+    /// 鼠标指针进入某个槽位。以 Godot 自身的鼠标拾取为准（不受缩放/镜像/父级变换影响），
+    /// 手算命中作为其失效时的兜底。
+    /// </summary>
+    internal void NotifySlotPointerEntered(NPerformItem item)
+    {
+        if (_slotSelectionCard == null) return;
+
+        var slotIndex = _items.IndexOf(item) + 1;
+        if (!IsCandidateSlot(slotIndex)) return;
+
+        _slotSelectionPointerSlot = slotIndex;
+        RefreshHoveredSlot(force: true);
+    }
+
+    /// <summary>鼠标指针离开某个槽位。</summary>
+    internal void NotifySlotPointerExited(NPerformItem item)
+    {
+        if (_slotSelectionCard == null) return;
+        if (_items.IndexOf(item) + 1 != _slotSelectionPointerSlot) return;
+
+        _slotSelectionPointerSlot = 0;
+        RefreshHoveredSlot(force: true);
+    }
+
+    /// <summary>
+    /// 重新确定指向的槽位：鼠标拾取优先，其次手算命中；两者都未命中时再用视口坐标兜底判定。
+    /// </summary>
+    private void RefreshHoveredSlot(bool force = false)
+    {
+        var hovered = _slotSelectionPointerSlot;
+        if (hovered <= 0)
+        {
+            hovered = HitTestCandidateSlot(GetGlobalMousePosition());
+        }
+
+        if (hovered <= 0)
+        {
+            // 兜底：若演奏区节点与鼠标的坐标空间不一致（父级缩放/相机位移等），用视口坐标再判一次。
+            var viewportMouse = GetViewport().GetMousePosition();
+            if (!viewportMouse.IsEqualApprox(GetGlobalMousePosition()))
+            {
+                hovered = HitTestCandidateSlot(viewportMouse);
+            }
+        }
+
+        if (!force && hovered == _slotSelectionHoveredSlot) return;
+
+        _slotSelectionHoveredSlot = hovered;
+        ApplySlotSelectionVisuals();
+
+        // 复用原版目标指示箭头：指向候选槽位时高亮，离开时恢复。
+        PerformTargetingArrow.SetHighlighted(hovered > 0);
+    }
+
+    private bool IsCandidateSlot(int slotIndex)
+    {
+        return slotIndex >= 1 &&
+               _slotSelectionCandidates.Any(candidate => candidate.SlotIndex == slotIndex);
+    }
+
+    /// <summary>选择态诊断文本：鼠标位置、指针/手算指向的槽位、各候选槽位的命中几何。</summary>
+    public string DescribeSlotSelection()
+    {
+        var mouse = GetGlobalMousePosition();
+        var geometry = _slotSelectionCandidates
+            .Where(candidate => candidate.SlotIndex >= 1 && candidate.SlotIndex <= _items.Count)
+            .Select(candidate =>
+            {
+                var item = _items[candidate.SlotIndex - 1];
+                item.TryHitTest(mouse, SlotSelectionHitPadding, out var center, out var halfSize);
+                var scale = item.GetGlobalTransform().X.Length();
+                return $"#{candidate.SlotIndex} origin={item.GlobalPosition} center={center} half={halfSize} " +
+                       $"scale={scale:0.###}";
+            });
+
+        return $"pointerSlot={_slotSelectionPointerSlot} hoveredSlot={_slotSelectionHoveredSlot} " +
+               $"manualSlot={HitTestCandidateSlot(mouse)} mouseCanvas={mouse} " +
+               $"mouseViewport={GetViewport().GetMousePosition()} area={GlobalPosition} " +
+               $"[{string.Join("; ", geometry)}]";
+    }
+
+    /// <summary>后绘制的槽位优先命中；非激活槽位不参与。</summary>
+    private int HitTestCandidateSlot(Vector2 globalPoint)
+    {
+        for (var index = _slotSelectionCandidates.Count - 1; index >= 0; index--)
+        {
+            var slotIndex = _slotSelectionCandidates[index].SlotIndex;
+            if (slotIndex < 1 || slotIndex > _items.Count) continue;
+
+            var item = _items[slotIndex - 1];
+            if (item.TryHitTest(globalPoint, SlotSelectionHitPadding)) return slotIndex;
+        }
+
+        return 0;
+    }
+
+    private PerformEnqueueRequest BuildSelectedRequest()
+    {
+        if (_slotSelectionHoveredSlot <= 0) return default;
+        if (_slotSelectionMode == PerformSlotSelectionMode.Slot)
+        {
+            return PerformEnqueueRequest.Slot(_slotSelectionHoveredSlot);
+        }
+
+        var candidate = _slotSelectionCandidates
+            .FirstOrDefault(candidate => candidate.SlotIndex == _slotSelectionHoveredSlot);
+        return PerformEnqueueRequest.ForGroup(candidate.Group);
+    }
+
+    /// <summary>
+    /// 刷新高亮：指定分组模式下，指向的槽位会让同组全部候选槽位一并高亮（其余只有候选高亮）。
+    /// </summary>
+    private void ApplySlotSelectionVisuals()
+    {
+        var highlightsGroup = _slotSelectionMode == PerformSlotSelectionMode.Group && _slotSelectionHoveredSlot > 0;
+        var hoveredCandidate = highlightsGroup
+            ? _slotSelectionCandidates.FirstOrDefault(candidate => candidate.SlotIndex == _slotSelectionHoveredSlot)
+            : default;
+
+        foreach (var candidate in _slotSelectionCandidates)
+        {
+            if (candidate.SlotIndex < 1 || candidate.SlotIndex > _items.Count) continue;
+
+            var isHovered = _slotSelectionHoveredSlot > 0 &&
+                            (candidate.SlotIndex == _slotSelectionHoveredSlot ||
+                             highlightsGroup && candidate.Group == hoveredCandidate.Group);
+            _items[candidate.SlotIndex - 1].SetSelectionState(isHovered
+                ? PerformSlotSelectionState.Hovered
+                : PerformSlotSelectionState.Candidate);
+        }
+    }
+
+    private void ResetSlotSelectionVisuals()
+    {
+        foreach (var item in _items)
+        {
+            item.SetSelectionState(PerformSlotSelectionState.None);
+        }
+    }
+
     public override void _ExitTree()
     {
         _isExiting = true;
+        _slotSelectionCard = null;
+        _slotSelectionMode = PerformSlotSelectionMode.None;
+        _slotSelectionCandidates.Clear();
+        _slotSelectionHoveredSlot = 0;
+        _slotSelectionPointerSlot = 0;
+        SetProcess(false);
+        PerformTargetingArrow.End();
+
         if (_player != null && SecondaryResourceStateStore.TryGet(_player, out var resourceState))
         {
             resourceState.Changed -= OnSecondaryResourceChanged;
