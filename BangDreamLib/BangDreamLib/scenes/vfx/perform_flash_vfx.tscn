@@ -1,9 +1,10 @@
-[gd_scene load_steps=16 format=3 uid="uid://bpod2aeovhlw"]
+[gd_scene load_steps=13 format=3 uid="uid://bpod2aeovhlw"]
 
 [ext_resource type="Script" uid="uid://dtfxyyc7kbuu6" path="res://Scripts/Nodes/VFX/PerformFlashVfx.cs" id="1_script"]
-[ext_resource type="Texture2D" uid="uid://ddg1bga84moge" path="res://BangDreamLib/images/vfx/icon_music_note.png" id="3_note"]
-[ext_resource type="Texture2D" uid="uid://dtgv5vokmg1c1" path="res://BangDreamLib/images/vfx/star_269.png" id="4_star"]
+[ext_resource type="Texture2D" uid="uid://bjstictevo2pr" path="res://BangDreamLib/images/vfx/perform_flash/perform_glint.png" id="2_glint"]
+[ext_resource type="Texture2D" uid="uid://btfpkxifpmw57" path="res://BangDreamLib/images/vfx/perform_flash/perform_shard.png" id="3_shard"]
 [ext_resource type="Shader" uid="uid://btb56526d8at2" path="res://BangDreamLib/shaders/parallelogram_center_sweep.gdshader" id="5_sweep"]
+[ext_resource type="Texture2D" uid="uid://d2srbops1xqm0" path="res://images/vfx/dot.png" id="6_dot"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_sweep"]
 shader = ExtResource("5_sweep")
@@ -12,71 +13,36 @@ shader_parameter/edge_softness = 0.0
 shader_parameter/sweep_band_width = 18.0
 shader_parameter/sweep_edge_glow = 8.0
 
-[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_note"]
-blend_mode = 1
-particles_animation = true
-particles_anim_h_frames = 3
-particles_anim_v_frames = 3
-particles_anim_loop = true
-
-[sub_resource type="Curve" id="Curve_note_alpha"]
-_data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(0.7, 0.85), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
-point_count = 3
-
-[sub_resource type="CurveTexture" id="CurveTexture_note_alpha"]
-curve = SubResource("Curve_note_alpha")
-
-[sub_resource type="Curve" id="Curve_note_scale"]
-_data = [Vector2(0, 0.85), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
-point_count = 2
-
-[sub_resource type="CurveTexture" id="CurveTexture_note_scale"]
-curve = SubResource("Curve_note_scale")
-
-[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_note"]
-particle_flag_disable_z = true
-emission_shape = 3
-emission_box_extents = Vector3(80, 25, 1)
-angle_min = -179.99998
-angle_max = 180.00002
-spread = 0.0
-angular_velocity_min = -120.0
-angular_velocity_max = 120.0
-radial_velocity_min = 60.0
-radial_velocity_max = 180.0
-gravity = Vector3(0, -60, 0)
-scale_min = 0.3
-scale_max = 0.45
-scale_curve = SubResource("CurveTexture_note_scale")
-alpha_curve = SubResource("CurveTexture_note_alpha")
-anim_offset_max = 1.0
-
-[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_star"]
+[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_add"]
 blend_mode = 1
 
-[sub_resource type="Curve" id="Curve_star_alpha"]
-_data = [Vector2(0, 0), 0.0, 0.0, 0, 0, Vector2(0.15, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
+[sub_resource type="Curve" id="Curve_dust_alpha"]
+_data = [Vector2(0, 0), 0.0, 0.0, 0, 0, Vector2(0.12, 0.7), 0.0, 0.0, 0, 0, Vector2(0.35, 0.5), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
+point_count = 4
+
+[sub_resource type="CurveTexture" id="CurveTexture_dust_alpha"]
+curve = SubResource("Curve_dust_alpha")
+
+[sub_resource type="Curve" id="Curve_dust_scale"]
+_data = [Vector2(0, 0.5), 0.0, 0.0, 0, 0, Vector2(0.15, 1), 0.0, 0.0, 0, 0, Vector2(1, 0.1), 0.0, 0.0, 0, 0]
 point_count = 3
 
-[sub_resource type="CurveTexture" id="CurveTexture_star_alpha"]
-curve = SubResource("Curve_star_alpha")
+[sub_resource type="CurveTexture" id="CurveTexture_dust_scale"]
+curve = SubResource("Curve_dust_scale")
 
-[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_star"]
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_dust"]
 particle_flag_disable_z = true
 emission_shape = 3
-emission_box_extents = Vector3(80, 25, 1)
-angle_min = -179.99998
-angle_max = 180.00002
-spread = 0.0
-angular_velocity_min = -240.0
-angular_velocity_max = 240.0
-radial_velocity_min = 120.0
-radial_velocity_max = 260.0
-gravity = Vector3(0, 0, 0)
-scale_min = 0.5
-alpha_curve = SubResource("CurveTexture_star_alpha")
-hue_variation_min = -0.1
-hue_variation_max = 0.1
+emission_box_extents = Vector3(67, 16, 1)
+direction = Vector3(0, -1, 0)
+spread = 28.0
+initial_velocity_min = 18.0
+initial_velocity_max = 46.0
+gravity = Vector3(0, -18, 0)
+scale_min = 0.018
+scale_max = 0.042
+scale_curve = SubResource("CurveTexture_dust_scale")
+alpha_curve = SubResource("CurveTexture_dust_alpha")
 
 [node name="PerformFlashVfx" type="Node2D"]
 script = ExtResource("1_script")
@@ -92,22 +58,158 @@ offset_bottom = 25.0
 mouse_filter = 2
 color = Color(1, 1, 1, 0.55)
 
-[node name="MusicNoteParticles" type="GPUParticles2D" parent="."]
-material = SubResource("CanvasItemMaterial_note")
-emitting = false
-amount = 16
-texture = ExtResource("3_note")
-lifetime = 0.7
-one_shot = true
-explosiveness = 0.9
-process_material = SubResource("ParticleProcessMaterial_note")
+[node name="Glints" type="Node2D" parent="."]
 
-[node name="StarParticles" type="GPUParticles2D" parent="."]
-material = SubResource("CanvasItemMaterial_star")
+[node name="Shards" type="Node2D" parent="."]
+
+[node name="GlowDust" type="GPUParticles2D" parent="."]
+material = SubResource("CanvasItemMaterial_add")
 emitting = false
-amount = 24
-texture = ExtResource("4_star")
-lifetime = 0.5
+amount = 14
+texture = ExtResource("6_dot")
+lifetime = 0.6
 one_shot = true
-explosiveness = 0.95
-process_material = SubResource("ParticleProcessMaterial_star")
+explosiveness = 0.85
+randomness = 0.3
+visibility_rect = Rect2(-110, -110, 220, 160)
+process_material = SubResource("ParticleProcessMaterial_dust")
+
+[node name="Glint0" type="Sprite2D" parent="Glints"]
+material = SubResource("CanvasItemMaterial_add")
+position = Vector2(-12, -11)
+rotation = -0.12
+scale = Vector2(0.13, 0.24)
+texture = ExtResource("2_glint")
+
+[node name="Glint1" type="Sprite2D" parent="Glints"]
+material = SubResource("CanvasItemMaterial_add")
+position = Vector2(15, 14)
+rotation = 0.12
+scale = Vector2(0.11, 0.19)
+texture = ExtResource("2_glint")
+
+[node name="Glint2" type="Sprite2D" parent="Glints"]
+material = SubResource("CanvasItemMaterial_add")
+position = Vector2(-34, 16)
+rotation = 0.08
+scale = Vector2(0.15, 0.28)
+texture = ExtResource("2_glint")
+
+[node name="Glint3" type="Sprite2D" parent="Glints"]
+material = SubResource("CanvasItemMaterial_add")
+position = Vector2(37, -17)
+rotation = -0.06
+scale = Vector2(0.16, 0.3)
+texture = ExtResource("2_glint")
+
+[node name="Glint4" type="Sprite2D" parent="Glints"]
+material = SubResource("CanvasItemMaterial_add")
+position = Vector2(-57, -18)
+rotation = -0.1
+scale = Vector2(0.12, 0.22)
+texture = ExtResource("2_glint")
+
+[node name="Glint5" type="Sprite2D" parent="Glints"]
+material = SubResource("CanvasItemMaterial_add")
+position = Vector2(60, 15)
+rotation = 0.1
+scale = Vector2(0.13, 0.24)
+texture = ExtResource("2_glint")
+
+[node name="Glint6" type="Sprite2D" parent="Glints"]
+material = SubResource("CanvasItemMaterial_add")
+position = Vector2(-72, 12)
+rotation = 0.04
+scale = Vector2(0.09, 0.18)
+texture = ExtResource("2_glint")
+
+[node name="Glint7" type="Sprite2D" parent="Glints"]
+material = SubResource("CanvasItemMaterial_add")
+position = Vector2(74, -9)
+rotation = -0.04
+scale = Vector2(0.1, 0.2)
+texture = ExtResource("2_glint")
+
+[node name="Shard0" type="Sprite2D" parent="Shards"]
+material = SubResource("CanvasItemMaterial_add")
+position = Vector2(-8, 20)
+rotation = -0.3
+scale = Vector2(0.66, 0.22)
+texture = ExtResource("3_shard")
+
+[node name="Shard1" type="Sprite2D" parent="Shards"]
+material = SubResource("CanvasItemMaterial_add")
+position = Vector2(12, -18)
+rotation = 0.2
+scale = Vector2(0.6, 0.176)
+texture = ExtResource("3_shard")
+
+[node name="Shard2" type="Sprite2D" parent="Shards"]
+material = SubResource("CanvasItemMaterial_add")
+position = Vector2(-24, -21)
+rotation = -0.15
+scale = Vector2(0.72, 0.231)
+texture = ExtResource("3_shard")
+
+[node name="Shard3" type="Sprite2D" parent="Shards"]
+material = SubResource("CanvasItemMaterial_add")
+position = Vector2(29, 20)
+rotation = 0.35
+scale = Vector2(0.54, 0.176)
+texture = ExtResource("3_shard")
+
+[node name="Shard4" type="Sprite2D" parent="Shards"]
+material = SubResource("CanvasItemMaterial_add")
+position = Vector2(-41, 6)
+rotation = -0.45
+scale = Vector2(0.6, 0.193)
+texture = ExtResource("3_shard")
+
+[node name="Shard5" type="Sprite2D" parent="Shards"]
+material = SubResource("CanvasItemMaterial_add")
+position = Vector2(43, -7)
+rotation = 0.3
+scale = Vector2(0.75, 0.242)
+texture = ExtResource("3_shard")
+
+[node name="Shard6" type="Sprite2D" parent="Shards"]
+material = SubResource("CanvasItemMaterial_add")
+position = Vector2(-55, 20)
+rotation = -0.2
+scale = Vector2(0.54, 0.176)
+texture = ExtResource("3_shard")
+
+[node name="Shard7" type="Sprite2D" parent="Shards"]
+material = SubResource("CanvasItemMaterial_add")
+position = Vector2(57, -20)
+rotation = 0.1
+scale = Vector2(0.6, 0.209)
+texture = ExtResource("3_shard")
+
+[node name="Shard8" type="Sprite2D" parent="Shards"]
+material = SubResource("CanvasItemMaterial_add")
+position = Vector2(-68, -8)
+rotation = -0.3
+scale = Vector2(0.66, 0.198)
+texture = ExtResource("3_shard")
+
+[node name="Shard9" type="Sprite2D" parent="Shards"]
+material = SubResource("CanvasItemMaterial_add")
+position = Vector2(70, 18)
+rotation = 0.4
+scale = Vector2(0.54, 0.165)
+texture = ExtResource("3_shard")
+
+[node name="Shard10" type="Sprite2D" parent="Shards"]
+material = SubResource("CanvasItemMaterial_add")
+position = Vector2(-32, 3)
+rotation = 0.25
+scale = Vector2(0.45, 0.149)
+texture = ExtResource("3_shard")
+
+[node name="Shard11" type="Sprite2D" parent="Shards"]
+material = SubResource("CanvasItemMaterial_add")
+position = Vector2(33, 8)
+rotation = -0.3
+scale = Vector2(0.48, 0.154)
+texture = ExtResource("3_shard")
