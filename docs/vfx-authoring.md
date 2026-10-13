@@ -2,6 +2,8 @@
 
 新增或改造一个特效时该遵守的约定。预览机制（编辑器里为何静止、三种环境如何共存、`VfxPreviewSupport` 各成员）见《特效预览机制》（`vfx-preview-mechanism.md`）——本文假定你已了解那套接缝。
 
+**要与用户协作、从零设计一个新特效**（用户不懂特效、需要先访谈再动手）时，走 skill `.codex/skills/vfx-authoring/`：素材侦察 → 访谈 → 计划 → **用户批准** → 实现。本文仍是实现规范的唯一事实来源。
+
 ## 1. 三条铁律（改错会破坏游戏内表现）
 
 **一、不要用硬编码的初值覆盖场景里的美术基准值。** 重播时的重置必须用从场景读回的基础值，不能用 `Colors.White` / `Vector2.One`：
@@ -129,14 +131,32 @@ ffmpeg -y -loglevel error -framerate 60 -i frame%08d.png \
 - 录制输出目录建议放 `.vfx_staging/`（已在 `.gitignore` 内），不要污染仓库。
 - 若命令在启动阶段就崩在 `RotatedFileLogger::rotate_file()`（沙箱/受限环境写不了
   `%APPDATA%\Godot`），加 `--log-file <工作区内的路径>` 重定向日志即可绕开。
+- **实测速度**：12 帧约 2 秒，90 帧约 12–13 秒（固定启动开销约 1 秒，之后每帧约 130ms）。
+  录 130 帧请预留 20 秒以上。
+- **背景不是黑，是灰。** 本项目未设置清屏色，用的是 Godot 默认 `default_clear_color`
+  （0.3 灰 ≈ 76/255，实测帧角像素 75）。判断「某元素是否按时消失」时不要按黑底预期，
+  亮度采样阈值也要相应调整。
+- **预览态会循环重播。** F6 / 场景根运行时 `ShouldSelfFree` 为 false、`LoopPreview` 为 true，
+  录制区间超过一个 `LIFE` 就会录到第二个循环。要核对单次播放，就把 `--quit-after`
+  控制在一个循环内。
+
+> 录制与校验已封装成脚本，优先用它们而不是手敲命令：
+> `.codex/skills/vfx-authoring/scripts/record.ps1`（录制 + 合成 mp4/gif）、
+> `verify_frames.py`（帧序列机器校验，背景自适应）。
 
 ## 4. 素材从资产库接入
 
 素材由 Polaris MCP 工具从资产库（`D:\PolarisAssets`）取出，流程：
 
-1. `search_assets` 定位候选（按 `tags: ["VFX"]` / 关键词 / `kinds` 过滤），再用 `render_contact_sheet` 一次拼图目视确认形态。
+1. `search_assets` 定位候选。除 `tags: ["VFX"]` / 关键词 / `kinds` 外，**优先用结构化过滤**（SQL 级，`total` 即真实命中数）：`alpha`（透明占比）、`fill_ratio`（剪影填充率）、`glow_range`（辉光强度）、`edge_softness`（边缘柔硬）、`dark_outline`（深色描边）、`layout`（构图）、`colors` + `color_min_ratio`（主色及其占比）、`sub_types`（`grid_atlas` / `image_sequence` 等）。首轮定位可用 `detail: "minimal"` 省 token。再用 `render_contact_sheet` 一次拼图目视确认形态。
+
+   > **v1 起还支持主体级选材**（候选是**具体帧**）：`role`（8 个用途角色）+ `mode`（`scout`/`strict`）
+   > + `facets`（受控形态事实）+ `dimensions`（维度区间）+ `target_px`/`tint`/`blend`（按使用条件排序）
+   > + `unknown_features`。受控取值先读 `get_selection_spec`（或 resource
+   > `polaris://spec/selection.json`）——**不要凭记忆猜取值**。返回里重点看 `risks` 与
+   > `required_review`（未知证据不会被当作通过），以及 `effective_constraints` 里候选池是否被截断。
 2. `get_asset_group_preview` 读取图集的切分参数（行列数、单帧尺寸）——**这是设置 `hframes`/`vframes` 的唯一依据**，不要目测。
-3. `export_assets` 导出到项目外的临时目录（如 `.vfx_staging`），**不要在资产库内改名**。
+3. `export_assets` 导出到项目外的临时目录（如 `.vfx_staging`），**不要在资产库内改名**。每个资产的导出子目录里会附带 `_provenance.json`（uuid / 名称 / 标签 / 描述 / 逐文件 hash），这是溯源依据。
 4. 复制进 `BangDreamLib/BangDreamLib/images/vfx/<特效名>/` 并重命名为语义化文件名（`music_slash_main.png` 而非 `fx_301403_tex_002.png`）。资产库中的数字名对项目无意义，语义名才便于后续维护。
 5. 运行 `--headless --import` 让引擎生成 `.import` 与 uid，**不要手写 uid**。手写的 uid 不保证合法，且可能与全库冲突。
 6. 场景里引用资源用**引擎生成的 uid**（从 `.import` 的 `uid=` 行读），`path=` 同时保留作可读性兜底。
@@ -145,11 +165,16 @@ ffmpeg -y -loglevel error -framerate 60 -i frame%08d.png \
 
 ### 4.1 选材与取证的实操坑
 
-**一、判断透明不要信 `render_asset_preview`。** 该工具会丢 alpha 通道，把透明底渲染成整块实色
-（实测 `oblvns_skin_05` 透明 86%，却渲染成整块蓝色底）。判断透明与边缘必须用：
+**一、判断透明与边缘：以 `features` 的数字为准，棋盘格底看形态。**
+`render_asset_preview` 与 `render_contact_sheet` 现在都会为透明素材自动叠**棋盘格底**
+（文本块里 `background=checkerboard`），`render_asset_preview` 还附带 `features`。所以：
 
-- `render_contact_sheet`——**棋盘格底**才是透明正确的表现；
-- `get_asset` 的 `features` 字段——读「透明 86%」这类数字。
+- `get_asset` / `get_assets` 的 `features` 字段——读「透明 86%」这类**数字**，最可靠；
+- `render_contact_sheet` / `render_asset_preview`——看**形态与边缘**。
+
+> 历史记录：早期版本 `render_asset_preview` 会丢 alpha 通道，把透明底渲染成整块实色
+> （实测 `oblvns_skin_05` 透明 86%，却渲染成整块蓝色底）。该问题已修复，
+> 但**数字仍比肉眼可靠**——判断透明占比一律以 `features` 为准。
 
 **二、库里的描述可能是错的，选材必须目视确认。** 本次发现同一批导入的三个资产
 （`oblvns_03` / `oblvns_skin_04` / `oblvns_skin_05`）被套了统一模板「光环纹样图集（TPS）」，
@@ -157,22 +182,35 @@ ffmpeg -y -loglevel error -framerate 60 -i frame%08d.png \
 它只比对「描述 vs 主色/辉光」，而「是光环还是音符」属于形状语义，特征里没有这个维度。
 
 所以：**选中素材后一定用 `render_contact_sheet` 看一眼实际形态**，不要只凭描述文字决策。
-怀疑有批量误标时，按导入时间戳聚类（同一批时间戳相近）再逐一目视。
+怀疑有批量误标时，用 `list_import_batches` 按导入时间**自动聚类**（相邻资产创建时间间隔 ≥
+`gap_minutes` 即算新批次），再配合 `render_contact_sheet` + `get_assets` 逐格比对——
+比手工按时间戳聚类可靠，也能直接拿到可复用的时间窗口。
 
-**三、素材改名后无法溯源，建议自己留一份对照表。** 导出时会重命名为语义名
-（`music_slash_note.png`），与库中资产的关联就断了。想反查来源，可用**文件字节数**匹配
-（`music_slash_note.png` 23827 字节 → 全库唯一匹配 `oblvns_skin_05`）。
-建议在特效目录里留一份来源注释（哪张图来自哪个 uuid），便于日后换素材。
+**三、溯源靠 `_provenance.json`，不必再用文件字节数猜。** `export_assets` 会在每个资产的导出
+子目录里写 `_provenance.json`，记录 uuid / 名称 / 标签 / 描述 / 导出时间 / 网格参数 / 逐文件 hash——
+**素材在项目里被重命名后仍可反查来源**。把其中的 uuid 一列转抄进特效目录的 `SOURCES.md` 即可。
+
+> 旧做法是用文件字节数去全库反查（`music_slash_note.png` 23827 字节 → `oblvns_skin_05`），
+> 仅在没有 `_provenance.json` 的历史导出上才需要。
 
 **四、黑底素材（加法混合）的 `主体框` 不可用。** 黑底被当作内容，包围盒永远是 `x0.00-1.00 y0.00-1.00`，
 无法据此定缩放。需要自己算亮度包围盒得到真实内容尺寸——本次月牙弧画布 128×128、
 实际内容仅 53×110，据此才定下 `scale ≈ 1.9`（补偿与 256px 画布素材的差异）。
 
-**五、`export_assets` 的目标目录必须预先存在**，先 `mkdir` 再导出。
+> **⚠️ 该条已被特征 v4 修正（选材契约 v1，2026-10）**：核心现在会检测**贴边均匀背景**
+> （`border_uniform`），识别到黑底时主体框是**剔除背景后的内容框**，会收紧，可直接据此定缩放；
+> 只有「未识别到背景、整幅即主体」（掩码方法 `full_frame`）时才等于满幅。
+> 读 `features` 的「背景」与掩码方法即可区分这两种情况——**不要再一律自己算亮度包围盒**。
+> 口径与交叉校验见 `.codex/skills/vfx-authoring/references/selection-contract.md`。
+
+**五、`export_assets` 会自动创建目标目录。** `directory` 传绝对路径，不存在时自动建。
 导出到 `.vfx_staging/`（已在 `.gitignore` 内），不要在资产库内改名或删除。
 
-**六、`search_assets` 的 `detail="minimal"` 当前不可用**（返回 schema 校验错误），
-用默认的 `standard` 即可。
+> **同名不覆盖**：已存在同名文件/文件夹的资产会报错，其余继续。重导出前先清掉旧目录，
+> 否则拿到的可能是上一次的产物。
+
+**六、`search_assets` 的 `detail` 三档均可用**：`minimal`（只回 uuid/name/kind/subType，
+首轮定位最省 token）、`standard`（默认）、`full`（完整描述与全部文件名）。
 
 ### 4.2 回写描述与修正误标
 
@@ -205,14 +243,16 @@ D:/Megadot/MegaDot_v4.5.1-stable_mono_win64_console.exe --headless --editor \
   --path BangDreamLib --quit-after 150
 ```
 
-以上两条命令加 `| grep -iE "error|script error|failed"`，**无输出即通过**。注意 `--headless --editor` 不会把新场景的 uid 回写进 `.tscn`，需要手写一个合法 uid（用 `grep -rl "uid://<候选>"` 确认全库无冲突）。
+以上两条命令加 `| grep -iE "error|script error|failed"`，**无输出即通过**。注意 `--headless --editor` 不会把新场景的 uid 回写进 `.tscn`；没有引擎生成的场景 uid 时保留 path 引用，由编辑器保存生成后再记录，不能手写或猜测 uid。
 
 **这两条只验证「没有报错」，不验证「观感对不对」——调观感请看第 3.1 节录帧核对。**
 
-两个已知的非问题：
+三个已知的非问题：
 
 - **`ObjectDB instances leaked at exit`** —— 继承 `NBangDreamFlyingVfx` 的场景都会出现 1 条（对照 `flying_music_note_default.tscn` 同样有）。这是基类场景的固有现象，不是新特效引入的缺陷。继承 `Node2D` 的场景不会出现。
-- **`Sentry GDExtension not loaded`** —— 无头运行时的常规提示，与特效无关。
+- **`Sentry GDExtension not loaded`** —— 无头运行与录帧时的常规提示，与特效无关。
+- **`ERROR: Error opening file 'res://icon.svg'`** —— `project.godot` 的 `config/icon` 指向了
+  仓库里不存在的 `icon.svg`（既有问题，与特效无关）。要根治就补一个图标文件或删掉该配置行。
 
 场景文件头 `load_steps` 需与实际资源数一致（`ext_resource` + `sub_resource` + 1）。写错不会导致加载失败，但会让引擎重新计算并可能覆盖你的手改，建议手写时就数对。
 
