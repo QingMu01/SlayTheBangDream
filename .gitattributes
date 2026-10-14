@@ -1,0 +1,19 @@
+# 文本文件统一按 LF 存入仓库；检出时按平台自动选择（Linux→LF，Windows→CRLF）
+* text=auto
+
+# 明确声明二进制，避免被误判为文本而做行尾转换
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.webp  binary
+*.gif   binary
+*.ttf   binary
+*.otf   binary
+*.woff  binary
+*.woff2 binary
+*.pck   binary
+*.dll   binary
+*.so    binary
+*.skel  binary
+*.spine binary
+*.pdb   binary
