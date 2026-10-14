@@ -108,14 +108,18 @@ grep -rn "MusicSlashVfx\|vfx_music_slash" --include=*.cs --include=*.tscn .
 「粒子挤在一起」「旋转很怪」「动画没生效」这类问题，读代码看不出来，跑一次才知道。
 
 ```bash
+# Godot 可执行文件取自 Directory.Build.props 的 <GodotExe>（单属性查询直接打印值）
+GODOT=$(dotnet msbuild BangDreamLib/BangDreamLib.csproj -getProperty:GodotExe)
+
 # 录成 PNG 序列（注意：--write-movie 与 --headless 不能同时用，headless 无渲染录不到画面）
-D:/Megadot/MegaDot_v4.5.1-stable_mono_win64_console.exe \
+"$GODOT" \
   --path BangDreamLib \
-  --write-movie "D:/MyProject/ProjectPolaris/BangDreamInSpire/.vfx_staging/rec/frame.png" \
+  --write-movie "$PWD/.vfx_staging/rec/frame.png" \
   --fixed-fps 60 --quit-after 90 \
   "res://BangDreamLib/scenes/vfx/<场景>.tscn"
 
-# 合成 mp4 交付（本机 ffmpeg 可用）
+# 合成 mp4 交付（本机 ffmpeg 可用）。部分发行版（如 Fedora）不打包 libx264，
+# 此时换 libopenh264（见下条要点，record.sh 会自动挑可用编码器）
 ffmpeg -y -loglevel error -framerate 60 -i frame%08d.png \
   -c:v libx264 -pix_fmt yuv420p -crf 18 ../<场景>_v2.mp4
 ```
@@ -129,8 +133,11 @@ ffmpeg -y -loglevel error -framerate 60 -i frame%08d.png \
 - 判断「某元素是否按时消失」时，**裁切目视比采样亮度更可靠**——
   中心区域往往同时有粒子/闪光，亮度采样会被污染，得出错误结论。
 - 录制输出目录建议放 `.vfx_staging/`（已在 `.gitignore` 内），不要污染仓库。
-- 若命令在启动阶段就崩在 `RotatedFileLogger::rotate_file()`（沙箱/受限环境写不了
-  `%APPDATA%\Godot`），加 `--log-file <工作区内的路径>` 重定向日志即可绕开。
+- 若命令在启动阶段就崩在 `RotatedFileLogger::rotate_file()` 或 `Failed to open 'user://logs/...'`
+  （受限环境 / 沙箱写不了 Godot 的日志与用户目录），两条出路：加 `--log-file <工作区内的路径>`，
+  或把 `XDG_CONFIG_HOME`、`XDG_DATA_HOME`、`XDG_CACHE_HOME` 指到可写目录（如 `$(mktemp -d)`）。
+- **编码器**：`libx264` 并非到处都有（Fedora 的 ffmpeg 就没有，只有 `libopenh264`）；
+  `record.sh` 按 `libx264 → libopenh264 → mpeg4` 自动挑，也可用 `--encoder` 指定。
 - **实测速度**：12 帧约 2 秒，90 帧约 12–13 秒（固定启动开销约 1 秒，之后每帧约 130ms）。
   录 130 帧请预留 20 秒以上。
 - **背景不是黑，是灰。** 本项目未设置清屏色，用的是 Godot 默认 `default_clear_color`
@@ -141,12 +148,12 @@ ffmpeg -y -loglevel error -framerate 60 -i frame%08d.png \
   控制在一个循环内。
 
 > 录制与校验已封装成脚本，优先用它们而不是手敲命令：
-> `.codex/skills/vfx-authoring/scripts/record.ps1`（录制 + 合成 mp4/gif）、
+> `.codex/skills/vfx-authoring/scripts/record.sh`（录制 + 合成 mp4/gif）、
 > `verify_frames.py`（帧序列机器校验，背景自适应）。
 
-## 4. 素材从资产库接入
+## 4. 素材接入（资产库导出 + 本体归属校验）
 
-素材由 Polaris MCP 工具从资产库（`D:\PolarisAssets`）取出，流程：
+素材由 Polaris MCP 工具从资产库取出（库在 MCP 服务侧，本仓库不硬编码它的路径），流程：
 
 1. `search_assets` 定位候选。除 `tags: ["VFX"]` / 关键词 / `kinds` 外，**优先用结构化过滤**（SQL 级，`total` 即真实命中数）：`alpha`（透明占比）、`fill_ratio`（剪影填充率）、`glow_range`（辉光强度）、`edge_softness`（边缘柔硬）、`dark_outline`（深色描边）、`layout`（构图）、`colors` + `color_min_ratio`（主色及其占比）、`sub_types`（`grid_atlas` / `image_sequence` 等）。首轮定位可用 `detail: "minimal"` 省 token。再用 `render_contact_sheet` 一次拼图目视确认形态。
 
@@ -160,10 +167,31 @@ ffmpeg -y -loglevel error -framerate 60 -i frame%08d.png \
 4. 复制进 `BangDreamLib/BangDreamLib/images/vfx/<特效名>/` 并重命名为语义化文件名（`music_slash_main.png` 而非 `fx_301403_tex_002.png`）。资产库中的数字名对项目无意义，语义名才便于后续维护。
 5. 运行 `--headless --import` 让引擎生成 `.import` 与 uid，**不要手写 uid**。手写的 uid 不保证合法，且可能与全库冲突。
 6. 场景里引用资源用**引擎生成的 uid**（从 `.import` 的 `uid=` 行读），`path=` 同时保留作可读性兜底。
+7. **复制进工程之前先做本体归属校验**（见 4.1）：命中本体的素材**不复制**，改为直接引用本体 uid。
 
 `.import` 文件必须随 PNG 一起提交，否则他人拉取后 Godot 需要重新导入才能打开场景。
 
-### 4.1 选材与取证的实操坑
+### 4.1 本体归属校验（复制素材前必做）
+
+**从资产库导出的素材，先判定它是不是本体资源**——是则直接引用本体，不是才复制进工程：
+
+```bash
+python .codex/skills/vfx-authoring/scripts/check_asset_origin.py <导出目录>
+```
+
+判定分三级（脚本实现，不靠文件名或肉眼）：
+
+| 结论 | 含义 | 处理 |
+|---|---|---|
+| `BODY <res://…> uid=…` | 逐字节 md5 命中，或**尺寸 + RGBA 像素**都相同（库内是本体图但被重新编码过） | **不复制**；场景里直接写输出的本体 `uid` + `path` |
+| `LOCAL` | 本体里没有对应图 | 按上面第 2–4 步复制进 `images/vfx/<特效名>/`、导入、取 uid |
+| `REVIEW` | 与本体某张图**同尺寸且感知哈希接近**（疑似在本体图上改绘） | 人工判定后，按上两条之一处理 |
+
+- 本体根缺省为 `BangDreamLib/images`（编辑器同步目录，其 `.import` 里的 uid 就是本体 uid）；也可 `--body-root ../sts2unpack/<版本>` 指向解包源。
+- 引用本体要求编辑器工程里已同步本体资源：新克隆先跑 `tools/sync-sts2-assets.sh`。
+- **特效目录不再产出 `README.md` / `SOURCES.md`**；来源凭据（库内 uuid/名称、语义名、用途、校验判定）写进 `.vfx_staging/plans/<slug>.md`。
+
+### 4.2 选材与取证的实操坑
 
 **一、判断透明与边缘：以 `features` 的数字为准，棋盘格底看形态。**
 `render_asset_preview` 与 `render_contact_sheet` 现在都会为透明素材自动叠**棋盘格底**
@@ -188,7 +216,8 @@ ffmpeg -y -loglevel error -framerate 60 -i frame%08d.png \
 
 **三、溯源靠 `_provenance.json`，不必再用文件字节数猜。** `export_assets` 会在每个资产的导出
 子目录里写 `_provenance.json`，记录 uuid / 名称 / 标签 / 描述 / 导出时间 / 网格参数 / 逐文件 hash——
-**素材在项目里被重命名后仍可反查来源**。把其中的 uuid 一列转抄进特效目录的 `SOURCES.md` 即可。
+**素材在项目里被重命名后仍可反查来源**。把 uuid / 名称一列写进本次的计划文件
+（`.vfx_staging/plans/<slug>.md`）即可——**特效目录不再产出 `SOURCES.md` / `README.md`**。
 
 > 旧做法是用文件字节数去全库反查（`music_slash_note.png` 23827 字节 → `oblvns_skin_05`），
 > 仅在没有 `_provenance.json` 的历史导出上才需要。
@@ -212,7 +241,7 @@ ffmpeg -y -loglevel error -framerate 60 -i frame%08d.png \
 **六、`search_assets` 的 `detail` 三档均可用**：`minimal`（只回 uuid/name/kind/subType，
 首轮定位最省 token）、`standard`（默认）、`full`（完整描述与全部文件名）。
 
-### 4.2 回写描述与修正误标
+### 4.3 回写描述与修正误标
 
 写回描述用 `update_asset_description`，注意七字段受控词表：
 
@@ -229,17 +258,20 @@ ffmpeg -y -loglevel error -framerate 60 -i frame%08d.png \
 ## 5. 验证与常见坑
 
 ```bash
-# 编译（改完脚本先过这一步）
+# 从 Directory.Build.props 读 Godot 与本体数据目录（单属性查询直接打印值）
+GODOT=$(dotnet msbuild BangDreamLib/BangDreamLib.csproj -getProperty:GodotExe)
+STS2_DATA=$(dotnet msbuild BangDreamLib/BangDreamLib.csproj -getProperty:Sts2DataDir)
+
+# 编译（改完脚本先过这一步）；部署到仓库内 bin/BuildDeploy，避免写 Steam 安装目录
 dotnet build BangDreamLib/BangDreamLib.csproj -c Debug \
-  -p:Sts2Dir="bin/BuildDeploy" \
-  -p:Sts2DataDir="D:\SteamLibrary\steamapps\common\Slay the Spire 2\data_sts2_windows_x86_64"
+  -p:Sts2Dir="$PWD/bin/BuildDeploy" -p:Sts2DataDir="$STS2_DATA"
 
 # 无头运行单个特效场景，检查脚本异常（F6 等价）
-D:/Megadot/MegaDot_v4.5.1-stable_mono_win64_console.exe --headless \
+"$GODOT" --headless \
   --path BangDreamLib --quit-after 120 "res://BangDreamLib/scenes/vfx/<场景>.tscn"
 
 # 无头加载编辑器，检查场景/资源导入错误
-D:/Megadot/MegaDot_v4.5.1-stable_mono_win64_console.exe --headless --editor \
+"$GODOT" --headless --editor \
   --path BangDreamLib --quit-after 150
 ```
 
@@ -247,8 +279,11 @@ D:/Megadot/MegaDot_v4.5.1-stable_mono_win64_console.exe --headless --editor \
 
 **这两条只验证「没有报错」，不验证「观感对不对」——调观感请看第 3.1 节录帧核对。**
 
-三个已知的非问题：
+已知的非问题（实测确认，不要误当新缺陷）：
 
+- **`Error loading GDExtension configuration file: 'res://addons/fmod/fmod.gdextension'`（sentry 同）**——
+  `.godot/extension_list.cfg` 里残留了指向已不存在的 addons 的旧条目。删掉那两行即可（该文件是可再生缓存）；
+  工程的 `addons/` 下只有 `mega_text`。
 - **`ObjectDB instances leaked at exit`** —— 继承 `NBangDreamFlyingVfx` 的场景都会出现 1 条（对照 `flying_music_note_default.tscn` 同样有）。这是基类场景的固有现象，不是新特效引入的缺陷。继承 `Node2D` 的场景不会出现。
 - **`Sentry GDExtension not loaded`** —— 无头运行与录帧时的常规提示，与特效无关。
 - **`ERROR: Error opening file 'res://icon.svg'`** —— `project.godot` 的 `config/icon` 指向了
@@ -259,3 +294,14 @@ D:/Megadot/MegaDot_v4.5.1-stable_mono_win64_console.exe --headless --editor \
 删除或替换已被场景引用的素材时，`--headless --import` 会报
 `Failed loading resource: ...` / `ext_resource, invalid UID`。若你正准备改写该场景的引用，
 这是**预期内的中间态**，改完场景即消失；若改完仍报，说明场景里还有残留引用。
+
+### 5.1 两条只能靠录帧发现的实现陷阱
+
+**一、alpha 曲线方向写反。** `alpha = Lerp(A0, A1, 1 - x^pow)` 在 `A1 = 0` 时等价于 `A0 * x^pow`：
+alpha 从 0 涨到 `A0`，并在 `x` 被 clamp 到 1 后**永久停在 A0**。症状是「前段正常、后段整片挂着不消失」，
+且**不报任何错**。正确写法是让 `fade` 从 0 走到 1 当插值参数：`Lerp(A0, A1, fade)`。
+
+**二、径向粒子贴图的朝向。** 贴图长轴沿局部 **Y 轴**时，要对齐径向 `offset.Angle() = φ`
+需要旋转 `φ - π/2`；写成 `φ` 会让火花**切向横躺**，看起来像风车的碎片而不是飞散的拖尾。
+
+两条都只能靠**录帧目视**发现——编译、无头运行、单帧截图全部正常。

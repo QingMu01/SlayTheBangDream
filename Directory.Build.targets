@@ -1,7 +1,7 @@
 ﻿<Project>
     <Target Name="Copy Mod" AfterTargets="PostBuildEvent">
         <Message Text="Copying mod to Slay the Spire 2 mods folder..." Importance="high"/>
-        <MakeDir Directories="$(Sts2Dir)\mods\"/>
+        <MakeDir Directories="$(Sts2Dir)/mods/"/>
         <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(Sts2Dir)/mods/$(MSBuildProjectName)/"/>
         <Copy SourceFiles="$(MSBuildProjectName).json" DestinationFolder="$(Sts2Dir)/mods/$(MSBuildProjectName)/"/>
         <Copy SourceFiles="$(TargetDir)$(TargetName).pdb" DestinationFolder="$(Sts2Dir)/mods/$(MSBuildProjectName)/"
