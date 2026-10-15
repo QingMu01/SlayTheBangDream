@@ -1,0 +1,71 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" uid="uid://cu1q5d6w6ckmh" path="res://Scripts/Nodes/VFX/MusicCrystalHitVfx.cs" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://d2srbops1xqm0" path="res://images/vfx/dot.png" id="2_glow"]
+[ext_resource type="Texture2D" uid="uid://dr2nf6j6dc3vb" path="res://images/vfx/vfx_power_up/base_ring.png" id="3_ring"]
+[ext_resource type="Texture2D" uid="uid://cwij55oqtnqvl" path="res://images/vfx/star1.png" id="4_burst_outer"]
+[ext_resource type="Texture2D" uid="uid://cheom6atd865v" path="res://images/vfx/vfx_coin_explosion/coin_explosion_flash.png" id="5_burst_core"]
+[ext_resource type="Texture2D" uid="uid://dbwd23pi4r266" path="res://images/vfx/vfx_dramatic_stab/sparks.png" id="6_spark"]
+
+[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_add"]
+blend_mode = 1
+
+[node name="MusicCrystalHitVfx" type="Node2D"]
+script = ExtResource("1_script")
+
+[node name="Glow" type="Sprite2D" parent="."]
+material = SubResource("CanvasItemMaterial_add")
+scale = Vector2(1.5, 1.5)
+texture = ExtResource("2_glow")
+
+[node name="Ring" type="Sprite2D" parent="."]
+material = SubResource("CanvasItemMaterial_add")
+scale = Vector2(0.75, 0.75)
+texture = ExtResource("3_ring")
+
+[node name="BurstOuter" type="Sprite2D" parent="."]
+material = SubResource("CanvasItemMaterial_add")
+scale = Vector2(4.8, 4.8)
+texture = ExtResource("4_burst_outer")
+
+[node name="BurstCore" type="Sprite2D" parent="."]
+material = SubResource("CanvasItemMaterial_add")
+scale = Vector2(1.357, 1.357)
+texture = ExtResource("5_burst_core")
+
+[node name="Flash" type="Sprite2D" parent="."]
+material = SubResource("CanvasItemMaterial_add")
+scale = Vector2(1.5, 1.5)
+texture = ExtResource("2_glow")
+
+[node name="Sparks" type="Node2D" parent="."]
+
+[node name="Spark0" type="Sprite2D" parent="Sparks"]
+material = SubResource("CanvasItemMaterial_add")
+scale = Vector2(1.357, 1.357)
+texture = ExtResource("6_spark")
+
+[node name="Spark1" type="Sprite2D" parent="Sparks"]
+material = SubResource("CanvasItemMaterial_add")
+scale = Vector2(1.357, 1.357)
+texture = ExtResource("6_spark")
+
+[node name="Spark2" type="Sprite2D" parent="Sparks"]
+material = SubResource("CanvasItemMaterial_add")
+scale = Vector2(1.357, 1.357)
+texture = ExtResource("6_spark")
+
+[node name="Spark3" type="Sprite2D" parent="Sparks"]
+material = SubResource("CanvasItemMaterial_add")
+scale = Vector2(1.357, 1.357)
+texture = ExtResource("6_spark")
+
+[node name="Spark4" type="Sprite2D" parent="Sparks"]
+material = SubResource("CanvasItemMaterial_add")
+scale = Vector2(1.357, 1.357)
+texture = ExtResource("6_spark")
+
+[node name="Spark5" type="Sprite2D" parent="Sparks"]
+material = SubResource("CanvasItemMaterial_add")
+scale = Vector2(1.357, 1.357)
+texture = ExtResource("6_spark")

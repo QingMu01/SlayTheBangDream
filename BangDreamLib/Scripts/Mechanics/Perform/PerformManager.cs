@@ -26,6 +26,7 @@ using MegaCrit.Sts2.Core.Multiplayer.Game;
 using MegaCrit.Sts2.Core.Nodes.Cards;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.CommonUi;
+using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 using MegaCrit.Sts2.Core.Runs;
 using STS2RitsuLib.Networking.ManagedActions;
 using STS2RitsuLib.Scaffolding.Godot.NodeAttachments;
@@ -183,7 +184,8 @@ public class PerformManager : SingletonModel, IInCombatManager
                 ? PerformAreaChangeType.Added
                 : PerformAreaChangeType.Removed);
         await BangDreamHook.RunPerformHookAction(
-            combatState, card, choiceContext => HandlePerformAreaChange(choiceContext, change, ToEnqueueRequest(payload)));
+            combatState, card,
+            choiceContext => HandlePerformAreaChange(choiceContext, change, ToEnqueueRequest(payload)));
     }
 
     private const string LocTable = "combat_messages";
@@ -442,7 +444,9 @@ public class PerformManager : SingletonModel, IInCombatManager
             await ApplyEnqueuePlan(enqueuePlan, performContext);
 
             if (!_cardsPendingArrival.Contains(cardModel) && PerformPile.Cards.Contains(cardModel))
+            {
                 PerformArea.AddItem(cardModel, performContext, _cardsWithArrivalVisual.Contains(cardModel));
+            }
 
             await BangDreamHook.OnCardTriggeredPerform(choiceContext, cardModel.CombatState, cardModel);
 
@@ -559,7 +563,7 @@ public class PerformManager : SingletonModel, IInCombatManager
     }
 
     /// <summary>
-    /// 让指定卡牌立即"即兴"演奏。同一张牌在一次入场内只即兴一次。
+    /// 让指定卡牌在飞入与槽位入场动画完成后"即兴"演奏。同一张牌在一次入场内只即兴一次。
     /// </summary>
     public async Task TryInstant(CardModel cardModel, PlayerChoiceContext? choiceContext = null)
     {
@@ -632,6 +636,8 @@ public class PerformManager : SingletonModel, IInCombatManager
     {
         ArgumentNullException.ThrowIfNull(cardModel.CombatState);
 
+        if (!await WaitForCardPresentation(cardModel)) return;
+
         PlayPerformFlashVfx(cardModel);
 
         var performContext = CardContexts.GetOrCreate(cardModel);
@@ -659,17 +665,48 @@ public class PerformManager : SingletonModel, IInCombatManager
         }
     }
 
+    /// <summary>飞牌到达由原版逐帧动画回调驱动，不依赖当前演奏 Action 完成。</summary>
+    private async Task<bool> WaitForCardPresentation(CardModel cardModel)
+    {
+        if (!PerformArea.IsInsideTree()) return true;
+
+        while (_cardsPendingArrival.Contains(cardModel))
+        {
+            if (!CombatManager.Instance.IsInProgress || cardModel.Pile != PerformPile ||
+                !PerformArea.IsInsideTree()) return false;
+            await PerformArea.AwaitProcessFrame();
+        }
+
+        if (!CombatManager.Instance.IsInProgress || cardModel.Pile != PerformPile ||
+            !PerformArea.IsInsideTree()) return false;
+
+        var context = CardContexts.GetOrCreate(cardModel);
+        PerformArea.AddItem(cardModel, context, waitForCardArrival: false);
+        // Container 的布局排序发生在帧末，等一帧后再核对入场与槽位移动动画。
+        await PerformArea.AwaitProcessFrame();
+        while (CombatManager.Instance.IsInProgress && cardModel.Pile == PerformPile && PerformArea.IsInsideTree())
+        {
+            var slot = context.Slot;
+            if (slot == null || slot.Model != cardModel) return false;
+            if (!slot.IsArrivalVisualPlaying && !PerformArea.IsSlotLayoutPlaying) return true;
+            await PerformArea.AwaitProcessFrame();
+        }
+
+        return false;
+    }
+
     private void PlayPerformFlashVfx(CardModel cardModel)
     {
         if (!PerformArea.IsInsideTree()) return;
-        if (!PerformArea.TryGetCardSlotCenter(cardModel, out var slotCenter)) return;
+        if (!PerformArea.TryGetCardSlotTransform(cardModel, out var slotTransform, out var slotSize)) return;
 
+        CardContexts.GetOrCreate(cardModel).Slot?.SuppressPortraitSweep();
         var vfx = BangDreamPreloadManager.GetScene(PerformFlashVfxPath).Instantiate<PerformFlashVfx>();
         vfx.FlashColor = _scheme.GetSlotColor(CardContexts.GetOrCreate(cardModel).SlotIndex, cardModel);
-        vfx.Scale = Vector2.One * PerformArea.ItemScale;
+        // 换算到演奏区局部空间，扫光与槽位共享中心、缩放和镜像方向。
+        vfx.ConfigureSlot(slotSize, PerformArea.GetGlobalTransform().AffineInverse() * slotTransform);
 
         PerformArea.AddChildSafely(vfx);
-        vfx.GlobalPosition = slotCenter;
     }
 
     /// <summary>

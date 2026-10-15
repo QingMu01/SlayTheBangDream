@@ -1,3 +1,4 @@
+using BangDreamLib.Scripts.Interfaces.CardAugment;
 using BangDreamLib.Scripts.Mechanics.Perform;
 using BangDreamLib.Scripts.Utils;
 using BangDreamLib.Scripts.Utils.Infos;
@@ -56,17 +57,20 @@ public partial class NPerformItem : NClickableControl
     private TextureRect? _cardPortrait;
     private ColorRect? _cardOverlay;
     private ColorRect? _portraitSweepLight;
+    private ColorRect? _selectionOutline;
     private Label? _cardTitle;
 
     private Vector2 _backgroundSize;
     private Vector2 _backgroundTopRight;
     private float _backgroundBaseWidth;
+    private Vector2 _itemSize = new(MinimumItemWidth, ItemHeight);
     private bool _isAdjustingBackgroundRect;
     private bool _isHintHighlighted;
     private PerformSlotSelectionState _selectionState = PerformSlotSelectionState.None;
     private bool _isCardEnterBouncePending;
     private bool _isPortraitRevealPending;
     private bool _isWaitingForCardArrival;
+    private bool _suppressPortraitSweep;
     private bool _isMirrored;
     private float _portraitRevealProgress = 1f;
     private Vector2 _cardContainerBasePosition;
@@ -76,6 +80,7 @@ public partial class NPerformItem : NClickableControl
     private Tween? _hintHighlightTween;
     private Tween? _cardEnterTween;
     private Tween? _portraitRevealTween;
+    private Tween? _selectionTween;
 
     public CardModel? Model
     {
@@ -85,6 +90,7 @@ public partial class NPerformItem : NClickableControl
             if (_cardModel == value) return;
 
             _cardModel = value;
+            _suppressPortraitSweep = value is IPerformCard { IsInstant: true };
             _fadeInTween?.Kill();
             _fadeOutTween?.Kill();
             _fadeInTween = null;
@@ -110,6 +116,15 @@ public partial class NPerformItem : NClickableControl
 
     public PerformContext? Context { get; set; }
 
+    /// <summary>槽位未缩放的显示尺寸（宽度按卡名自适应，高度固定），供特效按槽位大小铺开。</summary>
+    public Vector2 LocalSize => _itemSize;
+
+    /// <summary>卡图揭示、飞牌等待与入场弹跳尚未完成。</summary>
+    public bool IsArrivalVisualPlaying => _isWaitingForCardArrival || _isPortraitRevealPending ||
+                                          _isCardEnterBouncePending ||
+                                          (_portraitRevealTween?.IsRunning() ?? false) ||
+                                          (_cardEnterTween?.IsRunning() ?? false);
+
     public static NPerformItem Create(NPerformArea parent, CardModel? model = null)
     {
         var item = PreloadKey.PerformItem.GetScene().Instantiate<NPerformItem>();
@@ -129,6 +144,7 @@ public partial class NPerformItem : NClickableControl
         _cardOverlay = GetNode<ColorRect>("%Overlay");
         _portraitSweepLight = GetNode<ColorRect>("%SweepLight");
         _cardTitle = GetNode<Label>("%Title");
+        _selectionOutline = GetNode<ColorRect>("%SelectionOutline");
 
         _backgroundSize = _background.Size;
         _backgroundTopRight = GetTopRight(_background);
@@ -148,6 +164,7 @@ public partial class NPerformItem : NClickableControl
         ApplyTitleMirror();
         SetPortraitRevealProgress(_portraitRevealProgress);
         ApplyHintHighlightImmediately();
+        UpdateSelectionOutline();
         ConnectSignals();
         MouseEntered += OnPointerEntered;
         MouseExited += OnPointerExited;
@@ -183,6 +200,8 @@ public partial class NPerformItem : NClickableControl
         _cardEnterTween?.Kill();
         _portraitRevealTween?.Kill();
 
+        _selectionTween?.Kill();
+
         _card?.QueueFreeSafely();
         _card = null;
     }
@@ -197,7 +216,8 @@ public partial class NPerformItem : NClickableControl
     /// <summary>槽位根节点内，卡片容器中心的局部坐标。</summary>
     private Vector2 GetContainerLocalCenter()
     {
-        return _cardContainerBasePosition + (_cardContainer?.Size ?? Vector2.Zero) / 2f;
+        // Container 子节点的尺寸要到下一次布局才更新；即兴演奏会在设牌的同一帧读取中心。
+        return _cardContainerBasePosition + _itemSize / 2f;
     }
 
     /// <summary>绑定所属演奏区域。场景内置的槽位实例不经 <see cref="Create" />，需在就绪后补绑。</summary>
@@ -216,6 +236,31 @@ public partial class NPerformItem : NClickableControl
 
         _selectionState = state;
         ApplySlotColor();
+        UpdateSelectionOutline();
+    }
+
+    /// <summary>候选槽位显示呼吸描边，指向时稳定加亮；独立叠层不改变槽位布局与命中框。</summary>
+    private void UpdateSelectionOutline()
+    {
+        if (_selectionOutline == null) return;
+
+        _selectionTween?.Kill();
+        _selectionTween = null;
+        var wasVisible = _selectionOutline.Visible;
+        _selectionOutline.Visible = _selectionState != PerformSlotSelectionState.None;
+        if (!_selectionOutline.Visible) return;
+
+        var hovered = _selectionState == PerformSlotSelectionState.Hovered ? 1f : 0f;
+        if (!_selectionOutline.IsInsideTree()) return;
+
+        _selectionTween = CreateTween();
+        _selectionTween.SetParallel();
+        var fadeIn = _selectionTween.TweenProperty(_selectionOutline, "modulate:a", 1f, 0.16f);
+        if (!wasVisible) fadeIn.From(0f);
+
+        _selectionTween.TweenMethod(
+            Callable.From<float>(value => _selectionOutline.SetInstanceShaderParameter("hovered", value)),
+            _selectionOutline.GetInstanceShaderParameter("hovered").AsSingle(), hovered, 0.12f);
     }
 
     /// <summary>
@@ -320,7 +365,15 @@ public partial class NPerformItem : NClickableControl
         _portraitRevealTween = null;
         _isPortraitRevealPending = false;
         _isWaitingForCardArrival = true;
+        _suppressPortraitSweep = false;
         SetPortraitRevealProgress(0f);
+    }
+
+    /// <summary>本次入场已用演奏特效反馈，保留卡图揭示与弹跳，关闭重复的入场扫光。</summary>
+    public void SuppressPortraitSweep()
+    {
+        _suppressPortraitSweep = true;
+        if (_portraitSweepLight != null) _portraitSweepLight.Visible = false;
     }
 
     public void PlayPortraitReveal(float duration = PortraitRevealDuration)
@@ -370,6 +423,7 @@ public partial class NPerformItem : NClickableControl
         _cardPortrait?.SetInstanceShaderParameter(RevealProgressShaderParameter, _portraitRevealProgress);
         _cardOverlay?.SetInstanceShaderParameter(RevealProgressShaderParameter, _portraitRevealProgress);
         _portraitSweepLight?.SetInstanceShaderParameter(RevealProgressShaderParameter, _portraitRevealProgress);
+        if (_portraitSweepLight != null) _portraitSweepLight.Visible = !_suppressPortraitSweep;
     }
 
     public void SetHintHighlighted(bool highlighted, bool immediately = false)
@@ -521,6 +575,7 @@ public partial class NPerformItem : NClickableControl
             .X;
         var itemWidth = Mathf.Ceil(Mathf.Max(MinimumItemWidth, titleWidth + TitleHorizontalPadding));
         var itemSize = new Vector2(itemWidth, ItemHeight);
+        _itemSize = itemSize;
 
         _cardPortrait.CustomMinimumSize = itemSize;
         _cardOverlay.CustomMinimumSize = itemSize;
@@ -528,6 +583,13 @@ public partial class NPerformItem : NClickableControl
         _cardContainer.Size = itemSize;
         _cardContainer.Position = new Vector2(-itemWidth, -ItemHeight / 2f);
         _cardContainerBasePosition = _cardContainer.Position;
+
+        if (_selectionOutline != null)
+        {
+            _selectionOutline.Position = _cardContainerBasePosition;
+            _selectionOutline.Size = itemSize;
+            _selectionOutline.SetInstanceShaderParameter(RectSizeShaderParameter, itemSize);
+        }
 
         _backgroundBaseWidth = itemWidth + BackgroundWidthExtension;
         _background.CustomMinimumSize = new Vector2(_backgroundBaseWidth, _background.Size.Y);

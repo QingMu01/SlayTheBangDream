@@ -1,6 +1,6 @@
 [gd_scene load_steps=15 format=3 uid="uid://bxfp13jdk2utc"]
 
-[ext_resource type="Script" uid="uid://oncwg2tfyjii" path="res://Scripts/Nodes/Merchant/NExtraDeckRemovalSlot.cs" id="1_slot"]
+[ext_resource type="Script" uid="uid://ifg23kwckd9z1" path="res://Scripts/Nodes/Merchant/NExtraDeckRemovalSlot.cs" id="1_slot"]
 [ext_resource type="Script" uid="uid://bry8aaeikvcb3" path="res://src/Core/Nodes/GodotExtensions/NClickableControl.cs" id="2_ltd50"]
 [ext_resource type="Texture2D" uid="uid://b6yimphpcu43e" path="res://BangDreamLib/images/sceneui/card_removal_00-1.png" id="3_c5ruu"]
 [ext_resource type="Texture2D" uid="uid://dqc1hmdhvd3f5" path="res://BangDreamLib/images/sceneui/card_removal_01-1.png" id="4_urqjs"]

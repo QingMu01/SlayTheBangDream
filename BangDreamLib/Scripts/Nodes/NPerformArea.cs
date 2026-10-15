@@ -8,6 +8,7 @@ using Godot;
 using MegaCrit.Sts2.Core.Context;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Helpers;
+using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Models;
 using STS2RitsuLib.Combat.SecondaryResources;
 
@@ -51,6 +52,10 @@ public partial class NPerformArea : Control
 
     private Control? _itemContainer;
     private TextureRect? _hint;
+    private PanelContainer? _selectionPrompt;
+    private Label? _selectionTitle;
+    private Label? _selectionDetail;
+    private Tween? _selectionPromptTween;
     private Player? _player;
     private IPerformScheme? _scheme;
 
@@ -59,7 +64,7 @@ public partial class NPerformArea : Control
     private readonly List<SlotEntranceState> _enteringSlots = [];
     private readonly HashSet<int> _activeSlots = [];
     private readonly List<int> _newlyActiveSlots = [];
-    private readonly Dictionary<CardModel, Vector2> _lastCardSlotCenters = [];
+    private readonly Dictionary<CardModel, (Transform2D Transform, Vector2 Size)> _lastCardSlotLayouts = [];
     private readonly HashSet<CardModel> _pendingArrivalBounces = [];
     private readonly List<PerformSlotCandidate> _slotSelectionCandidates = [];
 
@@ -109,6 +114,9 @@ public partial class NPerformArea : Control
     {
         _itemContainer = GetNode<Control>("%ItemContainer");
         _hint = GetNode<TextureRect>("%Hint");
+        _selectionPrompt = GetNode<PanelContainer>("%SelectionPrompt");
+        _selectionTitle = GetNode<Label>("%SelectionTitle");
+        _selectionDetail = GetNode<Label>("%SelectionDetail");
         _hintPositionX = _hint.Position.X;
         _items.AddRange(_itemContainer.GetChildren().OfType<NPerformItem>());
         foreach (var item in _items)
@@ -160,6 +168,14 @@ public partial class NPerformArea : Control
         PerformSlotSelectionMode mode,
         IReadOnlyList<PerformSlotCandidate> candidates)
     {
+        // BeginDrag 与 TargetSelection 都可能进入同一次选择，避免重复播放入场提示。
+        if (_slotSelectionCard == cardModel && _slotSelectionMode == mode &&
+            _slotSelectionCandidates.SequenceEqual(candidates))
+        {
+            RefreshSlotSelection();
+            return;
+        }
+
         EndSlotSelection();
         if (mode == PerformSlotSelectionMode.None || candidates.Count == 0) return;
 
@@ -168,6 +184,7 @@ public partial class NPerformArea : Control
         _slotSelectionCandidates.AddRange(candidates);
         SetProcess(true);
         UpdateSlotSelection(force: true);
+        ShowSelectionPrompt();
     }
 
     /// <summary>
@@ -200,6 +217,7 @@ public partial class NPerformArea : Control
         _slotSelectionPointerSlot = 0;
         SetProcess(false);
         ResetSlotSelectionVisuals();
+        HideSelectionPrompt();
         PerformTargetingArrow.End();
     }
 
@@ -208,6 +226,7 @@ public partial class NPerformArea : Control
         if (_slotSelectionCard == null) return;
 
         UpdateSlotSelection(force: false);
+        UpdateSelectionPromptPosition();
     }
 
     /// <summary>按鼠标位置刷新指向的候选槽位；<paramref name="force" /> 用于进入选择态时立即建立高亮。</summary>
@@ -347,6 +366,89 @@ public partial class NPerformArea : Control
                 ? PerformSlotSelectionState.Hovered
                 : PerformSlotSelectionState.Candidate);
         }
+
+        UpdateSelectionPromptText();
+    }
+
+    private void ShowSelectionPrompt()
+    {
+        if (_selectionPrompt == null) return;
+
+        _selectionPromptTween?.Kill();
+        _selectionPrompt.Visible = true;
+        UpdateSelectionPromptPosition();
+        _selectionPromptTween = CreateTween();
+        _selectionPromptTween.SetParallel();
+        _selectionPromptTween.TweenProperty(_selectionPrompt, "modulate:a", 1f, 0.16f).From(0f);
+        _selectionPromptTween.TweenProperty(_selectionPrompt, "scale", Vector2.One, 0.2f)
+            .From(Vector2.One * 0.94f)
+            .SetTrans(Tween.TransitionType.Back)
+            .SetEase(Tween.EaseType.Out);
+    }
+
+    private void HideSelectionPrompt()
+    {
+        _selectionPromptTween?.Kill();
+        _selectionPromptTween = null;
+        if (_selectionPrompt != null) _selectionPrompt.Visible = false;
+    }
+
+    private void UpdateSelectionPromptText()
+    {
+        if (_selectionTitle == null || _selectionDetail == null) return;
+
+        const string prefix = "BANG_DREAM_LIB_PERFORM_TARGET_";
+        var isGroup = _slotSelectionMode == PerformSlotSelectionMode.Group;
+        _selectionTitle.Text = new LocString("gameplay_ui", prefix + (isGroup ? "GROUP" : "SLOT"))
+            .GetFormattedText();
+
+        var detailKey = "AIM";
+        if (_slotSelectionHoveredSlot > 0)
+        {
+            detailKey = isGroup ? "GROUP_READY" :
+                _items[_slotSelectionHoveredSlot - 1].Model == null ? "SLOT_READY" : "REPLACE_READY";
+        }
+
+        var detail = new LocString("gameplay_ui", prefix + detailKey);
+        detail.Add("Slot", _slotSelectionHoveredSlot);
+        _selectionDetail.Text = detail.GetFormattedText();
+    }
+
+    /// <summary>提示置于候选槽位整体上方，随布局与父级缩放更新，文字不随左右槽位镜像。</summary>
+    private void UpdateSelectionPromptPosition()
+    {
+        if (_selectionPrompt == null) return;
+
+        var inverse = GetGlobalTransform().AffineInverse();
+        Rect2? bounds = null;
+        foreach (var candidate in _slotSelectionCandidates)
+        {
+            if (candidate.SlotIndex < 1 || candidate.SlotIndex > _items.Count) continue;
+            var item = _items[candidate.SlotIndex - 1];
+            if (!item.TryHitTest(item.GetSlotGlobalCenter(), 0f, out var center, out var halfSize)) continue;
+
+            var rect = new Rect2(inverse * (center - halfSize), Vector2.Zero)
+                .Expand(inverse * (center + halfSize));
+            bounds = bounds?.Merge(rect) ?? rect;
+        }
+
+        if (bounds == null) return;
+        _selectionPrompt.Size = _selectionPrompt.GetCombinedMinimumSize();
+        _selectionPrompt.PivotOffset = _selectionPrompt.Size / 2f;
+        var position = new Vector2(
+            bounds.Value.GetCenter().X - _selectionPrompt.Size.X / 2f,
+            bounds.Value.Position.Y - _selectionPrompt.Size.Y - 18f);
+
+        // 角色靠近屏幕边缘或槽位较多时，保证操作提示仍完整可读。
+        var viewport = GetViewport().GetVisibleRect().Grow(-12f);
+        var canvasInverse = GetGlobalTransformWithCanvas().AffineInverse();
+        var visible = new Rect2(canvasInverse * viewport.Position, Vector2.Zero)
+            .Expand(canvasInverse * viewport.End);
+        position.X = Mathf.Clamp(position.X, visible.Position.X,
+            Mathf.Max(visible.Position.X, visible.End.X - _selectionPrompt.Size.X));
+        position.Y = Mathf.Clamp(position.Y, visible.Position.Y,
+            Mathf.Max(visible.Position.Y, visible.End.Y - _selectionPrompt.Size.Y));
+        _selectionPrompt.Position = position;
     }
 
     private void ResetSlotSelectionVisuals()
@@ -366,6 +468,7 @@ public partial class NPerformArea : Control
         _slotSelectionHoveredSlot = 0;
         _slotSelectionPointerSlot = 0;
         SetProcess(false);
+        HideSelectionPrompt();
         PerformTargetingArrow.End();
 
         if (_player != null && SecondaryResourceStateStore.TryGet(_player, out var resourceState))
@@ -377,7 +480,7 @@ public partial class NPerformArea : Control
         CancelSlotEntranceTween(false);
         CancelHintTween();
         SetHintHighlightedSlot(null, true);
-        _lastCardSlotCenters.Clear();
+        _lastCardSlotLayouts.Clear();
         _pendingArrivalBounces.Clear();
     }
 
@@ -427,7 +530,7 @@ public partial class NPerformArea : Control
         slot.Model = cardModel;
         slot.Context = context;
         context.Slot = slot;
-        _lastCardSlotCenters[cardModel] = slot.GetSlotGlobalCenter();
+        CacheCardSlotLayout(cardModel, slot);
         if (cardArrivalAlreadyFinished)
         {
             slot.PlayCardEnterBounce();
@@ -453,7 +556,7 @@ public partial class NPerformArea : Control
         _pendingArrivalBounces.Remove(cardModel);
         if (item == null) return;
 
-        _lastCardSlotCenters[cardModel] = item.GetSlotGlobalCenter();
+        CacheCardSlotLayout(cardModel, item);
 
         if (item.Context != null)
         {
@@ -466,11 +569,33 @@ public partial class NPerformArea : Control
 
     public bool TryGetCardSlotCenter(CardModel cardModel, out Vector2 center)
     {
+        return TryGetCardSlotLayout(cardModel, out center, out _);
+    }
+
+    /// <summary>
+    /// 取卡牌所属槽位的显示中心与未缩放尺寸（尺寸供特效按槽位大小铺开）。
+    /// 槽位已被移除时，沿用移除前的完整布局，避免长卡名特效回退到基准宽度。
+    /// </summary>
+    public bool TryGetCardSlotLayout(CardModel cardModel, out Vector2 center, out Vector2 size)
+    {
+        var found = TryGetCardSlotTransform(cardModel, out var transform, out size);
+        center = transform.Origin;
+        return found;
+    }
+
+    /// <summary>槽位整体的移动与新增槽位动画尚未完成。</summary>
+    public bool IsSlotLayoutPlaying => (_layoutTween?.Tween.IsRunning() ?? false) ||
+                                       (_slotEntranceTween?.Tween.IsRunning() ?? false);
+
+    /// <summary>获取以槽位中心为原点的全局变换，保留父级缩放及左右镜像。</summary>
+    public bool TryGetCardSlotTransform(CardModel cardModel, out Transform2D transform, out Vector2 size)
+    {
+        transform = Transform2D.Identity;
+        size = Vector2.Zero;
         var activeSlot = _items.FirstOrDefault(item => item.Model == cardModel);
         if (activeSlot != null)
         {
-            center = activeSlot.GetSlotGlobalCenter();
-            _lastCardSlotCenters[cardModel] = center;
+            (transform, size) = CacheCardSlotLayout(cardModel, activeSlot);
             return true;
         }
 
@@ -479,13 +604,25 @@ public partial class NPerformArea : Control
             var slotIndex = _player.AttachedData().PerformManager.GetExpectedSlotIndex(cardModel);
             if (slotIndex >= 1 && slotIndex <= _items.Count && _activeSlots.Contains(slotIndex))
             {
-                center = _items[slotIndex - 1].GetSlotGlobalCenter();
-                _lastCardSlotCenters[cardModel] = center;
+                var slot = _items[slotIndex - 1];
+                (transform, size) = CacheCardSlotLayout(cardModel, slot);
                 return true;
             }
         }
 
-        return _lastCardSlotCenters.TryGetValue(cardModel, out center);
+        if (!_lastCardSlotLayouts.TryGetValue(cardModel, out var layout)) return false;
+
+        (transform, size) = layout;
+        return true;
+    }
+
+    private (Transform2D Transform, Vector2 Size) CacheCardSlotLayout(CardModel cardModel, NPerformItem slot)
+    {
+        var transform = slot.GetGlobalTransform();
+        transform.Origin = slot.GetSlotGlobalCenter();
+        var layout = (transform, slot.LocalSize);
+        _lastCardSlotLayouts[cardModel] = layout;
+        return layout;
     }
 
     /// <summary>

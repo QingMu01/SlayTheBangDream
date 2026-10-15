@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://b8ll880lwpf2n" path="res://src/Core/Nodes/Screens/Shops/NMerchantInventory.cs" id="1_inventory"]
 [ext_resource type="Texture2D" uid="uid://csi2681amk4ke" path="res://BangDreamLib/images/sceneui/shop_rug-xz.png" id="2_a2rew"]
-[ext_resource type="PackedScene" uid="uid://0ffkpuhkymgw" path="res://BangDreamLib/scenes/merchant/music_card_slot.tscn" id="3_music"]
+[ext_resource type="PackedScene" uid="uid://a0ffkpuhkymgw" path="res://BangDreamLib/scenes/merchant/music_card_slot.tscn" id="3_music"]
 [ext_resource type="PackedScene" uid="uid://rdkoq04iuuhe" path="res://scenes/merchant/merchant_card.tscn" id="4_card"]
 [ext_resource type="PackedScene" uid="uid://bxfp13jdk2utc" path="res://BangDreamLib/scenes/merchant/extra_deck_removal_slot.tscn" id="5_removal"]
 [ext_resource type="PackedScene" uid="uid://bl4mbjqjfffa3" path="res://scenes/ui/back_button.tscn" id="6_back"]
