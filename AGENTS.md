@@ -59,7 +59,7 @@ C# 代码位于各项目的 `Scripts/` 目录下，Godot 资源（图片、场�
   （`cd BangDreamInSpire && dotnet msbuild BangDreamInSpire.csproj -getProperty:Sts2DataDir`）。
   查本体实现读解包源 `../sts2unpack/<版本>/src`（当前 0.111.0；可用 `$STS2_UNPACKED` 覆盖，或用
   `tools/sync-sts2-assets.sh -s` 指定）。
-
+- **日志**：当前环境下，游戏日志默认放置于`~/.local/share/SlayTheSpire2/logs`
 ## 关键约定
 
 - **命名空间**与 `Scripts/` 下目录结构完全对应，且第一段等于 mod 目录名（`BangDreamInSpire` / `ItsCrychic`）；卡图路径依赖它，写错会静默回退默认立绘（见 `docs/card-authoring.md` 第 1.1 节）

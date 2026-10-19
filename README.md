@@ -7,8 +7,6 @@
 | [`BangDreamInSpire/`](BangDreamInSpire/) | `BangDreamInSpire` | **核心模组**：通用前置依赖（组件 / 机制 / 特效）+ 新增层级与新怪物 |
 | [`ItsCrychic/`](ItsCrychic/) | `ItsCrychic` | **角色内容模组**：Crychic 乐队角色与配套卡牌 / 圣物 / 机制，依赖核心模组 |
 
-> mod id 是玩家存档与本地化键的前缀（`BANG_DREAM_IN_SPIRE_*` / `ITS_CRYCHIC_*`）。**改名属于破坏性变更**，会同时打断旧存档与所有依赖声明。
-
 ## 构建
 
 需要 .NET 9 SDK、Godot 4.5.1（Mono 版）、游戏本体与 [STS2-RitsuLib](https://github.com/BAKAOLC/STS2-RitsuLib)）。
@@ -31,6 +29,16 @@ dotnet build ItsCrychic/ItsCrychic.sln -c Debug
 
 ```bash
 dotnet build SlayTheBangDream.sln -c Debug -p:Sts2Dir="$PWD/bin/BuildDeploy"
+```
+
+打包模组 pck 用 `dotnet publish`：`ExportPck` 目标会先 `--import`，再跑
+`tools/check-resource-uids.py` 校验场景 `ext_resource` 的 uid 与 `.import`/`.uid` 实际值，
+发现漂移（典型原因：恢复美术时漏了 `.import`，引擎重新生成了新 uid）即中止打包，
+最后才 `--export-pack`。
+
+```bash
+dotnet publish BangDreamInSpire/BangDreamInSpire.csproj -c Release
+python3 tools/check-resource-uids.py   # 也可单独跑，只校验不打包
 ```
 
 ## 美术资源不入库
