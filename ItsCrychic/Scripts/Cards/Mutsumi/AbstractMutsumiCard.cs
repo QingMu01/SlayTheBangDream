@@ -6,7 +6,7 @@ using STS2RitsuLib.Scaffolding.Content;
 
 namespace ItsCrychic.Scripts.Cards.Mutsumi;
 
-[RegisterCard(typeof(MutsumiMusicalCardPool), Inherit = true)]
+[RegisterCard(typeof(MutsumiStandardCardPool), Inherit = true)]
 public abstract class AbstractMutsumiCard(
     int baseCost,
     CardType type,

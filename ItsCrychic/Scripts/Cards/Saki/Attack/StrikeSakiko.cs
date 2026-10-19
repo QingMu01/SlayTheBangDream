@@ -1,4 +1,5 @@
 ﻿using BangDreamLib.Scripts.Extensions;
+using BangDreamLib.Scripts.Nodes.VFX;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
@@ -30,7 +31,7 @@ public class StrikeSakiko() : AbstractSakikoCard(CustomCost, CustomType, CustomR
         await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
             .FromCard(this, play)
             .Targeting(play.Target)
-            .WithHitFx("vfx/vfx_attack_slash")
+            .WithHitVfxNode(StrikeSakikoVfx.Create)
             .Execute(choiceContext);
     }
 
