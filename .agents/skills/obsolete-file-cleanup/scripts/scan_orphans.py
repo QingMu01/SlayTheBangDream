@@ -32,6 +32,11 @@ CLI:
 
 退出码：1 = 存在 confirmed_orphan（有「确认无引用」项，需分档与人工签字）；
         0 = 无。注意 exit 1 只表示「有东西要人看」，不表示脚本失败。
+
+⚠️ 临时目录语义：本脚本的快照默认落在 `.vfx_staging/audit/` —— `.vfx_staging/` 是特效设计用的
+临时目录，**随时可能被整体清理**。因此必须在同一次会话内完成
+「扫描 → 分档 → 签字 → dry-run → apply」这条链；**长期留档靠 `docs/cleanup-log.md`**
+（由 `sign_off.py --apply` 追加）。
 """
 
 from __future__ import annotations
@@ -51,7 +56,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import keep_rules  # noqa: E402  (路径就绪后再导入)
 
-VERSION = "1.2.0"
+VERSION = "1.3.0"
 SCRIPT_NAME = "scan_orphans.py"
 
 # ---------------------------------------------------------------------------
@@ -334,7 +339,8 @@ def parse_type_bases(text: str) -> dict[str, list[str]]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="过时文件引用图扫描（四态分文件落盘）")
     parser.add_argument("--project-root", default=".", help="仓库根目录（默认 .）")
-    parser.add_argument("--out", default=".vfx_staging/audit", help="输出目录（默认 .vfx_staging/audit；相对路径相对 --project-root 解析）")
+    parser.add_argument("--out", default=".vfx_staging/audit", help="输出目录（默认 .vfx_staging/audit，是会在清理中被整体删除的临时目录；"
+                             "相对路径相对 --project-root 解析。长期留档请用 sign_off.py 的 docs/cleanup-log.md）")
     parser.add_argument("--json", action="store_true", help="额外输出机器可读 JSON")
     parser.add_argument("--keep-file", action="append", default=[],
                         help="追加保留规则文件（每行一条 glob，# 起注释）；影响死簇级联边界，"

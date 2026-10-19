@@ -68,7 +68,12 @@ python3 .agents/skills/vfx-authoring/scripts/check_asset_origin.py <导出目录
 python3 .agents/skills/obsolete-file-cleanup/scripts/cleanup_manifest.py
 ```
 
-产出 A/B/C 三档清单（含 sidecar 连带项、项数、体积）与 `stale` 桶。分档口径与默认保留规则见 `references/keep-list.md`。
+产出两份东西（默认都在 `.vfx_staging/audit/`，**该目录是临时目录，随时可能被清理**）：
+
+- `cleanup_manifest.md` —— **人看**：三档紧凑清单（每项一行，带 sidecar 数与体积、理由短码），`stale` / `broken` 各自成节；
+- `cleanup_decisions.tsv` —— **人改**：签字用，列 `id/bucket/path/sidecar/bytes/reason/action/note`，`action` 填 `delete` / `keep` / `defer`。
+
+分档口径与默认保留规则见 `references/keep-list.md`。
 
 **退出码语义**：`exit 0` = 清单生成成功；`exit 1` = 存在 `stale`（快照已过期）或工程内本地断链，**不代表 A 档为空**——不要用退出码判断「有没有待删项」，要看清单。A 档待签字只打 `WARN`。
 
@@ -80,11 +85,17 @@ python3 .agents/skills/obsolete-file-cleanup/scripts/cleanup_manifest.py
 - 涉及模型类（Card/Power/Relic）的删除，必须准备构建验证，不能只看静态引用。
 - 卡图不直接删，按 `references/deprecation-ledger.md` 记账。
 
-**未签字不得进入 S4。** 签字结论要落盘（写入清单文件的签字栏或任务记录），不要只在对话里说。
+签字的具体操作：
+
+1. 打开 `cleanup_decisions.tsv`，给 **A 档每一行**填 `action`（`delete` / `keep` / `defer`）；选 `keep`/`defer` 必须在 `note` 写理由。B/C 档可留空。
+2. `sign_off.py --decisions <tsv> --dry-run` 复核将要执行的 rm 清单；**有未决 A 项会 `exit 1`**。
+3. 确认无误后 `sign_off.py --decisions <tsv> --apply`（进入 S4）。
+
+**未签字不得进入 S4。** 签字结论落在 tsv 里，不在对话里；最终批次记录由 `--apply` 写进 `docs/cleanup-log.md`（持久、随提交入库）。
 
 ## S4 删除
 
-1. **先 `git add`** 目标文件（即使随后删除），保证可回滚。
+1. **用 `sign_off.py --apply` 执行**（它内置「先 `git add` 再删」、安全域硬校验、批次记账）；只有在工具不适用的特殊情况下才手工删，且必须自己先 `git add`。
 2. **成簇删除**：`A` 依赖 `B`、`B` 依赖 `C` 的链条一起删，避免留下新的断链。
 3. **sidecar 同批**：删 `X.png` 时同批删 `X.png.import`；删 `X.cs` 时同批删 `X.cs.uid`；删脚本时同批处理引用它的 `.tscn`。
 4. **同步硬编码清单**：删除场景/脚本后，检查 `BangDreamPreloadManager.cs` 的 `VfxAssets` 一类清单，以及 `skins/*/*.json` 的 entry 字符串。
@@ -134,7 +145,9 @@ dotnet build BangDreamLib/BangDreamLib.csproj -c Debug -p:Sts2Dir="$PWD/bin/Buil
 - [ ] 本体同步目录未出现在任何桶。
 - [ ] sidecar 孤儿/缺失双向都算过（当前应为 0/0，若非 0 要解释）。
 - [ ] A 档逐条有依据，B 档逐条有理由，C 档有挂起原因。
-- [ ] 删除已 `git add`，sidecar 同批，硬编码清单已同步。
+- [ ] `cleanup_decisions.tsv` 的 A 档已填满；`sign_off.py --dry-run` 无未决项。
+- [ ] 删除经 `sign_off.py --apply`（或手工时已 `git add`），sidecar 同批，硬编码清单已同步。
+- [ ] `docs/cleanup-log.md` 已追加本次批次记录。
 - [ ] 残留搜索为 0、JSON 校验通过、`git diff --check` 通过、构建通过。
 - [ ] 交付含三档清单、每条依据、执行的命令与输出、修改文件表。
 

@@ -20,7 +20,7 @@
 | `BangDreamLib/{addons,animations,fonts,images,materials,models,scenes,shaders,themes,src}/**` | 本体同步（`tools/sync-sts2-assets.sh` 生成，gitignore） | **禁止**。要重建就整目录跑 sync 脚本 | `.gitignore:17-25`、`tools/sync-sts2-assets.sh:62`、`BangDreamLib/export_presets.cfg:11`、`AGENTS.md` 项目结构节 |
 | `BangDreamLib/.godot/**`、`ItsCrychic/.godot/**` | 引擎缓存（可再生） | 默认可删，**但其中有 4 个手写文件必须先迁出**（见 `references/keep-list.md`） | `.gitignore:11` |
 | `bin/**` | 构建产物 | 可删，**但 `bin/spine-godot-extension-*` 是官方扩展，删了要重新下载** | `.gitignore:8`、`Directory.Build.targets:10-19` |
-| `.vfx_staging/**` | 录帧/导出/计划/审计快照 | 可删；但删前确认待办计划与未落地的清理证据已转移 | `.gitignore:14` |
+| `.vfx_staging/**` | 录帧/导出/计划/审计快照（**临时目录，随时可能被整体清理**） | 可删；扫描快照与签字用的 `decisions.tsv` 都是易失产物，**长期留档只认 `docs/cleanup-log.md`** | `.gitignore:14` |
 | `BangDreamLib/BangDreamLib/**`、`ItsCrychic/ItsCrychic/**` | **mod 自有真资源**（入库、进 pck） | 按引用图判定 | 两个 `export_presets.cfg` 未排除 |
 | `BangDreamLib/Scripts/**`、`ItsCrychic/Scripts/**` | mod 自有代码（`.cs` + `.cs.uid` 成对） | 按引用图判定 | 各 csproj |
 | `*.import` / `*.uid` | 引擎生成，但**必须随源一起提交** | 不可单独删；源删则同批删 | `docs/vfx-authoring.md:171-172` |
@@ -107,7 +107,10 @@
 8. **删除前先 `git add`**：保证可回滚。本仓库既有误删前科，也有未跟踪文件在 rebase/reset 中静默消失的前科。
 9. **删除后残留验证必须全绿**：旧类名、entry 字符串、本地化键、资源名的 `rg` 命中 = 0；JSON 可解析且无重复键；`git diff --check`；完整构建通过；**硬编码清单已同步**（如 `BangDreamPreloadManager.cs:55-63` 的 `VfxAssets`）。
 10. **不直接删除仍可能复用的卡图**：写进 `ItsCrychic/ItsCrychic/images/card_portraits/DEPRECATED.md`，格式见 `references/deprecation-ledger.md`；资源不存在就如实记「无对应资源」，不得虚构文件。
-11. **工具与快照可复现**：脚本入库在 `.agents/skills/obsolete-file-cleanup/scripts/`，快照落 `.vfx_staging/audit/`，且每份快照头部必须写「脚本名 + 版本 + 时间 + 输入域」。**禁止无出处的裸 `.txt`**——现有快照就出现过「文件名与脚本版本不对应」的情况，照脚本名反推产物会得出错误结论。
+11. **工具与快照可复现，但快照是易失品**：脚本入库在 `.agents/skills/obsolete-file-cleanup/scripts/`；扫描快照与签字用的 `decisions.tsv` 落 `.vfx_staging/audit/`，**该目录是特效设计的临时目录，随时可能被整体清理**。因此：
+    - 每份快照头部必须写「脚本名 + 版本 + 时间 + 输入域」，**禁止无出处的裸 `.txt`**（现有快照就出现过「文件名与脚本版本不对应」的情况，照脚本名反推产物会得出错误结论）；
+    - 「扫描 → 签字 → dry-run → apply」应在**同一次会话内**完成，不要跨天；快照一旦可能过期，就当场重跑；
+    - **长期留档只认 `docs/cleanup-log.md`**（由 `sign_off.py --apply` 自动追加，随提交入库）。
 12. **输出契约**：stdout 给 `key value` 统计行 + `PROBLEM`/`WARN` 前缀的逐行提示；存在 `confirmed_orphan` 时 `exit 1`，否则 `exit 0`（对齐 `.agents/skills/card-development/scripts/audit_cards.py:526-546`）。
 13. **交付即证据**：每条删除或保留都要给「判定依据 + 搜索命令 + 结果」，不接受结论式汇报。
 
@@ -124,12 +127,13 @@
 
 清理任务的验收顺序（详见 skill）：
 
-1. `python3 .agents/skills/obsolete-file-cleanup/scripts/scan_orphans.py --project-root .` → 四态清单，`exit 0/1` 有语义。
-2. `python3 .agents/skills/obsolete-file-cleanup/scripts/cleanup_manifest.py` → A/B/C 三档 + sidecar 连带 + 体积。
-3. 人工对 A 档逐条签字；B 档核对理由；C 档补齐判定。
-4. 执行删除（先 `git add`，成簇一起删）。
-5. 残留搜索、JSON 校验、`git diff --check`、完整构建。
-6. 交付：三档清单 + 每条依据 + 命令与输出 + 修改文件表。
+1. `scan_orphans.py --project-root .` → 四态 + 死簇清单，`exit 0/1` 有语义。
+2. `cleanup_manifest.py` → 紧凑清单 `cleanup_manifest.md`（人看）+ `cleanup_decisions.tsv`（人改）。
+3. 在 tsv 里逐条填 `action`（`delete`/`keep`/`defer`）与 `note`；**A 档必须填满**，`keep`/`defer` 必须写理由。
+4. `sign_off.py --dry-run` 复核 rm 清单；有未决 A 项会 `exit 1`。
+5. `sign_off.py --apply` 执行：先 `git add`、删资源 + sidecar、向 `docs/cleanup-log.md` 追加批次记录。安全域与未跟踪 WIP 会被硬拒绝。
+6. 残留搜索、JSON 校验、`git diff --check`、完整构建。
+7. 交付：清单 + 每条依据 + 命令与输出 + 修改文件表 + `cleanup-log.md` 里的批次条目。
 
 **脚本只证明「静态引用关系」，不证明「运行时是否被动态加载」。** 编译通过也不能替代第 5 步。存在未解释的集合差异、断链、构建错误或残留引用时，不得宣布完成。
 
