@@ -1,4 +1,4 @@
-﻿<Project>
+<Project>
     <Target Name="Copy Mod" AfterTargets="PostBuildEvent">
         <Message Text="Copying mod to Slay the Spire 2 mods folder..." Importance="high"/>
         <MakeDir Directories="$(Sts2Dir)/mods/"/>
@@ -13,6 +13,15 @@
               EnvironmentVariables="IsInnerGodotExport=true;MSBUILDDISABLENODEREUSE=1"
               IgnoreStandardErrorWarningFormat="true"
               ContinueOnError="WarnAndContinue"/>
+        <!--
+            打包闸：Godot headless import 之后、export-pack 之前校验 ext_resource 的
+            uid 与 .import/.uid sidecar 是否一致。不一致时引擎会按 text path 兜底并刷
+            "invalid UID ... using text path instead"；典型成因是恢复美术时漏了
+            .import，引擎重新生成了新 uid。此检查失败会中止 publish（不打包坏 pck）。
+            只校验真实存在的资源；本机没同步打法/美术时缺文件仅告警，不会误拦构建。
+        -->
+        <Exec Command="python3 &quot;$(MSBuildThisFileDirectory)tools/check-resource-uids.py&quot;"
+              IgnoreStandardErrorWarningFormat="true"/>
         <Exec Command="&quot;$(GodotExe)&quot; --headless --path &quot;$(MSBuildProjectDirectory)&quot; --export-pack &quot;BasicExport&quot; &quot;$(Sts2Dir)/mods/$(MSBuildProjectName)/$(MSBuildProjectName).pck&quot;"
               EnvironmentVariables="IsInnerGodotExport=true;MSBUILDDISABLENODEREUSE=1"
               IgnoreStandardErrorWarningFormat="true"
