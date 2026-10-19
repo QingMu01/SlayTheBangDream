@@ -9,8 +9,8 @@ BangDreamInSpire.sln
 ├── BangDreamLib/     — 共享前置库（依赖 游戏本体 sts2.dll 与 STS2-RitsuLib）
 ├── ItsCrychic/       — 角色模组合集（依赖 BangDreamLib）
 ├── tools/            — sync-sts2-assets.sh（同步本体解包资源）
-├── docs/             — 项目级规范（卡牌 / 机制 / 特效）
-└── .agents/skills/   — 工作流 skill（card-development、vfx-authoring），已入库
+├── docs/             — 项目级规范（卡牌 / 机制 / 特效 / 清理）
+└── .agents/skills/   — 工作流 skill（card-development、vfx-authoring、obsolete-file-cleanup），已入库
 ```
 
 C# 代码位于各项目的 `Scripts/` 目录下，Godot 资源（图片、场景、本地化 JSON）位于以 mod-id 命名的子文件夹中（如
@@ -45,6 +45,7 @@ C# 代码位于各项目的 `Scripts/` 目录下，Godot 资源（图片、场�
 - **特效基类默认继承 `Node2D`**；仅当明确需要「飞行道具」或「异步伤害」（即命中时刻要驱动玩法结算）时才继承 `NBangDreamFlyingVfx`。详见 `docs/vfx-authoring.md` 第 2 节；预览机制见 `docs/vfx-preview-mechanism.md`。
 - **新增、修改、重构卡牌**遵循 `docs/card-authoring.md`（规范与验收）；执行流程见 `.agents/skills/card-development/SKILL.md`。
 - **特效素材入库**：从资产库导出的素材，先用 `.agents/skills/vfx-authoring/scripts/check_asset_origin.py` 判定——命中本体的**不复制**、直接引用本体 uid；未命中的才复制进 `images/vfx/<特效名>/`。特效目录**不产出** `README.md` / `SOURCES.md`（来源凭据写进计划文件）。详见 `docs/vfx-authoring.md` 第 4 节。
+- **删除任何文件前**遵循 `docs/cleanup-authoring.md`（判定与安全域）；执行流程见 `.agents/skills/obsolete-file-cleanup/SKILL.md`。要点：以引用图为唯一判据（不得凭 grep 无命中）、四态分流、三档分档、**签字后才删**、sidecar 与源同生共死、删除后必须残留搜索 + 构建验证。本体同步目录与用户未跟踪的 WIP 一律不碰。
 
 ## 本地化
 
