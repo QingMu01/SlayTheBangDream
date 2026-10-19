@@ -1,6 +1,7 @@
 using System.Reflection;
 using BangDreamInSpire.Scripts.Enums;
 using BangDreamInSpire.Scripts.Extensions;
+using BangDreamInSpire.Scripts.Utils;
 using ItsCrychic.Scripts.Character;
 using ItsCrychic.Scripts.Patches;
 using ItsCrychic.Scripts.Relics.Sakiko;
@@ -51,5 +52,12 @@ public static class ItsCrychic
         mutsumiContent.RegisterCharacterStarterRelic<WakabaMutsumi, Synthesizer>();
         // 设置 Crychic 角色组图标
         CharacterGroup.Crychic.SetBandSelectIcon("res://ItsCrychic/images/charui/char_select_saki.png");
+
+        // BDS-Perf 报告显示这些资源原先在首次使用时走主线程同步加载；并入对应的预载集，
+        // 把首次触碰的卡顿挪到预加载阶段（角色选择图标进主菜单，能量图标进 run 资源集）。
+        BangDreamPreloadManager.AddCustomCommonAsset("crychic_group_select_icon",
+            "res://ItsCrychic/images/charui/char_select_saki.png");
+        BangDreamPreloadManager.AddCustomCombatAsset("sakiko_small_energy",
+            "res://ItsCrychic/images/charui/sakiko/sakiko_small_energy.png");
     }
 }
