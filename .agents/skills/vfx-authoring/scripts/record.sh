@@ -6,7 +6,7 @@
 # 本脚本刻意【不】使用 --headless：headless 无渲染，录不到画面。
 #
 # 用法：
-#   bash .agents/skills/vfx-authoring/scripts/record.sh -s "res://BangDreamLib/scenes/vfx/music_slash_vfx.tscn"
+#   bash .agents/skills/vfx-authoring/scripts/record.sh -s "res://BangDreamLib/scenes/vfx/staff_ring_vfx.tscn"
 #   bash .agents/skills/vfx-authoring/scripts/record.sh -s "<场景>" -n 130 -c "760:760:580:160" --gif
 #
 # 选项：

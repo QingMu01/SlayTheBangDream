@@ -55,9 +55,6 @@ public static class BangDreamPreloadManager
     internal static readonly HashSet<string> VfxAssets =
     [
         "res://BangDreamLib/scenes/vfx/staff_ring_vfx.tscn",
-        "res://BangDreamLib/scenes/vfx/music_wave.tscn",
-        "res://BangDreamLib/scenes/vfx/music_hit_vfx.tscn",
-        "res://BangDreamLib/scenes/vfx/music_flash_vfx.tscn",
         "res://BangDreamLib/scenes/vfx/music_equalizer_vfx.tscn",
         "res://BangDreamLib/scenes/vfx/perform_flash_vfx.tscn"
     ];
