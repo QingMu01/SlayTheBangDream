@@ -1,7 +1,7 @@
 # 卡牌开发规范
 
 本文是**卡牌实现方式的唯一事实来源**：新增、修改、重构卡牌都必须满足这里的约束。
-执行流程（按什么顺序做、跑哪些校验、什么算完成）见 `.codex/skills/card-development/SKILL.md`；本文只回答「应该长什么样」。
+执行流程（按什么顺序做、跑哪些校验、什么算完成）见 `.agents/skills/card-development/SKILL.md`；本文只回答「应该长什么样」。
 
 相关文档：机制接入见 `docs/mechanic-authoring.md`，特效见 `docs/vfx-authoring.md`。
 
@@ -171,7 +171,7 @@ protected override IEnumerable<IHoverTip> CardHoverTips =>
 ### 4.6 效果语义口径
 
 元数据一致不等于效果正确。伤害口径、触发条件、状态生命周期、历史窗口、牌堆范围、联机归属、动态变量与 UI 必须逐项对照
-`.codex/skills/card-development/references/effect-audit-checklist.md`。
+`.agents/skills/card-development/references/effect-audit-checklist.md`。
 
 ## 5. 三种变更的影响面
 

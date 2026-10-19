@@ -2,7 +2,7 @@
 
 新增或改造一个特效时该遵守的约定。预览机制（编辑器里为何静止、三种环境如何共存、`VfxPreviewSupport` 各成员）见《特效预览机制》（`vfx-preview-mechanism.md`）——本文假定你已了解那套接缝。
 
-**要与用户协作、从零设计一个新特效**（用户不懂特效、需要先访谈再动手）时，走 skill `.codex/skills/vfx-authoring/`：素材侦察 → 访谈 → 计划 → **用户批准** → 实现。本文仍是实现规范的唯一事实来源。
+**要与用户协作、从零设计一个新特效**（用户不懂特效、需要先访谈再动手）时，走 skill `.agents/skills/vfx-authoring/`：素材侦察 → 访谈 → 计划 → **用户批准** → 实现。本文仍是实现规范的唯一事实来源。
 
 ## 1. 三条铁律（改错会破坏游戏内表现）
 
@@ -148,7 +148,7 @@ ffmpeg -y -loglevel error -framerate 60 -i frame%08d.png \
   控制在一个循环内。
 
 > 录制与校验已封装成脚本，优先用它们而不是手敲命令：
-> `.codex/skills/vfx-authoring/scripts/record.sh`（录制 + 合成 mp4/gif）、
+> `.agents/skills/vfx-authoring/scripts/record.sh`（录制 + 合成 mp4/gif）、
 > `verify_frames.py`（帧序列机器校验，背景自适应）。
 
 ## 4. 素材接入（资产库导出 + 本体归属校验）
@@ -176,7 +176,7 @@ ffmpeg -y -loglevel error -framerate 60 -i frame%08d.png \
 **从资产库导出的素材，先判定它是不是本体资源**——是则直接引用本体，不是才复制进工程：
 
 ```bash
-python .codex/skills/vfx-authoring/scripts/check_asset_origin.py <导出目录>
+python .agents/skills/vfx-authoring/scripts/check_asset_origin.py <导出目录>
 ```
 
 判定分三级（脚本实现，不靠文件名或肉眼）：
@@ -230,7 +230,7 @@ python .codex/skills/vfx-authoring/scripts/check_asset_origin.py <导出目录>
 > （`border_uniform`），识别到黑底时主体框是**剔除背景后的内容框**，会收紧，可直接据此定缩放；
 > 只有「未识别到背景、整幅即主体」（掩码方法 `full_frame`）时才等于满幅。
 > 读 `features` 的「背景」与掩码方法即可区分这两种情况——**不要再一律自己算亮度包围盒**。
-> 口径与交叉校验见 `.codex/skills/vfx-authoring/references/selection-contract.md`。
+> 口径与交叉校验见 `.agents/skills/vfx-authoring/references/selection-contract.md`。
 
 **五、`export_assets` 会自动创建目标目录。** `directory` 传绝对路径，不存在时自动建。
 导出到 `.vfx_staging/`（已在 `.gitignore` 内），不要在资产库内改名或删除。

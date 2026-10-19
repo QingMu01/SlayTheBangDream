@@ -1,8 +1,7 @@
-# AI 工作流 skill 入库；仅忽略本机配置与缓存
-.codex/config.toml
-.codex/**/__pycache__/
-.codex/**/*.pyc
-.zcode/**
+# 本地 AI 工具配置与缓存（skill 已迁到 .agents/skills，仅忽略本机配置与 Python 缓存）
+.codex/**
+.agents/**/__pycache__/
+.agents/**/*.pyc
 .build/**
 .idea
 .run
