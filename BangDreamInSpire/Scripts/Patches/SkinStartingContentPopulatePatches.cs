@@ -1,0 +1,144 @@
+using BangDreamInSpire.Scripts.Interfaces.CharacterAugment;
+using BangDreamInSpire.Scripts.Utils;
+using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.Entities.Players;
+using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Nodes;
+using MegaCrit.Sts2.Core.Runs;
+using STS2RitsuLib.Patching.Core;
+using STS2RitsuLib.Patching.Models;
+
+namespace BangDreamInSpire.Scripts.Patches;
+
+public class SkinStartingContentPopulatePatches : IModPatches
+{
+    public static void AddTo(ModPatcher patcher)
+    {
+        patcher.RegisterPatch<DisableVanillaStartingPopulate>();
+        patcher.RegisterPatch<PopulateStartingContentPatch>();
+    }
+}
+
+internal class DisableVanillaStartingPopulate : IPatchMethod
+{
+    public static string PatchId => "disable_vanilla_populate";
+
+    public static ModPatchTarget[] GetTargets()
+    {
+        return
+        [
+            new ModPatchTarget(typeof(Player), "PopulateStartingInventory"),
+            new ModPatchTarget(typeof(Player), "PopulateStartingDeck"),
+            new ModPatchTarget(typeof(Player), "PopulateStartingRelics")
+        ];
+    }
+
+    public static bool Prefix(Player __instance)
+    {
+        return __instance.Character is not ISkinSupportCharacter;
+    }
+}
+
+internal class PopulateStartingContentPatch : IPatchMethod
+{
+    public static string PatchId => "populate_starting_content_by_skin_info";
+
+    public static ModPatchTarget[] GetTargets()
+    {
+        return [new ModPatchTarget(typeof(NGame), "StartRun")];
+    }
+
+    public static void Prefix(RunState runState)
+    {
+        foreach (var player in runState.Players)
+        {
+            if (player.Character is ISkinSupportCharacter)
+            {
+                var playerSkinData = BangDreamConst.PlayerSkin.Get(player);
+                BangDreamInSpireCore.Logger.Info(
+                    $"Player {player.NetId} / Character: {player.Character.Title.GetFormattedText()} use skin : {playerSkinData.SkinPath}.");
+                var skinInfo = playerSkinData.GetSkin();
+                if (skinInfo != null)
+                {
+                    PopulateDeck(player, runState, skinInfo.GetStartingDeck());
+                    PopulateExtraDeck(player, runState, skinInfo.GetStartingExtraDeck());
+                    PopulateRelics(player, skinInfo.GetStartingRelics());
+                    PopulatePotions(player, skinInfo.GetStartingPotions());
+                }
+            }
+            else
+            {
+                BangDreamInSpireCore.Logger.Info(
+                    $"Player {player.NetId} / Character: {player.Character.Title} is don't support skin, skip populate.");
+            }
+        }
+    }
+
+    private static void PopulateDeck(Player player, RunState runState, IEnumerable<CardModel> cards)
+    {
+        var startingDeck = new List<CardModel>();
+        foreach (var cardModel in cards)
+        {
+            var mutable = cardModel.ToMutable();
+            mutable.FloorAddedToDeck = 1;
+            startingDeck.Add(mutable);
+        }
+
+        if (startingDeck.Count > 0)
+        {
+            foreach (var card in startingDeck)
+            {
+                player.Deck.AddInternal(card, silent: false);
+                runState.AddCard(card, player);
+            }
+        }
+        else
+        {
+            throw new InvalidOperationException($"ISkinSupportCharacter({player.Character}) has empty Deck.");
+        }
+    }
+
+    private static void PopulateExtraDeck(Player player, RunState runState, IEnumerable<CardModel> cards)
+    {
+        var cardPile = BangDreamConst.ExtraDeck.GetPile(player);
+        var startingExtraDeck = new List<CardModel>();
+        foreach (var cardModel in cards)
+        {
+            var mutable = cardModel.ToMutable();
+            mutable.FloorAddedToDeck = 1;
+            startingExtraDeck.Add(mutable);
+        }
+
+        if (startingExtraDeck.Count > 0)
+        {
+            foreach (var card in startingExtraDeck)
+            {
+                cardPile.AddInternal(card, silent: false);
+                runState.AddCard(card, player);
+            }
+        }
+        else
+        {
+            BangDreamInSpireCore.Logger.Debug(
+                $"ISkinSupportCharacter({player.Character}) has empty ExtraDeck(optional).");
+        }
+    }
+
+    private static void PopulateRelics(Player player, IEnumerable<RelicModel> relics)
+    {
+        foreach (var relicModel in relics)
+        {
+            var mutable = relicModel.ToMutable();
+            mutable.FloorAddedToDeck = 1;
+            player.AddRelicInternal(mutable, silent: false);
+        }
+    }
+
+    private static void PopulatePotions(Player player, IEnumerable<PotionModel> potions)
+    {
+        foreach (var potionModel in potions)
+        {
+            player.AddPotionInternal(potionModel.ToMutable(), silent: false);
+        }
+    }
+}

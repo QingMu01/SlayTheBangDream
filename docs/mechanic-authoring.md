@@ -1,6 +1,6 @@
 # 机制模块与角色接入指南
 
-BangDreamLib 的玩法机制被拆分为若干**机制模块**（mechanic）。每个模块自行声明它需要注册的内容、注入的补丁、玩家状态模型与战斗生命周期钩子；核心初始化流程（`BangDreamLibCore`）不再感知任何具体机制。角色只需实现对应**能力接口**即可自动接入机制，库代码中不出现任何具体角色名。
+BangDreamInSpire 的玩法机制被拆分为若干**机制模块**（mechanic）。每个模块自行声明它需要注册的内容、注入的补丁、玩家状态模型与战斗生命周期钩子；核心初始化流程（`BangDreamInSpireCore`）不再感知任何具体机制。角色只需实现对应**能力接口**即可自动接入机制，库代码中不出现任何具体角色名。
 
 ## 1. 现有机制模块
 
@@ -36,7 +36,7 @@ public sealed class TogawaSakiko()
 
 ## 3. 新增一个机制模块
 
-1. 在 `BangDreamLib/Scripts/Mechanics/<Name>/` 下新建类，实现 `IBangDreamMechanic`：
+1. 在 `BangDreamInSpire/Scripts/Mechanics/<Name>/` 下新建类，实现 `IBangDreamMechanic`：
 
 ```csharp
 public sealed class MyMechanic : IBangDreamMechanic
@@ -76,7 +76,7 @@ public sealed class MyMechanic : IBangDreamMechanic
 }
 ```
 
-2. 完成。`BangDreamLibCore` 会通过反射自动发现并装配该模块，**无需修改核心或其它机制**。
+2. 完成。`BangDreamInSpireCore` 会通过反射自动发现并装配该模块，**无需修改核心或其它机制**。
 
 ## 4. 契约参考
 
@@ -141,7 +141,7 @@ public sealed class MyMechanic : IBangDreamMechanic
 
 实现要点：
 
-- **枚举值来源**：`CustomTargetType.RegisterMultiTargetType(BangDreamConst.ModId, "<stem>", _ => false)`，ID 形如 `BANG_DREAM_LIB_TARGETTYPE_ANY_SLOT`，数值由 ID 确定性生成。词干（`any_slot` / `request_group`）**冻结**：改名会破坏存档与联机一致性。
+- **枚举值来源**：`CustomTargetType.RegisterMultiTargetType(BangDreamConst.ModId, "<stem>", _ => false)`，ID 形如 `BANG_DREAM_IN_SPIRE_TARGETTYPE_ANY_SLOT`，数值由 ID 确定性生成。词干（`any_slot` / `request_group`）**冻结**：改名会破坏存档与联机一致性。
 - **为什么注册为「群体目标类型 + 恒假谓词」**：RitsuLib 的目标类型只表达生物目标（单体/群体），无法表达槽位目标；注册为群体且不选任何生物，可让原版与 RitsuLib 的全部目标判定（`IsValidTarget(null)`、`CanPlayTargeting(null)`、目标指示器）都按「无需生物目标」处理——出牌不会被目标校验拦住，生物指示器也不会误显示。
 - **出牌交互**：`PerformSlotTargetingPatches` 接入四处——`NMouseCardPlay.TargetSelection`（进入选择态，随后沿用原版「拖拽跟随鼠标、松开结束」的群体目标循环，结束时按松手位置写入请求或取消出牌）、`NMouseCardPlay.IsCardInPlayZone` 与私有的 `get_PlayZoneThreshold`（角色旁的槽位可能位于原版出牌区阈值下方，对这两种卡放宽；`TargetSelection` 内成功取到请求后还会置位原版「正在尝试出牌」标记，避免随后因不在出牌区而取消）、`NCardPlay.TryPlayCard`（读取选择结果）、`NCardPlay.Cleanup`（结束/取消选择态）；另以 `NHandCardHolder.BeginDrag` 作为兜底入口。
 - **不依赖极小方法**：`BeginDrag`、`IsCardInPlayZone` 这类方法体极小，可能被 JIT 内联到调用点，Harmony 补丁在那些调用点不生效；因此选择交互的主入口是 `TargetSelection`（与 RitsuLib 处理自定义目标类型的方式一致），`BeginDrag` / 出牌区放宽只作兜底。任一钩子未生效时最坏退化为「按常规规则出牌」，不会出现打不出去的情况。

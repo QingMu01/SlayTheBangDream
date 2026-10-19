@@ -1,5 +1,5 @@
-using BangDreamLib.Scripts.Powers;
-using BangDreamLib.Scripts.Utils;
+using BangDreamInSpire.Scripts.Powers;
+using BangDreamInSpire.Scripts.Utils;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Powers;

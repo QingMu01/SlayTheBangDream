@@ -1,6 +1,6 @@
-using BangDreamLib.Scripts.Interfaces.GameHook;
-using BangDreamLib.Scripts.Powers;
-using BangDreamLib.Scripts.Utils.Infos;
+using BangDreamInSpire.Scripts.Interfaces.GameHook;
+using BangDreamInSpire.Scripts.Powers;
+using BangDreamInSpire.Scripts.Utils.Infos;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Powers;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;

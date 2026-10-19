@@ -1,4 +1,4 @@
-﻿using BangDreamLib.Scripts.Cards;
+﻿using BangDreamInSpire.Scripts.Cards;
 using ItsCrychic.Scripts.Character.CardPools;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using STS2RitsuLib.Interop.AutoRegistration;

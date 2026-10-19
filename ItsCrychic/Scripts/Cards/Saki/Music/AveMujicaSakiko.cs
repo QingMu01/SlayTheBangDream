@@ -1,6 +1,6 @@
-using BangDreamLib.Scripts.Extensions;
-using BangDreamLib.Scripts.Interfaces.GameHook;
-using BangDreamLib.Scripts.Utils.Infos;
+using BangDreamInSpire.Scripts.Extensions;
+using BangDreamInSpire.Scripts.Interfaces.GameHook;
+using BangDreamInSpire.Scripts.Utils.Infos;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.HoverTips;

@@ -1,6 +1,6 @@
-using BangDreamLib.Scripts.Extensions;
-using BangDreamLib.Scripts.Mechanics.ExtraDeck;
-using BangDreamLib.Scripts.Utils;
+using BangDreamInSpire.Scripts.Extensions;
+using BangDreamInSpire.Scripts.Mechanics.ExtraDeck;
+using BangDreamInSpire.Scripts.Utils;
 using ItsCrychic.Scripts.Power.Buff;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;

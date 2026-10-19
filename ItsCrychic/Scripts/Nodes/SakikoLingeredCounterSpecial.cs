@@ -1,4 +1,4 @@
-using BangDreamLib.Scripts.Utils;
+using BangDreamInSpire.Scripts.Utils;
 using Godot;
 using MegaCrit.Sts2.Core.Helpers;
 using STS2RitsuLib.Combat.SecondaryResources;

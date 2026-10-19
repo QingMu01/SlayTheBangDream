@@ -1,9 +1,9 @@
-﻿using BangDreamLib.Scripts.Extensions;
-using BangDreamLib.Scripts.Interfaces.CharacterAugment;
-using BangDreamLib.Scripts.Interfaces.GameHook;
-using BangDreamLib.Scripts.Mechanics.ExtraDeck;
-using BangDreamLib.Scripts.Relics;
-using BangDreamLib.Scripts.Utils;
+﻿using BangDreamInSpire.Scripts.Extensions;
+using BangDreamInSpire.Scripts.Interfaces.CharacterAugment;
+using BangDreamInSpire.Scripts.Interfaces.GameHook;
+using BangDreamInSpire.Scripts.Mechanics.ExtraDeck;
+using BangDreamInSpire.Scripts.Relics;
+using BangDreamInSpire.Scripts.Utils;
 using ItsCrychic.Scripts.Character;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Entities.RestSite;

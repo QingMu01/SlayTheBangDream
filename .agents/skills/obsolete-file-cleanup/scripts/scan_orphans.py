@@ -89,15 +89,15 @@ GENERATED_ARTIFACT_NAMES = frozenset({
     "confirmed_orphan.txt", "dead_cluster.txt", "broken.txt",
     "sidecar_orphan.txt", "sidecar_missing.txt",
 })
-# 本体同步目录：BangDreamLib/{addons,animations,fonts,images,materials,models,
+# 本体同步目录：BangDreamInSpire/{addons,animations,fonts,images,materials,models,
 # scenes,shaders,themes} 由 tools/sync-sts2-assets.sh 生成；外加解包游戏源码 src。
 # 出处：docs/cleanup-authoring.md:20、tools/sync-sts2-assets.sh:62、AGENTS.md 项目结构节。
 BODY_SYNC_DIRS = {
     "addons", "animations", "fonts", "images", "materials",
     "models", "scenes", "shaders", "themes", "src",
 }
-BODY_SYNC_ROOTS = [("BangDreamLib", d) for d in sorted(BODY_SYNC_DIRS)]
-MOD_ROOTS = ("BangDreamLib", "ItsCrychic")
+BODY_SYNC_ROOTS = [("BangDreamInSpire", d) for d in sorted(BODY_SYNC_DIRS)]
+MOD_ROOTS = ("BangDreamInSpire", "ItsCrychic")
 
 # 语料里可被读作文本的文件后缀（token 提取 / 弱命中搜索 / uid 索引）
 TEXT_EXTS = {
@@ -521,7 +521,7 @@ def main(argv: list[str] | None = None) -> int:
         mod_id = parts[0] if parts else ""
 
         # mod loader 入口清单必须保留：docs/cleanup-authoring.md:27
-        if base in ("BangDreamLib.json", "ItsCrychic.json") and len(parts) == 2:
+        if base in ("BangDreamInSpire.json", "ItsCrychic.json") and len(parts) == 2:
             return (f"mod入口清单 {base}", "strong")
 
         # 本体同步目录 —— 不应出现在候选里（防御性检查）
@@ -534,7 +534,7 @@ def main(argv: list[str] | None = None) -> int:
             return ("弱约定:本地化表名（需本体 46 张表名核对）", "weak-convention")
 
         # 卡图约定：{modFolder}/images/card_portraits/{类名}.png
-        # 出处：BangDreamLib/Scripts/Extensions/PathExtensions.cs:9-15
+        # 出处：BangDreamInSpire/Scripts/Extensions/PathExtensions.cs:9-15
         # 升级图 {类名}_Bate.png：同文件 17-23
         if parent.endswith("/images/card_portraits"):
             core = stem[: -len("_Bate")] if stem.endswith("_Bate") else stem
@@ -549,13 +549,13 @@ def main(argv: list[str] | None = None) -> int:
             return None
 
         # 圣物图约定：images/relics/{类名}.png 与 images/relics/big/{类名}.png
-        # 出处：BangDreamLib/Scripts/Extensions/PathExtensions.cs:25-39
+        # 出处：BangDreamInSpire/Scripts/Extensions/PathExtensions.cs:25-39
         if parent.endswith("/images/relics") or parent.endswith("/images/relics/big"):
             if stem in all_classes_by_mod.get(mod_id, set()):
                 return (f"圣物图约定 ← {stem}", "strong")
 
         # mod 图标：res://{modId}/mod_image.png
-        # 出处：BangDreamLib/src/Core/Nodes/Screens/ModdingScreen/NModInfoContainer.cs:39
+        # 出处：BangDreamInSpire/src/Core/Nodes/Screens/ModdingScreen/NModInfoContainer.cs:39
         if base == "mod_image.png" and disk == f"{mod_id}/{mod_id}/mod_image.png":
             return ("mod图标约定 res://<modId>/mod_image.png", "strong")
 
@@ -698,7 +698,7 @@ def main(argv: list[str] | None = None) -> int:
     # ---- 11. 断链 -------------------------------------------------------
     # res:// 是**工程根相对**，而仓库里有两个工程，故三种解析顺序都要试：
     #   <root>/<rel>                 —— 仓库根相对（res://src/** 等本体路径）
-    #   <root>/BangDreamLib/<rel>    —— BangDreamLib 工程根（= 本体同步目录挂载点）
+    #   <root>/BangDreamInSpire/<rel>    —— BangDreamInSpire 工程根（= 本体同步目录挂载点）
     #   <root>/ItsCrychic/<rel>      —— ItsCrychic 工程根
     # 出处：references/reference-graph.md:11-13（跨工程建图、本体内嵌资源合法）
     def resolve_res(rel: str) -> str | None:
@@ -759,7 +759,7 @@ def main(argv: list[str] | None = None) -> int:
     # ---- 13. 落盘 -------------------------------------------------------
     input_domain = (
         f"git ls-files ∪ git ls-files -co --exclude-standard；"
-        f"排除 {sorted(EXCLUDED_DIRS)} 与本体同步目录 BangDreamLib/{{{','.join(sorted(BODY_SYNC_DIRS))}}}；"
+        f"排除 {sorted(EXCLUDED_DIRS)} 与本体同步目录 BangDreamInSpire/{{{','.join(sorted(BODY_SYNC_DIRS))}}}；"
         f"候选 = {MOD_ROOTS} 下的资源文件 + .cs 脚本（排除 *.import/*.uid 副产物）；"
         f"状态 = referenced / convention_referenced / weak / confirmed_orphan + dead_cluster（单列）"
     )

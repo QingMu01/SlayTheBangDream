@@ -1,4 +1,4 @@
-using BangDreamLib.Scripts.Utils.Infos;
+using BangDreamInSpire.Scripts.Utils.Infos;
 using Godot;
 
 namespace ItsCrychic.Scripts.Utils;

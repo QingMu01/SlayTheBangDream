@@ -5,7 +5,7 @@
 | 来源 | 何时用 | 取法 |
 |---|---|---|
 | **Polaris 资产库**（主） | 默认。库里有 12000+ 素材，覆盖面最广 | 本文件全部流程 |
-| **工程内已有贴图** | 想让新特效与现有特效**风格统一**时 | 见 `BangDreamLib/BangDreamLib/images/vfx/` |
+| **工程内已有贴图** | 想让新特效与现有特效**风格统一**时 | 见 `BangDreamInSpire/BangDreamInSpire/images/vfx/` |
 | **美术新画的图** | 库和工程里都没有合适形态 | 走常规资源流程，同样要 `--headless --import` |
 
 工程内已有素材很少（截至当前只有 `music_slash/` 与 `images/vfx/` 根下若干张），
@@ -170,10 +170,10 @@ python .agents/skills/vfx-authoring/scripts/check_asset_origin.py <导出目录>
 ```
 
 - **`BODY`（是本体素材）**：**不要复制**。按脚本输出的本体 `uid` + `path` 直接引用；
-  编辑器侧由 `tools/sync-sts2-assets.sh` 同步的 `BangDreamLib/images/**` 提供同一 uid 的文件。
+  编辑器侧由 `tools/sync-sts2-assets.sh` 同步的 `BangDreamInSpire/images/**` 提供同一 uid 的文件。
 - **`LOCAL`（非本体素材）**：
   1. 重命名为语义化文件名（`explosion_burst.jpg` 而非 `fx_301403_tex_002.jpg`）；
-  2. 复制进 `BangDreamLib/BangDreamLib/images/vfx/<特效名>/`；
+  2. 复制进 `BangDreamInSpire/BangDreamInSpire/images/vfx/<特效名>/`；
   3. 运行 `--headless --import` 生成 `.import` 与 uid。**不要手写 uid。**
   4. 场景里引用资源用**引擎生成的 uid**（从 `.import` 的 `uid=` 行读），`path=` 保留作可读性兜底。
 - **`REVIEW`（疑似在本体图上改绘）**：同尺寸且感知哈希接近本体某张图，人工判定后按上面两条之一处理。

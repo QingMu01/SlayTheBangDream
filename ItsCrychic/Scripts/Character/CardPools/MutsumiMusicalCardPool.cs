@@ -1,4 +1,4 @@
-﻿using BangDreamLib.Scripts.Utils;
+﻿using BangDreamInSpire.Scripts.Utils;
 using Godot;
 using ItsCrychic.Scripts.Utils;
 using STS2RitsuLib.Scaffolding.Content;

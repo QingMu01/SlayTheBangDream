@@ -67,7 +67,7 @@ WALK_SKIP_DIRS = {".git", ".godot", "bin", "obj", ".vfx_staging", "node_modules"
 
 # C 档结构性冗余（docs/cleanup-authoring.md:82、keep-list.md 第 3 节）
 STRUCTURAL_CANDIDATES = (
-    "BangDreamLib.sln", "ItsCrychic.sln", "BangDreamInSpire.sln",
+    "BangDreamInSpire.sln", "ItsCrychic.sln", "BangDreamInSpire.sln",
 )
 
 SIDECAR_EXTS = (".import", ".uid")
@@ -100,7 +100,7 @@ TEMPDIR_NOTICE = (
 
 def shorten_path(path: str, universe: set[str]) -> str:
     """人看的短路径：`<mod>/<mod>/rest` → `<mod>/rest`；有歧义时保留全路径。"""
-    for mod in ("BangDreamLib", "ItsCrychic"):
+    for mod in ("BangDreamInSpire", "ItsCrychic"):
         prefix = f"{mod}/{mod}/"
         if path.startswith(prefix):
             cand = f"{mod}/{path[len(prefix):]}"
@@ -120,7 +120,7 @@ SAFETY_SUFFIXES = (".csproj", ".sln", ".sln.DotSettings")
 def safety_reason(path: str) -> str | None:
     parts = path.split("/")
     base = os.path.basename(path)
-    if len(parts) >= 2 and parts[0] == "BangDreamLib" and parts[1] in BODY_SYNC_DIRS:
+    if len(parts) >= 2 and parts[0] == "BangDreamInSpire" and parts[1] in BODY_SYNC_DIRS:
         return "本体同步目录：禁止按孤儿规则处理（docs/cleanup-authoring.md:20）"
     if any(p in (".godot",) for p in parts):
         return "引擎缓存目录：可删但必须先迁出手写文件（docs/cleanup-authoring.md:21）"
@@ -209,7 +209,7 @@ def empty_dirs(root: str) -> list[str]:
         if any(p in WALK_SKIP_DIRS for p in parts):
             dirnames[:] = []
             continue
-        if len(parts) >= 2 and (parts[0], parts[1]) in {(r, d) for r in ("BangDreamLib",) for d in BODY_SYNC_DIRS}:
+        if len(parts) >= 2 and (parts[0], parts[1]) in {(r, d) for r in ("BangDreamInSpire",) for d in BODY_SYNC_DIRS}:
             dirnames[:] = []
             continue
         dirnames[:] = [d for d in dirnames if d not in WALK_SKIP_DIRS]

@@ -1,5 +1,5 @@
-﻿using BangDreamLib.Scripts.Extensions;
-using BangDreamLib.Scripts.Nodes.VFX;
+﻿using BangDreamInSpire.Scripts.Extensions;
+using BangDreamInSpire.Scripts.Nodes.VFX;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;

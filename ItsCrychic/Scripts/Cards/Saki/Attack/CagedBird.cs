@@ -1,4 +1,4 @@
-using BangDreamLib.Scripts.Extensions;
+using BangDreamInSpire.Scripts.Extensions;
 using ItsCrychic.Scripts.Power.Debuff;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;

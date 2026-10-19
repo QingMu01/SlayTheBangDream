@@ -142,7 +142,7 @@ approved_at: ""        # 自动写入
 
 ## 9. 交付物
 
-- `BangDreamLib/scenes/vfx/<场景>.tscn` + 脚本
+- `BangDreamInSpire/scenes/vfx/<场景>.tscn` + 脚本
 - `images/vfx/<特效名>/`（**仅当校验判定为非本体素材时**）+ `tuning-log.md`（有调参时）
 - `.vfx_staging/out/<slug>.mp4` + `.gif`
 

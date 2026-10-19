@@ -114,13 +114,13 @@ rg -n "<旧类名>|<旧entry>|<旧资源名>" --glob '!.godot/**' --glob '!bin/*
 4. 完整构建受影响项目；部署目标若指向游戏目录，用工作区内临时 `Sts2Dir` 重定向：
 
 ```bash
-dotnet build BangDreamLib/BangDreamLib.csproj -c Debug -p:Sts2Dir="$PWD/bin/BuildDeploy"
+dotnet build BangDreamInSpire/BangDreamInSpire.csproj -c Debug -p:Sts2Dir="$PWD/bin/BuildDeploy"
 ```
 
 5. 删了脚本或场景的，额外跑一次无头加载，确认无 `ext_resource, invalid UID` / `Failed loading resource`：
 
 ```bash
-"$GODOT" --headless --editor --path BangDreamLib --quit-after 150 2>&1 | grep -iE "error|failed"
+"$GODOT" --headless --editor --path BangDreamInSpire --quit-after 150 2>&1 | grep -iE "error|failed"
 ```
 
 出现任何未解释的残留、断链或构建错误，**不得宣布完成**。

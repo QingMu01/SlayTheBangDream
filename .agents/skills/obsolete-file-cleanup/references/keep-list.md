@@ -6,11 +6,11 @@
 
 | 目标 | 原因 | 依据 |
 |---|---|---|
-| `BangDreamLib/{addons,animations,fonts,images,materials,models,scenes,shaders,themes,src}/**` | 本体同步资源：gitignore、不进 mod pck、编辑器引用它们的**本体 uid**。删了编辑器里所有本体引用显示资源缺失 | `.gitignore:17-25`、`tools/sync-sts2-assets.sh:62`、`BangDreamLib/export_presets.cfg:11` |
-| `BangDreamLib/src/**` | 解包游戏源码（3508 个 `.cs`），是查本体实现的唯一来源 | `AGENTS.md` 依赖文档与源码节 |
-| `BangDreamLib.json` / `ItsCrychic.json` | mod loader 入口清单，缺了模组不加载 | 各 csproj `Content Include` |
+| `BangDreamInSpire/{addons,animations,fonts,images,materials,models,scenes,shaders,themes,src}/**` | 本体同步资源：gitignore、不进 mod pck、编辑器引用它们的**本体 uid**。删了编辑器里所有本体引用显示资源缺失 | `.gitignore:17-25`、`tools/sync-sts2-assets.sh:62`、`BangDreamInSpire/export_presets.cfg:11` |
+| `BangDreamInSpire/src/**` | 解包游戏源码（3508 个 `.cs`），是查本体实现的唯一来源 | `AGENTS.md` 依赖文档与源码节 |
+| `BangDreamInSpire.json` / `ItsCrychic.json` | mod loader 入口清单，缺了模组不加载 | 各 csproj `Content Include` |
 | `bin/spine-godot-extension-*` | 官方 Spine 运行时扩展（44M），删了要重新下载 | `Directory.Build.targets:10-19` |
-| `BangDreamLib/.godot/{polka_probe.gd,polka_rebuild_check.gd,polka_long.tscn,polka_short.tscn}` | **手写文件却躺在 gitignore 的缓存目录里**。任何「删 `.godot` 重开编辑器」都会连带丢失，应迁出后再删缓存 | 文件 mtime 2026-10-07；`.gitignore:11` |
+| `BangDreamInSpire/.godot/{polka_probe.gd,polka_rebuild_check.gd,polka_long.tscn,polka_short.tscn}` | **手写文件却躺在 gitignore 的缓存目录里**。任何「删 `.godot` 重开编辑器」都会连带丢失，应迁出后再删缓存 | 文件 mtime 2026-10-07；`.gitignore:11` |
 | `*.import` / `*.uid` | 引擎副产物，但必须随源一起提交；单独删会让场景报 `ext_resource, invalid UID` | `docs/card-authoring.md:21`、`docs/vfx-authoring.md:171-172` |
 | 用户工作区里未提交/未跟踪的 WIP | 清理任务没有处置权，误删即不可恢复（本仓库有未跟踪文件在 rebase 中静默消失的前科） | 每次任务前 `git status --short` |
 
@@ -28,8 +28,8 @@
 | `ItsCrychic/ItsCrychic/images/charui/anon/**`（约 28 张） | 预留待实装 | **未实装角色**的预留素材，不是过时 | 角色实装并接线后 |
 | `ItsCrychic/ItsCrychic/scenes/creature/anon01.tscn`、`anon02.tscn` | 预留待实装 | 同上，预留场景 | 同上 |
 | `ItsCrychic/ItsCrychic/images/charui/img_{soyo,taki,tomori}*.webp`（3 张） | 预留待实装 | 未实装角色的立绘预留 | 对应角色实装后 |
-| `BangDreamLib/BangDreamLib/scenes/vfx/music_crystal_hit_vfx.tscn` | **活跃保留** | **有意保留的预览件**：有 `.vfx_staging/rec/music_crystal_hit_vfx-*` 录帧记录，等接入卡牌；它引用的 `MusicCrystalHitVfx.cs` 因此是活的 | 接入完成后 |
-| `BangDreamLib/BangDreamLib/skins/skin_template.json` | **活跃保留** | 皮肤模板，供新增角色复制，本身是活的 | 模板机制变更时 |
+| `BangDreamInSpire/BangDreamInSpire/scenes/vfx/music_crystal_hit_vfx.tscn` | **活跃保留** | **有意保留的预览件**：有 `.vfx_staging/rec/music_crystal_hit_vfx-*` 录帧记录，等接入卡牌；它引用的 `MusicCrystalHitVfx.cs` 因此是活的 | 接入完成后 |
+| `BangDreamInSpire/BangDreamInSpire/skins/skin_template.json` | **活跃保留** | 皮肤模板，供新增角色复制，本身是活的 | 模板机制变更时 |
 | `docs/vfx-authoring.md` / `.agents/skills/vfx-authoring/references/csharp-recipes.md` 提到的 `MusicFlashVfx` / `MusicHitVfx` / `MusicWaveVfx` | 活跃保留（代码侧） | 被文档当作 `Node2D` 参考实现引用。若要删，必须**同批改文档**，否则文档指向不存在的代码 | 文档改写后 |
 
 > 上表第 6 行不是 keep 规则：这些是 `.cs` 脚本，靠扫描器的代码保护规则（有基类/接口即不判死）活着，不靠 `cascade_blocks`。机制不同，别混用。
@@ -38,8 +38,8 @@
 
 ## 3. 需人工确认（C 档，默认落这里）
 
-- 结构性冗余：`BangDreamLib.sln` / `ItsCrychic.sln`、空目录（如 `ItsCrychic/Scripts/Utils/Info/`）。
-- 跨工程边界：只在另一个工程被引用的文件（例如 `BangDreamLib` 的场景被 `ItsCrychic` 的 skin 引用）。
+- 结构性冗余：`SlayTheBangDream.sln`（企划总解决方案）/ `BangDreamInSpire.sln` / `ItsCrychic.sln`、空目录（如 `ItsCrychic/Scripts/Utils/Info/`）。
+- 跨工程边界：只在另一个工程被引用的文件（例如 `BangDreamInSpire` 的场景被 `ItsCrychic` 的 skin 引用）。
 - 判定不出来的任何东西：**默认 C，不得默认 A**。
 
 ## 4. 判定「预留」还是「废件」的口径

@@ -1,8 +1,8 @@
-using BangDreamLib.Scripts.Enums;
-using BangDreamLib.Scripts.Extensions;
-using BangDreamLib.Scripts.Interfaces.GameHook;
-using BangDreamLib.Scripts.Mechanics.Perform.Chord;
-using BangDreamLib.Scripts.Relics;
+using BangDreamInSpire.Scripts.Enums;
+using BangDreamInSpire.Scripts.Extensions;
+using BangDreamInSpire.Scripts.Interfaces.GameHook;
+using BangDreamInSpire.Scripts.Mechanics.Perform.Chord;
+using BangDreamInSpire.Scripts.Relics;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using STS2RitsuLib.Models.Capabilities;

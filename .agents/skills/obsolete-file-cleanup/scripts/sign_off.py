@@ -11,7 +11,7 @@
 「扫描 → 签字 → dry-run → apply」；**长期留档靠 `docs/cleanup-log.md`**（本脚本 apply 后追加）。
 
 安全域硬校验（即使 `--force` 也拒删）：
-  本体同步目录 `BangDreamLib/{addons,animations,fonts,images,materials,models,scenes,shaders,themes,src}`、
+  本体同步目录 `BangDreamInSpire/{addons,animations,fonts,images,materials,models,scenes,shaders,themes,src}`、
   `.git` / `.godot` / `bin` / `obj` / `.vfx_staging`、以及**用户未跟踪 WIP**。
   出处：docs/cleanup-authoring.md 第 7 节安全域、references/keep-list.md 第 1 节。
 
@@ -81,8 +81,8 @@ def safety_violation(rel: str, untracked: set[str]) -> str | None:
         return "路径越出仓库根"
     if any(p in FORBIDDEN_PARTS for p in parts):
         return f"落在禁止目录（{'/'.join(sorted(set(parts) & FORBIDDEN_PARTS))}）"
-    if len(parts) >= 2 and parts[0] == "BangDreamLib" and parts[1] in BODY_SYNC_DIRS:
-        return f"本体同步目录 BangDreamLib/{parts[1]}/（gitignore，删了编辑器全红）"
+    if len(parts) >= 2 and parts[0] == "BangDreamInSpire" and parts[1] in BODY_SYNC_DIRS:
+        return f"本体同步目录 BangDreamInSpire/{parts[1]}/（gitignore，删了编辑器全红）"
     if rel in untracked:
         return "用户未跟踪 WIP（清理任务无处置权）"
     return None
