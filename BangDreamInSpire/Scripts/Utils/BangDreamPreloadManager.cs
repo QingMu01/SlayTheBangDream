@@ -49,7 +49,23 @@ public static class BangDreamPreloadManager
     [
         "res://BangDreamInSpire/images/sceneui/default_portrait.png",
         "res://BangDreamInSpire/shaders/color_overlay.gdshader",
-        "res://BangDreamInSpire/scenes/merchant/extra_card_merchant_inventory.tscn"
+        "res://BangDreamInSpire/scenes/merchant/extra_card_merchant_inventory.tscn",
+        // 以下资源原先只在首次使用时走主线程同步加载（BDS-Perf 报告里反复出现 Asset not cached），
+        // 提前放进 run 资源集，把首次触碰的卡顿挪到房间预加载阶段。
+        "res://BangDreamInSpire/scenes/vfx/strike_sakiko_vfx.tscn",
+        "res://BangDreamInSpire/scenes/vfx/card_trail_sakiko.tscn",
+        "res://BangDreamInSpire/images/sceneui/xz-energy_lingered_small.png",
+        "res://BangDreamInSpire/images/sceneui/xz-energy_lingered.png",
+        "res://BangDreamInSpire/images/sceneui/music_reward.png"
+    ];
+
+    /// <summary>
+    /// 主菜单真正创建界面时才会用到的资源。它们原先在 <c>Time to main menu</c> 之前同步加载
+    /// （character_selector.tscn 单次可达 240ms），放进 MainMenuEssentials 让它们在 logo 播放期间预载。
+    /// </summary>
+    private static readonly HashSet<string> MainMenuEssentialAssets =
+    [
+        "res://BangDreamInSpire/images/sceneui/sakiko_night.png"
     ];
 
     internal static readonly HashSet<string> VfxAssets =
@@ -73,6 +89,12 @@ public static class BangDreamPreloadManager
     internal static IReadOnlySet<string> GetAssetsForSession(string sessionName)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(sessionName);
+
+        if (sessionName is "MainMenuEssentials")
+        {
+            SetMainMenuScope();
+            return GetMainMenuEssentialPaths();
+        }
 
         if (sessionName is "Common" or "MainMenu")
         {
@@ -142,6 +164,22 @@ public static class BangDreamPreloadManager
     public static Shader GetShader(string path)
     {
         return GetAsset<Shader>(path);
+    }
+
+    /// <summary>
+    /// MainMenuEssentials 会话用：只放主菜单创建阶段真正会用到的资源。
+    /// 主菜单创建发生在 Common 预载之前，所以这些资源必须提前到 logo 播放期间预载。
+    /// </summary>
+    private static HashSet<string> GetMainMenuEssentialPaths()
+    {
+        var assets = GetScenePaths(MainMenuSceneKeys);
+        assets.UnionWith(MainMenuEssentialAssets);
+        lock (RegistrationLock)
+        {
+            assets.UnionWith(CustomCommonAssets.Values);
+        }
+
+        return assets;
     }
 
     private static HashSet<string> GetMainMenuAssetPaths()
