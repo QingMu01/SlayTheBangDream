@@ -34,11 +34,12 @@ C# 代码位于各项目的 `Scripts/` 目录下，Godot 资源（图片、场�
 | 分支 | 用途 | 游戏本体 | 解包源 | 备注 |
 |---|---|---|---|---|
 | `main` | 稳定版发布线 | 0.111.0 | `../sts2unpack/0.111.0/src` | 与本体稳定版 API 对齐 |
-| `beta` | 本体 beta 版适配线（长期并行） | `<beta 版本，待填>` | `../sts2unpack/<beta 版本>/src` | 本体 API 差异集中在此分支处理 |
+| `beta` | 本体 beta 版适配线（长期并行） | `0.111.0` | `../sts2unpack/0.111.0/src` | 目前本体双版本为合并状态，暂无新beta版 |
 
 - 版本切换走 `Directory.Build.local.props` 或环境变量（见下节），**不要**改被跟踪的 `Directory.Build.props` 默认值。
 - 跨分支同步共享改动时，只合并源码、文档与场景文本；合并后必须在目标版本上重新构建 + 无头运行，不能只看能编译。
 - `main` 与 `beta` 长期共存，**不要**用 `feature/*` 承载长期分支。
+- **RitsuLib 不按分支锁版本**：上游同时支持本体双版本，工程各分支统一引用同一版本；分支差异只来自**本体 API**，不要为了「适配 beta」去改 `Directory.Build.props` 里的 `PackageReference`。
 
 ## 依赖文档与源码
 
@@ -48,6 +49,7 @@ C# 代码位于各项目的 `Scripts/` 目录下，Godot 资源（图片、场�
 - **STS2-RitsuLib**：本地源码 `~/Codes/SlayTheSpire/STS2-RitsuLib`（当前 `main` = v0.6.7；
   工程 NuGet 引用 **0.5.20**，读源码时注意版本差）。文档见其 `README.zh.md` 与 `docs/pages/guide/*.md`；
   XML 文档在 NuGet 包内：`~/.nuget/packages/sts2.ritsulib/0.5.20/lib/net9.0/STS2-RitsuLib.xml`。
+  上游同时支持本体双版本，因此**工程统一引用同一版本、不按分支切换**；双版本差异只在游戏本体侧（见「分支与游戏版本」）。
 - **游戏本体**：`sts2.dll` 的同名 XML 文档在本体安装目录
   （`cd BangDreamLib && dotnet msbuild BangDreamLib.csproj -getProperty:Sts2DataDir`）。
   查本体实现读解包源 `../sts2unpack/<版本>/src`（当前 0.111.0；可用 `$STS2_UNPACKED` 覆盖，或用
