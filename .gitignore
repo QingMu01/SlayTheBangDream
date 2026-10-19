@@ -30,3 +30,10 @@ SpineGodotExtension4.5.1
 
 # 美术资产不入库（分发合规；本地保留，克隆后需自行补齐）
 **/images/**
+**/mod_image.png*
+**/*.skel*
+**/*.atlas*
+**/skeleton.png*
+
+# 本机/分支构建覆盖（切游戏本体版本用，见 Directory.Build.props）
+Directory.Build.local.props
