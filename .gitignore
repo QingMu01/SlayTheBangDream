@@ -27,3 +27,6 @@ src
 *.sln.DotSettings.user
 
 SpineGodotExtension4.5.1
+
+# 美术资产不入库（分发合规；本地保留，克隆后需自行补齐）
+**/images/**
