@@ -1,0 +1,17 @@
+<!--
+    本机/分支构建覆盖模板。
+    用法：复制为 Directory.Build.local.props（已被 .gitignore 排除），按当前游戏本体版本填写。
+    切换本体稳定版 / beta 版时只改这份文件，不要去改被跟踪的 Directory.Build.props。
+-->
+<Project>
+    <PropertyGroup>
+        <!-- 游戏本体安装目录（含 data_*/ 子目录的那一层） -->
+        <Sts2Dir>/path/to/Slay the Spire 2</Sts2Dir>
+
+        <!-- 可选：数据目录名不同（Windows/Mac 或不同版本）时显式指定 -->
+        <!-- <Sts2DataDir>$(Sts2Dir)/data_sts2_windows_x86_64</Sts2DataDir> -->
+
+        <!-- Godot（Mono/C# 版）编辑器可执行文件 -->
+        <GodotExe>/path/to/Godot_v4.5.1-stable_mono_linux.x86_64</GodotExe>
+    </PropertyGroup>
+</Project>

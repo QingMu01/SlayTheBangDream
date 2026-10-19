@@ -4,9 +4,25 @@
         <LangVersion>13.0</LangVersion>
         <Nullable>enable</Nullable>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-        <Sts2Dir>/home/QingMu/.local/share/Steam/steamapps/common/Slay the Spire 2</Sts2Dir>
-        <Sts2DataDir>$(Sts2Dir)/data_sts2_linuxbsd_x86_64</Sts2DataDir>
-        <GodotExe>/home/QingMu/Software/megadot-4.5.1-m.14-linux-x86_64-editor-csharp/MegaDot_v4.5.1-stable_mono_linux.x86_64</GodotExe>
+    </PropertyGroup>
+
+    <!--
+        游戏本体定位（本体稳定版 / beta 版并行时按分支或本机切换）。
+        解析优先级：命令行 -p:Sts2Dir=...  >  Directory.Build.local.props  >  环境变量 STS2_DIR / GODOT_EXE  >  下列默认值。
+        切版本只改本机文件（已 gitignore），不要改这里的默认值、也不要跨分支合并这些默认值。
+    -->
+    <PropertyGroup>
+        <Sts2Dir Condition="'$(Sts2Dir)' == '' and '$(STS2_DIR)' != ''">$(STS2_DIR)</Sts2Dir>
+        <Sts2Dir Condition="'$(Sts2Dir)' == ''">/home/QingMu/.local/share/Steam/steamapps/common/Slay the Spire 2</Sts2Dir>
+        <GodotExe Condition="'$(GodotExe)' == '' and '$(GODOT_EXE)' != ''">$(GODOT_EXE)</GodotExe>
+        <GodotExe Condition="'$(GodotExe)' == ''">/home/QingMu/Software/megadot-4.5.1-m.14-linux-x86_64-editor-csharp/MegaDot_v4.5.1-stable_mono_linux.x86_64</GodotExe>
+    </PropertyGroup>
+
+    <!-- 本机/分支局部覆盖（不入库）：模板见 Directory.Build.local.props.example -->
+    <Import Project="Directory.Build.local.props" Condition="Exists('Directory.Build.local.props')"/>
+
+    <PropertyGroup>
+        <Sts2DataDir Condition="'$(Sts2DataDir)' == ''">$(Sts2Dir)/data_sts2_linuxbsd_x86_64</Sts2DataDir>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
