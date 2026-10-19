@@ -1,0 +1,38 @@
+﻿using BangDreamInSpire.Scripts.Enums;
+using BangDreamInSpire.Scripts.Interfaces.CardAugment;
+using BangDreamInSpire.Scripts.Utils;
+using BangDreamInSpire.Scripts.Utils.Infos;
+using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+
+namespace BangDreamInSpire.Scripts.Cards;
+
+public abstract class MusicCardModel(
+    int baseCost,
+    CardRarity rarity,
+    TargetType target,
+    bool showInCardLibrary = true) : BandCardModel(baseCost, CardType.Quest, rarity, target, showInCardLibrary),
+    IPerformCard
+{
+    public virtual bool IsInstant => false;
+    public virtual int AspirationSlot => 0;
+    public virtual PerformEnqueueStrategy Strategy => PerformEnqueueStrategy.Default;
+
+    public virtual Task OnPerform(PlayerChoiceContext choiceContext, CardPerform perform)
+    {
+        return Task.CompletedTask;
+    }
+
+    public virtual CardLocation StopPerformanceNextPile()
+    {
+        var location = base.GetResultLocationForCardPlay();
+        return location.pileType == PileType.Discard
+            ? new CardLocation(Owner, BangDreamConst.ExtraDraw, CardPilePosition.Bottom)
+            : location;
+    }
+
+    protected sealed override CardLocation GetResultLocationForCardPlay()
+    {
+        return new CardLocation(Owner, BangDreamConst.PerformPile, CardPilePosition.Bottom);
+    }
+}

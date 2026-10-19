@@ -15,7 +15,7 @@
 ```
 
 - 命名空间与 `Scripts/` 下目录结构完全对应（`ItsCrychic.Scripts.Cards.Saki.Skill`）。
-- **命名空间第一段必须等于 Mod 目录名**（`ItsCrychic` / `BangDreamLib`）：卡图路径由 `PathExtensions.GetCardImg` 用 `type.Namespace.Split(".")[0]` 拼出，写错会静默回退默认立绘。
+- **命名空间第一段必须等于 Mod 目录名**（`ItsCrychic` / `BangDreamInSpire`）：卡图路径由 `PathExtensions.GetCardImg` 用 `type.Namespace.Split(".")[0]` 拼出，写错会静默回退默认立绘。
 - 角色目录：`Saki`、`Mutsumi`。类型目录：`Attack`、`Skill`、`Power`、`Music`（音乐牌）。跨角色共用的 Token 放在 `Scripts/Cards/Token/`。
 - 抽象基类以 `Abstract` 前缀命名。
 - 每个 `.cs` 必须有同名 `.cs.uid`。UID 由 Godot 导入生成，**不要手写或复制伪造**。
@@ -63,11 +63,11 @@ public class BandPractice() : AbstractSakikoCard(CustomCost, CustomType, CustomR
 - X 费：`protected override bool HasEnergyCostX => true;`，同时 `CustomCost` 传 `0`。
 - 产生格挡的卡覆写 `protected override bool GainsBlock => true;`。
 - `TargetType`、`CardType` 的完整取值查依赖库 XML 文档（见 `AGENTS.md`）。
-- 音乐牌的手动落位目标类型（`BangDreamLib.Scripts.Utils.Infos.PerformTargetTypes`）：
+- 音乐牌的手动落位目标类型（`BangDreamInSpire.Scripts.Utils.Infos.PerformTargetTypes`）：
   - `AnySlot`：出牌时把牌拖到**任意已激活槽位**上松开，强制进入该槽位并顶掉其中原有的牌。
   - `RequestGroup`：出牌时把牌拖到**任意分组**上松开，按卡牌自身的入队策略进入该分组（和弦与其余规则不变）。
   - 交互与原版单体目标一致：按住卡牌拖到候选槽位松手即选定（松开未指向则转入点击模式继续等待）；点击卡牌后点击候选槽位即选定，点空/右键/拖到底部取消区都取消本次出牌（不耗能、牌回手牌）。容量为 0、手柄方向导航与自动出牌不进入选择流程，按常规规则入队。
-- 卡牌和弦（`BangDreamLib.Scripts.Mechanics.Perform.Chord.ChordCapability`）：
+- 卡牌和弦（`BangDreamInSpire.Scripts.Mechanics.Perform.Chord.ChordCapability`）：
   - 和弦由 `ChordCapability` 承载，随卡牌实例存档；**只**用于卡牌打出后激活对应分组中音乐牌的奏响，不参与音乐牌的入组判定。
   - 和弦在**卡牌奖励随机生成**时赋予（`card.GetOrCreateCapability<ChordCapability>().SetChord(chord)`），没有设计期或静态赋值入口。详见 `mechanic-authoring.md` §9。
 
@@ -77,7 +77,7 @@ public class BandPractice() : AbstractSakikoCard(CustomCost, CustomType, CustomR
 
 | 资源 | 路径 | 必需 |
 |---|---|---|
-| 立绘 | `res://<ModId>/images/card_portraits/<ClassName>.png` | 是（缺失回退 `BangDreamLib/images/sceneui/default_portrait.png`，即缺陷） |
+| 立绘 | `res://<ModId>/images/card_portraits/<ClassName>.png` | 是（缺失回退 `BangDreamInSpire/images/sceneui/default_portrait.png`，即缺陷） |
 | 升级立绘 | `res://<ModId>/images/card_portraits/<ClassName>_Bate.png` | 否 |
 | 卡框 | 由角色抽象基类按 `Type` 给出 | 由基类负责 |
 
@@ -118,7 +118,7 @@ Power 子键：`.title`、`.description`、`.smartDescription`（带数值的高
 ### 3.4 关键字
 
 `固有`、`消耗`、`虚无`、`保留` 由游戏自动追加说明，**不要**写进本地化。
-模组关键字（`音乐`、`音符`、`歌单` 等）定义在 `BangDreamLib/BangDreamLib/localization/zhs/card_keywords.json`，引用即可。
+模组关键字（`音乐`、`音符`、`歌单` 等）定义在 `BangDreamInSpire/BangDreamInSpire/localization/zhs/card_keywords.json`，引用即可。
 
 ### 3.5 同步要求
 

@@ -1,5 +1,5 @@
-using BangDreamLib.Scripts.Extensions;
-using BangDreamLib.Scripts.Utils;
+using BangDreamInSpire.Scripts.Extensions;
+using BangDreamInSpire.Scripts.Utils;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Combat.History.Entries;
 using MegaCrit.Sts2.Core.Commands;

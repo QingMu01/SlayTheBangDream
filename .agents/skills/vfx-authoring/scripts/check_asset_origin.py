@@ -13,7 +13,7 @@
 用法：
     python check_asset_origin.py <导出目录|文件...> [--body-root DIR] [--json]
 
-本体根解析顺序：--body-root > $BANGDREAM_BODY_ROOT > <仓库>/BangDreamLib/images
+本体根解析顺序：--body-root > $BANGDREAM_BODY_ROOT > <仓库>/BangDreamInSpire/images
                  > $STS2_UNPACKED（含版本子目录时取版本号最大的） > <仓库>/../sts2unpack（同上）
 
 输出（每行一条；BODY 行给出可直接粘进 .tscn 的 uid 与 path）：
@@ -67,7 +67,7 @@ def resolve_body_root(explicit: str | None) -> str:
         candidates.append(explicit)
     if os.environ.get("BANGDREAM_BODY_ROOT"):
         candidates.append(os.environ["BANGDREAM_BODY_ROOT"])
-    candidates.append(os.path.join(REPO_ROOT, "BangDreamLib", "images"))
+    candidates.append(os.path.join(REPO_ROOT, "BangDreamInSpire", "images"))
     if os.environ.get("STS2_UNPACKED"):
         candidates.append(os.environ["STS2_UNPACKED"])
     candidates.append(os.path.abspath(os.path.join(REPO_ROOT, "..", "sts2unpack")))
@@ -77,7 +77,7 @@ def resolve_body_root(explicit: str | None) -> str:
             return pick_version_dir(os.path.abspath(c))
     die(
         "找不到本体素材根。请用 --body-root 指定，例如：\n"
-        "  --body-root BangDreamLib/images        （编辑器同步目录，带本体 uid）\n"
+        "  --body-root BangDreamInSpire/images        （编辑器同步目录，带本体 uid）\n"
         "  --body-root ../sts2unpack/0.111.0      （解包源）"
     )
 

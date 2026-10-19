@@ -1,5 +1,5 @@
-using BangDreamLib.Scripts.Utils;
-using BangDreamLib.Scripts.Utils.Infos;
+using BangDreamInSpire.Scripts.Utils;
+using BangDreamInSpire.Scripts.Utils.Infos;
 using ItsCrychic.Scripts.Cards.Token;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;

@@ -1,0 +1,152 @@
+[gd_scene load_steps=15 format=3 uid="uid://txb6745aun8k"]
+
+[ext_resource type="Script" uid="uid://fmns5ke8lita" path="res://Scripts/Nodes/SubNode/NPerformItem.cs" id="1_b1k58"]
+[ext_resource type="Shader" uid="uid://6lk8eakexseb" path="res://BangDreamInSpire/shaders/parallelogram_clip.gdshader" id="2_eapvb"]
+[ext_resource type="Texture2D" uid="uid://bbnqvh5ldyuh1" path="res://BangDreamInSpire/images/sceneui/default_portrait.png" id="3_l5gee"]
+[ext_resource type="FontVariation" uid="uid://b31wycusbsq8w" path="res://themes/fonts/jpn/noto_sans_cjkjp_bold_shared.tres" id="4_eapvb"]
+[ext_resource type="Shader" uid="uid://d0wcj6w86sq02" path="res://BangDreamInSpire/shaders/parallelogram_overlay.gdshader" id="5_overlay"]
+[ext_resource type="Shader" path="res://BangDreamInSpire/shaders/parallelogram_reveal_sweep.gdshader" id="6_sweep"]
+[ext_resource type="Shader" uid="uid://cuufrpvjkbglt" path="res://BangDreamInSpire/shaders/perform_selection_outline.gdshader" id="7_selection"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_selection"]
+shader = ExtResource("7_selection")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_background"]
+shader = ExtResource("2_eapvb")
+shader_parameter/slant_slope = 0.29999997094239994
+shader_parameter/edge_softness = 0.0
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_portrait"]
+shader = ExtResource("2_eapvb")
+shader_parameter/slant_slope = 0.3
+shader_parameter/edge_softness = 0.0
+
+[sub_resource type="Gradient" id="Gradient_overlay"]
+offsets = PackedFloat32Array(0, 0.39999998, 0.7, 1)
+colors = PackedColorArray(0, 0, 0, 1, 0, 0, 0, 0.92156863, 0, 0, 0, 0.5882353, 0, 0, 0, 0)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture_overlay"]
+gradient = SubResource("Gradient_overlay")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_overlay"]
+shader = ExtResource("5_overlay")
+shader_parameter/slant_slope = 0.3
+shader_parameter/edge_softness = 0.0
+shader_parameter/edge_coverage_power = 0.25
+shader_parameter/gradient_texture = SubResource("GradientTexture_overlay")
+shader_parameter/gradient_angle = 0.0
+shader_parameter/dot_radius = 1.5
+shader_parameter/dot_spacing = 6.5
+shader_parameter/dot_offset = Vector2(0, 0)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_sweep"]
+shader = ExtResource("6_sweep")
+shader_parameter/slant_slope = 0.3
+shader_parameter/edge_softness = 0.0
+shader_parameter/sweep_band_width = 18.0
+shader_parameter/sweep_softness = 2.0
+
+[node name="PerformItem" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_b1k58")
+
+[node name="Background" type="ColorRect" parent="."]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_background")
+instance_shader_parameters/rect_size = Vector2(165, 25)
+custom_minimum_size = Vector2(165, 25)
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -174.0
+offset_top = 5.0
+offset_right = -9.0
+offset_bottom = 30.0
+grow_horizontal = 0
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.5669666, 0.5669666, 0.5669666, 1)
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+custom_minimum_size = Vector2(160, 50)
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -160.0
+offset_top = -25.0
+offset_bottom = 25.0
+grow_horizontal = 0
+grow_vertical = 2
+
+[node name="Portrait" type="TextureRect" parent="MarginContainer"]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_portrait")
+instance_shader_parameters/rect_size = Vector2(160, 50)
+instance_shader_parameters/reveal_progress = 1.0
+custom_minimum_size = Vector2(160, 50)
+layout_mode = 2
+mouse_filter = 2
+texture = ExtResource("3_l5gee")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="Overlay" type="ColorRect" parent="MarginContainer"]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_overlay")
+instance_shader_parameters/dot_color = Color(0.6117647, 0.6117647, 0.6117647, 0.3)
+instance_shader_parameters/rect_size = Vector2(160, 50)
+instance_shader_parameters/reveal_progress = 1.0
+custom_minimum_size = Vector2(160, 50)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="SweepLight" type="ColorRect" parent="MarginContainer"]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_sweep")
+instance_shader_parameters/rect_size = Vector2(160, 50)
+instance_shader_parameters/reveal_progress = 1.0
+custom_minimum_size = Vector2(160, 50)
+layout_mode = 2
+mouse_filter = 2
+color = Color(1, 1, 1, 0.75)
+
+[node name="TitleMargin" type="MarginContainer" parent="MarginContainer"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 4
+
+[node name="Title" type="Label" parent="MarginContainer/TitleMargin"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.65)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.9)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_constants/outline_size = 4
+theme_override_fonts/font = ExtResource("4_eapvb")
+theme_override_font_sizes/font_size = 28
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SelectionOutline" type="ColorRect" parent="."]
+unique_name_in_owner = true
+visible = false
+material = SubResource("ShaderMaterial_selection")
+instance_shader_parameters/rect_size = Vector2(160, 50)
+instance_shader_parameters/hovered = 0.0
+layout_mode = 0
+offset_left = -160.0
+offset_top = -25.0
+offset_bottom = 25.0
+mouse_filter = 2

@@ -1,4 +1,4 @@
-using BangDreamLib.Scripts.Nodes.MegeScript;
+using BangDreamInSpire.Scripts.Nodes.MegeScript;
 
 namespace ItsCrychic.Scripts.Nodes.MegaScripts;
 

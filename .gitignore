@@ -14,15 +14,15 @@ src
 /.vfx_staging/
 
 # 本体解包内容（tools/sync-sts2-assets.sh 同步；只服务编辑器，见该脚本头部说明）
-/BangDreamLib/addons
-/BangDreamLib/animations
-/BangDreamLib/fonts
-/BangDreamLib/images
-/BangDreamLib/materials
-/BangDreamLib/models
-/BangDreamLib/scenes
-/BangDreamLib/shaders
-/BangDreamLib/themes
+/BangDreamInSpire/addons
+/BangDreamInSpire/animations
+/BangDreamInSpire/fonts
+/BangDreamInSpire/images
+/BangDreamInSpire/materials
+/BangDreamInSpire/models
+/BangDreamInSpire/scenes
+/BangDreamInSpire/shaders
+/BangDreamInSpire/themes
 
 *.sln.DotSettings.user
 

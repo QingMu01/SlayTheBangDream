@@ -6,7 +6,7 @@
 # 本脚本刻意【不】使用 --headless：headless 无渲染，录不到画面。
 #
 # 用法：
-#   bash .agents/skills/vfx-authoring/scripts/record.sh -s "res://BangDreamLib/scenes/vfx/staff_ring_vfx.tscn"
+#   bash .agents/skills/vfx-authoring/scripts/record.sh -s "res://BangDreamInSpire/scenes/vfx/staff_ring_vfx.tscn"
 #   bash .agents/skills/vfx-authoring/scripts/record.sh -s "<场景>" -n 130 -c "760:760:580:160" --gif
 #
 # 选项：
@@ -49,7 +49,7 @@ die() { printf '错误：%s\n' "$*" >&2; exit 1; }
 [[ -n "$SCENE" ]] || die "必须指定 -s/--scene"
 
 REPO="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../../../.." && pwd)"
-PROJECT_DIR="$REPO/BangDreamLib"
+PROJECT_DIR="$REPO/BangDreamInSpire"
 [[ -d "$PROJECT_DIR" ]] || die "找不到工程目录：$PROJECT_DIR"
 
 # Godot 路径：--godot > $GODOT 环境变量 > Directory.Build.props 的 <GodotExe> > PATH

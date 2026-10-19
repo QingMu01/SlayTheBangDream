@@ -52,7 +52,7 @@ description: 面向「不懂特效的用户」的 Godot 特效创作工作流。
 **在 `check_gate.py` 返回 0 之前，禁止**：
 
 - 创建/修改任何 `.cs`、`.tscn`、`.tres`、`.gdshader`
-- 在 `BangDreamLib/` 下新建目录或复制素材
+- 在 `BangDreamInSpire/` 下新建目录或复制素材
 - 运行 `dotnet build` 或任何导入命令
 - 声称"我先搭个骨架再问"
 
@@ -314,7 +314,7 @@ python .agents/skills/vfx-authoring/scripts/check_gate.py --plan <plan.md>   # �
 
 ### S5.0 前置
 
-1. 复制素材到 `BangDreamLib/BangDreamLib/images/vfx/<特效名>/`，重命名为**语义化文件名**。
+1. 复制素材到 `BangDreamInSpire/BangDreamInSpire/images/vfx/<特效名>/`，重命名为**语义化文件名**。
 2. `--headless --import` 生成 `.import` 与 uid。**不要手写 uid。**
 3. 场景里按计划中**从底到顶**的层序摆好所需节点（例如 `glow → ring → burst_outer → burst_core → flash → sparks`；不需要的层省略），
    每层 `scale` 按 384px 参考框归一（见 [references/csharp-recipes.md](references/csharp-recipes.md) §6.1）。
@@ -354,7 +354,7 @@ python .agents/skills/vfx-authoring/scripts/check_gate.py --plan <plan.md>   # �
 
 ```
 bash .agents/skills/vfx-authoring/scripts/record.sh \
-  -s "res://BangDreamLib/scenes/vfx/<场景>.tscn" -n 130 --gif
+  -s "res://BangDreamInSpire/scenes/vfx/<场景>.tscn" -n 130 --gif
 ```
 
 3. **机器校验**——一次性淡出效果可加 `--fail-on-freeze`；持续/常驻效果不将冻结自动判失败，仍核对实际预期。`verify_frames.py` 会告警"疑似未淡出"（占比长时间冻结），

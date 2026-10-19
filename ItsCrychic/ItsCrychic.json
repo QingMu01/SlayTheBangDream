@@ -3,17 +3,17 @@
   "name": "ItsCrychic",
   "author": "QingMu,LaurelWater,xe08",
   "description": "以BangDream企划中，背景乐队Crychic为基础的角色Mod合集！计划加入祥子、睦、灯、立希和素世五名可游玩角色与配套内容。",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "has_pck": true,
   "has_dll": true,
   "dependencies": [
     {
-      "id":"STS2-RitsuLib",
-      "min_version":"0.5.20"
+      "id": "STS2-RitsuLib",
+      "min_version": "0.5.20"
     },
     {
-      "id":"BangDreamLib",
-      "min_version":"0.1.6"
+      "id": "BangDreamInSpire",
+      "min_version": "0.3.0"
     }
   ],
   "affects_gameplay": true,

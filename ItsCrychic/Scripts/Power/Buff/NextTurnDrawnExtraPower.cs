@@ -1,5 +1,5 @@
-﻿using BangDreamLib.Scripts.Mechanics.ExtraDeck;
-using BangDreamLib.Scripts.Powers;
+﻿using BangDreamInSpire.Scripts.Mechanics.ExtraDeck;
+using BangDreamInSpire.Scripts.Powers;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Entities.Powers;

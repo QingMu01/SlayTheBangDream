@@ -1,4 +1,4 @@
-﻿using BangDreamLib.Scripts.Relics;
+﻿using BangDreamInSpire.Scripts.Relics;
 using ItsCrychic.Scripts.Character.RelicPools;
 using STS2RitsuLib.Interop.AutoRegistration;
 

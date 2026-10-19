@@ -1,5 +1,5 @@
-﻿using BangDreamLib.Scripts.Cards;
-using BangDreamLib.Scripts.Extensions;
+﻿using BangDreamInSpire.Scripts.Cards;
+using BangDreamInSpire.Scripts.Extensions;
 using Godot;
 using ItsCrychic.Scripts.Character.CardPools;
 using MegaCrit.Sts2.Core.Entities.Cards;

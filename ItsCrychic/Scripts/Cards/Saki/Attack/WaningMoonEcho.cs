@@ -1,7 +1,7 @@
-using BangDreamLib.Scripts.Extensions;
-using BangDreamLib.Scripts.Interfaces.CardAugment;
-using BangDreamLib.Scripts.Mechanics.MusicNote;
-using BangDreamLib.Scripts.Utils;
+using BangDreamInSpire.Scripts.Extensions;
+using BangDreamInSpire.Scripts.Interfaces.CardAugment;
+using BangDreamInSpire.Scripts.Mechanics.MusicNote;
+using BangDreamInSpire.Scripts.Utils;
 using ItsCrychic.Scripts.Power.Temporary;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;

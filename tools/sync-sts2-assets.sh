@@ -9,12 +9,12 @@
 # 本脚本负责把统一解包源里的这些目录同步进工程。
 #
 # 用法：
-#   tools/sync-sts2-assets.sh                        # 同步到 BangDreamLib
+#   tools/sync-sts2-assets.sh                        # 同步到 BangDreamInSpire
 #   tools/sync-sts2-assets.sh -n                     # dry-run，只打印会做什么
 #   tools/sync-sts2-assets.sh --check                # 只检查源是否可用，不落盘
 #   tools/sync-sts2-assets.sh -s /path/to/unpack     # 指定解包源
 #   tools/sync-sts2-assets.sh --version 0.112.0      # 指定版本目录
-#   tools/sync-sts2-assets.sh BangDreamLib ItsCrychic
+#   tools/sync-sts2-assets.sh BangDreamInSpire ItsCrychic
 #
 # 源解析顺序：-s/--source > $STS2_UNPACKED > 仓库同级的 ../sts2unpack。
 # 源可以是两种结构：
@@ -95,7 +95,7 @@ while (($#)); do
         *) PROJECTS+=("$1"); shift ;;
     esac
 done
-((${#PROJECTS[@]})) || PROJECTS=(BangDreamLib)
+((${#PROJECTS[@]})) || PROJECTS=(BangDreamInSpire)
 
 # ---------- 解析源目录 ----------
 [[ -d "$SOURCE" ]] || die "解包源不存在：$SOURCE

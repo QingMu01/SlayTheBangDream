@@ -83,7 +83,7 @@ grep -rn "MusicSlashVfx\|vfx_music_slash" --include=*.cs --include=*.tscn .
 **注意 `WithHitFx` 的路径解析规则**：游戏内走 `VfxCmd` → `SceneHelper.GetScenePath`，
 规则是 `"res://scenes/" + innerPath + ".tscn"`，解析到的是**游戏本体**的资源目录。
 所以 `WithHitFx("vfx/vfx_attack_slash")` 拿到的是原版斩击，**永远到不了 mod 自己的
-`res://BangDreamLib/scenes/vfx/...`**。想让某张卡用上自定义特效，必须走注入路径
+`res://BangDreamInSpire/scenes/vfx/...`**。想让某张卡用上自定义特效，必须走注入路径
 （如 `PreloadManager.Cache.GetScene(...)` + `AddChildSafely`），不能只改字符串。
 
 ## 3. 新增特效接入清单
@@ -109,14 +109,14 @@ grep -rn "MusicSlashVfx\|vfx_music_slash" --include=*.cs --include=*.tscn .
 
 ```bash
 # Godot 可执行文件取自 Directory.Build.props 的 <GodotExe>（单属性查询直接打印值）
-GODOT=$(dotnet msbuild BangDreamLib/BangDreamLib.csproj -getProperty:GodotExe)
+GODOT=$(dotnet msbuild BangDreamInSpire/BangDreamInSpire.csproj -getProperty:GodotExe)
 
 # 录成 PNG 序列（注意：--write-movie 与 --headless 不能同时用，headless 无渲染录不到画面）
 "$GODOT" \
-  --path BangDreamLib \
+  --path BangDreamInSpire \
   --write-movie "$PWD/.vfx_staging/rec/frame.png" \
   --fixed-fps 60 --quit-after 90 \
-  "res://BangDreamLib/scenes/vfx/<场景>.tscn"
+  "res://BangDreamInSpire/scenes/vfx/<场景>.tscn"
 
 # 合成 mp4 交付（本机 ffmpeg 可用）。部分发行版（如 Fedora）不打包 libx264，
 # 此时换 libopenh264（见下条要点，record.sh 会自动挑可用编码器）
@@ -164,7 +164,7 @@ ffmpeg -y -loglevel error -framerate 60 -i frame%08d.png \
    > `required_review`（未知证据不会被当作通过），以及 `effective_constraints` 里候选池是否被截断。
 2. `get_asset_group_preview` 读取图集的切分参数（行列数、单帧尺寸）——**这是设置 `hframes`/`vframes` 的唯一依据**，不要目测。
 3. `export_assets` 导出到项目外的临时目录（如 `.vfx_staging`），**不要在资产库内改名**。每个资产的导出子目录里会附带 `_provenance.json`（uuid / 名称 / 标签 / 描述 / 逐文件 hash），这是溯源依据。
-4. 复制进 `BangDreamLib/BangDreamLib/images/vfx/<特效名>/` 并重命名为语义化文件名（`music_slash_main.png` 而非 `fx_301403_tex_002.png`）。资产库中的数字名对项目无意义，语义名才便于后续维护。
+4. 复制进 `BangDreamInSpire/BangDreamInSpire/images/vfx/<特效名>/` 并重命名为语义化文件名（`music_slash_main.png` 而非 `fx_301403_tex_002.png`）。资产库中的数字名对项目无意义，语义名才便于后续维护。
 5. 运行 `--headless --import` 让引擎生成 `.import` 与 uid，**不要手写 uid**。手写的 uid 不保证合法，且可能与全库冲突。
 6. 场景里引用资源用**引擎生成的 uid**（从 `.import` 的 `uid=` 行读），`path=` 同时保留作可读性兜底。
 7. **复制进工程之前先做本体归属校验**（见 4.1）：命中本体的素材**不复制**，改为直接引用本体 uid。
@@ -187,7 +187,7 @@ python .agents/skills/vfx-authoring/scripts/check_asset_origin.py <导出目录>
 | `LOCAL` | 本体里没有对应图 | 按上面第 2–4 步复制进 `images/vfx/<特效名>/`、导入、取 uid |
 | `REVIEW` | 与本体某张图**同尺寸且感知哈希接近**（疑似在本体图上改绘） | 人工判定后，按上两条之一处理 |
 
-- 本体根缺省为 `BangDreamLib/images`（编辑器同步目录，其 `.import` 里的 uid 就是本体 uid）；也可 `--body-root ../sts2unpack/<版本>` 指向解包源。
+- 本体根缺省为 `BangDreamInSpire/images`（编辑器同步目录，其 `.import` 里的 uid 就是本体 uid）；也可 `--body-root ../sts2unpack/<版本>` 指向解包源。
 - 引用本体要求编辑器工程里已同步本体资源：新克隆先跑 `tools/sync-sts2-assets.sh`。
 - **特效目录不再产出 `README.md` / `SOURCES.md`**；来源凭据（库内 uuid/名称、语义名、用途、校验判定）写进 `.vfx_staging/plans/<slug>.md`。
 
@@ -259,20 +259,20 @@ python .agents/skills/vfx-authoring/scripts/check_asset_origin.py <导出目录>
 
 ```bash
 # 从 Directory.Build.props 读 Godot 与本体数据目录（单属性查询直接打印值）
-GODOT=$(dotnet msbuild BangDreamLib/BangDreamLib.csproj -getProperty:GodotExe)
-STS2_DATA=$(dotnet msbuild BangDreamLib/BangDreamLib.csproj -getProperty:Sts2DataDir)
+GODOT=$(dotnet msbuild BangDreamInSpire/BangDreamInSpire.csproj -getProperty:GodotExe)
+STS2_DATA=$(dotnet msbuild BangDreamInSpire/BangDreamInSpire.csproj -getProperty:Sts2DataDir)
 
 # 编译（改完脚本先过这一步）；部署到仓库内 bin/BuildDeploy，避免写 Steam 安装目录
-dotnet build BangDreamLib/BangDreamLib.csproj -c Debug \
+dotnet build BangDreamInSpire/BangDreamInSpire.csproj -c Debug \
   -p:Sts2Dir="$PWD/bin/BuildDeploy" -p:Sts2DataDir="$STS2_DATA"
 
 # 无头运行单个特效场景，检查脚本异常（F6 等价）
 "$GODOT" --headless \
-  --path BangDreamLib --quit-after 120 "res://BangDreamLib/scenes/vfx/<场景>.tscn"
+  --path BangDreamInSpire --quit-after 120 "res://BangDreamInSpire/scenes/vfx/<场景>.tscn"
 
 # 无头加载编辑器，检查场景/资源导入错误
 "$GODOT" --headless --editor \
-  --path BangDreamLib --quit-after 150
+  --path BangDreamInSpire --quit-after 150
 ```
 
 以上两条命令加 `| grep -iE "error|script error|failed"`，**无输出即通过**。注意 `--headless --editor` 不会把新场景的 uid 回写进 `.tscn`；没有引擎生成的场景 uid 时保留 path 引用，由编辑器保存生成后再记录，不能手写或猜测 uid。
@@ -309,7 +309,7 @@ alpha 从 0 涨到 `A0`，并在 `x` 被 clamp 到 1 后**永久停在 A0**。�
 **三、`CanvasItemMaterial`（ADD）+ 紫色 `modulate` 染「烘焙了颜色」的贴图会偏红。** 2D 加法混合在线性空间做乘法，
 粉色边 × 蓝紫 modulate 会压出偏红的灰紫，看起来像「粉色残留边」——实测把一段粉边斩光染蓝紫时，
 红偏像素从 1432 个降到 99 个的关键就是不再用 modulate 染色，改为 shader 里用**亮度重建颜色**
-（`glow_color * max(r,g,b)`）再 `blend_add` 输出（参考 `BangDreamLib/shaders/strike_sakiko_glow.gdshader`）。
+（`glow_color * max(r,g,b)`）再 `blend_add` 输出（参考 `BangDreamInSpire/shaders/strike_sakiko_glow.gdshader`）。
 纯白/灰阶贴图可以直接 modulate，**带颜色的贴图不要**。
 
 **四、辉光层若固定用主帧贴图，主帧消失后会留下一整块刀影。** 辉光层应跟随主层**逐帧换同一张序列帧**，

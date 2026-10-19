@@ -17,14 +17,14 @@
 
 | 目录 / 类型 | 性质 | 能否按孤儿规则删 | 依据 |
 |---|---|---|---|
-| `BangDreamLib/{addons,animations,fonts,images,materials,models,scenes,shaders,themes,src}/**` | 本体同步（`tools/sync-sts2-assets.sh` 生成，gitignore） | **禁止**。要重建就整目录跑 sync 脚本 | `.gitignore:17-25`、`tools/sync-sts2-assets.sh:62`、`BangDreamLib/export_presets.cfg:11`、`AGENTS.md` 项目结构节 |
-| `BangDreamLib/.godot/**`、`ItsCrychic/.godot/**` | 引擎缓存（可再生） | 默认可删，**但其中有 4 个手写文件必须先迁出**（见 `references/keep-list.md`） | `.gitignore:11` |
+| `BangDreamInSpire/{addons,animations,fonts,images,materials,models,scenes,shaders,themes,src}/**` | 本体同步（`tools/sync-sts2-assets.sh` 生成，gitignore） | **禁止**。要重建就整目录跑 sync 脚本 | `.gitignore:17-25`、`tools/sync-sts2-assets.sh:62`、`BangDreamInSpire/export_presets.cfg:11`、`AGENTS.md` 项目结构节 |
+| `BangDreamInSpire/.godot/**`、`ItsCrychic/.godot/**` | 引擎缓存（可再生） | 默认可删，**但其中有 4 个手写文件必须先迁出**（见 `references/keep-list.md`） | `.gitignore:11` |
 | `bin/**` | 构建产物 | 可删，**但 `bin/spine-godot-extension-*` 是官方扩展，删了要重新下载** | `.gitignore:8`、`Directory.Build.targets:10-19` |
 | `.vfx_staging/**` | 录帧/导出/计划/审计快照（**临时目录，随时可能被整体清理**） | 可删；扫描快照与签字用的 `decisions.tsv` 都是易失产物，**长期留档只认 `docs/cleanup-log.md`** | `.gitignore:14` |
-| `BangDreamLib/BangDreamLib/**`、`ItsCrychic/ItsCrychic/**` | **mod 自有真资源**（入库、进 pck） | 按引用图判定 | 两个 `export_presets.cfg` 未排除 |
-| `BangDreamLib/Scripts/**`、`ItsCrychic/Scripts/**` | mod 自有代码（`.cs` + `.cs.uid` 成对） | 按引用图判定 | 各 csproj |
+| `BangDreamInSpire/BangDreamInSpire/**`、`ItsCrychic/ItsCrychic/**` | **mod 自有真资源**（入库、进 pck） | 按引用图判定 | 两个 `export_presets.cfg` 未排除 |
+| `BangDreamInSpire/Scripts/**`、`ItsCrychic/Scripts/**` | mod 自有代码（`.cs` + `.cs.uid` 成对） | 按引用图判定 | 各 csproj |
 | `*.import` / `*.uid` | 引擎生成，但**必须随源一起提交** | 不可单独删；源删则同批删 | `docs/vfx-authoring.md:171-172` |
-| `BangDreamLib.json` / `ItsCrychic.json` | mod loader 入口清单 | 必须保留 | csproj `Content Include` |
+| `BangDreamInSpire.json` / `ItsCrychic.json` | mod loader 入口清单 | 必须保留 | csproj `Content Include` |
 | `docs/**`、`tools/**`、`.agents/**` | 工程文档与工具 | 按引用图判定 | —— |
 
 **打包边界不构成过时判据**：两个工程的 `export_presets.cfg` 都是 `export_filter="all_resources"`，mod 自有目录里的文件**即使无人引用也会被无条件打进 pck**。所以「游戏里没出现」不能说明文件过时，只能靠引用图。
@@ -38,7 +38,7 @@
 | 1 | **字面 `res://` 路径** | `ext_resource ... path="res://ItsCrychic/..."` | —— |
 | 2 | **uid 引用** | `uid="uid://by15p1sy5ryvu"` | 实测 8582 条 `ext_resource` 中 uid-only 为 **0** 条，path-only 有 **1962 条（22.9%）** → 只按 uid 找会漏 23%，只按 path 找当前不漏但不能长期依赖 |
 | 3 | **命名约定引用** | 卡图 `<类名>.png`、升级图 `_Bate.png`、音乐牌共享图（`XSakiko` → `X.png`）、圣物图、`mod_image.png`、`.atlas` 内的裸文件名 | **删了不报错，只静默回退默认立绘**——最危险的一类 |
-| 4 | **跨工程引用** | `ItsCrychic` 里字面引用 `res://BangDreamLib/scenes/vfx/flying_music_note_default.tscn`（`MultiplayerVfx.MusicNote`） | 只看单工程会误判为断链/孤儿 |
+| 4 | **跨工程引用** | `ItsCrychic` 里字面引用 `res://BangDreamInSpire/scenes/vfx/flying_music_note_default.tscn`（`MultiplayerVfx.MusicNote`） | 只看单工程会误判为断链/孤儿 |
 | 5 | **JSON 字符串引用** | `skins/*/*.json` 的 `StartingRelics` / 牌组用 entry 字符串（如 `ITS_CRYCHIC_RELIC_SAKIKO_SPECIAL_RULES`） | 删 Relic/卡后 skin 挂空 |
 | 6 | **反射 / 特性注册** | 见第 4 节 | 删了可能让游戏启动崩或功能静默失效 |
 
@@ -49,14 +49,14 @@
 模型类走**双轨**注册，缺一不可：
 
 1. **RitsuLib 特性继承注册**：`AbstractSakikoCard.cs:9`（`[RegisterCard(typeof(SakikoStandardCardPool), Inherit = true)]`）、`AbstractMutsumiCard.cs:9`、`AbstractSakikoMusicCard.cs:11`、`BandPowerModel.cs:8`、`BandTemporaryPowerModel.cs:6`、`AbstractSakikoRelic.cs:7`、`AbstractMutsumiRelic.cs:7`；Token 卡自标（`Cards/Token/BasicScale.cs:15`）。
-2. **游戏无条件反射注入**：`BangDreamLib/src/Core/Models/ModelDb.cs:68-87` 汇总 `ReflectionHelper.GetSubtypesInMods<AbstractModel>()`（`src/Core/Helpers/ReflectionHelper.cs:60-63`＝模组程序集里**全部非抽象子类**），`ModelDb.Init`（`ModelDb.cs:423-431`）逐个 `Activator.CreateInstance`。
+2. **游戏无条件反射注入**：`BangDreamInSpire/src/Core/Models/ModelDb.cs:68-87` 汇总 `ReflectionHelper.GetSubtypesInMods<AbstractModel>()`（`src/Core/Helpers/ReflectionHelper.cs:60-63`＝模组程序集里**全部非抽象子类**），`ModelDb.Init`（`ModelDb.cs:423-431`）逐个 `Activator.CreateInstance`。
 
 结论与推论：
 
 - card / power / relic 类**不可能**靠「无引用」判死；特性只决定「进哪个池」「有没有模组前缀 ID」。
 - 一个无人引用的模型类仍然活着并占用 entry（如 `RhapsodyRequestPower`）——删它不会崩，但要连同 `powers.json` 僵尸键一起处理。
 - 反过来，**带必填构造参数的「死」model 类会让启动崩**，这是删除模型类时必须构建验证的原因。
-- 其他反射入口同样零引用但活着：`IBangDreamMechanic`（`BangDreamLibCore.cs:45` → `BangDreamMechanicRegistry.Discover`）、`AbstractConsoleCmd`（游戏 `src/Core/DevConsole/DevConsole.cs:33`）、`IPatchMethod`（同文件 `IModPatches.AddTo` 泛型注册）、`static class` 扩展类（按方法名调用）、`EnsureGodotScriptsRegistered`（`BangDreamLibCore.cs:28`、`ItsCrychic.cs:26`）。
+- 其他反射入口同样零引用但活着：`IBangDreamMechanic`（`BangDreamInSpireCore.cs:45` → `BangDreamMechanicRegistry.Discover`）、`AbstractConsoleCmd`（游戏 `src/Core/DevConsole/DevConsole.cs:33`）、`IPatchMethod`（同文件 `IModPatches.AddTo` 泛型注册）、`static class` 扩展类（按方法名调用）、`EnsureGodotScriptsRegistered`（`BangDreamInSpireCore.cs:28`、`ItsCrychic.cs:26`）。
 
 **池归属不能按名字或文档猜**：`AbstractMutsumiCard.cs:9` 把标准卡注册进了额外牌堆 `MutsumiMusicalCardPool`，而 `WakabaMutsumi.cs:18` 的标准池是 `MutsumiStandardCardPool` —— 这类问题在清理时会被误当成「文件没用」，实际是接线错误。
 
@@ -116,7 +116,7 @@
 
 ## 7. 安全域（禁止直接删，或必须先迁移）
 
-- 本体同步目录与 `BangDreamLib/src/**`（解包游戏源码，3508 个 `.cs`）。
+- 本体同步目录与 `BangDreamInSpire/src/**`（解包游戏源码，3508 个 `.cs`）。
 - `*.import` / `*.uid` 单独删除（必须与源同批）。
 - `.godot/` 内的手写文件（`polka_probe.gd`、`polka_rebuild_check.gd`、`polka_long.tscn`、`polka_short.tscn`）——应先迁出 `.godot` 再加白名单，否则「删缓存重开编辑器」会连带丢失。
 - `bin/spine-godot-extension-*`。

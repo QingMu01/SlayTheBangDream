@@ -1,6 +1,6 @@
-using BangDreamLib.Scripts.Interfaces.CardAugment;
-using BangDreamLib.Scripts.Mechanics.MusicNote;
-using BangDreamLib.Scripts.Utils;
+using BangDreamInSpire.Scripts.Interfaces.CardAugment;
+using BangDreamInSpire.Scripts.Mechanics.MusicNote;
+using BangDreamInSpire.Scripts.Utils;
 using ItsCrychic.Scripts.Character;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;

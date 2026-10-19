@@ -14,11 +14,11 @@
 ## 2. 脚本骨架（照抄这个结构）
 
 ```csharp
-using BangDreamLib.Scripts.Utils;
+using BangDreamInSpire.Scripts.Utils;
 using Godot;
 using MegaCrit.Sts2.Core.Helpers;
 
-namespace BangDreamLib.Scripts.Nodes.VFX;
+namespace BangDreamInSpire.Scripts.Nodes.VFX;
 
 [Tool]
 public partial class MusicBurstSparkVfx : Node2D
@@ -124,7 +124,7 @@ public partial class MusicBurstSparkVfx : Node2D
 
 ## 3. 压黑 shader（黑底素材必需）
 
-`BangDreamLib/shaders/crush_add.gdshader`：
+`BangDreamInSpire/shaders/crush_add.gdshader`：
 
 ```glsl
 shader_type canvas_item;
@@ -217,19 +217,19 @@ grep -rn "MusicBurstSparkVfx\|vfx_music_burst_spark" --include=*.cs --include=*.
 
 只命中定义文件本身 = **孤儿特效**，游戏里永远不会触发。
 
-**`WithHitFx` 的坑**：游戏内走 `VfxCmd` → `SceneHelper.GetScenePath`，规则是 `"res://scenes/" + innerPath + ".tscn"`，解析到**游戏本体**资源目录。所以 `WithHitFx("vfx/xxx")` 拿到的是原版特效，**永远到不了 mod 自己的 `res://BangDreamLib/scenes/vfx/...`**。要让某张卡用上自定义特效，必须走注入路径（`PreloadManager.Cache.GetScene(...)` + `AddChildSafely`），不能只改字符串。
+**`WithHitFx` 的坑**：游戏内走 `VfxCmd` → `SceneHelper.GetScenePath`，规则是 `"res://scenes/" + innerPath + ".tscn"`，解析到**游戏本体**资源目录。所以 `WithHitFx("vfx/xxx")` 拿到的是原版特效，**永远到不了 mod 自己的 `res://BangDreamInSpire/scenes/vfx/...`**。要让某张卡用上自定义特效，必须走注入路径（`PreloadManager.Cache.GetScene(...)` + `AddChildSafely`），不能只改字符串。
 
 ## 8. 编译与无头验证
 
 ```bash
 # 从 Directory.Build.props 读 Godot 与本体数据目录（单属性查询直接打印值）
-STS2_DATA=$(dotnet msbuild BangDreamLib/BangDreamLib.csproj -getProperty:Sts2DataDir)
+STS2_DATA=$(dotnet msbuild BangDreamInSpire/BangDreamInSpire.csproj -getProperty:Sts2DataDir)
 
-dotnet build BangDreamLib/BangDreamLib.csproj -c Debug \
+dotnet build BangDreamInSpire/BangDreamInSpire.csproj -c Debug \
   -p:Sts2Dir="$PWD/bin/BuildDeploy" -p:Sts2DataDir="$STS2_DATA"
 
 "$GODOT" --headless \
-  --path BangDreamLib --quit-after 120 "res://BangDreamLib/scenes/vfx/<场景>.tscn"
+  --path BangDreamInSpire --quit-after 120 "res://BangDreamInSpire/scenes/vfx/<场景>.tscn"
 ```
 
 **这两条只证明"没有报错"，不证明"看起来对"。** 调观感必须录帧——见 [SKILL.md](../SKILL.md) 的 S5。
@@ -244,7 +244,7 @@ dotnet build BangDreamLib/BangDreamLib.csproj -c Debug \
 | `Sentry GDExtension not loaded` | 无头/录制运行的常规提示 |
 | `ERROR: Error opening file 'res://icon.svg'` | `project.godot` 引用了不存在的图标，**既有问题**，与特效无关 |
 
-**BangDreamLib 的清屏色是灰 75（RGB 75/255），不是黑。** 这一点会影响两件事：
+**BangDreamInSpire 的清屏色是灰 75（RGB 75/255），不是黑。** 这一点会影响两件事：
 
 1. 判断"某元素是否消失"时，背景不是黑而是灰，亮度采样与肉眼观感都不同；
 2. `verify_frames.py` 用**众数自适应**背景，黑底与灰底都能正确处理，无需手工传阈值。

@@ -5,7 +5,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\BangDreamLib\BangDreamLib.csproj"/>
+        <ProjectReference Include="..\BangDreamInSpire\BangDreamInSpire.csproj"/>
     </ItemGroup>
 
     <ItemGroup>

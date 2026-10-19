@@ -5,16 +5,21 @@ Slay the Spire 2 模组项目：两个 C# 项目，使用 Godot.NET.Sdk/4.5.1 + 
 ## 项目结构
 
 ```
-BangDreamInSpire.sln
-├── BangDreamLib/     — 共享前置库（依赖 游戏本体 sts2.dll 与 STS2-RitsuLib）
-├── ItsCrychic/       — 角色模组合集（依赖 BangDreamLib）
-├── tools/            — sync-sts2-assets.sh（同步本体解包资源）
-├── docs/             — 项目级规范（卡牌 / 机制 / 特效 / 清理）
-└── .agents/skills/   — 工作流 skill（card-development、vfx-authoring、obsolete-file-cleanup），已入库
+SlayTheBangDream.sln          — 企划总解决方案（两个模组一起构建）
+├── BangDreamInSpire/         — 核心模组：前置依赖（组件 / 机制 / 特效）+ 新层级与新怪物
+│   └── BangDreamInSpire.sln  — 只构建核心模组
+├── ItsCrychic/               — 角色内容模组（祥子、睦、灯、立希、素世），依赖 BangDreamInSpire
+│   └── ItsCrychic.sln        — 只构建角色模组
+├── tools/                    — sync-sts2-assets.sh（同步本体解包资源）
+├── docs/                     — 项目级规范（卡牌 / 机制 / 特效 / 清理）
+└── .agents/skills/           — 工作流 skill（card-development、vfx-authoring、obsolete-file-cleanup），已入库
 ```
 
+企划名 **SlayTheBangDream**；两个 mod 的 id 分别是 `BangDreamInSpire`（核心）与 `ItsCrychic`（角色）。
+mod id 是存档与本地化键的前缀（`BANG_DREAM_IN_SPIRE_*` / `ITS_CRYCHIC_*`），**改名等于破坏性变更**，不要随手动。
+
 C# 代码位于各项目的 `Scripts/` 目录下，Godot 资源（图片、场景、本地化 JSON）位于以 mod-id 命名的子文件夹中（如
-`BangDreamLib/BangDreamLib/`、`ItsCrychic/ItsCrychic/`）。
+`BangDreamInSpire/BangDreamInSpire/`、`ItsCrychic/ItsCrychic/`）。
 
 **三类资源目录必须分清**：
 
@@ -22,7 +27,7 @@ C# 代码位于各项目的 `Scripts/` 目录下，Godot 资源（图片、场�
 - **美术资产**：`**/images/**`、`mod_image.png`、Spine 的 `.skel` / `.atlas` / `skeleton.png` 及其 `.import`，
   因**分发合规不入库**，只保留在本机。新克隆必须另行获取并放回对应路径，否则编辑器里图片引用显示缺失
   （C# 编译不受影响）。不要为了「让仓库完整」把它们加回 git，`.gitignore` 已显式排除。
-- **本体资源**：`BangDreamLib/{images,scenes,animations,fonts,materials,models,shaders,themes,addons/mega_text}`，
+- **本体资源**：`BangDreamInSpire/{images,scenes,animations,fonts,materials,models,shaders,themes,addons/mega_text}`，
   由 `tools/sync-sts2-assets.sh` 从解包源同步；已被 `.gitignore` 忽略、只服务编辑器、被 `export_presets.cfg`
   的 `exclude_filter` 挡在 pck 之外。场景按**本体 uid**（`res://images/...`）引用它们，**新克隆必须先跑该脚本**，
   否则编辑器里这些引用会显示资源缺失。
@@ -51,14 +56,14 @@ C# 代码位于各项目的 `Scripts/` 目录下，Godot 资源（图片、场�
   XML 文档在 NuGet 包内：`~/.nuget/packages/sts2.ritsulib/0.5.20/lib/net9.0/STS2-RitsuLib.xml`。
   上游同时支持本体双版本，因此**工程统一引用同一版本、不按分支切换**；双版本差异只在游戏本体侧（见「分支与游戏版本」）。
 - **游戏本体**：`sts2.dll` 的同名 XML 文档在本体安装目录
-  （`cd BangDreamLib && dotnet msbuild BangDreamLib.csproj -getProperty:Sts2DataDir`）。
+  （`cd BangDreamInSpire && dotnet msbuild BangDreamInSpire.csproj -getProperty:Sts2DataDir`）。
   查本体实现读解包源 `../sts2unpack/<版本>/src`（当前 0.111.0；可用 `$STS2_UNPACKED` 覆盖，或用
   `tools/sync-sts2-assets.sh -s` 指定）。
 
 ## 关键约定
 
-- **命名空间**与 `Scripts/` 下目录结构完全对应，且第一段等于 mod 目录名（`BangDreamLib` / `ItsCrychic`）；卡图路径依赖它，写错会静默回退默认立绘（见 `docs/card-authoring.md` 第 1.1 节）
-- **抽象类命名**：`ItsCrychic` 的角色卡 / 圣物基类用 `Abstract` 前缀（`AbstractSakikoCard` 等，见 `docs/card-authoring.md` 第 1.1 节）；`BangDreamLib` 的共享抽象类**不带**前缀（`BandCardModel`、`MusicCardModel`、`BandPowerModel`、`BandRelicModel`、`BandTemporaryPowerModel`、`HiddenRelic`、`BandMemberModel`）
+- **命名空间**与 `Scripts/` 下目录结构完全对应，且第一段等于 mod 目录名（`BangDreamInSpire` / `ItsCrychic`）；卡图路径依赖它，写错会静默回退默认立绘（见 `docs/card-authoring.md` 第 1.1 节）
+- **抽象类命名**：`ItsCrychic` 的角色卡 / 圣物基类用 `Abstract` 前缀（`AbstractSakikoCard` 等，见 `docs/card-authoring.md` 第 1.1 节）；`BangDreamInSpire` 的共享抽象类**不带**前缀（`BandCardModel`、`MusicCardModel`、`BandPowerModel`、`BandRelicModel`、`BandTemporaryPowerModel`、`HiddenRelic`、`BandMemberModel`）
 - 项目全局启用 `<Nullable>enable</Nullable>`、`<LangVersion>13.0</LangVersion>`、`<ImplicitUsings>true</ImplicitUsings>`
 - 保持程序风格一致
 - 执行修改任务前，先定制修改方案再进行修改工作
@@ -71,11 +76,11 @@ C# 代码位于各项目的 `Scripts/` 目录下，Godot 资源（图片、场�
 ## 本地化
 
 - 当修改Card，Power或者Relic时需要同步修改其本地化文件。
-- JSON 文件位于 `BangDreamLib/BangDreamLib/localization/zhs/` 和 `ItsCrychic/ItsCrychic/localization/zhs/`，是运行时加载的资源文件。
+- JSON 文件位于 `BangDreamInSpire/BangDreamInSpire/localization/zhs/` 和 `ItsCrychic/ItsCrychic/localization/zhs/`，是运行时加载的资源文件。
 - `固有`、`消耗`、`虚无`等关键字由游戏自动添加说明，无需主动在本地化文件中添加。
 
 
 ## 游戏钩子
 
 - 原版游戏提供`Hook`类（`MegaCrit.Sts2.Core.Hooks.Hook`）统一处理游戏事件
-- `BangDreamLib` 通过`BangDreamHook`类处理一系列自定义 Hook 接口（在`Scripts/Interfaces/GameHook/` 下）供模组实现自定义游戏行为。
+- `BangDreamInSpire` 通过`BangDreamHook`类处理一系列自定义 Hook 接口（在`Scripts/Interfaces/GameHook/` 下）供模组实现自定义游戏行为。

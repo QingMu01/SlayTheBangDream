@@ -1,4 +1,4 @@
-using BangDreamLib.Scripts.Powers;
+using BangDreamInSpire.Scripts.Powers;
 using ItsCrychic.Scripts.Cards.Saki.Attack;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Creatures;

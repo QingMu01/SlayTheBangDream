@@ -1,4 +1,4 @@
-using BangDreamLib.Scripts.Utils;
+using BangDreamInSpire.Scripts.Utils;
 using ItsCrychic.Scripts.Cards.Token;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;

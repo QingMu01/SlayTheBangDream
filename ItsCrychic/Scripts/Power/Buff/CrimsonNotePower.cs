@@ -1,5 +1,5 @@
-using BangDreamLib.Scripts.Mechanics.MusicNote;
-using BangDreamLib.Scripts.Powers;
+using BangDreamInSpire.Scripts.Mechanics.MusicNote;
+using BangDreamInSpire.Scripts.Powers;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Powers;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
