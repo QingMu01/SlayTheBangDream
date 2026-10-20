@@ -12,6 +12,7 @@ using MegaCrit.Sts2.Core.Multiplayer.Game;
 using MegaCrit.Sts2.Core.Multiplayer.Game.Lobby;
 using MegaCrit.Sts2.Core.Nodes.Screens.CharacterSelect;
 using MegaCrit.Sts2.Core.Saves;
+using STS2RitsuLib;
 
 namespace BangDreamInSpire.Scripts.Nodes;
 
@@ -227,10 +228,10 @@ public partial class BangDreamCharacterSelector : Control
             _goldLabel.Text = character.StartingGold.ToString();
         }
 
-        if (character.StartingRelics.Count > 0)
+        var visibleRelic = character.StartingRelics.FirstOrDefault(RitsuLibFramework.IsRelicVisible);
+        if (visibleRelic != null)
         {
-            var relic = character.StartingRelics[0];
-            SetRelicShow(relic);
+            SetRelicShow(visibleRelic);
         }
 
         if (_delegate != null && _sourceButton != null)
@@ -332,11 +333,13 @@ public partial class BangDreamCharacterSelector : Control
     }
 
     /// <summary>
-    /// 乐队色负责舞台（背景、立绘底、书签），成员色负责个人信息（罗马音、纹章、细节），
-    /// 过亮的乐队色先压暗再作为文字/描边色使用。
+    /// 立绘舞台/色卡用角色主题色，乐队色负责品牌点缀（标签、分隔线、描边、按钮），
+    /// 过亮的颜色先压暗再作为文字/描边色使用。
     /// </summary>
     private void ApplyAccent(Color bandColor, Color accentColor, Color memberColor)
     {
+        var memberAccent = memberColor.ToAccentColor();
+
         _accentTween?.Kill();
         _accentTween = CreateTween()
             .SetParallel()
@@ -345,7 +348,7 @@ public partial class BangDreamCharacterSelector : Control
 
         if (_showBg?.Material is ShaderMaterial material)
         {
-            _accentTween.TweenProperty(material, $"shader_parameter/{BgColorShaderParameter}", bandColor,
+            _accentTween.TweenProperty(material, $"shader_parameter/{BgColorShaderParameter}", memberColor,
                 AccentTransitionDuration);
         }
 
@@ -362,7 +365,7 @@ public partial class BangDreamCharacterSelector : Control
 
         if (_posterBackdrop != null)
         {
-            _accentTween.TweenProperty(_posterBackdrop, "color", WithAlpha(accentColor, 0.22f),
+            _accentTween.TweenProperty(_posterBackdrop, "color", WithAlpha(memberAccent, 0.22f),
                 AccentTransitionDuration);
         }
 
@@ -540,7 +543,8 @@ public partial class BangDreamCharacterSelector : Control
 
     private void OnSelectedSkin(string skinPath)
     {
-        var startingRelic = SkinManager.GetSkinInfo(skinPath)?.GetStartingRelics().FirstOrDefault();
+        var startingRelic = SkinManager.GetSkinInfo(skinPath)?.GetStartingRelics()
+            .FirstOrDefault(RitsuLibFramework.IsRelicVisible);
         if (startingRelic != null)
         {
             SetRelicShow(startingRelic);

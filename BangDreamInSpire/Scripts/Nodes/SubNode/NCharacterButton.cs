@@ -10,17 +10,12 @@ using STS2RitsuLib.Ui.Toast;
 namespace BangDreamInSpire.Scripts.Nodes.SubNode;
 
 /// <summary>
-/// 角色选择页贴在卡片上缘的「书签」成员标签：成员色底 + 立绘裁脸 + 名字 / 职业，
+/// 角色选择页压在卡片下缘的「书签」成员标签：成员色底 + 角色代表物纹章 + 名字 / 职业，
 /// 选中时整体向上抽出并补一道白色描边。
 /// </summary>
 public partial class NCharacterButton : Button
 {
     public static readonly Vector2 CardSize = new(84f, 104f);
-
-    /// <summary>
-    /// 立绘为 1800x2160 的全身图，人物脸部大致落在画布 33%~67% 宽、3%~37% 高 的范围内。
-    /// </summary>
-    private static readonly Rect2 FaceRegionRatio = new(0.33f, 0.03f, 0.34f, 0.34f);
 
     private const string MessagePrefixKey = "BANG_DREAM_IN_SPIRE_CHARACTER_CANT_SELECT_";
 
@@ -35,7 +30,7 @@ public partial class NCharacterButton : Button
     private BangDreamCharacterSelector? _parent;
 
     private Panel? _tab;
-    private TextureRect? _face;
+    private TextureRect? _icon;
     private Label? _nameLabel;
     private Label? _classLabel;
 
@@ -77,7 +72,7 @@ public partial class NCharacterButton : Button
         _originalPosition = Position;
 
         _tab = GetNode<Panel>("Tab");
-        _face = GetNode<TextureRect>("FaceClip/Face");
+        _icon = GetNode<TextureRect>("%Icon");
         _nameLabel = GetNode<Label>("%Name");
         _classLabel = GetNode<Label>("%Class");
 
@@ -85,7 +80,7 @@ public partial class NCharacterButton : Button
         if (Character is { } character)
         {
             memberColor = character.NameColor;
-            ApplyFace(character);
+            ApplyIcon(character);
             _nameLabel.Text = new LocString("characters", character.CharacterSelectTitle).GetFormattedText();
             if (character is IBangDreamMateData mateData)
             {
@@ -112,34 +107,22 @@ public partial class NCharacterButton : Button
     }
 
     /// <summary>
-    /// 用立绘的脸部区域做头像，省掉为每个角色单独维护一张头像图。
+    /// 用角色代表物（SelectLogo 纹章）做标签图标，替换原来的立绘裁脸。
     /// </summary>
-    private void ApplyFace(CharacterModel character)
+    private void ApplyIcon(CharacterModel character)
     {
-        if (_face == null
-            || character is not IBangDreamMateData { SelectPoster: { } posterPath }
-            || string.IsNullOrWhiteSpace(posterPath)
-            || !ResourceLoader.Exists(posterPath))
+        if (_icon == null || character is not IBangDreamMateData { SelectLogo: { } logoPath })
         {
             return;
         }
 
-        var texture = BangDreamPreloadManager.GetTexture2D(posterPath);
-        var size = texture.GetSize();
-        if (size.X <= 0f || size.Y <= 0f)
+        var texture = BangDreamCharacterSelector.LoadTexture(logoPath);
+        if (texture == null)
         {
             return;
         }
 
-        _face.Texture = new AtlasTexture
-        {
-            Atlas = texture,
-            Region = new Rect2(
-                size.X * FaceRegionRatio.Position.X,
-                size.Y * FaceRegionRatio.Position.Y,
-                size.X * FaceRegionRatio.Size.X,
-                size.Y * FaceRegionRatio.Size.Y)
-        };
+        _icon.Texture = texture;
     }
 
     private void BuildTabStyles(Color memberColor)
@@ -180,6 +163,11 @@ public partial class NCharacterButton : Button
         {
             _classLabel.AddThemeColorOverride("font_color",
                 new Color(textColor.R, textColor.G, textColor.B, 0.8f));
+        }
+
+        if (_icon != null)
+        {
+            _icon.Modulate = textColor;
         }
     }
 

@@ -9,6 +9,7 @@ using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Multiplayer.Game.Lobby;
+using STS2RitsuLib;
 
 namespace BangDreamInSpire.Scripts.Nodes;
 
@@ -308,9 +309,11 @@ public partial class BangDreamCharacterDetailsPopup : Control
         var deck = skinInfo != null
             ? skinInfo.GetStartingDeck().ToList()
             : _character.StartingDeck.ToList();
-        var relics = skinInfo != null
-            ? skinInfo.GetStartingRelics().ToList()
-            : _character.StartingRelics.ToList();
+        IEnumerable<RelicModel> relicSource = skinInfo != null
+            ? skinInfo.GetStartingRelics()
+            : _character.StartingRelics;
+        // 隐藏遗物（如“角色专属规则”这类只做逻辑的遗物）不出现在详情页。
+        var relics = relicSource.Where(RitsuLibFramework.IsRelicVisible).ToList();
         var extraDeck = skinInfo?.GetStartingExtraDeck().ToList() ?? [];
 
         RebuildCards(deck);
