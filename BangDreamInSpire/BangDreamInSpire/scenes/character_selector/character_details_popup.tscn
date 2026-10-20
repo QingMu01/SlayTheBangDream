@@ -187,8 +187,6 @@ text = "Key."
 horizontal_alignment = 1
 vertical_alignment = 1
 script = ExtResource("8_label")
-MaxFontSize = 15
-MinFontSize = 9
 
 [node name="BandLabel" type="Label" parent="Panel"]
 unique_name_in_owner = true
@@ -271,8 +269,6 @@ theme_override_fonts/font = ExtResource("5_fira")
 theme_override_font_sizes/font_size = 14
 text = "1 / 2"
 script = ExtResource("8_label")
-MaxFontSize = 14
-MinFontSize = 10
 
 [node name="ExtraLabel" type="Label" parent="Panel"]
 unique_name_in_owner = true

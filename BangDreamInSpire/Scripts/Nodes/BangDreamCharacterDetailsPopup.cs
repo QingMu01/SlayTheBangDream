@@ -67,6 +67,13 @@ public partial class BangDreamCharacterDetailsPopup : Control
 
     public bool IsOpen => Visible;
 
+    public override void _EnterTree()
+    {
+        // 见 BangDreamTools.ConfigureMegaText：Mega 导出属性写在 tscn 里会被编辑器保存时置空。
+        BangDreamTools.ConfigureMegaText(GetNodeOrNull<Control>("%ClassLabel"), maxFontSize: 15, minFontSize: 9);
+        BangDreamTools.ConfigureMegaText(GetNodeOrNull<Control>("%SkinIndex"), maxFontSize: 14, minFontSize: 10);
+    }
+
     public override void _Ready()
     {
         _scrim = GetNode<ColorRect>("%Scrim");

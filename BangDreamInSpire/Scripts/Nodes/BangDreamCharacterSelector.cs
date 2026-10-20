@@ -62,6 +62,7 @@ public partial class BangDreamCharacterSelector : Control
     private BangDreamRichTextLabel? _relicDescription;
     private ColorRect? _accentBar;
     private BangDreamAscensionPanel? _ascensionPanel;
+    private VBoxContainer? _content;
     private BangDreamCharacterDetailsPopup? _detailsPopup;
 
     private Tween? _posterTween;
@@ -80,6 +81,16 @@ public partial class BangDreamCharacterSelector : Control
 
     public BangDreamAscensionPanel AscensionPanel =>
         _ascensionPanel ?? throw new NullReferenceException("ascension panel is not init.");
+
+    public override void _EnterTree()
+    {
+        // MegaLabel 的自动缩放区间必须在子节点 _Ready 之前配好，否则 _Ready 会先按默认 8..100 算一遍字号。
+        BangDreamTools.ConfigureMegaText(GetNodeOrNull<Control>("%ClassLabel"), maxFontSize: 15, minFontSize: 9);
+        BangDreamTools.ConfigureMegaText(GetNodeOrNull<Control>("%HealthLabel"), maxFontSize: 28, minFontSize: 18);
+        BangDreamTools.ConfigureMegaText(GetNodeOrNull<Control>("%GoldLabel"), maxFontSize: 28, minFontSize: 18);
+        BangDreamTools.ConfigureMegaText(GetNodeOrNull<Control>("%Description"), maxFontSize: 19, minFontSize: 13, autoSize: false);
+        BangDreamTools.ConfigureMegaText(GetNodeOrNull<Control>("%RelicDescription"), maxFontSize: 17, minFontSize: 13, autoSize: false);
+    }
 
     public override void _Ready()
     {
@@ -103,14 +114,15 @@ public partial class BangDreamCharacterSelector : Control
         _divider1 = GetNode<ColorRect>("%Divider1");
         _divider2 = GetNode<ColorRect>("%Divider2");
         _description = GetNode<BangDreamRichTextLabel>("%Description");
-        _healthChip = GetNode<Panel>("ShowCharacterInfo/HealthChip");
+        _healthChip = GetNode<Panel>("%HealthChip");
         _healthLabel = GetNode<BangDreamLabel>("%HealthLabel");
-        _goldChip = GetNode<Panel>("ShowCharacterInfo/GoldChip");
+        _goldChip = GetNode<Panel>("%GoldChip");
         _goldLabel = GetNode<BangDreamLabel>("%GoldLabel");
         _relicIcon = GetNode<TextureRect>("%RelicIcon");
         _relicDescription = GetNode<BangDreamRichTextLabel>("%RelicDescription");
         _accentBar = GetNode<ColorRect>("%AccentBar");
         _ascensionPanel = GetNode<BangDreamAscensionPanel>("%AscensionPanel");
+        _content = GetNode<VBoxContainer>("ShowCharacterInfo/Content");
         _detailsPopup = GetNode<BangDreamCharacterDetailsPopup>("%CharacterDetailsPopup");
 
         _posterRestPosition = _characterPoster.Position;
@@ -148,6 +160,9 @@ public partial class BangDreamCharacterSelector : Control
 
         _ascensionPanel.Connect(BangDreamAscensionPanel.SignalName.AscensionLevelChanged,
             Callable.From(OnAscensionPanelLevelChanged));
+        // 进阶面板显示时内容列靠上（下方留给面板），隐藏时整列垂直居中，避免卡片下半部留空。
+        _ascensionPanel.VisibilityChanged += SyncContentAlignment;
+        SyncContentAlignment();
 
         _detailsButton.Pressed += OnDetailsButtonPressed;
         _detailsPopup.Connect(BangDreamCharacterDetailsPopup.SignalName.SkinChanged,
@@ -538,5 +553,17 @@ public partial class BangDreamCharacterSelector : Control
         {
             SetRelicShow(startingRelic);
         }
+    }
+
+    private void SyncContentAlignment()
+    {
+        if (_content == null)
+        {
+            return;
+        }
+
+        _content.Alignment = _ascensionPanel is { Visible: true }
+            ? BoxContainer.AlignmentMode.Begin
+            : BoxContainer.AlignmentMode.Center;
     }
 }

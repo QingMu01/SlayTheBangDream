@@ -1,6 +1,7 @@
 using BangDreamInSpire.Scripts.Interfaces.CardAugment;
 using BangDreamInSpire.Scripts.Interfaces.CharacterAugment;
 using Godot;
+using MegaCrit.Sts2.addons.mega_text;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;
 using STS2RitsuLib.Utils;
@@ -9,6 +10,28 @@ namespace BangDreamInSpire.Scripts.Utils;
 
 public static class BangDreamTools
 {
+    /// <summary>
+    /// 配置 MegaLabel / MegaRichTextLabel 的自动缩放区间。
+    /// 注意：不要把这些导出属性写进 .tscn —— 在编辑器里保存场景时 C# 导出属性会被写成 null，
+    /// 因此统一在父节点的 _EnterTree 中、子节点 _Ready 之前用代码配置。
+    /// </summary>
+    public static void ConfigureMegaText(Control? control, int maxFontSize, int minFontSize, bool autoSize = true)
+    {
+        switch (control)
+        {
+            case MegaLabel label:
+                label.AutoSizeEnabled = autoSize;
+                label.MaxFontSize = maxFontSize;
+                label.MinFontSize = minFontSize;
+                break;
+            case MegaRichTextLabel richText:
+                richText.AutoSizeEnabled = autoSize;
+                richText.MaxFontSize = maxFontSize;
+                richText.MinFontSize = minFontSize;
+                break;
+        }
+    }
+
     public static T? LoadFromJson<T>(string filePath)
     {
         if (FileOperations.FileExists(filePath))

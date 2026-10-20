@@ -145,8 +145,6 @@ text = "7"
 horizontal_alignment = 1
 vertical_alignment = 1
 script = ExtResource("11_label")
-MinFontSize = 20
-MaxFontSize = 32
 
 [node name="AscensionDescription" type="Control" parent="HBoxContainer"]
 custom_minimum_size = Vector2(400, 120)
@@ -178,8 +176,6 @@ Whenever you kill an [red]Elite[/red], other [red]Elites[/red] in the Act gain [
 scroll_active = false
 vertical_alignment = 1
 script = ExtResource("8_o2kow")
-MinFontSize = 14
-MaxFontSize = 22
 theme_override_fonts/bold_font = ExtResource("5_13uwv")
 theme_override_fonts/normal_font = ExtResource("8_yhgpx")
 

@@ -96,6 +96,9 @@ public partial class NCharacterButton : Button
 
     public override void _EnterTree()
     {
+        // 见 BangDreamTools.ConfigureMegaText：Mega 导出属性写在 tscn 里会被编辑器保存时置空。
+        BangDreamTools.ConfigureMegaText(GetNodeOrNull<Control>("%Name"), maxFontSize: 12, minFontSize: 9);
+        BangDreamTools.ConfigureMegaText(GetNodeOrNull<Control>("%Class"), maxFontSize: 9, minFontSize: 7);
         MouseEntered += OnMouseEntered;
         MouseExited += OnMouseExited;
         Pressed += OnPressed;

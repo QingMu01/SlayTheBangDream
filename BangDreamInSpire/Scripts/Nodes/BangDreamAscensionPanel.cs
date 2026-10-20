@@ -1,4 +1,5 @@
 using BangDreamInSpire.Scripts.Nodes.MegeScript;
+using BangDreamInSpire.Scripts.Utils;
 using Godot;
 using MegaCrit.Sts2.addons.mega_text;
 using MegaCrit.Sts2.Core.ControllerInput;
@@ -46,6 +47,17 @@ public partial class BangDreamAscensionPanel : Control
     private Tween? _tween;
 
     public int Ascension { get; private set; }
+
+    public override void _EnterTree()
+    {
+        // 见 BangDreamTools.ConfigureMegaText：Mega 导出属性写在 tscn 里会被编辑器保存时置空。
+        BangDreamTools.ConfigureMegaText(
+            GetNodeOrNull<Control>("HBoxContainer/AscensionIconContainer/AscensionIcon/AscensionLevel"),
+            maxFontSize: 32, minFontSize: 20);
+        BangDreamTools.ConfigureMegaText(
+            GetNodeOrNull<Control>("HBoxContainer/AscensionDescription/Description"),
+            maxFontSize: 22, minFontSize: 14);
+    }
 
     public override void _Ready()
     {
