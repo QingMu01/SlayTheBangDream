@@ -1,8 +1,9 @@
-[gd_scene load_steps=5 format=3 uid="uid://nigrkjxufhlu"]
+[gd_scene load_steps=6 format=3 uid="uid://nigrkjxufhlu"]
 
 [ext_resource type="Script" uid="uid://d1mgc0f3n187y" path="res://Scripts/Nodes/SubNode/NCharacterButton.cs" id="1_script"]
 [ext_resource type="FontVariation" uid="uid://b31wycusbsq8w" path="res://themes/fonts/jpn/noto_sans_cjkjp_bold_shared.tres" id="2_name_font"]
 [ext_resource type="FontVariation" uid="uid://ciql5khgewwbm" path="res://themes/kreon_bold_glyph_space_two.tres" id="3_class_font"]
+[ext_resource type="Script" uid="uid://cr26tfi6bv8im" path="res://Scripts/Nodes/MegeScript/BangDreamLabel.cs" id="4_mega"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_states"]
 
@@ -53,6 +54,9 @@ theme_override_font_sizes/font_size = 12
 text = "丰川祥子"
 horizontal_alignment = 1
 vertical_alignment = 1
+script = ExtResource("4_mega")
+MaxFontSize = 12
+MinFontSize = 9
 
 [node name="Class" type="Label" parent="."]
 unique_name_in_owner = true
@@ -67,3 +71,6 @@ theme_override_fonts/font = ExtResource("3_class_font")
 theme_override_font_sizes/font_size = 9
 text = "Key."
 horizontal_alignment = 1
+script = ExtResource("4_mega")
+MaxFontSize = 9
+MinFontSize = 7

@@ -45,7 +45,7 @@ public partial class BangDreamCharacterSelector : Control
     private Label? _bandLabel;
     private Panel? _classChip;
     private StyleBoxFlat? _classChipStyleBox;
-    private Label? _classLabel;
+    private BangDreamLabel? _classLabel;
     private Label? _smallIntro;
     private Label? _bigIntro;
     private Button? _detailsButton;
@@ -53,11 +53,11 @@ public partial class BangDreamCharacterSelector : Control
     private StyleBoxFlat? _detailsHoverStyleBox;
     private ColorRect? _divider1;
     private ColorRect? _divider2;
-    private RichTextLabel? _description;
+    private BangDreamRichTextLabel? _description;
     private Panel? _healthChip;
-    private Label? _healthLabel;
+    private BangDreamLabel? _healthLabel;
     private Panel? _goldChip;
-    private Label? _goldLabel;
+    private BangDreamLabel? _goldLabel;
     private TextureRect? _relicIcon;
     private BangDreamRichTextLabel? _relicDescription;
     private ColorRect? _accentBar;
@@ -96,17 +96,17 @@ public partial class BangDreamCharacterSelector : Control
 
         _bandLabel = GetNode<Label>("%BandLabel");
         _classChip = GetNode<Panel>("%ClassChip");
-        _classLabel = GetNode<Label>("%ClassLabel");
+        _classLabel = GetNode<BangDreamLabel>("%ClassLabel");
         _smallIntro = GetNode<Label>("%SmallIntro");
         _bigIntro = GetNode<Label>("%BigIntro");
         _detailsButton = GetNode<Button>("%DetailsButton");
         _divider1 = GetNode<ColorRect>("%Divider1");
         _divider2 = GetNode<ColorRect>("%Divider2");
-        _description = GetNode<RichTextLabel>("%Description");
+        _description = GetNode<BangDreamRichTextLabel>("%Description");
         _healthChip = GetNode<Panel>("ShowCharacterInfo/HealthChip");
-        _healthLabel = GetNode<Label>("%HealthLabel");
+        _healthLabel = GetNode<BangDreamLabel>("%HealthLabel");
         _goldChip = GetNode<Panel>("ShowCharacterInfo/GoldChip");
-        _goldLabel = GetNode<Label>("%GoldLabel");
+        _goldLabel = GetNode<BangDreamLabel>("%GoldLabel");
         _relicIcon = GetNode<TextureRect>("%RelicIcon");
         _relicDescription = GetNode<BangDreamRichTextLabel>("%RelicDescription");
         _accentBar = GetNode<ColorRect>("%AccentBar");
@@ -202,10 +202,7 @@ public partial class BangDreamCharacterSelector : Control
                 _smallIntro.AddThemeColorOverride("font_color", memberColor);
             }
 
-            if (_classLabel != null)
-            {
-                _classLabel.Text = mateData.MemberClass;
-            }
+            _classLabel?.SetTextAutoSize(mateData.MemberClass);
         }
 
         if (_bigIntro != null)
@@ -214,19 +211,11 @@ public partial class BangDreamCharacterSelector : Control
                 .GetFormattedText();
         }
 
-        if (_description != null)
-            _description.Text = new LocString("characters", character.CharacterSelectDesc)
-                .GetFormattedText();
+        _description?.SetTextAutoSize(
+            new LocString("characters", character.CharacterSelectDesc).GetFormattedText());
 
-        if (_healthLabel != null)
-        {
-            _healthLabel.Text = character.StartingHp.ToString();
-        }
-
-        if (_goldLabel != null)
-        {
-            _goldLabel.Text = character.StartingGold.ToString();
-        }
+        _healthLabel?.SetTextAutoSize(character.StartingHp.ToString());
+        _goldLabel?.SetTextAutoSize(character.StartingGold.ToString());
 
         var visibleRelic = character.StartingRelics.FirstOrDefault(RitsuLibFramework.IsRelicVisible);
         if (visibleRelic != null)

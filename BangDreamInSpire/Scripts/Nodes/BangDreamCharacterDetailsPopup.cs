@@ -1,6 +1,7 @@
 using BangDreamInSpire.Scripts.Enums;
 using BangDreamInSpire.Scripts.Extensions;
 using BangDreamInSpire.Scripts.Interfaces.CharacterAugment;
+using BangDreamInSpire.Scripts.Nodes.MegeScript;
 using BangDreamInSpire.Scripts.Utils;
 using BangDreamInSpire.Scripts.Utils.Infos;
 using Godot;
@@ -32,6 +33,10 @@ public partial class BangDreamCharacterDetailsPopup : Control
     private static readonly FontVariation? NotoMedium =
         ResourceLoader.Load<FontVariation>("res://themes/fonts/jpn/noto_sans_cjkjp_medium_shared.tres");
 
+    // 标题级字体（中文思源宋体 Bold）：与正文的黑体拉开对比，遗物名等小标题都用它。
+    private static readonly FontVariation? TitleFont =
+        ResourceLoader.Load<FontVariation>("res://themes/fonts/zhs/source_han_serif_sc_bold_shared.tres");
+
     private const float PanelOpenScale = 0.96f;
 
     private ColorRect? _scrim;
@@ -43,11 +48,11 @@ public partial class BangDreamCharacterDetailsPopup : Control
     private Label? _roman;
     private Panel? _classChip;
     private StyleBoxFlat? _classChipStyleBox;
-    private Label? _classLabel;
+    private BangDreamLabel? _classLabel;
     private Label? _bandLabel;
     private Button? _closeButton;
     private Label? _skinLabel;
-    private Label? _skinIndex;
+    private BangDreamLabel? _skinIndex;
     private Label? _extraLabel;
     private Label? _cardsLabel;
     private Label? _relicsLabel;
@@ -72,11 +77,11 @@ public partial class BangDreamCharacterDetailsPopup : Control
         _title = GetNode<Label>("%Title");
         _roman = GetNode<Label>("%Roman");
         _classChip = GetNode<Panel>("%ClassChip");
-        _classLabel = GetNode<Label>("%ClassLabel");
+        _classLabel = GetNode<BangDreamLabel>("%ClassLabel");
         _bandLabel = GetNode<Label>("%BandLabel");
         _closeButton = GetNode<Button>("%CloseButton");
         _skinLabel = GetNode<Label>("%SkinLabel");
-        _skinIndex = GetNode<Label>("%SkinIndex");
+        _skinIndex = GetNode<BangDreamLabel>("%SkinIndex");
         _extraLabel = GetNode<Label>("%ExtraLabel");
         _cardsLabel = GetNode<Label>("%CardsLabel");
         _relicsLabel = GetNode<Label>("%RelicsLabel");
@@ -131,10 +136,7 @@ public partial class BangDreamCharacterDetailsPopup : Control
                 _roman.Text = mateData.MemberNameRoman.ToUpperInvariant();
             }
 
-            if (_classLabel != null)
-            {
-                _classLabel.Text = mateData.MemberClass;
-            }
+            _classLabel?.SetTextAutoSize(mateData.MemberClass);
 
             if (_emblem != null)
             {
@@ -332,7 +334,7 @@ public partial class BangDreamCharacterDetailsPopup : Control
         if (_skinSelector is { SkinCount: > 0 })
         {
             _skinIndex.Visible = _skinSelector.Visible;
-            _skinIndex.Text = $"{_skinSelector.SkinIndex} / {_skinSelector.SkinCount}";
+            _skinIndex.SetTextAutoSize($"{_skinSelector.SkinIndex} / {_skinSelector.SkinCount}");
         }
         else
         {
@@ -411,7 +413,7 @@ public partial class BangDreamCharacterDetailsPopup : Control
         };
         frame.AddThemeStyleboxOverride("panel", new StyleBoxFlat
         {
-            BgColor = new Color(0.994f, 0.996f, 1f),
+            BgColor = new Color(0.99f, 0.984f, 0.969f),
             BorderColor = typeColor,
             BorderWidthLeft = 2,
             BorderWidthTop = 2,
@@ -458,12 +460,14 @@ public partial class BangDreamCharacterDetailsPopup : Control
             ShadowSize = 3,
             AntiAliasing = true
         });
-        var costLabel = new Label
+        var costLabel = new BangDreamLabel
         {
             Text = card.EnergyCost.CostsX ? "X" : card.EnergyCost.Canonical.ToString(),
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
-            MouseFilter = MouseFilterEnum.Ignore
+            MouseFilter = MouseFilterEnum.Ignore,
+            MaxFontSize = 12,
+            MinFontSize = 8
         };
         costLabel.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
         costLabel.AddThemeFontOverride("font", NotoBold);
@@ -472,14 +476,16 @@ public partial class BangDreamCharacterDetailsPopup : Control
         costPanel.AddChild(costLabel);
         frame.AddChild(costPanel);
 
-        var nameLabel = new Label
+        var nameLabel = new BangDreamLabel
         {
             Text = card.Title,
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
             MaxLinesVisible = 2,
-            MouseFilter = MouseFilterEnum.Ignore
+            MouseFilter = MouseFilterEnum.Ignore,
+            MaxFontSize = 10,
+            MinFontSize = 7
         };
         nameLabel.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
         nameLabel.OffsetLeft = 4f;
@@ -520,23 +526,27 @@ public partial class BangDreamCharacterDetailsPopup : Control
         };
         textBox.AddThemeConstantOverride("separation", 2);
 
+        // 遗物名属于标题层：用普通 Label 保留展示字体（MegaLabel 会在 _Ready 按语言替换成正文黑体）。
         var title = new Label
         {
             Text = relic.Title.GetFormattedText(),
             MouseFilter = MouseFilterEnum.Ignore
         };
-        title.AddThemeFontOverride("font", NotoBold);
+        title.AddThemeFontOverride("font", TitleFont);
         title.AddThemeFontSizeOverride("font_size", 15);
         title.AddThemeColorOverride("font_color", TextPrimary);
         textBox.AddChild(title);
 
-        var description = new RichTextLabel
+        var description = new BangDreamRichTextLabel
         {
             BbcodeEnabled = true,
             FitContent = true,
+            AutoSizeEnabled = false,
             ScrollActive = false,
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
-            MouseFilter = MouseFilterEnum.Ignore
+            MouseFilter = MouseFilterEnum.Ignore,
+            MaxFontSize = 13,
+            MinFontSize = 11
         };
         description.AddThemeFontOverride("normal_font", NotoMedium);
         description.AddThemeFontSizeOverride("normal_font_size", 13);
@@ -550,10 +560,12 @@ public partial class BangDreamCharacterDetailsPopup : Control
 
     private static Control BuildEmptyHint(string text)
     {
-        var label = new Label
+        var label = new BangDreamLabel
         {
             Text = text,
-            MouseFilter = MouseFilterEnum.Ignore
+            MouseFilter = MouseFilterEnum.Ignore,
+            MaxFontSize = 13,
+            MinFontSize = 11
         };
         label.AddThemeFontOverride("font", NotoMedium);
         label.AddThemeFontSizeOverride("font_size", 13);

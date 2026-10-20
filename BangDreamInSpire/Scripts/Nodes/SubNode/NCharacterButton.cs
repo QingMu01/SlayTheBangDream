@@ -1,5 +1,6 @@
 using BangDreamInSpire.Scripts.Extensions;
 using BangDreamInSpire.Scripts.Interfaces.CharacterAugment;
+using BangDreamInSpire.Scripts.Nodes.MegeScript;
 using BangDreamInSpire.Scripts.Utils;
 using Godot;
 using MegaCrit.Sts2.Core.Localization;
@@ -31,8 +32,8 @@ public partial class NCharacterButton : Button
 
     private Panel? _tab;
     private TextureRect? _icon;
-    private Label? _nameLabel;
-    private Label? _classLabel;
+    private BangDreamLabel? _nameLabel;
+    private BangDreamLabel? _classLabel;
 
     private StyleBoxFlat? _tabStyle;
     private StyleBoxFlat? _selectedTabStyle;
@@ -73,18 +74,19 @@ public partial class NCharacterButton : Button
 
         _tab = GetNode<Panel>("Tab");
         _icon = GetNode<TextureRect>("%Icon");
-        _nameLabel = GetNode<Label>("%Name");
-        _classLabel = GetNode<Label>("%Class");
+        _nameLabel = GetNode<BangDreamLabel>("%Name");
+        _classLabel = GetNode<BangDreamLabel>("%Class");
 
         var memberColor = FallbackMemberColor;
         if (Character is { } character)
         {
             memberColor = character.NameColor;
             ApplyIcon(character);
-            _nameLabel.Text = new LocString("characters", character.CharacterSelectTitle).GetFormattedText();
+            _nameLabel.SetTextAutoSize(
+                new LocString("characters", character.CharacterSelectTitle).GetFormattedText());
             if (character is IBangDreamMateData mateData)
             {
-                _classLabel.Text = mateData.MemberClass;
+                _classLabel.SetTextAutoSize(mateData.MemberClass);
             }
         }
 
