@@ -1,5 +1,6 @@
-﻿using BangDreamInSpire.Scripts.Interfaces.CardAugment;
+using BangDreamInSpire.Scripts.Interfaces.CardAugment;
 using BangDreamInSpire.Scripts.Interfaces.CharacterAugment;
+using Godot;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;
 using STS2RitsuLib.Utils;
@@ -65,5 +66,14 @@ public static class BangDreamTools
         if (storage.HasValue)
             throw new InvalidOperationException($"{propertyName} is already initialized!");
         storage = value;
+    }
+
+    /// <summary>
+    /// 把乐队/角色主题色压到可以承载白字或作为细线的对比度：过亮的颜色（如 Crychic 的浅青）整体压暗。
+    /// </summary>
+    public static Color ToAccentColor(this Color color)
+    {
+        var luminance = 0.2126f * color.R + 0.7152f * color.G + 0.0722f * color.B;
+        return luminance > 0.55f ? color.Darkened(0.45f) : color;
     }
 }
