@@ -37,7 +37,9 @@ public partial class BangDreamCharacterSelector : Control
     private TextureRect? _characterPoster;
     private TextureRect? _leftGlow;
     private GpuParticles2D? _particles;
-    private VBoxContainer? _characterButtons;
+    private TextureRect? _emblemWatermark;
+    private Label? _titleWatermark;
+    private HBoxContainer? _characterButtons;
 
     private Label? _bandLabel;
     private Panel? _classChip;
@@ -45,7 +47,9 @@ public partial class BangDreamCharacterSelector : Control
     private Label? _classLabel;
     private Label? _smallIntro;
     private Label? _bigIntro;
-    private TextureRect? _signature;
+    private Button? _detailsButton;
+    private StyleBoxFlat? _detailsNormalStyleBox;
+    private StyleBoxFlat? _detailsHoverStyleBox;
     private ColorRect? _divider1;
     private ColorRect? _divider2;
     private RichTextLabel? _description;
@@ -56,9 +60,8 @@ public partial class BangDreamCharacterSelector : Control
     private TextureRect? _relicIcon;
     private BangDreamRichTextLabel? _relicDescription;
     private ColorRect? _accentBar;
-    private Panel? _skinCard;
     private BangDreamAscensionPanel? _ascensionPanel;
-    private BangDreamSkinSelector? _skinSelector;
+    private BangDreamCharacterDetailsPopup? _detailsPopup;
 
     private Tween? _posterTween;
     private Tween? _accentTween;
@@ -79,7 +82,7 @@ public partial class BangDreamCharacterSelector : Control
 
     public override void _Ready()
     {
-        _characterButtons = GetNode<VBoxContainer>("%CharacterButtons");
+        _characterButtons = GetNode<HBoxContainer>("%CharacterButtons");
 
         _showBg = GetNode<ColorRect>("%ShowBg");
         _posterBackdrop = GetNode<ColorRect>("%PosterBackdrop");
@@ -87,13 +90,15 @@ public partial class BangDreamCharacterSelector : Control
         _characterPoster = GetNode<TextureRect>("%CharacterPoster");
         _leftGlow = GetNode<TextureRect>("LeftGlow");
         _particles = GetNode<GpuParticles2D>("ScreenBackground/GPUParticles2D");
+        _emblemWatermark = GetNode<TextureRect>("%EmblemWatermark");
+        _titleWatermark = GetNode<Label>("%CharacterTitleWatermark");
 
         _bandLabel = GetNode<Label>("%BandLabel");
         _classChip = GetNode<Panel>("%ClassChip");
         _classLabel = GetNode<Label>("%ClassLabel");
         _smallIntro = GetNode<Label>("%SmallIntro");
         _bigIntro = GetNode<Label>("%BigIntro");
-        _signature = GetNode<TextureRect>("%Signature");
+        _detailsButton = GetNode<Button>("%DetailsButton");
         _divider1 = GetNode<ColorRect>("%Divider1");
         _divider2 = GetNode<ColorRect>("%Divider2");
         _description = GetNode<RichTextLabel>("%Description");
@@ -104,9 +109,8 @@ public partial class BangDreamCharacterSelector : Control
         _relicIcon = GetNode<TextureRect>("%RelicIcon");
         _relicDescription = GetNode<BangDreamRichTextLabel>("%RelicDescription");
         _accentBar = GetNode<ColorRect>("%AccentBar");
-        _skinCard = GetNode<Panel>("SkinCard");
         _ascensionPanel = GetNode<BangDreamAscensionPanel>("%AscensionPanel");
-        _skinSelector = GetNode<BangDreamSkinSelector>("%SkinSelector");
+        _detailsPopup = GetNode<BangDreamCharacterDetailsPopup>("%CharacterDetailsPopup");
 
         _posterRestPosition = _characterPoster.Position;
 
@@ -122,9 +126,21 @@ public partial class BangDreamCharacterSelector : Control
             _classChip.AddThemeStyleboxOverride("panel", _classChipStyleBox);
         }
 
+        if (_detailsButton.GetThemeStylebox("normal") is StyleBoxFlat normalStyleBox)
+        {
+            _detailsNormalStyleBox = (StyleBoxFlat)normalStyleBox.Duplicate();
+            _detailsButton.AddThemeStyleboxOverride("normal", _detailsNormalStyleBox);
+        }
+
+        if (_detailsButton.GetThemeStylebox("hover") is StyleBoxFlat hoverStyleBox)
+        {
+            _detailsHoverStyleBox = (StyleBoxFlat)hoverStyleBox.Duplicate();
+            _detailsButton.AddThemeStyleboxOverride("hover", _detailsHoverStyleBox);
+        }
+
         _contentItems =
         [
-            _bandLabel, _classChip, _smallIntro, _bigIntro, _signature, _divider1,
+            _bandLabel, _classChip, _smallIntro, _bigIntro, _detailsButton, _divider1,
             _description, _healthChip, _goldChip, _divider2, _relicIcon, _relicDescription,
             _ascensionPanel, _accentBar
         ];
@@ -132,7 +148,8 @@ public partial class BangDreamCharacterSelector : Control
         _ascensionPanel.Connect(BangDreamAscensionPanel.SignalName.AscensionLevelChanged,
             Callable.From(OnAscensionPanelLevelChanged));
 
-        _skinSelector.Connect(BangDreamSkinSelector.SignalName.SkinSelected,
+        _detailsButton.Pressed += OnDetailsButtonPressed;
+        _detailsPopup.Connect(BangDreamCharacterDetailsPopup.SignalName.SkinChanged,
             Callable.From((Action<string>)OnSelectedSkin));
 
         StartPosterFloat();
@@ -172,10 +189,10 @@ public partial class BangDreamCharacterSelector : Control
                 _characterPoster.Texture = LoadTexture(mateData.SelectPoster);
             }
 
-            if (_signature != null)
+            if (_emblemWatermark != null)
             {
-                _signature.Texture = LoadTexture(mateData.SelectLogo);
-                _signature.Visible = _signature.Texture != null;
+                _emblemWatermark.Texture = LoadTexture(mateData.SelectLogo);
+                _emblemWatermark.Visible = _emblemWatermark.Texture != null;
             }
 
             if (_smallIntro != null)
@@ -216,20 +233,13 @@ public partial class BangDreamCharacterSelector : Control
             SetRelicShow(relic);
         }
 
-        var skinSupportCharacter = character as ISkinSupportCharacter;
-        if (_skinCard != null)
-        {
-            _skinCard.Visible = skinSupportCharacter != null;
-        }
-
         if (_delegate != null && _sourceButton != null)
         {
             _delegate.SelectCharacter(_sourceButton, character);
-            if (skinSupportCharacter != null)
-            {
-                _skinSelector?.Init(skinSupportCharacter, Lobby);
-            }
         }
+
+        // 弹窗同步角色数据（皮肤 / 初始卡组 / 初始遗物），关闭时也保持最新。
+        _detailsPopup?.SetCharacter(character, Lobby);
 
         if (_ascensionPanel != null)
         {
@@ -248,6 +258,8 @@ public partial class BangDreamCharacterSelector : Control
 
     public void Init(CharacterGroup group, NCharacterSelectButton button, ICharacterSelectButtonDelegate delegateButton)
     {
+        _detailsPopup?.Close();
+
         _buttonGroup = group;
         _sourceButton = button;
         _delegate = delegateButton;
@@ -285,13 +297,13 @@ public partial class BangDreamCharacterSelector : Control
                 child.Deselect();
             }
 
-            // 书签标签从卡片右缘顶端起向下生长：按实际可见人数撑高竖排容器。
+            // 书签从卡片右缘顶端向左生长：人数变化时重新对齐整排。
             var visibleCount = _buttons.Count(item => item.Visible);
             if (visibleCount > 0)
             {
                 var separation = _characterButtons.GetThemeConstant("separation");
-                var stackHeight = visibleCount * NCharacterButton.CardSize.Y + (visibleCount - 1) * separation;
-                _characterButtons.OffsetBottom = _characterButtons.OffsetTop + stackHeight;
+                var rowWidth = visibleCount * NCharacterButton.CardSize.X + (visibleCount - 1) * separation;
+                _characterButtons.OffsetLeft = _characterButtons.OffsetRight - rowWidth;
             }
 
             var defaultButton = _buttons.FirstOrDefault(item => item is
@@ -307,7 +319,7 @@ public partial class BangDreamCharacterSelector : Control
         }
     }
 
-    private static Texture2D? LoadTexture(string? path)
+    public static Texture2D? LoadTexture(string? path)
     {
         return !string.IsNullOrWhiteSpace(path) && ResourceLoader.Exists(path)
             ? BangDreamPreloadManager.GetTexture2D(path)
@@ -320,7 +332,7 @@ public partial class BangDreamCharacterSelector : Control
     }
 
     /// <summary>
-    /// 乐队色负责舞台（背景、立绘底、色条），成员色负责个人信息（罗马音、细节），
+    /// 乐队色负责舞台（背景、立绘底、书签），成员色负责个人信息（罗马音、纹章、细节），
     /// 过亮的乐队色先压暗再作为文字/描边色使用。
     /// </summary>
     private void ApplyAccent(Color bandColor, Color accentColor, Color memberColor)
@@ -374,11 +386,45 @@ public partial class BangDreamCharacterSelector : Control
             _accentTween.TweenProperty(_classChipStyleBox, "bg_color", accentColor, AccentTransitionDuration);
         }
 
-        if (_signature != null)
+        if (_detailsNormalStyleBox != null)
         {
-            _accentTween.TweenProperty(_signature, "modulate", WithAlpha(memberColor, 0.95f),
+            _accentTween.TweenProperty(_detailsNormalStyleBox, "border_color", WithAlpha(accentColor, 0.45f),
+                AccentTransitionDuration);
+            _accentTween.TweenProperty(_detailsNormalStyleBox, "bg_color", WithAlpha(accentColor, 0.1f),
                 AccentTransitionDuration);
         }
+
+        if (_detailsHoverStyleBox != null)
+        {
+            _accentTween.TweenProperty(_detailsHoverStyleBox, "border_color", WithAlpha(accentColor, 0.7f),
+                AccentTransitionDuration);
+            _accentTween.TweenProperty(_detailsHoverStyleBox, "bg_color", WithAlpha(accentColor, 0.2f),
+                AccentTransitionDuration);
+        }
+
+        if (_detailsButton != null)
+        {
+            _detailsButton.AddThemeColorOverride("font_color", accentColor);
+            _detailsButton.AddThemeColorOverride("font_hover_color", accentColor);
+            _detailsButton.AddThemeColorOverride("font_pressed_color", accentColor);
+        }
+
+        if (_emblemWatermark != null)
+        {
+            _accentTween.TweenProperty(_emblemWatermark, "self_modulate", WithAlpha(accentColor, 0.1f),
+                AccentTransitionDuration);
+        }
+
+        if (_titleWatermark != null)
+        {
+            _accentTween.TweenProperty(_titleWatermark, "modulate", WithAlpha(accentColor, 0.05f),
+                AccentTransitionDuration);
+        }
+    }
+
+    private void OnDetailsButtonPressed()
+    {
+        _detailsPopup?.Open();
     }
 
     private void PlayPosterIntro()

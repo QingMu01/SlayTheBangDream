@@ -1,4 +1,4 @@
-[gd_scene load_steps=32 format=3 uid="uid://dck01ibc7cr71"]
+[gd_scene load_steps=39 format=3 uid="uid://dck01ibc7cr71"]
 
 [ext_resource type="Script" uid="uid://cmtlynk8dabtw" path="res://Scripts/Nodes/BangDreamCharacterSelector.cs" id="1_script"]
 [ext_resource type="Texture2D" uid="uid://bx7y6ggsxsgty" path="res://BangDreamInSpire/images/sceneui/bg_gray.9d1fe428.png" id="2_bg"]
@@ -14,10 +14,12 @@
 [ext_resource type="FontVariation" uid="uid://7k0n7sxph05k" path="res://themes/fonts/rus/fira_sans_extra_condensed_bold_shared.tres" id="12_fira"]
 [ext_resource type="FontVariation" uid="uid://b8ce4a71ref23" path="res://themes/spectral_bold_shared.tres" id="13_spectral"]
 [ext_resource type="PackedScene" uid="uid://r3e6mea37phd" path="res://BangDreamInSpire/scenes/character_selector/ascension_panel.tscn" id="14_asc"]
-[ext_resource type="PackedScene" uid="uid://bfq1kub0qqf3m" path="res://BangDreamInSpire/scenes/character_selector/skin_selector.tscn" id="15_skin"]
-[ext_resource type="Texture2D" uid="uid://bh4h4ty5mcsj" path="res://images/packed/vfx/generic/twinkle_star.png" id="16_star"]
-[ext_resource type="Texture2D" uid="uid://bctjbu1ke8sb3" path="res://BangDreamInSpire/images/sceneui/music_draw.png" id="17_relic"]
-[ext_resource type="Shader" uid="uid://bmcmftrx7jyco" path="res://BangDreamInSpire/shaders/parallelogram_reveal_sweep.gdshader" id="18_sweep"]
+[ext_resource type="Texture2D" uid="uid://bh4h4ty5mcsj" path="res://images/packed/vfx/generic/twinkle_star.png" id="15_star"]
+[ext_resource type="Texture2D" uid="uid://bctjbu1ke8sb3" path="res://BangDreamInSpire/images/sceneui/music_draw.png" id="16_relic"]
+[ext_resource type="Shader" uid="uid://bmcmftrx7jyco" path="res://BangDreamInSpire/shaders/parallelogram_reveal_sweep.gdshader" id="17_sweep"]
+[ext_resource type="PackedScene" uid="uid://c8p0m3xq6v1ba" path="res://BangDreamInSpire/scenes/character_selector/character_details_popup.tscn" id="18_popup"]
+[ext_resource type="Shader" uid="uid://d0wcj6w86sq02" path="res://BangDreamInSpire/shaders/parallelogram_overlay.gdshader" id="19_dots"]
+[ext_resource type="Texture2D" uid="uid://ddg1bga84moge" path="res://BangDreamInSpire/images/vfx/icon_music_note.png" id="20_note"]
 
 [sub_resource type="Curve" id="Curve_particle"]
 _data = [Vector2(0, 0.50128955), 0.0, 0.0, 0, 0, Vector2(0.7518797, 0), 0.0, 0.0, 0, 0]
@@ -62,7 +64,7 @@ shader_parameter/line_count = 6
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_sweep"]
 resource_local_to_scene = true
-shader = ExtResource("18_sweep")
+shader = ExtResource("17_sweep")
 shader_parameter/slant_slope = 0.1
 shader_parameter/edge_softness = 0.0
 shader_parameter/sweep_band_width = 26.0
@@ -98,20 +100,60 @@ corner_radius_top_right = 8
 corner_radius_bottom_right = 8
 corner_radius_bottom_left = 8
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_skincard"]
-bg_color = Color(1, 1, 1, 0.5)
+[sub_resource type="Gradient" id="Gradient_dots"]
+colors = PackedColorArray(1, 1, 1, 0, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_dots"]
+gradient = SubResource("Gradient_dots")
+width = 512
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_dots"]
+resource_local_to_scene = true
+shader = ExtResource("19_dots")
+shader_parameter/slant_slope = 0.14
+shader_parameter/edge_softness = 0.0
+shader_parameter/edge_coverage_power = 0.25
+shader_parameter/gradient_texture = SubResource("GradientTexture1D_dots")
+shader_parameter/gradient_angle = 90.0
+shader_parameter/dot_radius = 1.4
+shader_parameter/dot_spacing = 8.0
+shader_parameter/dot_offset = Vector2(0, 0)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_details_normal"]
+bg_color = Color(0.29, 0.45, 0.46, 0.1)
 border_width_left = 1
 border_width_top = 1
 border_width_right = 1
 border_width_bottom = 1
-border_color = Color(0.29, 0.45, 0.46, 0.28)
-corner_radius_top_left = 10
-corner_radius_top_right = 10
-corner_radius_bottom_right = 10
-corner_radius_bottom_left = 10
-shadow_color = Color(0.05, 0.08, 0.12, 0.08)
-shadow_size = 16
-shadow_offset = Vector2(0, 6)
+border_color = Color(0.29, 0.45, 0.46, 0.45)
+corner_radius_top_left = 22
+corner_radius_top_right = 22
+corner_radius_bottom_right = 22
+corner_radius_bottom_left = 22
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_details_hover"]
+bg_color = Color(0.29, 0.45, 0.46, 0.2)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.29, 0.45, 0.46, 0.7)
+corner_radius_top_left = 22
+corner_radius_top_right = 22
+corner_radius_bottom_right = 22
+corner_radius_bottom_left = 22
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_details_pressed"]
+bg_color = Color(0.29, 0.45, 0.46, 0.28)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.29, 0.45, 0.46, 0.8)
+corner_radius_top_left = 22
+corner_radius_top_right = 22
+corner_radius_bottom_right = 22
+corner_radius_bottom_left = 22
 
 [node name="CharacterSelector" type="Control"]
 layout_mode = 3
@@ -136,7 +178,7 @@ stretch_mode = 0
 [node name="GPUParticles2D" type="GPUParticles2D" parent="ScreenBackground"]
 modulate = Color(0.549, 0.827, 0.831, 0.55)
 position = Vector2(2100, 480)
-amount = 16
+amount = 22
 texture = ExtResource("3_particle")
 lifetime = 14.0
 speed_scale = 1.8
@@ -158,6 +200,21 @@ texture = SubResource("GradientTexture1D_glow")
 expand_mode = 1
 stretch_mode = 0
 
+[node name="DotBand" type="ColorRect" parent="."]
+material = SubResource("ShaderMaterial_dots")
+layout_mode = 0
+offset_left = -81.0
+offset_top = 542.0
+offset_right = 759.0
+offset_bottom = 1142.0
+rotation = -0.08
+pivot_offset = Vector2(420, 300)
+mouse_filter = 2
+color = Color(1, 1, 1, 1)
+instance_shader_parameters/rect_size = Vector2(840, 600)
+instance_shader_parameters/dot_color = Color(0.29, 0.45, 0.46, 0.28)
+instance_shader_parameters/reveal_progress = 1.0
+
 [node name="DiagLine1" type="Line2D" parent="."]
 points = PackedVector2Array(-61, 622, 1959, 322)
 width = 2.0
@@ -173,43 +230,145 @@ points = PackedVector2Array(39, 202, 799, 62)
 width = 1.5
 default_color = Color(0.29, 0.45, 0.46, 0.14)
 
+[node name="DiagLine4" type="Line2D" parent="."]
+points = PackedVector2Array(599, -98, 1959, 542)
+width = 3.0
+default_color = Color(0.29, 0.45, 0.46, 0.1)
+
+[node name="DiagLine5" type="Line2D" parent="."]
+points = PackedVector2Array(39, 1042, 859, 882)
+width = 1.5
+default_color = Color(0.29, 0.45, 0.46, 0.12)
+
 [node name="Sparkle1" type="TextureRect" parent="."]
 modulate = Color(0.29, 0.45, 0.46, 0.5)
 layout_mode = 0
-offset_left = 1549.0
-offset_top = 102.0
-offset_right = 1595.0
-offset_bottom = 148.0
+offset_left = 1588.0
+offset_top = 84.0
+offset_right = 1634.0
+offset_bottom = 130.0
 rotation = 0.25
 mouse_filter = 2
-texture = ExtResource("16_star")
+texture = ExtResource("15_star")
 expand_mode = 1
 stretch_mode = 0
 
 [node name="Sparkle2" type="TextureRect" parent="."]
 modulate = Color(0.29, 0.45, 0.46, 0.35)
 layout_mode = 0
-offset_left = 1774.0
-offset_top = 487.0
-offset_right = 1802.0
-offset_bottom = 515.0
+offset_left = 1813.0
+offset_top = 469.0
+offset_right = 1841.0
+offset_bottom = 497.0
 mouse_filter = 2
-texture = ExtResource("16_star")
+texture = ExtResource("15_star")
 expand_mode = 1
 stretch_mode = 0
 
 [node name="Sparkle3" type="TextureRect" parent="."]
 modulate = Color(0.29, 0.45, 0.46, 0.3)
 layout_mode = 0
-offset_left = 144.0
-offset_top = 282.0
-offset_right = 166.0
-offset_bottom = 304.0
+offset_left = 183.0
+offset_top = 264.0
+offset_right = 205.0
+offset_bottom = 286.0
 rotation = 0.6
 mouse_filter = 2
-texture = ExtResource("16_star")
+texture = ExtResource("15_star")
 expand_mode = 1
 stretch_mode = 0
+
+[node name="Sparkle4" type="TextureRect" parent="."]
+modulate = Color(0.29, 0.45, 0.46, 0.22)
+layout_mode = 0
+offset_left = 1719.0
+offset_top = 602.0
+offset_right = 1803.0
+offset_bottom = 686.0
+rotation = 0.45
+mouse_filter = 2
+texture = ExtResource("15_star")
+expand_mode = 1
+stretch_mode = 0
+
+[node name="Sparkle5" type="TextureRect" parent="."]
+modulate = Color(0.29, 0.45, 0.46, 0.3)
+layout_mode = 0
+offset_left = 639.0
+offset_top = 42.0
+offset_right = 669.0
+offset_bottom = 72.0
+rotation = 0.9
+mouse_filter = 2
+texture = ExtResource("15_star")
+expand_mode = 1
+stretch_mode = 0
+
+[node name="MusicNote1" type="TextureRect" parent="."]
+modulate = Color(0.29, 0.45, 0.46, 0.1)
+layout_mode = 0
+offset_left = 99.0
+offset_top = 502.0
+offset_right = 151.0
+offset_bottom = 554.0
+rotation = -0.25
+mouse_filter = 2
+texture = ExtResource("20_note")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="MusicNote2" type="TextureRect" parent="."]
+modulate = Color(0.29, 0.45, 0.46, 0.09)
+layout_mode = 0
+offset_left = 1839.0
+offset_top = 202.0
+offset_right = 1903.0
+offset_bottom = 266.0
+rotation = 0.2
+mouse_filter = 2
+texture = ExtResource("20_note")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="MusicNote3" type="TextureRect" parent="."]
+modulate = Color(0.29, 0.45, 0.46, 0.08)
+layout_mode = 0
+offset_left = 599.0
+offset_top = 982.0
+offset_right = 643.0
+offset_bottom = 1026.0
+rotation = 0.5
+mouse_filter = 2
+texture = ExtResource("20_note")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="CharacterTitleWatermark" type="Label" parent="."]
+unique_name_in_owner = true
+modulate = Color(0.29, 0.45, 0.46, 0.05)
+layout_mode = 0
+offset_left = 1794.0
+offset_top = 912.0
+offset_right = 2554.0
+offset_bottom = 1032.0
+rotation = -1.5707964
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("12_fira")
+theme_override_font_sizes/font_size = 108
+text = "CHARACTER"
+
+[node name="EmblemWatermark" type="TextureRect" parent="."]
+unique_name_in_owner = true
+modulate = Color(0.29, 0.45, 0.46, 0.1)
+layout_mode = 0
+offset_left = 129.0
+offset_top = 862.0
+offset_right = 549.0
+offset_bottom = 1020.0
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
 
 [node name="ShowCharacterInfo" type="Panel" parent="."]
 layout_mode = 0
@@ -344,18 +503,23 @@ theme_override_fonts/font = ExtResource("10_serif")
 theme_override_font_sizes/font_size = 78
 text = "丰川祥子"
 
-[node name="Signature" type="TextureRect" parent="ShowCharacterInfo"]
+[node name="DetailsButton" type="Button" parent="ShowCharacterInfo"]
 unique_name_in_owner = true
-modulate = Color(0.467, 0.6, 0.8, 0.95)
 layout_mode = 0
-offset_left = 1220.0
-offset_top = 40.0
-offset_right = 1380.0
-offset_bottom = 100.0
-pivot_offset = Vector2(80, 30)
-mouse_filter = 2
-expand_mode = 1
-stretch_mode = 5
+offset_left = 1130.0
+offset_top = 28.0
+offset_right = 1330.0
+offset_bottom = 72.0
+focus_mode = 0
+theme_override_colors/font_color = Color(0.29, 0.45, 0.46, 1)
+theme_override_colors/font_hover_color = Color(0.29, 0.45, 0.46, 1)
+theme_override_colors/font_pressed_color = Color(0.29, 0.45, 0.46, 1)
+theme_override_fonts/font = ExtResource("12_fira")
+theme_override_font_sizes/font_size = 16
+theme_override_styles/hover = SubResource("StyleBoxFlat_details_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_details_pressed")
+theme_override_styles/normal = SubResource("StyleBoxFlat_details_normal")
+text = "DETAILS"
 
 [node name="Divider1" type="ColorRect" parent="ShowCharacterInfo"]
 unique_name_in_owner = true
@@ -471,7 +635,7 @@ offset_top = 444.0
 offset_right = 624.0
 offset_bottom = 528.0
 mouse_filter = 2
-texture = ExtResource("17_relic")
+texture = ExtResource("16_relic")
 expand_mode = 1
 stretch_mode = 4
 
@@ -521,51 +685,16 @@ offset_bottom = 670.0
 mouse_filter = 2
 color = Color(0.29, 0.45, 0.46, 0.9)
 
-[node name="CharacterButtons" type="VBoxContainer" parent="ShowCharacterInfo"]
+[node name="CharacterButtons" type="HBoxContainer" parent="ShowCharacterInfo"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 1376.0
-offset_top = 70.0
-offset_right = 1552.0
-offset_bottom = 246.0
+offset_left = 1222.0
+offset_top = -88.0
+offset_right = 1400.0
+offset_bottom = 16.0
 mouse_filter = 2
-theme_override_constants/separation = 24
+theme_override_constants/separation = 10
 alignment = 0
 
-[node name="SkinCard" type="Panel" parent="."]
-layout_mode = 0
-offset_left = 1349.0
-offset_top = 6.0
-offset_right = 1639.0
-offset_bottom = 206.0
-mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_skincard")
-
-[node name="SkinLabel" type="Label" parent="SkinCard"]
-layout_mode = 0
-offset_left = 14.0
-offset_top = 10.0
-offset_right = 114.0
-offset_bottom = 32.0
-mouse_filter = 2
-theme_override_colors/font_color = Color(0.29, 0.45, 0.46, 1)
-theme_override_fonts/font = ExtResource("12_fira")
-theme_override_font_sizes/font_size = 14
-text = "SKIN"
-
-[node name="SkinSelector" parent="SkinCard" instance=ExtResource("15_skin")]
+[node name="CharacterDetailsPopup" parent="." instance=ExtResource("18_popup")]
 unique_name_in_owner = true
-layout_mode = 0
-anchors_preset = 0
-anchor_left = 0.0
-anchor_top = 0.0
-anchor_right = 0.0
-anchor_bottom = 0.0
-offset_left = 12.0
-offset_top = 26.0
-offset_right = 12.0
-offset_bottom = 26.0
-pivot_offset = Vector2(0, 0)
-grow_horizontal = 1
-grow_vertical = 1
-scale = Vector2(0.55, 0.55)

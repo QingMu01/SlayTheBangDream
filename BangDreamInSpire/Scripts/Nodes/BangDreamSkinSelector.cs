@@ -32,6 +32,18 @@ public partial class BangDreamSkinSelector : Control
 
     private readonly List<(string, SkinInfo)> _skinInfos = [];
 
+    /// <summary>当前皮肤的索引（1 起）。</summary>
+    public int SkinIndex => _currentSkinIndex + 1;
+
+    /// <summary>该角色可用的皮肤数量。</summary>
+    public int SkinCount => _skinInfos.Count;
+
+    /// <summary>当前选中的皮肤路径；没有皮肤时为 null。</summary>
+    public string? CurrentSkinPath =>
+        _skinInfos.Count == 0
+            ? null
+            : _skinInfos[Math.Clamp(_currentSkinIndex, 0, _skinInfos.Count - 1)].Item1;
+
     public override void _Ready()
     {
         _leftArrow = GetNode<BangDreamGoldArrowButton>("VSplitContainer/HBoxContainer/LeftArrowContainer/LeftArrow");

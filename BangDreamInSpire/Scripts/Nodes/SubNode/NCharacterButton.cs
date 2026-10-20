@@ -10,12 +10,12 @@ using STS2RitsuLib.Ui.Toast;
 namespace BangDreamInSpire.Scripts.Nodes.SubNode;
 
 /// <summary>
-/// 角色选择页贴在卡片右缘的「书签」成员标签：成员色底 + 立绘裁脸 + 名字 / 职业，
-/// 选中时整体向外抽出并补一道白色描边。
+/// 角色选择页贴在卡片上缘的「书签」成员标签：成员色底 + 立绘裁脸 + 名字 / 职业，
+/// 选中时整体向上抽出并补一道白色描边。
 /// </summary>
 public partial class NCharacterButton : Button
 {
-    public static readonly Vector2 CardSize = new(176f, 76f);
+    public static readonly Vector2 CardSize = new(84f, 104f);
 
     /// <summary>
     /// 立绘为 1800x2160 的全身图，人物脸部大致落在画布 33%~67% 宽、3%~37% 高 的范围内。
@@ -26,8 +26,8 @@ public partial class NCharacterButton : Button
 
     private const float AnimationDuration = 0.16f;
 
-    private static readonly Vector2 SelectedOffset = new(16f, 0f);
-    private static readonly Vector2 HoverOffset = new(7f, 0f);
+    private static readonly Vector2 SelectedOffset = new(0f, -10f);
+    private static readonly Vector2 HoverOffset = new(0f, -4f);
 
     private static readonly Color SelectedBorderColor = new(1f, 1f, 1f, 0.92f);
     private static readonly Color FallbackMemberColor = new(0.467f, 0.6f, 0.8f);
@@ -150,10 +150,10 @@ public partial class NCharacterButton : Button
         _tabStyle = new StyleBoxFlat
         {
             BgColor = background,
-            CornerRadiusTopLeft = 3,
-            CornerRadiusBottomLeft = 3,
-            CornerRadiusTopRight = 10,
-            CornerRadiusBottomRight = 10,
+            CornerRadiusTopLeft = 12,
+            CornerRadiusTopRight = 12,
+            CornerRadiusBottomLeft = 2,
+            CornerRadiusBottomRight = 2,
             ShadowColor = new Color(0.05f, 0.08f, 0.12f, 0.18f),
             ShadowSize = 8,
             ShadowOffset = new Vector2(0f, 3f),
