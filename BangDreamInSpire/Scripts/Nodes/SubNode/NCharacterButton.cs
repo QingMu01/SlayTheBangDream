@@ -10,11 +10,12 @@ using STS2RitsuLib.Ui.Toast;
 namespace BangDreamInSpire.Scripts.Nodes.SubNode;
 
 /// <summary>
-/// 角色选择页的成员卡：从角色立绘裁出脸部特写做头像，底部压一条主题色名字条。
+/// 角色选择页贴在卡片右缘的「书签」成员标签：成员色底 + 立绘裁脸 + 名字 / 职业，
+/// 选中时整体向外抽出并补一道白色描边。
 /// </summary>
 public partial class NCharacterButton : Button
 {
-    public static readonly Vector2 CardSize = new(126f, 180f);
+    public static readonly Vector2 CardSize = new(176f, 76f);
 
     /// <summary>
     /// 立绘为 1800x2160 的全身图，人物脸部大致落在画布 33%~67% 宽、3%~37% 高 的范围内。
@@ -24,18 +25,22 @@ public partial class NCharacterButton : Button
     private const string MessagePrefixKey = "BANG_DREAM_IN_SPIRE_CHARACTER_CANT_SELECT_";
 
     private const float AnimationDuration = 0.16f;
-    private const float ActiveScale = 1.04f;
 
-    private static readonly Vector2 SelectedOffset = new(0f, -12f);
-    private static readonly Vector2 HoverOffset = new(0f, -6f);
+    private static readonly Vector2 SelectedOffset = new(16f, 0f);
+    private static readonly Vector2 HoverOffset = new(7f, 0f);
+
+    private static readonly Color SelectedBorderColor = new(1f, 1f, 1f, 0.92f);
+    private static readonly Color FallbackMemberColor = new(0.467f, 0.6f, 0.8f);
 
     private BangDreamCharacterSelector? _parent;
 
-    private Panel? _frame;
+    private Panel? _tab;
     private TextureRect? _face;
-    private Panel? _namePlate;
     private Label? _nameLabel;
-    private TextureRect? _outline;
+    private Label? _classLabel;
+
+    private StyleBoxFlat? _tabStyle;
+    private StyleBoxFlat? _selectedTabStyle;
 
     private Tween? _hoverTween;
 
@@ -71,22 +76,24 @@ public partial class NCharacterButton : Button
     {
         _originalPosition = Position;
 
-        _frame = GetNode<Panel>("Frame");
+        _tab = GetNode<Panel>("Tab");
         _face = GetNode<TextureRect>("FaceClip/Face");
-        _namePlate = GetNode<Panel>("NamePlate");
-        _nameLabel = GetNode<Label>("NamePlate/Name");
-        _outline = GetNode<TextureRect>("Outline");
+        _nameLabel = GetNode<Label>("%Name");
+        _classLabel = GetNode<Label>("%Class");
 
-        var accentColor = Colors.White;
+        var memberColor = FallbackMemberColor;
         if (Character is { } character)
         {
-            var bandColor = (character as IGroupableCharacter)?.Group.GetGroupInfo().Color ?? Colors.White;
-            accentColor = bandColor.ToAccentColor();
+            memberColor = character.NameColor;
             ApplyFace(character);
             _nameLabel.Text = new LocString("characters", character.CharacterSelectTitle).GetFormattedText();
+            if (character is IBangDreamMateData mateData)
+            {
+                _classLabel.Text = mateData.MemberClass;
+            }
         }
 
-        ApplyAccent(accentColor);
+        BuildTabStyles(memberColor);
         ApplyVisualState(false, true);
     }
 
@@ -135,25 +142,44 @@ public partial class NCharacterButton : Button
         };
     }
 
-    private void ApplyAccent(Color accentColor)
+    private void BuildTabStyles(Color memberColor)
     {
-        if (_frame?.GetThemeStylebox("panel") is StyleBoxFlat frameStyleBox)
+        var background = memberColor.Darkened(0.1f);
+        var textColor = background.GetReadableTextColor();
+
+        _tabStyle = new StyleBoxFlat
         {
-            var duplicated = (StyleBoxFlat)frameStyleBox.Duplicate();
-            duplicated.BorderColor = accentColor;
-            _frame.AddThemeStyleboxOverride("panel", duplicated);
+            BgColor = background,
+            CornerRadiusTopLeft = 3,
+            CornerRadiusBottomLeft = 3,
+            CornerRadiusTopRight = 10,
+            CornerRadiusBottomRight = 10,
+            ShadowColor = new Color(0.05f, 0.08f, 0.12f, 0.18f),
+            ShadowSize = 8,
+            ShadowOffset = new Vector2(0f, 3f),
+            AntiAliasing = true
+        };
+
+        _selectedTabStyle = (StyleBoxFlat)_tabStyle.Duplicate();
+        _selectedTabStyle.SetBorderWidthAll(2);
+        _selectedTabStyle.BorderColor = SelectedBorderColor;
+        _selectedTabStyle.ShadowColor = new Color(0.03f, 0.05f, 0.08f, 0.3f);
+        _selectedTabStyle.ShadowSize = 14;
+
+        if (_tab != null)
+        {
+            _tab.AddThemeStyleboxOverride("panel", _tabStyle);
         }
 
-        if (_namePlate?.GetThemeStylebox("panel") is StyleBoxFlat namePlateStyleBox)
+        if (_nameLabel != null)
         {
-            var duplicated = (StyleBoxFlat)namePlateStyleBox.Duplicate();
-            duplicated.BgColor = new Color(accentColor.R, accentColor.G, accentColor.B, 0.92f);
-            _namePlate.AddThemeStyleboxOverride("panel", duplicated);
+            _nameLabel.AddThemeColorOverride("font_color", textColor);
         }
 
-        if (_outline != null)
+        if (_classLabel != null)
         {
-            _outline.SelfModulate = accentColor;
+            _classLabel.AddThemeColorOverride("font_color",
+                new Color(textColor.R, textColor.G, textColor.B, 0.8f));
         }
     }
 
@@ -172,13 +198,13 @@ public partial class NCharacterButton : Button
 
     private void ApplyVisualState(bool active, bool instant = false)
     {
-        var liftedOffset = IsSelected ? SelectedOffset : active ? HoverOffset : Vector2.Zero;
-        var targetPosition = _originalPosition + liftedOffset;
-        var targetScale = IsSelected || active ? new Vector2(ActiveScale, ActiveScale) : Vector2.One;
+        var targetPosition = _originalPosition +
+                             (IsSelected ? SelectedOffset : active ? HoverOffset : Vector2.Zero);
 
-        if (_outline != null)
+        if (_tab != null)
         {
-            _outline.Visible = IsSelected;
+            _tab.AddThemeStyleboxOverride("panel",
+                IsSelected && _selectedTabStyle != null ? _selectedTabStyle : _tabStyle);
         }
 
         _hoverTween?.Kill();
@@ -186,16 +212,12 @@ public partial class NCharacterButton : Button
         if (instant)
         {
             Position = targetPosition;
-            Scale = targetScale;
             return;
         }
 
         _hoverTween = CreateTween();
-        _hoverTween.SetParallel()
-            .SetTrans(Tween.TransitionType.Quad)
-            .SetEase(Tween.EaseType.Out);
+        _hoverTween.SetTrans(Tween.TransitionType.Quad).SetEase(Tween.EaseType.Out);
         _hoverTween.TweenProperty(this, "position", targetPosition, AnimationDuration);
-        _hoverTween.TweenProperty(this, "scale", targetScale, AnimationDuration);
     }
 
     private void OnPressed()

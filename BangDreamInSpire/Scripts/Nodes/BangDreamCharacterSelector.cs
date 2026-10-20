@@ -37,7 +37,7 @@ public partial class BangDreamCharacterSelector : Control
     private TextureRect? _characterPoster;
     private TextureRect? _leftGlow;
     private GpuParticles2D? _particles;
-    private HBoxContainer? _characterButtons;
+    private VBoxContainer? _characterButtons;
 
     private Label? _bandLabel;
     private Panel? _classChip;
@@ -79,7 +79,7 @@ public partial class BangDreamCharacterSelector : Control
 
     public override void _Ready()
     {
-        _characterButtons = GetNode<HBoxContainer>("%CharacterButtons");
+        _characterButtons = GetNode<VBoxContainer>("%CharacterButtons");
 
         _showBg = GetNode<ColorRect>("%ShowBg");
         _posterBackdrop = GetNode<ColorRect>("%PosterBackdrop");
@@ -285,13 +285,13 @@ public partial class BangDreamCharacterSelector : Control
                 child.Deselect();
             }
 
-            // 成员卡向右对齐：人数增加时整排向左生长，而不是撑出卡片右缘。
+            // 书签标签从卡片右缘顶端起向下生长：按实际可见人数撑高竖排容器。
             var visibleCount = _buttons.Count(item => item.Visible);
             if (visibleCount > 0)
             {
                 var separation = _characterButtons.GetThemeConstant("separation");
-                var rowWidth = visibleCount * NCharacterButton.CardSize.X + (visibleCount - 1) * separation;
-                _characterButtons.OffsetLeft = _characterButtons.OffsetRight - rowWidth;
+                var stackHeight = visibleCount * NCharacterButton.CardSize.Y + (visibleCount - 1) * separation;
+                _characterButtons.OffsetBottom = _characterButtons.OffsetTop + stackHeight;
             }
 
             var defaultButton = _buttons.FirstOrDefault(item => item is

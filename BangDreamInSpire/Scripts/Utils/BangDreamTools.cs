@@ -73,7 +73,22 @@ public static class BangDreamTools
     /// </summary>
     public static Color ToAccentColor(this Color color)
     {
-        var luminance = 0.2126f * color.R + 0.7152f * color.G + 0.0722f * color.B;
+        var luminance = GetLuminance(color);
         return luminance > 0.55f ? color.Darkened(0.45f) : color;
+    }
+
+    /// <summary>
+    /// 返回能压在该背景色上阅读的文字色：亮底配深字，暗底配白字。
+    /// </summary>
+    public static Color GetReadableTextColor(this Color background)
+    {
+        return GetLuminance(background) > 0.55f
+            ? new Color(0.086f, 0.125f, 0.18f)
+            : Colors.White;
+    }
+
+    private static float GetLuminance(Color color)
+    {
+        return 0.2126f * color.R + 0.7152f * color.G + 0.0722f * color.B;
     }
 }

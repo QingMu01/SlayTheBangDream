@@ -349,9 +349,9 @@ unique_name_in_owner = true
 modulate = Color(0.467, 0.6, 0.8, 0.95)
 layout_mode = 0
 offset_left = 1220.0
-offset_top = 24.0
+offset_top = 40.0
 offset_right = 1380.0
-offset_bottom = 84.0
+offset_bottom = 100.0
 pivot_offset = Vector2(80, 30)
 mouse_filter = 2
 expand_mode = 1
@@ -521,36 +521,23 @@ offset_bottom = 670.0
 mouse_filter = 2
 color = Color(0.29, 0.45, 0.46, 0.9)
 
-[node name="MembersLabel" type="Label" parent="ShowCharacterInfo"]
-layout_mode = 0
-offset_left = 1014.0
-offset_top = -104.0
-offset_right = 1136.0
-offset_bottom = -80.0
-mouse_filter = 2
-theme_override_colors/font_color = Color(0.42, 0.46, 0.52, 1)
-theme_override_fonts/font = ExtResource("12_fira")
-theme_override_font_sizes/font_size = 14
-text = "MEMBERS"
-horizontal_alignment = 2
-
-[node name="CharacterButtons" type="HBoxContainer" parent="ShowCharacterInfo"]
+[node name="CharacterButtons" type="VBoxContainer" parent="ShowCharacterInfo"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 1154.0
-offset_top = -166.0
-offset_right = 1420.0
-offset_bottom = 14.0
+offset_left = 1376.0
+offset_top = 70.0
+offset_right = 1552.0
+offset_bottom = 246.0
 mouse_filter = 2
-theme_override_constants/separation = 14
-alignment = 2
+theme_override_constants/separation = 24
+alignment = 0
 
 [node name="SkinCard" type="Panel" parent="."]
 layout_mode = 0
-offset_left = 1669.0
-offset_top = 212.0
-offset_right = 1939.0
-offset_bottom = 452.0
+offset_left = 1349.0
+offset_top = 6.0
+offset_right = 1639.0
+offset_bottom = 206.0
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_skincard")
 
@@ -574,11 +561,11 @@ anchor_left = 0.0
 anchor_top = 0.0
 anchor_right = 0.0
 anchor_bottom = 0.0
-offset_left = 1.0
-offset_top = 20.0
-offset_right = 1.0
-offset_bottom = 20.0
+offset_left = 12.0
+offset_top = 26.0
+offset_right = 12.0
+offset_bottom = 26.0
 pivot_offset = Vector2(0, 0)
 grow_horizontal = 1
 grow_vertical = 1
-scale = Vector2(0.65, 0.65)
+scale = Vector2(0.55, 0.55)
