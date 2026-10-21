@@ -62,7 +62,6 @@ public partial class BangDreamCharacterSelector : Control
     private BangDreamRichTextLabel? _relicDescription;
     private ColorRect? _accentBar;
     private BangDreamAscensionPanel? _ascensionPanel;
-    private VBoxContainer? _content;
     private BangDreamCharacterDetailsPopup? _detailsPopup;
 
     private Tween? _posterTween;
@@ -122,7 +121,6 @@ public partial class BangDreamCharacterSelector : Control
         _relicDescription = GetNode<BangDreamRichTextLabel>("%RelicDescription");
         _accentBar = GetNode<ColorRect>("%AccentBar");
         _ascensionPanel = GetNode<BangDreamAscensionPanel>("%AscensionPanel");
-        _content = GetNode<VBoxContainer>("ShowCharacterInfo/Content");
         _detailsPopup = GetNode<BangDreamCharacterDetailsPopup>("%CharacterDetailsPopup");
 
         _posterRestPosition = _characterPoster.Position;
@@ -160,9 +158,6 @@ public partial class BangDreamCharacterSelector : Control
 
         _ascensionPanel.Connect(BangDreamAscensionPanel.SignalName.AscensionLevelChanged,
             Callable.From(OnAscensionPanelLevelChanged));
-        // 进阶面板显示时内容列靠上（下方留给面板），隐藏时整列垂直居中，避免卡片下半部留空。
-        _ascensionPanel.VisibilityChanged += SyncContentAlignment;
-        SyncContentAlignment();
 
         _detailsButton.Pressed += OnDetailsButtonPressed;
         _detailsPopup.Connect(BangDreamCharacterDetailsPopup.SignalName.SkinChanged,
@@ -553,17 +548,5 @@ public partial class BangDreamCharacterSelector : Control
         {
             SetRelicShow(startingRelic);
         }
-    }
-
-    private void SyncContentAlignment()
-    {
-        if (_content == null)
-        {
-            return;
-        }
-
-        _content.Alignment = _ascensionPanel is { Visible: true }
-            ? BoxContainer.AlignmentMode.Begin
-            : BoxContainer.AlignmentMode.Center;
     }
 }

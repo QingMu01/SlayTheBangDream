@@ -53,10 +53,10 @@ public partial class BangDreamAscensionPanel : Control
         // 见 BangDreamTools.ConfigureMegaText：Mega 导出属性写在 tscn 里会被编辑器保存时置空。
         BangDreamTools.ConfigureMegaText(
             GetNodeOrNull<Control>("HBoxContainer/AscensionIconContainer/AscensionIcon/AscensionLevel"),
-            maxFontSize: 32, minFontSize: 20);
+            maxFontSize: 26, minFontSize: 16);
         BangDreamTools.ConfigureMegaText(
             GetNodeOrNull<Control>("HBoxContainer/AscensionDescription/Description"),
-            maxFontSize: 22, minFontSize: 14);
+            maxFontSize: 15, minFontSize: 12, autoSize: false);
     }
 
     public override void _Ready()
@@ -235,7 +235,7 @@ public partial class BangDreamAscensionPanel : Control
         {
             var formattedText = AscensionHelper.GetTitle(Ascension).GetFormattedText();
             var formattedText2 = AscensionHelper.GetDescription(Ascension).GetFormattedText();
-            _info.SetTextAutoSize("[b][gold]" + formattedText + "[/gold][/b]\n" + formattedText2);
+            _info.SetTextAutoSize("[b]" + formattedText + "[/b]\n" + formattedText2);
         }
     }
 

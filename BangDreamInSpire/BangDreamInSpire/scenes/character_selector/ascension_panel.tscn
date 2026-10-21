@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=3 uid="uid://r3e6mea37phd"]
+[gd_scene load_steps=16 format=3 uid="uid://r3e6mea37phd"]
 
 [ext_resource type="Script" uid="uid://c61vw8opw6r7u" path="res://Scripts/Nodes/BangDreamAscensionPanel.cs" id="1_yhgpx"]
 [ext_resource type="Script" uid="uid://bfud75nlnqvyj" path="res://Scripts/Nodes/MegeScript/BangDreamGoldArrowButton.cs" id="2_gas87"]
@@ -6,11 +6,12 @@
 [ext_resource type="Texture2D" uid="uid://b4ffylh" path="res://images/atlases/ui_atlas.sprites/settings_tiny_left_arrow.tres" id="3_m8tgv"]
 [ext_resource type="Texture2D" uid="uid://b5x513mavmk5v" path="res://images/ui/placeholder_controller_icon.png" id="3_qf22s"]
 [ext_resource type="Texture2D" uid="uid://b75ih21" path="res://images/atlases/ui_atlas.sprites/top_bar/top_bar_ascension.tres" id="4_m8tgv"]
-[ext_resource type="FontVariation" uid="uid://b8ce4a71ref23" path="res://themes/spectral_bold_shared.tres" id="5_13uwv"]
 [ext_resource type="Script" uid="uid://8fwyrla6d78v" path="res://Scripts/Nodes/MegeScript/BangDreamRichTextLabel.cs" id="8_o2kow"]
+[ext_resource type="FontVariation" uid="uid://c7kiei3ejbckl" path="res://themes/fonts/jpn/noto_sans_cjkjp_medium_shared.tres" id="8_noto"]
 [ext_resource type="FontVariation" uid="uid://c71uw4aqpsn1b" path="res://themes/spectral_glphy_space_two.tres" id="8_yhgpx"]
 [ext_resource type="Texture2D" uid="uid://kjsi4o" path="res://images/atlases/ui_atlas.sprites/settings_tiny_right_arrow.tres" id="10_m8tgv"]
 [ext_resource type="Script" uid="uid://cr26tfi6bv8im" path="res://Scripts/Nodes/MegeScript/BangDreamLabel.cs" id="11_label"]
+[ext_resource type="FontVariation" uid="uid://bxphqqry0qswt" path="res://themes/fonts/zhs/source_han_serif_sc_bold_shared.tres" id="12_serif"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_qf22s"]
 resource_local_to_scene = true
@@ -23,8 +24,8 @@ shader_parameter/v = 1.0
 resource_local_to_scene = true
 shader = ExtResource("3_2vicy")
 shader_parameter/h = 1.0
-shader_parameter/s = 0.750000035625
-shader_parameter/v = 1.2
+shader_parameter/s = 0.75
+shader_parameter/v = 1.0
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_2vicy"]
 resource_local_to_scene = true
@@ -34,29 +35,39 @@ shader_parameter/s = 1.0
 shader_parameter/v = 1.0
 
 [node name="AscensionPanel" type="Control"]
+custom_minimum_size = Vector2(342, 0)
 layout_mode = 3
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-grow_horizontal = 2
+anchors_preset = 0
 mouse_filter = 2
 script = ExtResource("1_yhgpx")
 
+[node name="Rule" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_bottom = 1.0
+offset_top = 2.0
+offset_right = 1.0
+offset_bottom = -2.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.29, 0.45, 0.46, 0.18)
+
 [node name="HBoxContainer" type="HBoxContainer" parent="."]
 layout_mode = 1
-anchors_preset = 10
+anchors_preset = 15
 anchor_right = 1.0
-offset_left = -396.0
-offset_right = 404.0
-offset_bottom = 150.0
+anchor_bottom = 1.0
+offset_left = 14.0
 grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
-theme_override_constants/separation = 8
-alignment = 1
+theme_override_constants/separation = 10
 
 [node name="LeftArrowContainer" type="Control" parent="HBoxContainer"]
-custom_minimum_size = Vector2(80, 64)
+custom_minimum_size = Vector2(26, 26)
 layout_mode = 2
+size_flags_vertical = 4
 mouse_filter = 2
 
 [node name="LeftArrow" type="Control" parent="HBoxContainer/LeftArrowContainer"]
@@ -66,24 +77,18 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+pivot_offset = Vector2(13, 13)
 script = ExtResource("2_gas87")
 
 [node name="TextureRect" type="TextureRect" parent="HBoxContainer/LeftArrowContainer/LeftArrow"]
-material = SubResource("ShaderMaterial_qf22s")
-custom_minimum_size = Vector2(32, 32)
+material = SubResource("ShaderMaterial_2vicy")
+modulate = Color(0.86, 0.72, 0.44, 1)
 layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -16.0
-offset_top = -60.0
-offset_right = 16.0
-offset_bottom = 60.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-pivot_offset = Vector2(16, 60)
 mouse_filter = 2
 texture = ExtResource("3_m8tgv")
 expand_mode = 1
@@ -91,32 +96,34 @@ stretch_mode = 5
 
 [node name="LeftTriggerIcon" type="TextureRect" parent="HBoxContainer/LeftArrowContainer"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(48, 48)
+visible = false
+custom_minimum_size = Vector2(26, 26)
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -24.0
-offset_top = -24.0
-offset_right = 24.0
-offset_bottom = 24.0
+offset_left = -13.0
+offset_top = -13.0
+offset_right = 13.0
+offset_bottom = 13.0
 grow_horizontal = 2
 grow_vertical = 2
-size_flags_horizontal = 4
-size_flags_vertical = 4
+mouse_filter = 2
 texture = ExtResource("3_qf22s")
 expand_mode = 2
 stretch_mode = 4
 
 [node name="AscensionIconContainer" type="Control" parent="HBoxContainer"]
-custom_minimum_size = Vector2(64, 64)
+custom_minimum_size = Vector2(52, 52)
 layout_mode = 2
+size_flags_vertical = 4
 mouse_filter = 2
 
 [node name="AscensionIcon" type="TextureRect" parent="HBoxContainer/AscensionIconContainer"]
 unique_name_in_owner = true
+modulate = Color(0.78, 0.66, 0.58, 1)
 material = SubResource("ShaderMaterial_bw1ox")
 layout_mode = 1
 anchors_preset = 15
@@ -134,54 +141,57 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = 10.0
-offset_bottom = 10.0
+offset_top = 4.0
+offset_bottom = 4.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/outline_size = 7
-theme_override_fonts/font = ExtResource("5_13uwv")
-theme_override_font_sizes/font_size = 32
+theme_override_colors/font_color = Color(1, 0.972, 0.933, 1)
+theme_override_colors/font_outline_color = Color(0.353, 0.204, 0, 1)
+theme_override_constants/outline_size = 2
+theme_override_fonts/font = ExtResource("12_serif")
+theme_override_font_sizes/font_size = 24
 text = "7"
 horizontal_alignment = 1
 vertical_alignment = 1
 script = ExtResource("11_label")
 
-[node name="AscensionDescription" type="Control" parent="HBoxContainer"]
-custom_minimum_size = Vector2(400, 120)
+[node name="AscensionDescription" type="VBoxContainer" parent="HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+mouse_filter = 2
+theme_override_constants/separation = 2
+
+[node name="Caption" type="Label" parent="HBoxContainer/AscensionDescription"]
 layout_mode = 2
 mouse_filter = 2
+theme_override_colors/font_color = Color(0.478, 0.451, 0.404, 1)
+theme_override_fonts/font = ExtResource("8_yhgpx")
+theme_override_font_sizes/font_size = 11
+text = "ASCENSION"
 
 [node name="Description" type="RichTextLabel" parent="HBoxContainer/AscensionDescription"]
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_top = 8.0
-offset_bottom = 128.0
-grow_horizontal = 2
+layout_mode = 2
+size_flags_horizontal = 3
 mouse_filter = 2
-theme_override_colors/default_color = Color(0.07450981, 0.105882354, 0.16470589, 1)
-theme_override_constants/line_separation = -2
-theme_override_constants/shadow_offset_x = 4
-theme_override_constants/shadow_offset_y = 3
-theme_override_fonts/normal_font = ExtResource("8_yhgpx")
-theme_override_fonts/bold_font = ExtResource("5_13uwv")
-theme_override_font_sizes/normal_font_size = 22
-theme_override_font_sizes/bold_font_size = 22
-theme_override_font_sizes/bold_italics_font_size = 22
-theme_override_font_sizes/italics_font_size = 22
-theme_override_font_sizes/mono_font_size = 22
+autowrap_mode = 3
+theme_override_colors/default_color = Color(0.322, 0.302, 0.278, 1)
+theme_override_constants/line_separation = 2
+theme_override_fonts/normal_font = ExtResource("8_noto")
+theme_override_fonts/bold_font = ExtResource("12_serif")
+theme_override_font_sizes/normal_font_size = 13
+theme_override_font_sizes/bold_font_size = 15
 bbcode_enabled = true
-text = "[b][gold]Intruder Alert[/gold][/b]
-Whenever you kill an [red]Elite[/red], other [red]Elites[/red] in the Act gain [blue]1[/blue] [gold]Strength[/gold] at the start of combat."
+text = "[b]Intruder Alert[/b]
+Whenever you kill an Elite, other Elites in the Act gain 1 Strength at the start of combat."
+fit_content = true
 scroll_active = false
-vertical_alignment = 1
 script = ExtResource("8_o2kow")
-theme_override_fonts/bold_font = ExtResource("5_13uwv")
-theme_override_fonts/normal_font = ExtResource("8_yhgpx")
 
 [node name="RightArrowContainer" type="Control" parent="HBoxContainer"]
-custom_minimum_size = Vector2(80, 64)
+custom_minimum_size = Vector2(26, 26)
 layout_mode = 2
+size_flags_vertical = 4
 mouse_filter = 2
 
 [node name="RightArrow" type="Control" parent="HBoxContainer/RightArrowContainer"]
@@ -191,24 +201,18 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+pivot_offset = Vector2(13, 13)
 script = ExtResource("2_gas87")
 
 [node name="TextureRect" type="TextureRect" parent="HBoxContainer/RightArrowContainer/RightArrow"]
-material = SubResource("ShaderMaterial_2vicy")
-custom_minimum_size = Vector2(32, 32)
+material = SubResource("ShaderMaterial_qf22s")
+modulate = Color(0.86, 0.72, 0.44, 1)
 layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -16.0
-offset_top = -60.0
-offset_right = 16.0
-offset_bottom = 60.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-pivot_offset = Vector2(16, 60)
 mouse_filter = 2
 texture = ExtResource("10_m8tgv")
 expand_mode = 1
@@ -216,21 +220,21 @@ stretch_mode = 5
 
 [node name="RightTriggerIcon" type="TextureRect" parent="HBoxContainer/RightArrowContainer"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(48, 48)
+visible = false
+custom_minimum_size = Vector2(26, 26)
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -124.0
-offset_top = -24.0
-offset_right = 124.0
-offset_bottom = 24.0
+offset_left = -13.0
+offset_top = -13.0
+offset_right = 13.0
+offset_bottom = 13.0
 grow_horizontal = 2
 grow_vertical = 2
-size_flags_horizontal = 4
-size_flags_vertical = 4
+mouse_filter = 2
 texture = ExtResource("3_qf22s")
 expand_mode = 2
-stretch_mode = 5
+stretch_mode = 4
