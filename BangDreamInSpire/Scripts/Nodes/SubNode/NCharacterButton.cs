@@ -21,6 +21,7 @@ public partial class NCharacterButton : Button
     private const string MessagePrefixKey = "BANG_DREAM_IN_SPIRE_CHARACTER_CANT_SELECT_";
 
     private const float AnimationDuration = 0.16f;
+    private const float OutlineDuration = 0.22f;
 
     private static readonly Vector2 SelectedOffset = new(0f, -10f);
     private static readonly Vector2 HoverOffset = new(0f, -4f);
@@ -35,10 +36,11 @@ public partial class NCharacterButton : Button
     private BangDreamLabel? _nameLabel;
     private BangDreamLabel? _classLabel;
 
-    private StyleBoxFlat? _tabStyle;
-    private StyleBoxFlat? _selectedTabStyle;
+    private StyleBoxFlat? _liveTabStyle;
 
     private Tween? _hoverTween;
+    private Tween? _outlineTween;
+    private float _outlineProgress;
 
     private Vector2 _originalPosition;
     private bool _isSelected;
@@ -135,7 +137,7 @@ public partial class NCharacterButton : Button
         var background = memberColor.Darkened(0.1f);
         var textColor = background.GetReadableTextColor();
 
-        _tabStyle = new StyleBoxFlat
+        var baseStyle = new StyleBoxFlat
         {
             BgColor = background,
             CornerRadiusTopLeft = 12,
@@ -148,15 +150,14 @@ public partial class NCharacterButton : Button
             AntiAliasing = true
         };
 
-        _selectedTabStyle = (StyleBoxFlat)_tabStyle.Duplicate();
-        _selectedTabStyle.SetBorderWidthAll(2);
-        _selectedTabStyle.BorderColor = SelectedBorderColor;
-        _selectedTabStyle.ShadowColor = new Color(0.03f, 0.05f, 0.08f, 0.3f);
-        _selectedTabStyle.ShadowSize = 14;
+        // 面板始终用同一个 StyleBox 实例，选中/取消选中时动画它的描边与投影，
+        // 这样切换角色能看到描边「长出来」的过程，而不是瞬间切换样式。
+        _liveTabStyle = (StyleBoxFlat)baseStyle.Duplicate();
+        ApplyOutline(_outlineProgress);
 
         if (_tab != null)
         {
-            _tab.AddThemeStyleboxOverride("panel", _tabStyle);
+            _tab.AddThemeStyleboxOverride("panel", _liveTabStyle);
         }
 
         if (_nameLabel != null)
@@ -194,12 +195,7 @@ public partial class NCharacterButton : Button
         var targetPosition = _originalPosition +
                              (IsSelected ? SelectedOffset : active ? HoverOffset : Vector2.Zero);
 
-        if (_tab != null)
-        {
-            _tab.AddThemeStyleboxOverride("panel",
-                IsSelected && _selectedTabStyle != null ? _selectedTabStyle : _tabStyle);
-        }
-
+        AnimateOutline(IsSelected, instant);
         _hoverTween?.Kill();
 
         if (instant)
@@ -211,6 +207,49 @@ public partial class NCharacterButton : Button
         _hoverTween = CreateTween();
         _hoverTween.SetTrans(Tween.TransitionType.Quad).SetEase(Tween.EaseType.Out);
         _hoverTween.TweenProperty(this, "position", targetPosition, AnimationDuration);
+    }
+
+    /// <summary>
+    /// 描边动画：0 = 无描边，1 = 完整白描边 + 加大的投影。选中时描边从 0 长出来（带一点回弹）。
+    /// </summary>
+    private void AnimateOutline(bool selected, bool instant)
+    {
+        if (_liveTabStyle == null)
+        {
+            return;
+        }
+
+        var target = selected ? 1f : 0f;
+        _outlineTween?.Kill();
+
+        if (instant)
+        {
+            ApplyOutline(_outlineProgress = target);
+            return;
+        }
+
+        _outlineTween = CreateTween();
+        _outlineTween.SetTrans(selected ? Tween.TransitionType.Back : Tween.TransitionType.Cubic);
+        _outlineTween.SetEase(Tween.EaseType.Out);
+        _outlineTween.TweenMethod(
+            Callable.From<float>(value => ApplyOutline(_outlineProgress = value)),
+            _outlineProgress, target, OutlineDuration);
+    }
+
+    private void ApplyOutline(float progress)
+    {
+        if (_liveTabStyle == null)
+        {
+            return;
+        }
+
+        var t = Mathf.Clamp(progress, 0f, 1.25f);
+        _liveTabStyle.SetBorderWidthAll(Mathf.RoundToInt(2.4f * t));
+        _liveTabStyle.BorderColor = new Color(
+            SelectedBorderColor.R, SelectedBorderColor.G, SelectedBorderColor.B, SelectedBorderColor.A * t);
+        _liveTabStyle.ShadowColor = new Color(0.05f, 0.08f, 0.12f, Mathf.Lerp(0.18f, 0.3f, t));
+        _liveTabStyle.ShadowSize = Mathf.RoundToInt(Mathf.Lerp(8f, 14f, t));
+        _liveTabStyle.ShadowOffset = new Vector2(0f, Mathf.Lerp(3f, 4.5f, t));
     }
 
     private void OnPressed()
