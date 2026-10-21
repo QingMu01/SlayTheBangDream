@@ -84,8 +84,8 @@ corner_radius_top_right = 3
 corner_radius_bottom_right = 3
 corner_radius_bottom_left = 3
 shadow_color = Color(0.05, 0.08, 0.12, 0.16)
-shadow_size = 30
-shadow_offset = Vector2(0, 12)
+shadow_size = 15
+shadow_offset = Vector2(12, 12)
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_paper"]
 resource_local_to_scene = true
@@ -97,11 +97,11 @@ shader_parameter/fiber_color = Color(1, 1, 1, 1)
 shader_parameter/grain_strength = 0.035
 shader_parameter/fiber_strength = 0.11
 shader_parameter/mottle_strength = 0.07
-shader_parameter/edge_strength = 0.1
+shader_parameter/edge_strength = 0.0
 shader_parameter/edge_width = 18.0
 shader_parameter/grain_scale = 1.0
 shader_parameter/rim_color = Color(0.78, 0.749, 0.694, 1)
-shader_parameter/rim_strength = 0.22
+shader_parameter/rim_strength = 0.0
 shader_parameter/opacity = 1.0
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_bg"]
@@ -135,13 +135,6 @@ shader_parameter/slant_slope = 0.1
 shader_parameter/edge_softness = 0.0
 shader_parameter/sweep_band_width = 26.0
 shader_parameter/sweep_softness = 2.0
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_chip"]
-bg_color = Color(0.29, 0.45, 0.46, 1)
-corner_radius_top_left = 14
-corner_radius_top_right = 14
-corner_radius_bottom_right = 14
-corner_radius_bottom_left = 14
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_details_normal"]
 bg_color = Color(0.29, 0.45, 0.46, 0.1)
@@ -178,6 +171,13 @@ corner_radius_top_left = 22
 corner_radius_top_right = 22
 corner_radius_bottom_right = 22
 corner_radius_bottom_left = 22
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_chip"]
+bg_color = Color(0.29, 0.45, 0.46, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_stat"]
 bg_color = Color(0.973, 0.966, 0.949, 1)
@@ -400,12 +400,13 @@ stretch_mode = 5
 [node name="CharacterButtons" type="HBoxContainer" parent="."]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 1441.0
+offset_left = 1390.0
 offset_top = 84.0
-offset_right = 1619.0
+offset_right = 1568.0
 offset_bottom = 188.0
 mouse_filter = 2
 theme_override_constants/separation = 26
+alignment = 2
 
 [node name="ShowCharacterInfo" type="Panel" parent="."]
 layout_mode = 0
@@ -566,12 +567,14 @@ text = "Key."
 horizontal_alignment = 1
 vertical_alignment = 1
 script = ExtResource("23_label")
+AutoSizeEnabled = null
+MinFontSize = null
+MaxFontSize = null
 
 [node name="SmallIntro" type="Label" parent="ShowCharacterInfo/Content/HeaderRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_vertical = 4
 theme_override_colors/font_color = Color(0.467, 0.6, 0.8, 1)
 theme_override_fonts/font = ExtResource("22_track")
 theme_override_font_sizes/font_size = 16
@@ -621,6 +624,11 @@ fit_content = true
 scroll_active = false
 shortcut_keys_enabled = false
 script = ExtResource("9_rich")
+AutoSizeEnabled = null
+MinFontSize = null
+MaxFontSize = null
+IsVerticallyBound = null
+IsHorizontallyBound = null
 
 [node name="GapStats" type="Control" parent="ShowCharacterInfo/Content"]
 custom_minimum_size = Vector2(0, 24)
@@ -663,6 +671,9 @@ theme_override_fonts/font = ExtResource("11_kreon")
 theme_override_font_sizes/font_size = 28
 text = "75"
 script = ExtResource("23_label")
+AutoSizeEnabled = null
+MinFontSize = null
+MaxFontSize = null
 
 [node name="GoldChip" type="Panel" parent="ShowCharacterInfo/Content/StatsRow"]
 unique_name_in_owner = true
@@ -695,6 +706,9 @@ theme_override_fonts/font = ExtResource("11_kreon")
 theme_override_font_sizes/font_size = 28
 text = "99"
 script = ExtResource("23_label")
+AutoSizeEnabled = null
+MinFontSize = null
+MaxFontSize = null
 
 [node name="GapRule2" type="Control" parent="ShowCharacterInfo/Content"]
 custom_minimum_size = Vector2(0, 28)
@@ -749,6 +763,11 @@ text = "[b][gold]调音器[/gold][/b]
 fit_content = true
 scroll_active = false
 script = ExtResource("9_rich")
+AutoSizeEnabled = null
+MinFontSize = null
+MaxFontSize = null
+IsVerticallyBound = null
+IsHorizontallyBound = null
 
 [node name="AscensionPanel" parent="ShowCharacterInfo/Content/FooterRow" instance=ExtResource("14_asc")]
 unique_name_in_owner = true

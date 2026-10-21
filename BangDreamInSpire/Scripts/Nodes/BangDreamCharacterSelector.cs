@@ -280,12 +280,14 @@ public partial class BangDreamCharacterSelector : Control
                 child.QueueFreeSafely();
             }
 
+            // 注册顺序靠前的角色排在更右侧：先按注册序建好，再倒序放进 HBox。
+            var wrappers = new List<Control>(_characters.Count);
             foreach (var character in _characters)
             {
                 var child = NCharacterButton.Create(this, character);
                 var wrapper = new Control { CustomMinimumSize = NCharacterButton.CardSize };
                 wrapper.AddChildSafely(child);
-                _characterButtons.AddChildSafely(wrapper);
+                wrappers.Add(wrapper);
 
                 _buttons.Add(child);
 
@@ -295,6 +297,11 @@ public partial class BangDreamCharacterSelector : Control
                 }
 
                 child.Deselect();
+            }
+
+            for (var i = wrappers.Count - 1; i >= 0; i--)
+            {
+                _characterButtons.AddChildSafely(wrappers[i]);
             }
 
             // 书签从卡片右缘顶端向左生长：人数变化时重新对齐整排。
