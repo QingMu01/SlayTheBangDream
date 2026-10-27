@@ -13,9 +13,9 @@
     -->
     <PropertyGroup>
         <Sts2Dir Condition="'$(Sts2Dir)' == '' and '$(STS2_DIR)' != ''">$(STS2_DIR)</Sts2Dir>
-        <Sts2Dir Condition="'$(Sts2Dir)' == ''">/home/QingMu/.local/share/Steam/steamapps/common/Slay the Spire 2</Sts2Dir>
+        <Sts2Dir Condition="'$(Sts2Dir)' == ''">/home/qingmu/.local/share/Steam/steamapps/common/Slay the Spire 2</Sts2Dir>
         <GodotExe Condition="'$(GodotExe)' == '' and '$(GODOT_EXE)' != ''">$(GODOT_EXE)</GodotExe>
-        <GodotExe Condition="'$(GodotExe)' == ''">/home/QingMu/Software/megadot-4.5.1-m.14-linux-x86_64-editor-csharp/MegaDot_v4.5.1-stable_mono_linux.x86_64</GodotExe>
+        <GodotExe Condition="'$(GodotExe)' == ''">/usr/lib/megadot/MegaDot_v4.5.1-stable_mono_linux.x86_64</GodotExe>
     </PropertyGroup>
 
     <!-- 本机/分支局部覆盖（不入库）：模板见 Directory.Build.local.props.example -->
@@ -55,7 +55,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="STS2.RitsuLib" Version="0.6.9"/>
+        <PackageReference Include="STS2.RitsuLib" Version="0.6.10"/>
         <!--        <PackageReference Include="Krafs.Publicizer" Version="2.3.0" PrivateAssets="all"/>-->
     </ItemGroup>
 
