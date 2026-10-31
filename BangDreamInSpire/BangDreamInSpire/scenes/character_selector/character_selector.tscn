@@ -1,64 +1,195 @@
-[gd_scene load_steps=22 format=3 uid="uid://dck01ibc7cr71"]
+[gd_scene load_steps=44 format=3 uid="uid://dck01ibc7cr71"]
 
-[ext_resource type="Script" uid="uid://cmtlynk8dabtw" path="res://Scripts/Nodes/BangDreamCharacterSelector.cs" id="1_4y8i4"]
-[ext_resource type="Texture2D" uid="uid://bx7y6ggsxsgty" path="res://BangDreamInSpire/images/sceneui/bg_gray.9d1fe428.png" id="2_308mo"]
-[ext_resource type="Texture2D" uid="uid://dsddcrx3c10pb" path="res://images/vfx/common/common_square_small.png" id="3_308mo"]
-[ext_resource type="Shader" uid="uid://8uf51kmnmlpy" path="res://BangDreamInSpire/shaders/mix_color_and_line.gdshader" id="3_kq4ob"]
-[ext_resource type="Texture2D" uid="uid://2d3vyqtct4cj" path="res://BangDreamInSpire/images/sceneui/img_sakiko-togawa_2.webp" id="4_3uw8w"]
-[ext_resource type="Texture2D" uid="uid://cknkfj7wdeoq1" path="res://BangDreamInSpire/images/sceneui/health.png" id="5_d38ck"]
-[ext_resource type="Texture2D" uid="uid://1efrtqal7gmo" path="res://BangDreamInSpire/images/sceneui/gold.png" id="6_uhkod"]
-[ext_resource type="FontVariation" uid="uid://c7kiei3ejbckl" path="res://themes/fonts/jpn/noto_sans_cjkjp_medium_shared.tres" id="7_rlwux"]
-[ext_resource type="Script" uid="uid://8fwyrla6d78v" path="res://Scripts/Nodes/MegeScript/BangDreamRichTextLabel.cs" id="8_syx62"]
-[ext_resource type="Texture2D" uid="uid://bctjbu1ke8sb3" path="res://BangDreamInSpire/images/sceneui/music_draw.png" id="10_dtmv1"]
-[ext_resource type="PackedScene" uid="uid://r3e6mea37phd" path="res://BangDreamInSpire/scenes/character_selector/ascension_panel.tscn" id="12_4y8i4"]
-[ext_resource type="FontVariation" uid="uid://b8ce4a71ref23" path="res://themes/spectral_bold_shared.tres" id="12_308mo"]
-[ext_resource type="FontVariation" uid="uid://b31wycusbsq8w" path="res://themes/fonts/jpn/noto_sans_cjkjp_bold_shared.tres" id="12_pbs0m"]
-[ext_resource type="PackedScene" uid="uid://bfq1kub0qqf3m" path="res://BangDreamInSpire/scenes/character_selector/skin_selector.tscn" id="14_kq4ob"]
+[ext_resource type="Script" uid="uid://cmtlynk8dabtw" path="res://Scripts/Nodes/BangDreamCharacterSelector.cs" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://bx7y6ggsxsgty" path="res://BangDreamInSpire/images/sceneui/bg_gray.9d1fe428.png" id="2_bg"]
+[ext_resource type="Texture2D" uid="uid://dsddcrx3c10pb" path="res://images/vfx/common/common_square_small.png" id="3_particle"]
+[ext_resource type="Shader" uid="uid://8uf51kmnmlpy" path="res://BangDreamInSpire/shaders/mix_color_and_line.gdshader" id="4_shader"]
+[ext_resource type="Texture2D" uid="uid://2d3vyqtct4cj" path="res://BangDreamInSpire/images/sceneui/img_sakiko-togawa_2.webp" id="5_poster"]
+[ext_resource type="Texture2D" uid="uid://cknkfj7wdeoq1" path="res://BangDreamInSpire/images/sceneui/health.png" id="6_health"]
+[ext_resource type="Texture2D" uid="uid://1efrtqal7gmo" path="res://BangDreamInSpire/images/sceneui/gold.png" id="7_gold"]
+[ext_resource type="FontVariation" uid="uid://c7kiei3ejbckl" path="res://themes/fonts/jpn/noto_sans_cjkjp_medium_shared.tres" id="8_noto"]
+[ext_resource type="Script" uid="uid://8fwyrla6d78v" path="res://Scripts/Nodes/MegeScript/BangDreamRichTextLabel.cs" id="9_rich"]
+[ext_resource type="FontVariation" uid="uid://bxphqqry0qswt" path="res://themes/fonts/zhs/source_han_serif_sc_bold_shared.tres" id="10_serif"]
+[ext_resource type="FontVariation" uid="uid://ciql5khgewwbm" path="res://themes/kreon_bold_glyph_space_two.tres" id="11_kreon"]
+[ext_resource type="FontVariation" uid="uid://7k0n7sxph05k" path="res://themes/fonts/rus/fira_sans_extra_condensed_bold_shared.tres" id="12_fira"]
+[ext_resource type="FontVariation" uid="uid://b8ce4a71ref23" path="res://themes/spectral_bold_shared.tres" id="13_spectral"]
+[ext_resource type="PackedScene" uid="uid://r3e6mea37phd" path="res://BangDreamInSpire/scenes/character_selector/ascension_panel.tscn" id="14_asc"]
+[ext_resource type="Texture2D" uid="uid://bh4h4ty5mcsj" path="res://images/packed/vfx/generic/twinkle_star.png" id="15_star"]
+[ext_resource type="Texture2D" uid="uid://bctjbu1ke8sb3" path="res://BangDreamInSpire/images/sceneui/music_draw.png" id="16_relic"]
+[ext_resource type="Shader" uid="uid://bmcmftrx7jyco" path="res://BangDreamInSpire/shaders/parallelogram_reveal_sweep.gdshader" id="17_sweep"]
+[ext_resource type="PackedScene" uid="uid://c8p0m3xq6v1ba" path="res://BangDreamInSpire/scenes/character_selector/character_details_popup.tscn" id="18_popup"]
+[ext_resource type="Shader" uid="uid://d0wcj6w86sq02" path="res://BangDreamInSpire/shaders/parallelogram_overlay.gdshader" id="19_dots"]
+[ext_resource type="Texture2D" uid="uid://ddg1bga84moge" path="res://BangDreamInSpire/images/vfx/icon_music_note.png" id="20_note"]
+[ext_resource type="Shader" uid="uid://bqp7rap4er2x" path="res://BangDreamInSpire/shaders/paper_grain.gdshader" id="21_paper"]
+[ext_resource type="FontVariation" uid="uid://c71uw4aqpsn1b" path="res://themes/spectral_glphy_space_two.tres" id="22_track"]
+[ext_resource type="Script" uid="uid://cr26tfi6bv8im" path="res://Scripts/Nodes/MegeScript/BangDreamLabel.cs" id="23_label"]
 
-[sub_resource type="Curve" id="Curve_kq4ob"]
+[sub_resource type="Curve" id="Curve_particle"]
 _data = [Vector2(0, 0.50128955), 0.0, 0.0, 0, 0, Vector2(0.7518797, 0), 0.0, 0.0, 0, 0]
 point_count = 2
 
-[sub_resource type="CurveTexture" id="CurveTexture_3uw8w"]
+[sub_resource type="CurveTexture" id="CurveTexture_particle"]
 width = 1920
-curve = SubResource("Curve_kq4ob")
+curve = SubResource("Curve_particle")
 
-[sub_resource type="Gradient" id="Gradient_d38ck"]
-interpolation_mode = 2
-colors = PackedColorArray(0.67058825, 0.58431375, 0.77254903, 1, 0.25490198, 0.24313726, 0.4392157, 1)
+[sub_resource type="Gradient" id="Gradient_particle"]
+colors = PackedColorArray(1, 1, 1, 0.9, 1, 1, 1, 0.12)
 
-[sub_resource type="GradientTexture1D" id="GradientTexture1D_uhkod"]
-gradient = SubResource("Gradient_d38ck")
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_particle"]
+gradient = SubResource("Gradient_particle")
 width = 1920
-use_hdr = true
 
-[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_rlwux"]
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_particle"]
 lifetime_randomness = 0.4
 emission_shape = 3
-emission_box_extents = Vector3(2000, 10, 100)
+emission_box_extents = Vector3(1400, 10, 100)
 direction = Vector3(1, 1, 0)
 gravity = Vector3(-350, 98, 0)
-scale_min = 0.099999994
-scale_max = 0.29999998
-color_ramp = SubResource("GradientTexture1D_uhkod")
-alpha_curve = SubResource("CurveTexture_3uw8w")
-hue_variation_min = -1.0
-hue_variation_max = 0.99999994
+scale_min = 0.1
+scale_max = 0.3
+color_ramp = SubResource("GradientTexture1D_particle")
+alpha_curve = SubResource("CurveTexture_particle")
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_3jwpl"]
-bg_color = Color(1, 1, 1, 1)
-border_width_right = 5
-border_color = Color(0.46666667, 0.6, 0.8, 1)
-corner_radius_top_left = 4
-corner_radius_top_right = 4
-corner_radius_bottom_right = 4
-corner_radius_bottom_left = 4
+[sub_resource type="Gradient" id="Gradient_glow"]
+offsets = PackedFloat32Array(0, 0.5, 1)
+colors = PackedColorArray(1, 1, 1, 0.24, 1, 1, 1, 0.08, 1, 1, 1, 0)
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_h6w26"]
-shader = ExtResource("3_kq4ob")
-shader_parameter/bg_color = Color(0.46666667, 0.6, 0.8, 1)
-shader_parameter/line_color = Color(0.95686275, 0.95686275, 0.95686275, 0.4117647)
-shader_parameter/line_count = 5
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_glow"]
+gradient = SubResource("Gradient_glow")
+width = 1024
+
+[sub_resource type="Gradient" id="Gradient_dots"]
+colors = PackedColorArray(1, 1, 1, 0, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_dots"]
+gradient = SubResource("Gradient_dots")
+width = 512
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_dots"]
+resource_local_to_scene = true
+shader = ExtResource("19_dots")
+shader_parameter/slant_slope = 0.14
+shader_parameter/edge_softness = 0.0
+shader_parameter/edge_coverage_power = 0.25
+shader_parameter/gradient_texture = SubResource("GradientTexture1D_dots")
+shader_parameter/gradient_angle = 90.0
+shader_parameter/dot_radius = 1.4
+shader_parameter/dot_spacing = 8.0
+shader_parameter/dot_offset = Vector2(0, 0)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card"]
+bg_color = Color(0.984, 0.976, 0.957, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+shadow_color = Color(0.05, 0.08, 0.12, 0.16)
+shadow_size = 15
+shadow_offset = Vector2(12, 12)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_paper"]
+resource_local_to_scene = true
+shader = ExtResource("21_paper")
+shader_parameter/area_size = Vector2(1420, 670)
+shader_parameter/corner_radius = 3.0
+shader_parameter/paper_color = Color(0.9882353, 0.98039216, 1, 1)
+shader_parameter/fiber_color = Color(1, 1, 1, 1)
+shader_parameter/grain_strength = 0.035
+shader_parameter/fiber_strength = 0.11
+shader_parameter/mottle_strength = 0.07
+shader_parameter/edge_strength = 0.0
+shader_parameter/edge_width = 18.0
+shader_parameter/grain_scale = 1.0
+shader_parameter/rim_color = Color(0.78, 0.749, 0.694, 1)
+shader_parameter/rim_strength = 0.0
+shader_parameter/opacity = 1.0
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_bg"]
+resource_local_to_scene = true
+shader = ExtResource("4_shader")
+shader_parameter/bg_color = Color(0.467, 0.6, 0.8, 1)
+shader_parameter/line_color = Color(1, 1, 1, 0.12)
+shader_parameter/line_count = 6
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_paper_stage"]
+resource_local_to_scene = true
+shader = ExtResource("21_paper")
+shader_parameter/area_size = Vector2(480, 670)
+shader_parameter/corner_radius = 0.0
+shader_parameter/paper_color = Color(0.973, 0.961, 0.937, 1)
+shader_parameter/fiber_color = Color(0.898, 0.875, 0.831, 1)
+shader_parameter/grain_strength = 0.035
+shader_parameter/fiber_strength = 0.11
+shader_parameter/mottle_strength = 0.07
+shader_parameter/edge_strength = 0.0
+shader_parameter/edge_width = 18.0
+shader_parameter/grain_scale = 1.0
+shader_parameter/rim_color = Color(0.78, 0.749, 0.694, 1)
+shader_parameter/rim_strength = 0.0
+shader_parameter/opacity = 0.16
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_sweep"]
+resource_local_to_scene = true
+shader = ExtResource("17_sweep")
+shader_parameter/slant_slope = 0.1
+shader_parameter/edge_softness = 0.0
+shader_parameter/sweep_band_width = 26.0
+shader_parameter/sweep_softness = 2.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_details_normal"]
+bg_color = Color(0.29, 0.45, 0.46, 0.1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.29, 0.45, 0.46, 0.45)
+corner_radius_top_left = 22
+corner_radius_top_right = 22
+corner_radius_bottom_right = 22
+corner_radius_bottom_left = 22
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_details_pressed"]
+bg_color = Color(0.29, 0.45, 0.46, 0.28)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.29, 0.45, 0.46, 0.8)
+corner_radius_top_left = 22
+corner_radius_top_right = 22
+corner_radius_bottom_right = 22
+corner_radius_bottom_left = 22
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_details_hover"]
+bg_color = Color(0.29, 0.45, 0.46, 0.2)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.29, 0.45, 0.46, 0.7)
+corner_radius_top_left = 22
+corner_radius_top_right = 22
+corner_radius_bottom_right = 22
+corner_radius_bottom_left = 22
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_chip"]
+bg_color = Color(0.29, 0.45, 0.46, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_stat"]
+bg_color = Color(0.973, 0.966, 0.949, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.827, 0.804, 0.761, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
 
 [node name="CharacterSelector" type="Control"]
 layout_mode = 3
@@ -67,277 +198,591 @@ offset_left = 349.0
 offset_top = 98.0
 offset_right = 349.0
 offset_bottom = 98.0
-script = ExtResource("1_4y8i4")
+script = ExtResource("1_script")
 
 [node name="ScreenBackground" type="TextureRect" parent="."]
 layout_mode = 0
-offset_left = -1067.0
-offset_top = -435.0
-offset_right = 2422.0
-offset_bottom = 1531.0
-texture = ExtResource("2_308mo")
+offset_left = -349.0
+offset_top = -98.0
+offset_right = 2211.0
+offset_bottom = 1102.0
+mouse_filter = 2
+texture = ExtResource("2_bg")
+expand_mode = 1
 
 [node name="GPUParticles2D" type="GPUParticles2D" parent="ScreenBackground"]
-position = Vector2(2885, 376)
-amount = 24
-texture = ExtResource("3_308mo")
-lifetime = 15.0
-speed_scale = 2.0
+modulate = Color(0.549, 0.827, 0.831, 0.55)
+position = Vector2(2100, 480)
+amount = 22
+texture = ExtResource("3_particle")
+lifetime = 14.0
+speed_scale = 1.8
 trail_enabled = true
-trail_lifetime = 2.5
+trail_lifetime = 2.0
 trail_sections = 2
 trail_section_subdivisions = 1
-process_material = SubResource("ParticleProcessMaterial_rlwux")
+process_material = SubResource("ParticleProcessMaterial_particle")
 
-[node name="ShowCharacterInfo" type="Panel" parent="."]
-custom_minimum_size = Vector2(700, 400)
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = 342.5
-offset_top = 205.5
-offset_right = 1577.5
-offset_bottom = 875.5
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_3jwpl")
+[node name="LeftGlow" type="TextureRect" parent="."]
+self_modulate = Color(0.549, 0.827, 0.831, 0.85)
+layout_mode = 0
+offset_left = -349.0
+offset_top = -98.0
+offset_right = 1089.0
+offset_bottom = 1102.0
+mouse_filter = 2
+texture = SubResource("GradientTexture1D_glow")
+expand_mode = 1
 
-[node name="CharacterButtons" type="VBoxContainer" parent="ShowCharacterInfo"]
-unique_name_in_owner = true
-show_behind_parent = true
-layout_mode = 1
-anchors_preset = 11
-anchor_left = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 0
-grow_vertical = 2
-theme_override_constants/separation = 80
+[node name="DotBand" type="ColorRect" parent="."]
+material = SubResource("ShaderMaterial_dots")
+instance_shader_parameters/dot_color = Color(0.29, 0.45, 0.46, 0.28)
+instance_shader_parameters/rect_size = Vector2(840, 600)
+instance_shader_parameters/reveal_progress = 1.0
+layout_mode = 0
+offset_left = -81.0
+offset_top = 542.0
+offset_right = 759.0
+offset_bottom = 1142.0
+rotation = -0.08
+pivot_offset = Vector2(420, 300)
+mouse_filter = 2
 
-[node name="SplitContainer" type="SplitContainer" parent="ShowCharacterInfo"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-split_offset = 550
-dragging_enabled = false
-dragger_visibility = 2
+[node name="DiagLine1" type="Line2D" parent="."]
+points = PackedVector2Array(-61, 622, 1959, 322)
+width = 2.0
+default_color = Color(0.29, 0.45, 0.46, 0.26)
 
-[node name="ShowBg" type="Panel" parent="ShowCharacterInfo/SplitContainer"]
-material = SubResource("ShaderMaterial_h6w26")
-layout_mode = 2
+[node name="DiagLine2" type="Line2D" parent="."]
+points = PackedVector2Array(39, 962, 1959, 722)
+width = 1.5
+default_color = Color(0.29, 0.45, 0.46, 0.16)
 
-[node name="CharacterPoster" type="TextureRect" parent="ShowCharacterInfo/SplitContainer/ShowBg"]
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = -1
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -200.0
-offset_top = -160.0
-offset_right = 200.0
-offset_bottom = 240.0
-grow_horizontal = 2
-grow_vertical = 2
-pivot_offset = Vector2(475, 535)
-texture = ExtResource("4_3uw8w")
+[node name="DiagLine3" type="Line2D" parent="."]
+points = PackedVector2Array(39, 202, 799, 62)
+width = 1.5
+default_color = Color(0.29, 0.45, 0.46, 0.14)
+
+[node name="DiagLine4" type="Line2D" parent="."]
+points = PackedVector2Array(599, -98, 1959, 542)
+width = 3.0
+default_color = Color(0.29, 0.45, 0.46, 0.1)
+
+[node name="DiagLine5" type="Line2D" parent="."]
+points = PackedVector2Array(39, 1042, 859, 882)
+width = 1.5
+default_color = Color(0.29, 0.45, 0.46, 0.12)
+
+[node name="Sparkle1" type="TextureRect" parent="."]
+modulate = Color(0.29, 0.45, 0.46, 0.5)
+layout_mode = 0
+offset_left = 1588.0
+offset_top = 84.0
+offset_right = 1634.0
+offset_bottom = 130.0
+rotation = 0.25
+mouse_filter = 2
+texture = ExtResource("15_star")
+expand_mode = 1
+
+[node name="Sparkle2" type="TextureRect" parent="."]
+modulate = Color(0.29, 0.45, 0.46, 0.35)
+layout_mode = 0
+offset_left = 1813.0
+offset_top = 469.0
+offset_right = 1841.0
+offset_bottom = 497.0
+mouse_filter = 2
+texture = ExtResource("15_star")
+expand_mode = 1
+
+[node name="Sparkle3" type="TextureRect" parent="."]
+modulate = Color(0.29, 0.45, 0.46, 0.3)
+layout_mode = 0
+offset_left = 183.0
+offset_top = 264.0
+offset_right = 205.0
+offset_bottom = 286.0
+rotation = 0.6
+mouse_filter = 2
+texture = ExtResource("15_star")
+expand_mode = 1
+
+[node name="Sparkle4" type="TextureRect" parent="."]
+modulate = Color(0.29, 0.45, 0.46, 0.22)
+layout_mode = 0
+offset_left = 1719.0
+offset_top = 602.0
+offset_right = 1803.0
+offset_bottom = 686.0
+rotation = 0.45
+mouse_filter = 2
+texture = ExtResource("15_star")
+expand_mode = 1
+
+[node name="Sparkle5" type="TextureRect" parent="."]
+modulate = Color(0.29, 0.45, 0.46, 0.3)
+layout_mode = 0
+offset_left = 639.0
+offset_top = 42.0
+offset_right = 669.0
+offset_bottom = 72.0
+rotation = 0.9
+mouse_filter = 2
+texture = ExtResource("15_star")
+expand_mode = 1
+
+[node name="MusicNote1" type="TextureRect" parent="."]
+modulate = Color(0.29, 0.45, 0.46, 0.1)
+layout_mode = 0
+offset_left = 99.0
+offset_top = 502.0
+offset_right = 151.0
+offset_bottom = 554.0
+rotation = -0.25
+mouse_filter = 2
+texture = ExtResource("20_note")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="Introduction" type="Control" parent="ShowCharacterInfo/SplitContainer"]
-layout_mode = 2
+[node name="MusicNote2" type="TextureRect" parent="."]
+modulate = Color(0.29, 0.45, 0.46, 0.09)
+layout_mode = 0
+offset_left = 1839.0
+offset_top = 202.0
+offset_right = 1903.0
+offset_bottom = 266.0
+rotation = 0.2
+mouse_filter = 2
+texture = ExtResource("20_note")
+expand_mode = 1
+stretch_mode = 5
 
-[node name="MarginContainer" type="MarginContainer" parent="ShowCharacterInfo/SplitContainer/Introduction"]
+[node name="MusicNote3" type="TextureRect" parent="."]
+modulate = Color(0.29, 0.45, 0.46, 0.08)
+layout_mode = 0
+offset_left = 599.0
+offset_top = 982.0
+offset_right = 643.0
+offset_bottom = 1026.0
+rotation = 0.5
+mouse_filter = 2
+texture = ExtResource("20_note")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="CharacterTitleWatermark" type="Label" parent="."]
+unique_name_in_owner = true
+modulate = Color(0.29, 0.45, 0.46, 0.05)
+layout_mode = 0
+offset_left = 1794.0
+offset_top = 912.0
+offset_right = 2554.0
+offset_bottom = 1032.0
+rotation = -1.5707964
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("12_fira")
+theme_override_font_sizes/font_size = 108
+text = "CHARACTER"
+
+[node name="EmblemWatermark" type="TextureRect" parent="."]
+unique_name_in_owner = true
+modulate = Color(0.29, 0.45, 0.46, 0.1)
+layout_mode = 0
+offset_left = 129.0
+offset_top = 862.0
+offset_right = 549.0
+offset_bottom = 1020.0
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="CharacterButtons" type="HBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 1390.0
+offset_top = 84.0
+offset_right = 1568.0
+offset_bottom = 188.0
+mouse_filter = 2
+theme_override_constants/separation = 26
+alignment = 2
+
+[node name="ShowCharacterInfo" type="Panel" parent="."]
+layout_mode = 0
+offset_left = 219.0
+offset_top = 172.0
+offset_right = 1639.0
+offset_bottom = 842.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="PaperGrain" type="ColorRect" parent="ShowCharacterInfo"]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_paper")
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 80
-theme_override_constants/margin_top = 40
-theme_override_constants/margin_right = 80
+mouse_filter = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="SmallIntro" type="Label" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer/VBoxContainer"]
+[node name="ShowBg" type="ColorRect" parent="ShowCharacterInfo"]
 unique_name_in_owner = true
-modulate = Color(0.46666667, 0.6, 0.8, 1)
-layout_mode = 2
-text = "Key.  Sakiko Togawa"
+material = SubResource("ShaderMaterial_bg")
+layout_mode = 0
+offset_right = 480.0
+offset_bottom = 670.0
+mouse_filter = 2
+color = Color(0.467, 0.6, 0.8, 1)
 
-[node name="ClassLabel" type="Label" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer/VBoxContainer"]
+[node name="StageGrain" type="ColorRect" parent="ShowCharacterInfo"]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_paper_stage")
+layout_mode = 0
+offset_right = 480.0
+offset_bottom = 670.0
+mouse_filter = 2
+
+[node name="StageSweep" type="ColorRect" parent="ShowCharacterInfo"]
+unique_name_in_owner = true
+visible = false
+material = SubResource("ShaderMaterial_sweep")
+instance_shader_parameters/rect_size = Vector2(480, 670)
+instance_shader_parameters/reveal_progress = 0.0
+layout_mode = 0
+offset_right = 480.0
+offset_bottom = 670.0
+mouse_filter = 2
+color = Color(1, 1, 1, 0.9)
+
+[node name="BandWatermark" type="Label" parent="ShowCharacterInfo"]
+layout_mode = 0
+offset_left = 16.0
+offset_top = 620.0
+offset_right = 416.0
+offset_bottom = 700.0
+rotation = -1.5707964
+theme_override_colors/font_color = Color(1, 1, 1, 0.35)
+theme_override_fonts/font = ExtResource("12_fira")
+theme_override_font_sizes/font_size = 72
+text = "CRYCHIC"
+
+[node name="PosterBackdrop" type="ColorRect" parent="ShowCharacterInfo"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 70.0
+offset_top = 60.0
+offset_right = 430.0
+offset_bottom = 580.0
+rotation = -0.14
+pivot_offset = Vector2(180, 260)
+mouse_filter = 2
+color = Color(0.257, 0.33, 0.44, 0.22)
+
+[node name="CharacterPoster" type="TextureRect" parent="ShowCharacterInfo"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = -138.0
+offset_top = -148.0
+offset_right = 661.0
+offset_bottom = 811.0
+pivot_offset = Vector2(388, 806)
+mouse_filter = 2
+texture = ExtResource("5_poster")
+expand_mode = 1
+
+[node name="Content" type="VBoxContainer" parent="ShowCharacterInfo"]
+layout_mode = 0
+offset_left = 540.0
+offset_top = 24.0
+offset_right = 1330.0
+offset_bottom = 652.0
+mouse_filter = 2
+theme_override_constants/separation = 0
+alignment = 1
+
+[node name="TopRow" type="HBoxContainer" parent="ShowCharacterInfo/Content"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 10
+
+[node name="BandLabel" type="Label" parent="ShowCharacterInfo/Content/TopRow"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.07450981, 0.105882354, 0.16470589, 1)
-theme_override_font_sizes/font_size = 42
-text = "Key.  "
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.29, 0.45, 0.46, 1)
+theme_override_fonts/font = ExtResource("22_track")
+theme_override_font_sizes/font_size = 20
+text = "CRYCHIC"
+vertical_alignment = 1
 
-[node name="BigIntro" type="Label" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer/VBoxContainer"]
+[node name="DetailsButton" type="Button" parent="ShowCharacterInfo/Content/TopRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(200, 44)
+layout_mode = 2
+size_flags_vertical = 4
+focus_mode = 0
+theme_override_colors/font_color = Color(0.29, 0.45, 0.46, 1)
+theme_override_colors/font_pressed_color = Color(0.29, 0.45, 0.46, 1)
+theme_override_colors/font_hover_color = Color(0.29, 0.45, 0.46, 1)
+theme_override_fonts/font = ExtResource("22_track")
+theme_override_font_sizes/font_size = 15
+theme_override_styles/normal = SubResource("StyleBoxFlat_details_normal")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_details_pressed")
+theme_override_styles/hover = SubResource("StyleBoxFlat_details_hover")
+text = "DETAILS"
+
+[node name="GapHead" type="Control" parent="ShowCharacterInfo/Content"]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="HeaderRow" type="HBoxContainer" parent="ShowCharacterInfo/Content"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 14
+
+[node name="ClassChip" type="Panel" parent="ShowCharacterInfo/Content/HeaderRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(54, 28)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_chip")
+
+[node name="ClassLabel" type="Label" parent="ShowCharacterInfo/Content/HeaderRow/ClassChip"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("11_kreon")
+theme_override_font_sizes/font_size = 15
+text = "Key."
+horizontal_alignment = 1
+vertical_alignment = 1
+script = ExtResource("23_label")
+AutoSizeEnabled = null
+MinFontSize = null
+MaxFontSize = null
+
+[node name="SmallIntro" type="Label" parent="ShowCharacterInfo/Content/HeaderRow"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.07450981, 0.105882354, 0.16470589, 1)
-theme_override_font_sizes/font_size = 60
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.467, 0.6, 0.8, 1)
+theme_override_fonts/font = ExtResource("22_track")
+theme_override_font_sizes/font_size = 16
+text = "SAKIKO TOGAWA"
+vertical_alignment = 1
+
+[node name="GapTitle" type="Control" parent="ShowCharacterInfo/Content"]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="BigIntro" type="Label" parent="ShowCharacterInfo/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.086, 0.125, 0.18, 1)
+theme_override_fonts/font = ExtResource("10_serif")
+theme_override_font_sizes/font_size = 76
 text = "丰川祥子"
 
-[node name="HealthAndGold" type="SplitContainer" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer/VBoxContainer"]
-custom_minimum_size = Vector2(0, 42)
+[node name="GapRule" type="Control" parent="ShowCharacterInfo/Content"]
+custom_minimum_size = Vector2(0, 26)
 layout_mode = 2
-split_offset = 150
-dragging_enabled = false
-dragger_visibility = 1
+mouse_filter = 2
 
-[node name="Health" type="Control" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer/VBoxContainer/HealthAndGold"]
-layout_mode = 2
-
-[node name="Icon" type="TextureRect" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer/VBoxContainer/HealthAndGold/Health"]
-modulate = Color(1, 0.27999997, 0.29199982, 1)
-layout_mode = 1
-anchors_preset = 4
-anchor_top = 0.5
-anchor_bottom = 0.5
-offset_top = -16.0
-offset_right = 32.0
-offset_bottom = 16.0
-grow_vertical = 2
-texture = ExtResource("5_d38ck")
-expand_mode = 1
-
-[node name="HealthLabel" type="Label" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer/VBoxContainer/HealthAndGold/Health"]
+[node name="Divider1" type="ColorRect" parent="ShowCharacterInfo/Content"]
 unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 4
-anchor_top = 0.5
-anchor_bottom = 0.5
-offset_left = 50.0
-offset_top = -17.0
-offset_right = 77.0
-offset_bottom = 17.0
-grow_vertical = 2
-theme_override_colors/font_color = Color(0.07450981, 0.105882354, 0.16470589, 1)
-theme_override_font_sizes/font_size = 24
-text = "75"
-
-[node name="Gold" type="Control" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer/VBoxContainer/HealthAndGold"]
+custom_minimum_size = Vector2(0, 2)
 layout_mode = 2
+mouse_filter = 2
+color = Color(0.29, 0.45, 0.46, 0.5)
 
-[node name="TextureRect" type="TextureRect" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer/VBoxContainer/HealthAndGold/Gold"]
-modulate = Color(1, 0.81666666, 0, 1)
-layout_mode = 1
-anchors_preset = 4
-anchor_top = 0.5
-anchor_bottom = 0.5
-offset_top = -16.0
-offset_right = 32.0
-offset_bottom = 16.0
-grow_vertical = 2
-texture = ExtResource("6_uhkod")
-expand_mode = 1
-
-[node name="GoldLabel" type="Label" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer/VBoxContainer/HealthAndGold/Gold"]
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 4
-anchor_top = 0.5
-anchor_bottom = 0.5
-offset_left = 50.0
-offset_top = -17.0
-offset_right = 90.0
-offset_bottom = 17.0
-grow_vertical = 2
-theme_override_colors/font_color = Color(0.07450981, 0.105882354, 0.16470589, 1)
-theme_override_font_sizes/font_size = 24
-text = "99"
-
-[node name="SpiltLine1" type="Control" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer/VBoxContainer"]
+[node name="GapBody" type="Control" parent="ShowCharacterInfo/Content"]
+custom_minimum_size = Vector2(0, 22)
 layout_mode = 2
+mouse_filter = 2
 
-[node name="Line2D" type="Line2D" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer/VBoxContainer/SpiltLine1"]
-points = PackedVector2Array(0, 0, 520, 0)
-width = 2.0
-default_color = Color(0.07450981, 0.105882354, 0.16470589, 0.53333336)
-
-[node name="Description" type="RichTextLabel" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer/VBoxContainer"]
+[node name="Description" type="RichTextLabel" parent="ShowCharacterInfo/Content"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/default_color = Color(0.07450981, 0.105882354, 0.16470589, 1)
-theme_override_fonts/normal_font = ExtResource("7_rlwux")
-theme_override_font_sizes/normal_font_size = 18
+theme_override_colors/default_color = Color(0.22, 0.26, 0.33, 1)
+theme_override_constants/line_separation = 7
+theme_override_fonts/normal_font = ExtResource("8_noto")
+theme_override_font_sizes/normal_font_size = 19
 bbcode_enabled = true
-text = "羽丘女子学园高一学生。丰川集团的千金小姐，谈吐温文尔雅。她下定决心要背负所有团员的人生，构筑起了AveMujica。为了守护AveMujica的世界观，她倾投入了全部的心血。"
+text = "丰川财团的千金小姐，谈吐温文尔雅。在月之森音乐祭上观看了前辈乐队Morfonica的表演后，深受鼓舞，对于乐队的憧憬在此萌芽。"
 fit_content = true
 scroll_active = false
 shortcut_keys_enabled = false
+script = ExtResource("9_rich")
+AutoSizeEnabled = null
+MinFontSize = null
+MaxFontSize = null
+IsVerticallyBound = null
+IsHorizontallyBound = null
 
-[node name="SpiltLine2" type="Control" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer/VBoxContainer"]
+[node name="GapStats" type="Control" parent="ShowCharacterInfo/Content"]
+custom_minimum_size = Vector2(0, 24)
 layout_mode = 2
+mouse_filter = 2
 
-[node name="Line2D" type="Line2D" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer/VBoxContainer/SpiltLine2"]
-points = PackedVector2Array(0, 0, 520, 0)
-width = 2.0
-default_color = Color(0.07450981, 0.105882354, 0.16470589, 0.53333336)
-
-[node name="Relic" type="SplitContainer" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer/VBoxContainer"]
-custom_minimum_size = Vector2(0, 84)
+[node name="StatsRow" type="HBoxContainer" parent="ShowCharacterInfo/Content"]
 layout_mode = 2
-split_offset = 90
-dragging_enabled = false
-dragger_visibility = 1
+mouse_filter = 2
+theme_override_constants/separation = 16
 
-[node name="RelicIcon" type="TextureRect" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer/VBoxContainer/Relic"]
+[node name="HealthChip" type="Panel" parent="ShowCharacterInfo/Content/StatsRow"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(170, 54)
 layout_mode = 2
-texture = ExtResource("10_dtmv1")
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_stat")
+
+[node name="HealthIcon" type="TextureRect" parent="ShowCharacterInfo/Content/StatsRow/HealthChip"]
+modulate = Color(1, 0.36, 0.4, 1)
+layout_mode = 0
+offset_left = 14.0
+offset_top = 13.0
+offset_right = 42.0
+offset_bottom = 41.0
+mouse_filter = 2
+texture = ExtResource("6_health")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="HealthLabel" type="Label" parent="ShowCharacterInfo/Content/StatsRow/HealthChip"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 52.0
+offset_top = 10.0
+offset_right = 152.0
+offset_bottom = 44.0
+theme_override_colors/font_color = Color(0.09, 0.12, 0.17, 1)
+theme_override_fonts/font = ExtResource("11_kreon")
+theme_override_font_sizes/font_size = 28
+text = "75"
+script = ExtResource("23_label")
+AutoSizeEnabled = null
+MinFontSize = null
+MaxFontSize = null
+
+[node name="GoldChip" type="Panel" parent="ShowCharacterInfo/Content/StatsRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(170, 54)
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_stat")
+
+[node name="GoldIcon" type="TextureRect" parent="ShowCharacterInfo/Content/StatsRow/GoldChip"]
+modulate = Color(1, 0.82, 0.15, 1)
+layout_mode = 0
+offset_left = 14.0
+offset_top = 13.0
+offset_right = 42.0
+offset_bottom = 41.0
+mouse_filter = 2
+texture = ExtResource("7_gold")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="GoldLabel" type="Label" parent="ShowCharacterInfo/Content/StatsRow/GoldChip"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 52.0
+offset_top = 10.0
+offset_right = 152.0
+offset_bottom = 44.0
+theme_override_colors/font_color = Color(0.09, 0.12, 0.17, 1)
+theme_override_fonts/font = ExtResource("11_kreon")
+theme_override_font_sizes/font_size = 28
+text = "99"
+script = ExtResource("23_label")
+AutoSizeEnabled = null
+MinFontSize = null
+MaxFontSize = null
+
+[node name="GapRule2" type="Control" parent="ShowCharacterInfo/Content"]
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Divider2" type="ColorRect" parent="ShowCharacterInfo/Content"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 2)
+layout_mode = 2
+mouse_filter = 2
+color = Color(0.29, 0.45, 0.46, 0.28)
+
+[node name="GapFooter" type="Control" parent="ShowCharacterInfo/Content"]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="FooterRow" type="HBoxContainer" parent="ShowCharacterInfo/Content"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 24
+
+[node name="RelicRow" type="HBoxContainer" parent="ShowCharacterInfo/Content/FooterRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+mouse_filter = 2
+theme_override_constants/separation = 18
+
+[node name="RelicIcon" type="TextureRect" parent="ShowCharacterInfo/Content/FooterRow/RelicRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(84, 84)
+layout_mode = 2
+mouse_filter = 2
+texture = ExtResource("16_relic")
 expand_mode = 1
 stretch_mode = 4
 
-[node name="RelicDescription" type="RichTextLabel" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer/VBoxContainer/Relic"]
+[node name="RelicDescription" type="RichTextLabel" parent="ShowCharacterInfo/Content/FooterRow/RelicRow"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/default_color = Color(0.07450981, 0.105882354, 0.16470589, 1)
-theme_override_fonts/normal_font = ExtResource("12_pbs0m")
-theme_override_fonts/bold_font = ExtResource("12_308mo")
-theme_override_font_sizes/normal_font_size = 18
-theme_override_font_sizes/bold_font_size = 26
+size_flags_horizontal = 3
+theme_override_colors/default_color = Color(0.086, 0.125, 0.18, 1)
+theme_override_fonts/normal_font = ExtResource("8_noto")
+theme_override_fonts/bold_font = ExtResource("13_spectral")
+theme_override_font_sizes/normal_font_size = 17
+theme_override_font_sizes/bold_font_size = 24
 bbcode_enabled = true
 text = "[b][gold]调音器[/gold][/b]
 每场战斗首次打出带有[gold]休止[/gold]效果的卡牌时，不会消耗[gold]余音[/gold]。"
 fit_content = true
-script = ExtResource("8_syx62")
-theme_override_colors/default_color = Color(0.07450981, 0.105882354, 0.16470589, 1)
-theme_override_fonts/normal_font = ExtResource("12_pbs0m")
-theme_override_font_sizes/normal_font_size = 18
-theme_override_font_sizes/bold_font_size = 26
-theme_override_fonts/bold_font = ExtResource("12_308mo")
+scroll_active = false
+script = ExtResource("9_rich")
+AutoSizeEnabled = null
+MinFontSize = null
+MaxFontSize = null
+IsVerticallyBound = null
+IsHorizontallyBound = null
 
-[node name="SpiltLine3" type="Control" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer/VBoxContainer"]
-layout_mode = 2
-
-[node name="Line2D" type="Line2D" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer/VBoxContainer/SpiltLine3"]
-points = PackedVector2Array(0, 0, 520, 0)
-width = 2.0
-default_color = Color(0.07450981, 0.105882354, 0.16470589, 0.53333336)
-
-[node name="AscensionPanel" parent="ShowCharacterInfo/SplitContainer/Introduction/MarginContainer/VBoxContainer" instance=ExtResource("12_4y8i4")]
+[node name="AscensionPanel" parent="ShowCharacterInfo/Content/FooterRow" instance=ExtResource("14_asc")]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_vertical = 4
 
-[node name="SkinSelector" parent="ShowCharacterInfo" instance=ExtResource("14_kq4ob")]
+[node name="AccentBar" type="ColorRect" parent="ShowCharacterInfo"]
 unique_name_in_owner = true
 layout_mode = 0
+offset_left = 1412.0
+offset_right = 1420.0
+offset_bottom = 670.0
+mouse_filter = 2
+color = Color(0.29, 0.45, 0.46, 0.9)
+
+[node name="CharacterDetailsPopup" parent="." instance=ExtResource("18_popup")]
+unique_name_in_owner = true
 anchors_preset = 0
-anchor_left = 0.0
-anchor_top = 0.0
-anchor_right = 0.0
-anchor_bottom = 0.0
-offset_left = 850.0
-offset_right = 850.0
-grow_horizontal = 1
-grow_vertical = 1

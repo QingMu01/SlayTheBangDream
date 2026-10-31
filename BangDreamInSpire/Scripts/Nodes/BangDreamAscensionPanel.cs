@@ -1,4 +1,5 @@
 using BangDreamInSpire.Scripts.Nodes.MegeScript;
+using BangDreamInSpire.Scripts.Utils;
 using Godot;
 using MegaCrit.Sts2.addons.mega_text;
 using MegaCrit.Sts2.Core.ControllerInput;
@@ -32,7 +33,7 @@ public partial class BangDreamAscensionPanel : Control
 
     private BangDreamGoldArrowButton? _leftArrow;
     private BangDreamGoldArrowButton? _rightArrow;
-    private Label? _ascensionLevel;
+    private BangDreamLabel? _ascensionLevel;
     private MegaRichTextLabel? _info;
     private TextureRect? _leftTriggerIcon;
     private TextureRect? _rightTriggerIcon;
@@ -47,6 +48,17 @@ public partial class BangDreamAscensionPanel : Control
 
     public int Ascension { get; private set; }
 
+    public override void _EnterTree()
+    {
+        // 见 BangDreamTools.ConfigureMegaText：Mega 导出属性写在 tscn 里会被编辑器保存时置空。
+        BangDreamTools.ConfigureMegaText(
+            GetNodeOrNull<Control>("HBoxContainer/AscensionIconContainer/AscensionIcon/AscensionLevel"),
+            maxFontSize: 26, minFontSize: 16);
+        BangDreamTools.ConfigureMegaText(
+            GetNodeOrNull<Control>("HBoxContainer/AscensionDescription/Description"),
+            maxFontSize: 15, minFontSize: 12, autoSize: false);
+    }
+
     public override void _Ready()
     {
         _leftTriggerIcon = GetNode<TextureRect>("%LeftTriggerIcon");
@@ -55,7 +67,7 @@ public partial class BangDreamAscensionPanel : Control
         _leftArrow = GetNode<BangDreamGoldArrowButton>("HBoxContainer/LeftArrowContainer/LeftArrow");
         _rightArrow = GetNode<BangDreamGoldArrowButton>("HBoxContainer/RightArrowContainer/RightArrow");
 
-        _ascensionLevel = GetNode<Label>("HBoxContainer/AscensionIconContainer/AscensionIcon/AscensionLevel");
+        _ascensionLevel = GetNode<BangDreamLabel>("HBoxContainer/AscensionIconContainer/AscensionIcon/AscensionLevel");
 
         _info = GetNode<MegaRichTextLabel>("HBoxContainer/AscensionDescription/Description");
         _iconHsv = (ShaderMaterial)GetNode<Control>("%AscensionIcon").Material;
@@ -217,13 +229,13 @@ public partial class BangDreamAscensionPanel : Control
 
     private void RefreshAscensionText()
     {
-        if (_ascensionLevel != null) _ascensionLevel.Text = Ascension.ToString();
+        _ascensionLevel?.SetTextAutoSize(Ascension.ToString());
 
         if (_info != null)
         {
             var formattedText = AscensionHelper.GetTitle(Ascension).GetFormattedText();
             var formattedText2 = AscensionHelper.GetDescription(Ascension).GetFormattedText();
-            _info.Text = "[b][gold]" + formattedText + "[/gold][/b]\n" + formattedText2;
+            _info.SetTextAutoSize("[b]" + formattedText + "[/b]\n" + formattedText2);
         }
     }
 

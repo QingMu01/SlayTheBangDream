@@ -1,44 +1,72 @@
-[gd_scene load_steps=4 format=3 uid="uid://nigrkjxufhlu"]
+[gd_scene load_steps=6 format=3 uid="uid://nigrkjxufhlu"]
 
-[ext_resource type="Script" uid="uid://d1mgc0f3n187y" path="res://Scripts/Nodes/SubNode/NCharacterButton.cs" id="1_3qbkp"]
+[ext_resource type="Script" uid="uid://d1mgc0f3n187y" path="res://Scripts/Nodes/SubNode/NCharacterButton.cs" id="1_script"]
+[ext_resource type="FontVariation" uid="uid://b31wycusbsq8w" path="res://themes/fonts/jpn/noto_sans_cjkjp_bold_shared.tres" id="2_name_font"]
+[ext_resource type="FontVariation" uid="uid://ciql5khgewwbm" path="res://themes/kreon_bold_glyph_space_two.tres" id="3_class_font"]
+[ext_resource type="Script" uid="uid://cr26tfi6bv8im" path="res://Scripts/Nodes/MegeScript/BangDreamLabel.cs" id="4_mega"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tlav0"]
-bg_color = Color(1, 1, 1, 1)
-border_color = Color(1, 1, 1, 1)
-corner_radius_top_left = 5
-corner_radius_top_right = 5
-corner_radius_bottom_right = 5
-corner_radius_bottom_left = 5
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_3qbkp"]
-bg_color = Color(0.1882353, 0.1882353, 0.1882353, 0.8)
-border_color = Color(1, 1, 1, 1)
-corner_radius_top_left = 5
-corner_radius_top_right = 5
-corner_radius_bottom_right = 5
-corner_radius_bottom_left = 5
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_states"]
 
 [node name="Button" type="Button"]
-custom_minimum_size = Vector2(160, 60)
-offset_left = -80.0
-offset_right = 80.0
-offset_bottom = 60.0
-theme_override_styles/normal = SubResource("StyleBoxFlat_tlav0")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_tlav0")
-theme_override_styles/hover = SubResource("StyleBoxFlat_tlav0")
-theme_override_styles/disabled = SubResource("StyleBoxFlat_3qbkp")
-theme_override_styles/focus = SubResource("StyleBoxFlat_tlav0")
-script = ExtResource("1_3qbkp")
+custom_minimum_size = Vector2(84, 104)
+offset_right = 84.0
+offset_bottom = 104.0
+pivot_offset = Vector2(42, 52)
+focus_mode = 2
+theme_override_styles/focus = SubResource("StyleBoxEmpty_states")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_states")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_states")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_states")
+theme_override_styles/normal = SubResource("StyleBoxEmpty_states")
+script = ExtResource("1_script")
+
+[node name="Tab" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
 
 [node name="Icon" type="TextureRect" parent="."]
-layout_mode = 1
-anchors_preset = 6
-anchor_left = 1.0
-anchor_top = 0.5
-anchor_right = 1.0
-anchor_bottom = 0.5
-offset_left = -60.0
-offset_top = -30.0
-offset_bottom = 30.0
-grow_horizontal = 0
-grow_vertical = 2
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 6.0
+offset_top = 10.0
+offset_right = 78.0
+offset_bottom = 46.0
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Name" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 2.0
+offset_top = 54.0
+offset_right = 82.0
+offset_bottom = 76.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_name_font")
+theme_override_font_sizes/font_size = 12
+text = "丰川祥子"
+horizontal_alignment = 1
+vertical_alignment = 1
+script = ExtResource("4_mega")
+
+[node name="Class" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 2.0
+offset_top = 78.0
+offset_right = 82.0
+offset_bottom = 94.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 0.82)
+theme_override_fonts/font = ExtResource("3_class_font")
+theme_override_font_sizes/font_size = 9
+text = "Key."
+horizontal_alignment = 1
+script = ExtResource("4_mega")
