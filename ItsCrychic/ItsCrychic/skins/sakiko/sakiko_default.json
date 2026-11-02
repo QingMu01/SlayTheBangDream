@@ -1,5 +1,6 @@
 {
-  "Name": "Default",
+  "NameKey": "SKIN_SAKIKO_DEFAULT_NAME",
+  "DescriptionKey": "SKIN_SAKIKO_DEFAULT_DESCRIPTION",
   "MultiplayerVisual": {
     "VisualScene": "res://ItsCrychic/scenes/creature/sakiko_skin_default.tscn",
     "RestSiteScene": "res://ItsCrychic/scenes/rest_site/sakiko_rest_default.tscn",

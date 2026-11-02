@@ -57,6 +57,16 @@ text = "—"
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="SkinDescriptionLabel" type="Label" parent="Layout"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.42, 0.46, 0.52, 1)
+theme_override_fonts/font = ExtResource("6_serif")
+theme_override_font_sizes/font_size = 13
+autowrap_mode = 3
+horizontal_alignment = 1
+
 [node name="IndexRow" type="HBoxContainer" parent="Layout"]
 layout_mode = 2
 theme_override_constants/separation = 10
