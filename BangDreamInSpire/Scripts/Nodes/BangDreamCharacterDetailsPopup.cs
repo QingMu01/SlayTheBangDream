@@ -3,7 +3,6 @@ using BangDreamInSpire.Scripts.Extensions;
 using BangDreamInSpire.Scripts.Interfaces.CharacterAugment;
 using BangDreamInSpire.Scripts.Nodes.MegeScript;
 using BangDreamInSpire.Scripts.Utils;
-using BangDreamInSpire.Scripts.Utils.Infos;
 using Godot;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Helpers;
@@ -582,7 +581,6 @@ public partial class BangDreamCharacterDetailsPopup : Control
 
     private static Color GetTypeColor(CardType type)
     {
-        // Music 是运行时动态注册的枚举值，不是编译期常量，无法作为 switch 分支。
         if (BangDreamConst.IsMusicCardType(type))
         {
             return new Color(0.86f, 0.5f, 0.76f);

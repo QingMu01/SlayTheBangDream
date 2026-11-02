@@ -1,4 +1,4 @@
-using System.Reflection;
+﻿using System.Reflection;
 using BangDreamInSpire.Scripts.Cards;
 using BangDreamInSpire.Scripts.Interfaces.CardAugment;
 using BangDreamInSpire.Scripts.Interfaces.CharacterAugment;
@@ -311,12 +311,6 @@ internal class ArmFightTexturePatch : IPatchMethod
         }
     }
 }
-
-/// <summary>
-///     音乐牌卡框的皮肤替换：只在本局"来源角色"玩家的皮肤配置了 <c>Ui.MusicCardFrame</c> 时替换纹理；
-///     否则保留卡牌自身 <see cref="MusicCardModel.AssetProfile" /> 提供的默认卡框。
-///     解析来源角色而非当前持有者，因此角色 A 的卡被角色 B 拿到后仍显示 A 的配置。
-/// </summary>
 internal static class MusicCardSkinFrames
 {
     public static bool TryResolveFramePath(CardModel card, out string path)
@@ -350,7 +344,7 @@ internal static class MusicCardSkinFrames
             return null;
         }
 
-        foreach (var character in ModelDb.AllCharacters.OfType<CharacterModel>())
+        foreach (var character in ModelDb.AllCharacters)
         {
             if (character is not ISkinSupportCharacter skinSupport)
             {

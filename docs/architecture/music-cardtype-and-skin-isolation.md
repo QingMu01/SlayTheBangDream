@@ -62,8 +62,9 @@
    `BangDreamConst.MusicCardType = RitsuLibFramework.RegisterDynamicEnumValue<CardType>(context.ModId, "Music");`
    `BangDreamConst.MusicCardType` 采用与自定义 `PileType` 相同的"初始化后读取"模式（`Init` + 未初始化抛异常），
    另提供 `BangDreamConst.IsMusicCardType(CardType)` 供渲染早期安全判断。
-2. **铭牌本地化**：新增 `CardTypeExtensions.ToLocString` 的 Postfix，把 Music 映射到
-   `LocString("gameplay_ui", "CARD_TYPE.MUSIC")`，并在 `gameplay_ui.json` 增加 `"CARD_TYPE.MUSIC": "音乐"`。
+2. **铭牌本地化**：新增 `CardTypeExtensions.ToLocString` 的 **Prefix**（`return false` 短路原方法），
+   把 Music 映射到 `LocString("gameplay_ui", "CARD_TYPE.MUSIC")`，并在 `gameplay_ui.json` 增加 `"CARD_TYPE.MUSIC": "音乐"`。
+   必须是 Prefix：原方法是 switch 表达式，对 Music 会先抛 `SwitchExpressionException`，Postfix 根本不会执行。
    - 原"覆盖 `NCard.UpdateTypePlaque` 文本"的做法被取代；`IPerformCard` 的唯一实现者是 `MusicCardModel`，不会漏牌。
    - RitsuLib 的 `CardTypeTextHook` 只能替换 `GetFormattedText` 之后的结果，`ToLocString` 仍先执行，救不了这个异常。
 3. **卡面纹理**：Music 会命中原版三处 switch 的 `default` throw。默认值由卡牌 asset profile 保证：
@@ -134,7 +135,7 @@ TryResolveFramePath(card):
 | `Mechanics/Perform/PerformMechanic.cs` | 内容注册阶段用 `RitsuLibFramework.RegisterDynamicEnumValue<CardType>` 注册 Music 值 |
 | `Interfaces/CardAugment/IPerformCard.cs` | 新增契约 `CardAssetProfile PerformCardAssets { get; }` |
 | `Cards/MusicCardModel.cs` | 类型用 `BangDreamConst.MusicCardType`；`PerformCardAssets` 默认卡框并入 `AssetProfile`；保留 `OriginCharacter` |
-| `Mechanics/Perform/MusicCardTypePatch.cs` | 目标改为 `CardTypeExtensions.ToLocString` Postfix（用 `IsMusicCardType` 判断） |
+| `Mechanics/Perform/MusicCardTypePatch.cs` | 目标改为 `CardTypeExtensions.ToLocString` **Prefix**（`IsMusicCardType` 时写 `__result` 并 `return false`） |
 | `Patches/SkinVisualSupportPatches.cs` | `MusicCardSkinFrames` + 纹理两个 patch：`NCard.UpdatePortrait` 动态替换纹理；`CardModel.FrameMaterial` getter 同步清空材质 |
 | `Nodes/BangDreamCharacterDetailsPopup.cs` | `GetTypeColor` 增加 Music 颜色 |
 | `ItsCrychic/Scripts/Cards/Token/BasicScale.cs` | `OriginCharacter => ModelDb.Character<TogawaSakiko>()`（`TokenCardPool` 无法反查来源；该牌只由祥子牌生成） |

@@ -9,8 +9,8 @@ namespace BangDreamInSpire.Scripts.Mechanics.Perform;
 ///     为新增卡牌类型 <c>Music</c> 提供类型铭牌本地化。
 ///     <para>
 ///         本体 <see cref="CardTypeExtensions.ToLocString" /> 是穷举 switch 表达式且没有 default，
-///         新枚举值会在 <c>NCard.UpdateTypePlaque</c> 处抛 <see cref="System.Runtime.CompilerServices.SwitchExpressionException" />；
-///         这里补上 Music 的 LocString 映射（原实现是覆盖 NCard 铭牌文本，属于同一语义的旧做法）。
+///         新枚举值会在 <c>NCard.UpdateTypePlaque</c> 处抛 <see cref="System.Runtime.CompilerServices.SwitchExpressionException" />。
+///         必须用 Prefix 直接短路：Postfix 在原方法抛异常时根本不会执行。
 ///     </para>
 /// </summary>
 internal class MusicCardTypePatch : IPatchMethod
@@ -26,11 +26,14 @@ internal class MusicCardTypePatch : IPatchMethod
         return [new ModPatchTarget(typeof(CardTypeExtensions), nameof(CardTypeExtensions.ToLocString))];
     }
 
-    public static void Postfix(CardType cardType, ref LocString __result)
+    public static bool Prefix(CardType cardType, ref LocString __result)
     {
-        if (BangDreamConst.IsMusicCardType(cardType))
+        if (!BangDreamConst.IsMusicCardType(cardType))
         {
-            __result = MusicType;
+            return true;
         }
+
+        __result = MusicType;
+        return false;
     }
 }
