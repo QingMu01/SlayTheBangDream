@@ -47,6 +47,8 @@ public partial class BangDreamCharacterDetailsPopup : Control
     private const float CardGap = 12f;
     private const int MaxCardColumns = 6;
     private const float MinCardWidth = 96f;
+    // 卡牌区的高度预算：行数决定实际占用，缩放以此为上限，避免撑掉下方遗物区。
+    private const float CardAreaMaxHeight = 358f;
     private const float CardHoverDuration = 0.12f;
     private const int CardHoverZIndex = 80;
     private const string HoverPadName = "HoverPad";
@@ -423,7 +425,8 @@ public partial class BangDreamCharacterDetailsPopup : Control
     /// </summary>
     private (int Columns, int Rows) ApplyCardLayout(int count)
     {
-        var area = _cardsRow?.Size ?? new Vector2(668f, 358f);
+        var columnWidth = _cardsRow?.GetParent<Control>()?.Size.X ?? 668f;
+        var area = new Vector2(columnWidth, CardAreaMaxHeight);
         var maxColumns = Mathf.Clamp(
             Mathf.FloorToInt((area.X + CardGap) / (MinCardWidth + CardGap)),
             1,
@@ -779,10 +782,91 @@ public partial class BangDreamCharacterDetailsPopup : Control
             return;
         }
 
+        // 初始遗物通常只有 1~2 个：并排铺满整行，避免右侧一大片空白；更多时退回纵向列表。
+        if (relics.Count <= 2)
+        {
+            var row = new HBoxContainer
+            {
+                Alignment = BoxContainer.AlignmentMode.Center,
+                MouseFilter = MouseFilterEnum.Ignore
+            };
+            row.AddThemeConstantOverride("separation", 12);
+
+            foreach (var relic in relics)
+            {
+                var tile = BuildRelicTile(relic);
+                tile.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+                row.AddChild(tile);
+            }
+
+            _relicsBox.AddChild(row);
+            return;
+        }
+
         foreach (var relic in relics)
         {
             _relicsBox.AddChild(BuildRelicRow(relic));
         }
+    }
+
+    /// <summary>
+    /// 横向遗物条目（1~2 个遗物时并排展示）：图标在左、名称与描述在右，条目按栏宽等分。
+    /// </summary>
+    private Control BuildRelicTile(RelicModel relic)
+    {
+        var tile = new HBoxContainer
+        {
+            CustomMinimumSize = new Vector2(0f, 64f),
+            MouseFilter = MouseFilterEnum.Ignore
+        };
+        tile.AddThemeConstantOverride("separation", 10);
+
+        var icon = new TextureRect
+        {
+            Texture = relic.Icon,
+            CustomMinimumSize = new Vector2(48f, 48f),
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+            StretchMode = TextureRect.StretchModeEnum.KeepAspect,
+            MouseFilter = MouseFilterEnum.Ignore
+        };
+        tile.AddChild(icon);
+
+        var textBox = new VBoxContainer
+        {
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
+            MouseFilter = MouseFilterEnum.Ignore
+        };
+        textBox.AddThemeConstantOverride("separation", 2);
+
+        var title = new Label
+        {
+            Text = relic.Title.GetFormattedText(),
+            MouseFilter = MouseFilterEnum.Ignore
+        };
+        title.AddThemeFontOverride("font", TitleFont);
+        title.AddThemeFontSizeOverride("font_size", 14);
+        title.AddThemeColorOverride("font_color", TextPrimary);
+        textBox.AddChild(title);
+
+        var description = new BangDreamRichTextLabel
+        {
+            BbcodeEnabled = true,
+            FitContent = true,
+            AutoSizeEnabled = false,
+            ScrollActive = false,
+            AutowrapMode = TextServer.AutowrapMode.WordSmart,
+            MouseFilter = MouseFilterEnum.Ignore,
+            MaxFontSize = 12,
+            MinFontSize = 10
+        };
+        description.AddThemeFontOverride("normal_font", NotoMedium);
+        description.AddThemeFontSizeOverride("normal_font_size", 12);
+        description.AddThemeColorOverride("default_color", TextMuted);
+        description.Text = relic.DynamicDescription.GetFormattedText();
+        textBox.AddChild(description);
+
+        tile.AddChild(textBox);
+        return tile;
     }
 
     private Control BuildMiniCard(CardModel card)
