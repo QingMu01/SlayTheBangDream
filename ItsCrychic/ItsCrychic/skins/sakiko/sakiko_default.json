@@ -1,4 +1,5 @@
-﻿{
+{
+  "Name": "Default",
   "MultiplayerVisual": {
     "VisualScene": "res://ItsCrychic/scenes/creature/sakiko_skin_default.tscn",
     "RestSiteScene": "res://ItsCrychic/scenes/rest_site/sakiko_rest_default.tscn",

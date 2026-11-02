@@ -52,7 +52,8 @@ public class SkinInfo
             RewardRareCardIcon: skinTemplate.Ui.RewardRareCardIcon?.EmptyStringFilter()
         );
 
-        SkinTemplate = new SkinTemplate(multiplayerVisual, multiplayerVfx, ui, skinTemplate.Starting);
+        SkinTemplate = new SkinTemplate(multiplayerVisual, multiplayerVfx, ui, skinTemplate.Starting,
+            skinTemplate.Name?.EmptyStringFilter());
     }
 
     public IEnumerable<string> GetAllVisualResourcePaths()
@@ -134,7 +135,8 @@ public record SkinTemplate(
     MultiplayerVisual MultiplayerVisual,
     MultiplayerVfx MultiplayerVfx,
     Ui Ui,
-    StartingInfo Starting
+    StartingInfo Starting,
+    string? Name = null
 );
 
 // 可配置项 所有人可见的视觉资源

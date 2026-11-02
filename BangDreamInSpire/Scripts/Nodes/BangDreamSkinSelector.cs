@@ -26,6 +26,10 @@ public partial class BangDreamSkinSelector : Control
 
     private Control? _skinContainer;
 
+    private Label? _skinNameLabel;
+
+    private Label? _indexLabel;
+
     private int _currentSkinIndex;
 
     private StartRunLobby? _lobby;
@@ -46,10 +50,12 @@ public partial class BangDreamSkinSelector : Control
 
     public override void _Ready()
     {
-        _leftArrow = GetNode<BangDreamGoldArrowButton>("VSplitContainer/HBoxContainer/LeftArrowContainer/LeftArrow");
-        _rightArrow = GetNode<BangDreamGoldArrowButton>("VSplitContainer/HBoxContainer/RightArrowContainer/RightArrow");
+        _leftArrow = GetNode<BangDreamGoldArrowButton>("%LeftArrow");
+        _rightArrow = GetNode<BangDreamGoldArrowButton>("%RightArrow");
 
         _skinContainer = GetNode<Control>("%SkinContainer");
+        _skinNameLabel = GetNode<Label>("%SkinNameLabel");
+        _indexLabel = GetNode<Label>("%IndexLabel");
 
         _leftArrow.Connect(NClickableControl.SignalName.Released,
             Callable.From<NButton>(delegate { DecrementSkinIndex(); }));
@@ -144,6 +150,18 @@ public partial class BangDreamSkinSelector : Control
                 }
             }
 
+            if (_indexLabel != null)
+            {
+                _indexLabel.Text = $"{_currentSkinIndex + 1} / {_skinInfos.Count}";
+            }
+
+            if (_skinNameLabel != null)
+            {
+                var skinPath = _skinInfos[_currentSkinIndex].Item1;
+                _skinNameLabel.Text = _skinInfos[_currentSkinIndex].Item2.SkinTemplate.Name
+                                      ?? skinPath.GetFile().GetBaseName();
+            }
+
             if (_skinContainer != null)
             {
                 var visualScene = _skinInfos[_currentSkinIndex].Item2.SkinTemplate.MultiplayerVisual.VisualScene;
@@ -189,6 +207,8 @@ public partial class BangDreamSkinSelector : Control
             if (_leftArrow != null) _leftArrow.Visible = false;
             if (_rightArrow != null) _rightArrow.Visible = false;
             if (_skinContainer != null) _skinContainer.Visible = false;
+            if (_skinNameLabel != null) _skinNameLabel.Visible = false;
+            if (_indexLabel != null) _indexLabel.Visible = false;
         }
     }
 

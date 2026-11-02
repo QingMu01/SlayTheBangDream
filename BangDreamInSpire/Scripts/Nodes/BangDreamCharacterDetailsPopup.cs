@@ -48,6 +48,8 @@ public partial class BangDreamCharacterDetailsPopup : Control
     private const float CardHoverDuration = 0.12f;
     private const int CardHoverZIndex = 80;
     private const string HoverPadName = "HoverPad";
+    private const string ExtraBadgeName = "ExtraBadge";
+    private const string CountBadgeName = "CountBadge";
 
     private ColorRect? _scrim;
     private Panel? _panel;
@@ -62,7 +64,7 @@ public partial class BangDreamCharacterDetailsPopup : Control
     private Label? _bandLabel;
     private Button? _closeButton;
     private Label? _skinLabel;
-    private BangDreamLabel? _skinIndex;
+    private Color _accentColor = Colors.White;
     private Label? _cardsLabel;
     private Label? _relicsLabel;
     private BangDreamSkinSelector? _skinSelector;
@@ -80,7 +82,6 @@ public partial class BangDreamCharacterDetailsPopup : Control
     {
         // 见 BangDreamTools.ConfigureMegaText：Mega 导出属性写在 tscn 里会被编辑器保存时置空。
         BangDreamTools.ConfigureMegaText(GetNodeOrNull<Control>("%ClassLabel"), maxFontSize: 15, minFontSize: 9);
-        BangDreamTools.ConfigureMegaText(GetNodeOrNull<Control>("%SkinIndex"), maxFontSize: 14, minFontSize: 10);
     }
 
     public override void _Ready()
@@ -97,7 +98,6 @@ public partial class BangDreamCharacterDetailsPopup : Control
         _bandLabel = GetNode<Label>("%BandLabel");
         _closeButton = GetNode<Button>("%CloseButton");
         _skinLabel = GetNode<Label>("%SkinLabel");
-        _skinIndex = GetNode<BangDreamLabel>("%SkinIndex");
         _cardsLabel = GetNode<Label>("%CardsLabel");
         _relicsLabel = GetNode<Label>("%RelicsLabel");
         _skinSelector = GetNode<BangDreamSkinSelector>("%SkinSelector");
@@ -154,6 +154,7 @@ public partial class BangDreamCharacterDetailsPopup : Control
         }
 
         ApplyEmblem(character);
+        AlignHeader();
 
         var skinSupportCharacter = character as ISkinSupportCharacter;
         var hasSkins = skinSupportCharacter != null;
@@ -197,6 +198,7 @@ public partial class BangDreamCharacterDetailsPopup : Control
             && ResourceLoader.Load<PackedScene>(iconPath) is { } iconScene)
         {
             _emblem.AddChild(iconScene.Instantiate());
+            _emblem.Modulate = Colors.White;
             _emblem.Visible = true;
             return;
         }
@@ -207,6 +209,46 @@ public partial class BangDreamCharacterDetailsPopup : Control
         }
 
         _emblem.Visible = _emblem.Texture != null;
+    }
+
+    /// <summary>
+    /// 顶部标题区对齐：罗马字与标题左对齐；班级胶囊与乐队名按标题中心线垂直居中，
+    /// 胶囊宽度跟随班级文字实际宽度，避免不同角色的班级名溢出固定宽度。
+    /// </summary>
+    private void AlignHeader()
+    {
+        if (_title == null)
+        {
+            return;
+        }
+
+        var titleCenterY = _title.Position.Y + _title.Size.Y * 0.5f;
+
+        if (_roman != null)
+        {
+            _roman.Position = new Vector2(_title.Position.X, _roman.Position.Y);
+        }
+
+        if (_classChip == null)
+        {
+            return;
+        }
+
+        var chipHeight = _classChip.Size.Y;
+        var chipWidth = Mathf.Max(54f, _classChip.Size.X);
+        if (_classLabel != null)
+        {
+            chipWidth = Mathf.Max(54f, _classLabel.GetMinimumSize().X + 20f);
+        }
+
+        _classChip.Size = new Vector2(chipWidth, chipHeight);
+        _classChip.Position = new Vector2(_classChip.Position.X, titleCenterY - chipHeight * 0.5f);
+
+        if (_bandLabel != null)
+        {
+            _bandLabel.Position = new Vector2(_classChip.Position.X + chipWidth + 12f,
+                titleCenterY - _bandLabel.Size.Y * 0.5f);
+        }
     }
 
     public void Open()
@@ -301,8 +343,6 @@ public partial class BangDreamCharacterDetailsPopup : Control
 
     private void OnSkinSelected(string skinPath)
     {
-        UpdateSkinIndex();
-
         if (_suppressSkinRefresh)
         {
             return;
@@ -314,6 +354,8 @@ public partial class BangDreamCharacterDetailsPopup : Control
 
     private void ApplyPalette(Color accentColor, Color memberColor)
     {
+        _accentColor = accentColor;
+
         if (_topAccent != null)
         {
             _topAccent.Color = accentColor;
@@ -362,25 +404,6 @@ public partial class BangDreamCharacterDetailsPopup : Control
 
         RebuildCards(deck, extraDeck);
         RebuildRelics(relics);
-        UpdateSkinIndex();
-    }
-
-    private void UpdateSkinIndex()
-    {
-        if (_skinIndex == null)
-        {
-            return;
-        }
-
-        if (_skinSelector is { SkinCount: > 0 })
-        {
-            _skinIndex.Visible = _skinSelector.Visible;
-            _skinIndex.SetTextAutoSize($"{_skinSelector.SkinIndex} / {_skinSelector.SkinCount}");
-        }
-        else
-        {
-            _skinIndex.Visible = false;
-        }
     }
 
     private readonly record struct CardEntry(CardModel Card, int Count, bool IsExtra);
@@ -481,6 +504,7 @@ public partial class BangDreamCharacterDetailsPopup : Control
                 try
                 {
                     cardNode.UpdateVisuals(PileType.None, CardPreviewMode.Normal);
+                    ApplyMusicCardFrame(cardNode, entry.Card);
                 }
                 catch (Exception exception)
                 {
@@ -511,6 +535,15 @@ public partial class BangDreamCharacterDetailsPopup : Control
     {
         cell.ZIndex = hovered ? CardHoverZIndex : 0;
         hoverPad.Visible = hovered;
+        foreach (var child in cell.GetChildren())
+        {
+            if (child is Control badge
+                && (badge.Name == ExtraBadgeName || badge.Name == CountBadgeName))
+            {
+                badge.Visible = !hovered;
+            }
+        }
+
         if (hovered)
         {
             hoverPad.Position = cell.Size * 0.5f - NCard.defaultSize * 0.5f;
@@ -527,35 +560,41 @@ public partial class BangDreamCharacterDetailsPopup : Control
         _cardHoverTweens[cell] = hoverTween;
     }
 
-    private static Control BuildExtraBadge()
+    private Control BuildExtraBadge()
     {
-        var badge = CreateBadge(dark: true);
+        var badge = CreateBadge(_accentColor, lightText: true);
+        badge.Name = ExtraBadgeName;
         badge.SetAnchorsPreset(LayoutPreset.TopRight);
-        badge.OffsetLeft = -46f;
-        badge.OffsetTop = 3f;
-        badge.OffsetRight = -3f;
-        badge.OffsetBottom = 21f;
+        badge.OffsetLeft = -52f;
+        badge.OffsetTop = -6f;
+        badge.OffsetRight = 3f;
+        badge.OffsetBottom = 18f;
 
-        var label = CreateBadgeLabel("EXTRA", 9);
+        var label = CreateBadgeLabel("EXTRA", 10);
+        label.AddThemeColorOverride("font_outline_color", new Color(0f, 0f, 0f, 0.55f));
+        label.AddThemeConstantOverride("outline_size", 3);
         badge.AddChild(label);
         return badge;
     }
 
-    private static Control BuildCountBadge(int count)
+    private Control BuildCountBadge(int count)
     {
-        var badge = CreateBadge(dark: true);
+        var badge = CreateBadge(new Color(0.09f, 0.13f, 0.19f), lightText: true);
+        badge.Name = CountBadgeName;
         badge.SetAnchorsPreset(LayoutPreset.BottomRight);
-        badge.OffsetLeft = -32f;
-        badge.OffsetTop = -19f;
-        badge.OffsetRight = -3f;
+        badge.OffsetLeft = -40f;
+        badge.OffsetTop = -27f;
+        badge.OffsetRight = 3f;
         badge.OffsetBottom = -3f;
 
-        var label = CreateBadgeLabel($"×{count}", 10);
+        var label = CreateBadgeLabel($"×{count}", 13);
+        label.AddThemeColorOverride("font_outline_color", new Color(0f, 0f, 0f, 0.55f));
+        label.AddThemeConstantOverride("outline_size", 3);
         badge.AddChild(label);
         return badge;
     }
 
-    private static Panel CreateBadge(bool dark)
+    private static Panel CreateBadge(Color background, bool lightText)
     {
         var badge = new Panel
         {
@@ -563,12 +602,20 @@ public partial class BangDreamCharacterDetailsPopup : Control
         };
         badge.AddThemeStyleboxOverride("panel", new StyleBoxFlat
         {
-            BgColor = dark ? new Color(0.09f, 0.13f, 0.19f, 0.9f) : new Color(0.99f, 0.984f, 0.969f, 0.95f),
-            CornerRadiusTopLeft = 4,
-            CornerRadiusTopRight = 4,
-            CornerRadiusBottomRight = 4,
-            CornerRadiusBottomLeft = 4,
-            AntiAliasing = true
+            BgColor = new Color(background.R, background.G, background.B, lightText ? 0.96f : 0.95f),
+            CornerRadiusTopLeft = 7,
+            CornerRadiusTopRight = 7,
+            CornerRadiusBottomRight = 7,
+            CornerRadiusBottomLeft = 7,
+            BorderWidthLeft = 1,
+            BorderWidthTop = 1,
+            BorderWidthRight = 1,
+            BorderWidthBottom = 1,
+            BorderColor = lightText ? new Color(1f, 1f, 1f, 0.5f) : new Color(0f, 0f, 0f, 0.2f),
+            AntiAliasing = true,
+            ShadowColor = new Color(0f, 0f, 0f, 0.4f),
+            ShadowSize = 4,
+            ShadowOffset = new Vector2(0f, 2f)
         });
         return badge;
     }
@@ -587,6 +634,36 @@ public partial class BangDreamCharacterDetailsPopup : Control
         label.AddThemeFontSizeOverride("font_size", fontSize);
         label.AddThemeColorOverride("font_color", Colors.White);
         return label;
+    }
+
+    /// <summary>
+    /// 详情页里的音乐牌预览跟随当前展示的皮肤：皮肤配置了 <c>Ui.MusicCardFrame</c> 时替换卡框；
+    /// 否则保留 <c>IPerformCard.PerformCardAssets</c> 提供的默认卡框（预览卡是 canonical 卡，
+    /// 走不到皮肤 patch 的 mutable/owner 判定）。
+    /// </summary>
+    private void ApplyMusicCardFrame(NCard cardNode, CardModel card)
+    {
+        if (!BangDreamConst.IsMusicCardType(card.Type))
+        {
+            return;
+        }
+
+        var skinPath = _skinSelector?.CurrentSkinPath;
+        var framePath = string.IsNullOrWhiteSpace(skinPath)
+            ? null
+            : SkinManager.GetSkinInfo(skinPath)?.SkinTemplate.Ui.MusicCardFrame;
+        if (string.IsNullOrWhiteSpace(framePath) || !ResourceLoader.Exists(framePath))
+        {
+            return;
+        }
+
+        if (cardNode.GetNodeOrNull<TextureRect>("%Frame") is not { } frame)
+        {
+            return;
+        }
+
+        frame.Texture = BangDreamPreloadManager.GetTexture2D(framePath);
+        frame.Material = null;
     }
 
     /// <summary>
