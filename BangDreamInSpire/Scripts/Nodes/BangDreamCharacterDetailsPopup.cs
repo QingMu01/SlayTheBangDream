@@ -49,6 +49,19 @@ public partial class BangDreamCharacterDetailsPopup : Control
     private const float MinCardWidth = 96f;
     // 卡牌区的高度预算：行数决定实际占用，缩放以此为上限，避免撑掉下方遗物区。
     private const float CardAreaMaxHeight = 358f;
+
+    // 面板高度按内容收缩：右栏内容自 y=112 起依次是「小标题 24 + 间距 8 + 卡牌区 + 间距 8 + 小标题 24 + 间距 8 + 遗物区」，
+    // 左栏（皮肤选择器）从 y=166 起；取两栏较长者加底部留白，再在父容器内垂直居中，避免面板下半部大片空白。
+    private const float PanelContentTop = 112f;
+    private const float SectionLabelHeight = 24f;
+    private const float SectionGap = 8f;
+    private const float PanelBottomPadding = 36f;
+    private const float SkinColumnTop = 166f;
+    private const float SkinColumnFallbackHeight = 280f;
+    private const float PanelMinHeight = 420f;
+    private const float PanelMaxHeight = 720f;
+    private const float EmptyHintHeight = 20f;
+    private const float RelicTileHeight = 72f;
     private const float CardHoverDuration = 0.12f;
     private const int CardHoverZIndex = 80;
     private const string HoverPadName = "HoverPad";
@@ -75,6 +88,10 @@ public partial class BangDreamCharacterDetailsPopup : Control
     private readonly List<Control> _cardCells = new();
     private Vector2 _cardCellSize = CardCellBaseSize;
     private Vector2 _cardPreviewScale = Vector2.One * (CardCellBaseSize.X / NCard.defaultSize.X);
+
+    // 右栏两段的实际内容高度，重建时记录，供面板高度自适应使用。
+    private float _cardsAreaHeight = CardCellBaseSize.Y;
+    private float _relicsAreaHeight = RelicTileHeight;
 
     private Tween? _tween;
     private readonly Dictionary<Control, Tween> _cardHoverTweens = new();
@@ -365,6 +382,43 @@ public partial class BangDreamCharacterDetailsPopup : Control
 
         RebuildCards(deck, extraDeck);
         RebuildRelics(relics);
+        FitPanelHeight();
+    }
+
+    /// <summary>
+    /// 面板高度按左右两栏的内容收缩并垂直居中：固定 1160x650 的旧高度会让单行卡牌/单个遗物的皮肤剩下一大片空白。
+    /// 内容高度直接由两栏已知段落的高度相加（不依赖同帧的布局结果），面板宽度保持不变。
+    /// </summary>
+    private void FitPanelHeight()
+    {
+        if (_panel == null)
+        {
+            return;
+        }
+
+        var cardsContentBottom = PanelContentTop + SectionLabelHeight + SectionGap + _cardsAreaHeight;
+        var relicsContentBottom = cardsContentBottom + SectionGap + SectionLabelHeight + SectionGap + _relicsAreaHeight;
+
+        // 左栏高度取皮肤选择器的组合最小高度（spine 容器 + 皮肤名 + 序号行），取不到时用场景里的经验值。
+        var skinSelectorHeight = _skinSelector?.GetChildOrNull<Control>(0)?.GetCombinedMinimumSize().Y
+            ?? SkinColumnFallbackHeight;
+        var skinContentBottom = SkinColumnTop + skinSelectorHeight;
+
+        var height = Mathf.Clamp(
+            Mathf.Max(relicsContentBottom, skinContentBottom) + PanelBottomPadding,
+            PanelMinHeight,
+            PanelMaxHeight);
+
+        var parentHeight = (_panel.GetParent() as Control)?.Size.Y ?? 0f;
+        var top = parentHeight > 0f ? Mathf.Max(8f, (parentHeight - height) * 0.5f) : _panel.Position.Y;
+        _panel.Position = new Vector2(_panel.Position.X, top);
+        _panel.Size = new Vector2(_panel.Size.X, height);
+
+        // 纸张噪点着色器把面板尺寸当 uniform 用，改高后要同步，否则纹理会被拉伸。
+        if (_panel.GetNodeOrNull<ColorRect>("%PaperGrain")?.Material is ShaderMaterial paperMaterial)
+        {
+            paperMaterial.SetShaderParameter("area_size", _panel.Size);
+        }
     }
 
     private readonly record struct CardEntry(CardModel Card, int Count, bool IsExtra);
@@ -391,10 +445,12 @@ public partial class BangDreamCharacterDetailsPopup : Control
             };
             emptyRow.AddChild(BuildEmptyHint("该皮肤没有配置初始卡组"));
             _cardsRow.AddChild(emptyRow);
+            _cardsAreaHeight = EmptyHintHeight;
             return;
         }
 
-        var (columns, _) = ApplyCardLayout(entries.Count);
+        var (columns, rows) = ApplyCardLayout(entries.Count);
+        _cardsAreaHeight = rows * _cardCellSize.Y + (rows - 1) * CardGap;
 
         var index = 0;
         while (index < entries.Count)
@@ -779,6 +835,7 @@ public partial class BangDreamCharacterDetailsPopup : Control
         if (relics.Count == 0)
         {
             _relicsBox.AddChild(BuildEmptyHint("该皮肤没有配置初始遗物"));
+            _relicsAreaHeight = EmptyHintHeight;
             return;
         }
 
@@ -800,6 +857,7 @@ public partial class BangDreamCharacterDetailsPopup : Control
             }
 
             _relicsBox.AddChild(row);
+            _relicsAreaHeight = RelicTileHeight;
             return;
         }
 
@@ -807,6 +865,8 @@ public partial class BangDreamCharacterDetailsPopup : Control
         {
             _relicsBox.AddChild(BuildRelicRow(relic));
         }
+
+        _relicsAreaHeight = relics.Count * 56f + (relics.Count - 1) * 10f;
     }
 
     /// <summary>

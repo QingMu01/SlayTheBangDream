@@ -38,8 +38,7 @@ script = ExtResource("1_meeur")
 layout_mode = 1
 offset_right = 412.0
 offset_bottom = 276.0
-theme_override_constants/separation = 4
-alignment = 0
+theme_override_constants/separation = 12
 
 [node name="SkinContainer" type="Control" parent="Layout"]
 unique_name_in_owner = true
@@ -51,7 +50,6 @@ size_flags_horizontal = 4
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 26)
 layout_mode = 2
-mouse_filter = 2
 theme_override_colors/font_color = Color(0.086, 0.125, 0.18, 1)
 theme_override_fonts/font = ExtResource("6_serif")
 theme_override_font_sizes/font_size = 16
@@ -95,7 +93,6 @@ stretch_mode = 5
 unique_name_in_owner = true
 custom_minimum_size = Vector2(64, 0)
 layout_mode = 2
-mouse_filter = 2
 theme_override_colors/font_color = Color(0.42, 0.46, 0.52, 1)
 theme_override_fonts/font = ExtResource("7_fira")
 theme_override_font_sizes/font_size = 15
