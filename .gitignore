@@ -2,6 +2,7 @@
 .codex/**
 .agents/**/__pycache__/
 .agents/**/*.pyc
+.dsh-tmp/**
 .build/**
 .idea
 .run

@@ -3,7 +3,7 @@
   "name": "BangDreamInSpire",
   "author": "QingMu",
   "description": "SlayTheBangDream 企划的核心模组：通用前置依赖（组件 / 机制 / 特效）与可选的新层级、新怪物等内容。",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "has_pck": true,
   "has_dll": true,
   "dependencies": [
