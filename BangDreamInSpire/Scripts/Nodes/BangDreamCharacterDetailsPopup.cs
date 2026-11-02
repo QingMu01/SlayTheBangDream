@@ -5,11 +5,14 @@ using BangDreamInSpire.Scripts.Nodes.MegeScript;
 using BangDreamInSpire.Scripts.Utils;
 using Godot;
 using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.Entities.UI;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Multiplayer.Game.Lobby;
+using MegaCrit.Sts2.Core.Nodes.Cards;
 using STS2RitsuLib;
+using STS2RitsuLib.Scaffolding.Characters;
 
 namespace BangDreamInSpire.Scripts.Nodes;
 
@@ -38,6 +41,14 @@ public partial class BangDreamCharacterDetailsPopup : Control
 
     private const float PanelOpenScale = 0.96f;
 
+    // 卡牌预览用游戏标准卡节点（NCard，本体尺寸 300x422）统一缩小到网格单元格大小；
+    // 悬停时放大回标准比例。NCard 根节点的局部原点就是卡面中心，所以统一以 Scale 缩放即可。
+    private static readonly Vector2 CardCellSize = new(110f, 155f);
+    private static readonly Vector2 CardPreviewScale = Vector2.One * (CardCellSize.X / NCard.defaultSize.X);
+    private const float CardHoverDuration = 0.12f;
+    private const int CardHoverZIndex = 80;
+    private const string HoverPadName = "HoverPad";
+
     private ColorRect? _scrim;
     private Panel? _panel;
     private ColorRect? _topAccent;
@@ -52,15 +63,14 @@ public partial class BangDreamCharacterDetailsPopup : Control
     private Button? _closeButton;
     private Label? _skinLabel;
     private BangDreamLabel? _skinIndex;
-    private Label? _extraLabel;
     private Label? _cardsLabel;
     private Label? _relicsLabel;
     private BangDreamSkinSelector? _skinSelector;
-    private HBoxContainer? _extraRow;
     private GridContainer? _cardsGrid;
     private VBoxContainer? _relicsBox;
 
     private Tween? _tween;
+    private readonly Dictionary<Control, Tween> _cardHoverTweens = new();
     private CharacterModel? _character;
     private bool _suppressSkinRefresh;
 
@@ -88,11 +98,9 @@ public partial class BangDreamCharacterDetailsPopup : Control
         _closeButton = GetNode<Button>("%CloseButton");
         _skinLabel = GetNode<Label>("%SkinLabel");
         _skinIndex = GetNode<BangDreamLabel>("%SkinIndex");
-        _extraLabel = GetNode<Label>("%ExtraLabel");
         _cardsLabel = GetNode<Label>("%CardsLabel");
         _relicsLabel = GetNode<Label>("%RelicsLabel");
         _skinSelector = GetNode<BangDreamSkinSelector>("%SkinSelector");
-        _extraRow = GetNode<HBoxContainer>("%ExtraRow");
         _cardsGrid = GetNode<GridContainer>("%CardsGrid");
         _relicsBox = GetNode<VBoxContainer>("%RelicsBox");
 
@@ -143,13 +151,9 @@ public partial class BangDreamCharacterDetailsPopup : Control
             }
 
             _classLabel?.SetTextAutoSize(mateData.MemberClass);
-
-            if (_emblem != null)
-            {
-                _emblem.Texture = BangDreamCharacterSelector.LoadTexture(mateData.SelectLogo);
-                _emblem.Visible = _emblem.Texture != null;
-            }
         }
+
+        ApplyEmblem(character);
 
         var skinSupportCharacter = character as ISkinSupportCharacter;
         var hasSkins = skinSupportCharacter != null;
@@ -172,6 +176,37 @@ public partial class BangDreamCharacterDetailsPopup : Control
         }
 
         RefreshContent();
+    }
+
+    /// <summary>
+    /// 名字左侧的头像：优先用角色声明的 <see cref="IModCharacterAssetOverrides.CustomIconPath" /> 图标场景，
+    /// 没配时回退到乐队 logo。
+    /// </summary>
+    private void ApplyEmblem(CharacterModel character)
+    {
+        if (_emblem == null)
+        {
+            return;
+        }
+
+        ClearChildren(_emblem);
+        _emblem.Texture = null;
+
+        var iconPath = (character as IModCharacterAssetOverrides)?.CustomIconPath;
+        if (!string.IsNullOrWhiteSpace(iconPath) && ResourceLoader.Exists(iconPath)
+            && ResourceLoader.Load<PackedScene>(iconPath) is { } iconScene)
+        {
+            _emblem.AddChild(iconScene.Instantiate());
+            _emblem.Visible = true;
+            return;
+        }
+
+        if (character is IBangDreamMateData mateData)
+        {
+            _emblem.Texture = BangDreamCharacterSelector.LoadTexture(mateData.SelectLogo);
+        }
+
+        _emblem.Visible = _emblem.Texture != null;
     }
 
     public void Open()
@@ -220,6 +255,7 @@ public partial class BangDreamCharacterDetailsPopup : Control
         }
 
         _tween?.Kill();
+        ResetCardHover();
         if (_panel != null)
         {
             _panel.PivotOffset = _panel.Size * 0.5f;
@@ -293,7 +329,7 @@ public partial class BangDreamCharacterDetailsPopup : Control
             _classChipStyleBox.BgColor = accentColor;
         }
 
-        foreach (var label in new[] { _bandLabel, _skinLabel, _extraLabel, _cardsLabel, _relicsLabel })
+        foreach (var label in new[] { _bandLabel, _skinLabel, _cardsLabel, _relicsLabel })
         {
             label?.AddThemeColorOverride("font_color", accentColor);
         }
@@ -324,8 +360,7 @@ public partial class BangDreamCharacterDetailsPopup : Control
         var relics = relicSource.Where(RitsuLibFramework.IsRelicVisible).ToList();
         var extraDeck = skinInfo?.GetStartingExtraDeck().ToList() ?? [];
 
-        RebuildCards(deck);
-        RebuildExtraCards(extraDeck);
+        RebuildCards(deck, extraDeck);
         RebuildRelics(relics);
         UpdateSkinIndex();
     }
@@ -348,40 +383,285 @@ public partial class BangDreamCharacterDetailsPopup : Control
         }
     }
 
-    private void RebuildCards(IReadOnlyList<CardModel> cards)
+    private readonly record struct CardEntry(CardModel Card, int Count, bool IsExtra);
+
+    /// <summary>
+    /// 初始卡组与额外卡组合并展示：按「卡牌 id + 是否升级」去重计数，额外卡组来源的卡在右上角打标。
+    /// </summary>
+    private void RebuildCards(IReadOnlyList<CardModel> deck, IReadOnlyList<CardModel> extraDeck)
     {
         if (_cardsGrid == null)
         {
             return;
         }
 
-        ClearChildren(_cardsGrid);
+        ClearCardGrid();
 
-        if (cards.Count == 0)
+        var entries = MergeCards(deck, extraDeck);
+        if (entries.Count == 0)
         {
             _cardsGrid.AddChild(BuildEmptyHint("该皮肤没有配置初始卡组"));
             return;
         }
 
-        foreach (var card in cards)
+        foreach (var entry in entries)
         {
-            _cardsGrid.AddChild(BuildMiniCard(card));
+            _cardsGrid.AddChild(BuildCardCell(entry));
         }
     }
 
-    private void RebuildExtraCards(IReadOnlyList<CardModel> cards)
+    private static List<CardEntry> MergeCards(IReadOnlyList<CardModel> deck, IReadOnlyList<CardModel> extraDeck)
     {
-        if (_extraRow == null || _extraLabel == null)
+        var entries = new List<CardEntry>();
+        var indexByKey = new Dictionary<(string Id, bool Upgraded), int>();
+
+        void Add(CardModel card, bool isExtra)
+        {
+            var key = (card.Id.Entry, card.IsUpgraded);
+            if (indexByKey.TryGetValue(key, out var index))
+            {
+                var existing = entries[index];
+                entries[index] = existing with
+                {
+                    Count = existing.Count + 1,
+                    IsExtra = existing.IsExtra || isExtra
+                };
+                return;
+            }
+
+            indexByKey[key] = entries.Count;
+            entries.Add(new CardEntry(card, 1, isExtra));
+        }
+
+        foreach (var card in deck)
+        {
+            Add(card, false);
+        }
+
+        foreach (var card in extraDeck)
+        {
+            Add(card, true);
+        }
+
+        return entries;
+    }
+
+    private Control BuildCardCell(CardEntry entry)
+    {
+        var cell = new Control
+        {
+            CustomMinimumSize = CardCellSize,
+            MouseFilter = MouseFilterEnum.Stop
+        };
+
+        var cardNode = NCard.Create(entry.Card, ModelVisibility.Visible);
+        if (cardNode != null)
+        {
+            cardNode.MouseFilter = MouseFilterEnum.Ignore;
+            cardNode.Scale = CardPreviewScale;
+            cell.AddChild(cardNode);
+
+            // 悬停放大后卡牌会超出单元格；用一块透明"命中垫"接管放大期间的鼠标，
+            // 否则指针一离开单元格就会立刻缩回、来回闪烁。
+            var hoverPad = new Control
+            {
+                Name = HoverPadName,
+                MouseFilter = MouseFilterEnum.Stop,
+                Visible = false
+            };
+            cell.AddChild(hoverPad);
+
+            // 单元格尺寸由 GridContainer 决定，布局完成后再把卡牌中心对准单元格中心。
+            cell.Resized += () => cardNode.Position = cell.Size * 0.5f;
+            cell.MouseEntered += () => SetCardHovered(cell, cardNode, hoverPad, true);
+            hoverPad.MouseExited += () => SetCardHovered(cell, cardNode, hoverPad, false);
+            // NCard._Ready 内的 Reload 在节点未就绪时会提前返回，需要显式刷新一次标题/描述。
+            Callable.From(() =>
+            {
+                try
+                {
+                    cardNode.UpdateVisuals(PileType.None, CardPreviewMode.Normal);
+                }
+                catch (Exception exception)
+                {
+                    GD.PushWarning($"刷新卡片预览失败：{entry.Card.Id.Entry} - {exception.Message}");
+                }
+            }).CallDeferred();
+        }
+        else
+        {
+            // 卡节点池不可用（如 TestMode）时退回手绘小卡，避免空窗。
+            cell.AddChild(BuildMiniCard(entry.Card));
+        }
+
+        if (entry.IsExtra)
+        {
+            cell.AddChild(BuildExtraBadge());
+        }
+
+        if (entry.Count > 1)
+        {
+            cell.AddChild(BuildCountBadge(entry.Count));
+        }
+
+        return cell;
+    }
+
+    private void SetCardHovered(Control cell, NCard cardNode, Control hoverPad, bool hovered)
+    {
+        cell.ZIndex = hovered ? CardHoverZIndex : 0;
+        hoverPad.Visible = hovered;
+        if (hovered)
+        {
+            hoverPad.Position = cell.Size * 0.5f - NCard.defaultSize * 0.5f;
+            hoverPad.Size = NCard.defaultSize;
+        }
+
+        _cardHoverTweens.TryGetValue(cell, out var previousTween);
+        previousTween?.Kill();
+        var hoverTween = cardNode.CreateTween();
+        hoverTween
+            .TweenProperty(cardNode, "scale", hovered ? Vector2.One : CardPreviewScale, CardHoverDuration)
+            .SetEase(Tween.EaseType.Out)
+            .SetTrans(Tween.TransitionType.Cubic);
+        _cardHoverTweens[cell] = hoverTween;
+    }
+
+    private static Control BuildExtraBadge()
+    {
+        var badge = CreateBadge(dark: true);
+        badge.SetAnchorsPreset(LayoutPreset.TopRight);
+        badge.OffsetLeft = -46f;
+        badge.OffsetTop = 3f;
+        badge.OffsetRight = -3f;
+        badge.OffsetBottom = 21f;
+
+        var label = CreateBadgeLabel("EXTRA", 9);
+        badge.AddChild(label);
+        return badge;
+    }
+
+    private static Control BuildCountBadge(int count)
+    {
+        var badge = CreateBadge(dark: true);
+        badge.SetAnchorsPreset(LayoutPreset.BottomRight);
+        badge.OffsetLeft = -32f;
+        badge.OffsetTop = -19f;
+        badge.OffsetRight = -3f;
+        badge.OffsetBottom = -3f;
+
+        var label = CreateBadgeLabel($"×{count}", 10);
+        badge.AddChild(label);
+        return badge;
+    }
+
+    private static Panel CreateBadge(bool dark)
+    {
+        var badge = new Panel
+        {
+            MouseFilter = MouseFilterEnum.Ignore
+        };
+        badge.AddThemeStyleboxOverride("panel", new StyleBoxFlat
+        {
+            BgColor = dark ? new Color(0.09f, 0.13f, 0.19f, 0.9f) : new Color(0.99f, 0.984f, 0.969f, 0.95f),
+            CornerRadiusTopLeft = 4,
+            CornerRadiusTopRight = 4,
+            CornerRadiusBottomRight = 4,
+            CornerRadiusBottomLeft = 4,
+            AntiAliasing = true
+        });
+        return badge;
+    }
+
+    private static Label CreateBadgeLabel(string text, int fontSize)
+    {
+        var label = new Label
+        {
+            Text = text,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            MouseFilter = MouseFilterEnum.Ignore
+        };
+        label.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        label.AddThemeFontOverride("font", NotoBold);
+        label.AddThemeFontSizeOverride("font_size", fontSize);
+        label.AddThemeColorOverride("font_color", Colors.White);
+        return label;
+    }
+
+    /// <summary>
+    /// 清空卡牌网格：NCard 是池化节点，必须先交还给 NodePool 再销毁外层单元格。
+    /// </summary>
+    private void ClearCardGrid()
+    {
+        if (_cardsGrid == null)
         {
             return;
         }
 
-        ClearChildren(_extraRow);
-        _extraLabel.Visible = cards.Count > 0;
-
-        foreach (var card in cards)
+        foreach (var tween in _cardHoverTweens.Values)
         {
-            _extraRow.AddChild(BuildMiniCard(card));
+            tween.Kill();
+        }
+
+        _cardHoverTweens.Clear();
+
+        foreach (var child in _cardsGrid.GetChildren())
+        {
+            if (child is Control cell)
+            {
+                foreach (var inner in cell.GetChildren())
+                {
+                    if (inner is NCard cardNode)
+                    {
+                        cardNode.QueueFreeSafely();
+                    }
+                }
+            }
+
+            _cardsGrid.RemoveChild(child);
+            child.QueueFreeSafely();
+        }
+    }
+
+    /// <summary>
+    /// 关闭弹窗时若指针正停在卡片上，<c>MouseExited</c> 不会触发；这里统一把悬停状态复位，
+    /// 避免下次打开时残留一张放大卡或一层看不见的命中垫。
+    /// </summary>
+    private void ResetCardHover()
+    {
+        foreach (var tween in _cardHoverTweens.Values)
+        {
+            tween.Kill();
+        }
+
+        _cardHoverTweens.Clear();
+
+        if (_cardsGrid == null)
+        {
+            return;
+        }
+
+        foreach (var child in _cardsGrid.GetChildren())
+        {
+            if (child is not Control cell)
+            {
+                continue;
+            }
+
+            cell.ZIndex = 0;
+
+            foreach (var inner in cell.GetChildren())
+            {
+                if (inner.Name == HoverPadName && inner is Control hoverPad)
+                {
+                    hoverPad.Visible = false;
+                }
+                else if (inner is NCard cardNode && GodotObject.IsInstanceValid(cardNode))
+                {
+                    cardNode.Scale = CardPreviewScale;
+                }
+            }
         }
     }
 
