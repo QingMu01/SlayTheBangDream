@@ -9,6 +9,7 @@ using MegaCrit.Sts2.Core.Context;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Entities.TreasureRelicPicking;
+using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Nodes.Cards;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.CommonUi;
@@ -41,7 +42,6 @@ public class SkinVisualSupportPatches : IModPatches
         patcher.RegisterPatch<FakeMerchantScenePatch>();
         patcher.RegisterPatch<ArmPointingTexturePatch>();
         patcher.RegisterPatch<ArmFightTexturePatch>();
-        patcher.RegisterPatch<MusicCardFramePatch>();
         patcher.RegisterPatch<MusicCardFrameMaterialPatch>();
         patcher.RegisterPatch<MapMarkerPatch>();
         patcher.RegisterPatch<TopBarPatch>();
@@ -309,55 +309,22 @@ internal class ArmFightTexturePatch : IPatchMethod
     }
 }
 
-internal class MusicCardFramePatch : IPatchMethod
-{
-    public static string PatchId => "create_music_card_frame_by_skin_info";
-
-    public static ModPatchTarget[] GetTargets()
-    {
-        return [new ModPatchTarget(typeof(NCard), "UpdatePortrait"),];
-    }
-
-    public static void Postfix(NCard __instance, ref TextureRect? ____frame)
-    {
-        if (__instance.Model is IPerformCard && __instance.Model is
-                { IsMutable: true, Owner.Character: ISkinSupportCharacter })
-        {
-            if (__instance.Model.Owner.RunState is not RunState)
-                return;
-
-            var path = BangDreamConst.PlayerSkin.Get(__instance.Model.Owner).GetSkin()?.SkinTemplate.Ui.MusicCardFrame;
-            if (path != null)
-            {
-                ____frame ??= new TextureRect();
-                ____frame.Texture = BangDreamPreloadManager.GetTexture2D(path);
-            }
-        }
-    }
-}
-
 internal class MusicCardFrameMaterialPatch : IPatchMethod
 {
     public static string PatchId => "clear_music_card_frame_material_by_skin_info";
 
     public static ModPatchTarget[] GetTargets()
     {
-        return [new ModPatchTarget(typeof(NCard), "Reload"),];
+        return [new ModPatchTarget(typeof(CardModel), "FrameMaterial", MethodType.Getter)];
     }
 
-    public static void Postfix(NCard __instance, ref TextureRect? ____frame)
+    public static void Postfix(CardModel __instance, ref Material __result)
     {
-        if (__instance.Model is IPerformCard && __instance.Model is
-                { IsMutable: true, Owner.Character: ISkinSupportCharacter })
+        // 卡框纹理由 MusicCardModel.CustomFramePath（来源角色皮肤）接管；这里同步清空池染色材质，
+        // 让"纹理"和"材质"出自同一条解析链，避免与 RitsuLib 的贴图/材质覆盖补丁出现 postfix 顺序竞争。
+        if (MusicCardSkinResolver.UsesSkinFrame(__instance))
         {
-            if (__instance.Model.Owner.RunState is not RunState)
-                return;
-
-            var path = BangDreamConst.PlayerSkin.Get(__instance.Model.Owner).GetSkin()?.SkinTemplate.Ui.MusicCardFrame;
-            if (path != null)
-            {
-                if (____frame != null) ____frame.Material = null;
-            }
+            __result = null!;
         }
     }
 }
