@@ -5,7 +5,6 @@ using BangDreamInSpire.Scripts.Nodes.MegeScript;
 using BangDreamInSpire.Scripts.Utils;
 using Godot;
 using MegaCrit.Sts2.Core.Entities.Cards;
-using MegaCrit.Sts2.Core.Entities.UI;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Models;
@@ -43,8 +42,11 @@ public partial class BangDreamCharacterDetailsPopup : Control
 
     // 卡牌预览用游戏标准卡节点（NCard，本体尺寸 300x422）统一缩小到网格单元格大小；
     // 悬停时放大回标准比例。NCard 根节点的局部原点就是卡面中心，所以统一以 Scale 缩放即可。
-    private static readonly Vector2 CardCellSize = new(110f, 155f);
-    private static readonly Vector2 CardPreviewScale = Vector2.One * (CardCellSize.X / NCard.defaultSize.X);
+    // 卡牌单元格的基准尺寸；实际尺寸与列数由张数和可用空间动态决定（见 ApplyCardLayout）。
+    private static readonly Vector2 CardCellBaseSize = new(110f, 155f);
+    private const float CardGap = 12f;
+    private const int MaxCardColumns = 6;
+    private const float MinCardWidth = 96f;
     private const float CardHoverDuration = 0.12f;
     private const int CardHoverZIndex = 80;
     private const string HoverPadName = "HoverPad";
@@ -58,18 +60,19 @@ public partial class BangDreamCharacterDetailsPopup : Control
     private TextureRect? _emblem;
     private Label? _title;
     private Label? _roman;
-    private Panel? _classChip;
-    private StyleBoxFlat? _classChipStyleBox;
-    private BangDreamLabel? _classLabel;
-    private Label? _bandLabel;
     private Button? _closeButton;
     private Label? _skinLabel;
     private Color _accentColor = Colors.White;
     private Label? _cardsLabel;
     private Label? _relicsLabel;
     private BangDreamSkinSelector? _skinSelector;
-    private GridContainer? _cardsGrid;
+    private VBoxContainer? _cardsRow;
     private VBoxContainer? _relicsBox;
+
+    // 卡牌区响应式布局：列数/行数与单元格缩放每次重建时按张数/可用空间重算。
+    private readonly List<Control> _cardCells = new();
+    private Vector2 _cardCellSize = CardCellBaseSize;
+    private Vector2 _cardPreviewScale = Vector2.One * (CardCellBaseSize.X / NCard.defaultSize.X);
 
     private Tween? _tween;
     private readonly Dictionary<Control, Tween> _cardHoverTweens = new();
@@ -80,7 +83,6 @@ public partial class BangDreamCharacterDetailsPopup : Control
 
     public override void _EnterTree()
     {
-        // 见 BangDreamTools.ConfigureMegaText：Mega 导出属性写在 tscn 里会被编辑器保存时置空。
         BangDreamTools.ConfigureMegaText(GetNodeOrNull<Control>("%ClassLabel"), maxFontSize: 15, minFontSize: 9);
     }
 
@@ -93,22 +95,13 @@ public partial class BangDreamCharacterDetailsPopup : Control
         _emblem = GetNode<TextureRect>("%Emblem");
         _title = GetNode<Label>("%Title");
         _roman = GetNode<Label>("%Roman");
-        _classChip = GetNode<Panel>("%ClassChip");
-        _classLabel = GetNode<BangDreamLabel>("%ClassLabel");
-        _bandLabel = GetNode<Label>("%BandLabel");
         _closeButton = GetNode<Button>("%CloseButton");
         _skinLabel = GetNode<Label>("%SkinLabel");
         _cardsLabel = GetNode<Label>("%CardsLabel");
         _relicsLabel = GetNode<Label>("%RelicsLabel");
         _skinSelector = GetNode<BangDreamSkinSelector>("%SkinSelector");
-        _cardsGrid = GetNode<GridContainer>("%CardsGrid");
+        _cardsRow = GetNode<VBoxContainer>("%CardsRow");
         _relicsBox = GetNode<VBoxContainer>("%RelicsBox");
-
-        if (_classChip.GetThemeStylebox("panel") is StyleBoxFlat chipStyleBox)
-        {
-            _classChipStyleBox = (StyleBoxFlat)chipStyleBox.Duplicate();
-            _classChip.AddThemeStyleboxOverride("panel", _classChipStyleBox);
-        }
 
         _scrim.GuiInput += OnScrimGuiInput;
         _closeButton.Pressed += Close;
@@ -138,19 +131,12 @@ public partial class BangDreamCharacterDetailsPopup : Control
             _title.Text = new LocString("characters", character.CharacterSelectTitle).GetFormattedText();
         }
 
-        if (_bandLabel != null)
-        {
-            _bandLabel.Text = group?.GetGroupInfo().Name.ToUpperInvariant() ?? string.Empty;
-        }
-
         if (character is IBangDreamMateData mateData)
         {
             if (_roman != null)
             {
                 _roman.Text = mateData.MemberNameRoman.ToUpperInvariant();
             }
-
-            _classLabel?.SetTextAutoSize(mateData.MemberClass);
         }
 
         ApplyEmblem(character);
@@ -195,7 +181,7 @@ public partial class BangDreamCharacterDetailsPopup : Control
 
         var iconPath = (character as IModCharacterAssetOverrides)?.CustomIconPath;
         if (!string.IsNullOrWhiteSpace(iconPath) && ResourceLoader.Exists(iconPath)
-            && ResourceLoader.Load<PackedScene>(iconPath) is { } iconScene)
+                                                 && ResourceLoader.Load<PackedScene>(iconPath) is { } iconScene)
         {
             _emblem.AddChild(iconScene.Instantiate());
             _emblem.Modulate = Colors.White;
@@ -222,32 +208,9 @@ public partial class BangDreamCharacterDetailsPopup : Control
             return;
         }
 
-        var titleCenterY = _title.Position.Y + _title.Size.Y * 0.5f;
-
         if (_roman != null)
         {
             _roman.Position = new Vector2(_title.Position.X, _roman.Position.Y);
-        }
-
-        if (_classChip == null)
-        {
-            return;
-        }
-
-        var chipHeight = _classChip.Size.Y;
-        var chipWidth = Mathf.Max(54f, _classChip.Size.X);
-        if (_classLabel != null)
-        {
-            chipWidth = Mathf.Max(54f, _classLabel.GetMinimumSize().X + 20f);
-        }
-
-        _classChip.Size = new Vector2(chipWidth, chipHeight);
-        _classChip.Position = new Vector2(_classChip.Position.X, titleCenterY - chipHeight * 0.5f);
-
-        if (_bandLabel != null)
-        {
-            _bandLabel.Position = new Vector2(_classChip.Position.X + chipWidth + 12f,
-                titleCenterY - _bandLabel.Size.Y * 0.5f);
         }
     }
 
@@ -366,12 +329,8 @@ public partial class BangDreamCharacterDetailsPopup : Control
             _divider.Color = new Color(accentColor.R, accentColor.G, accentColor.B, 0.35f);
         }
 
-        if (_classChipStyleBox != null)
-        {
-            _classChipStyleBox.BgColor = accentColor;
-        }
 
-        foreach (var label in new[] { _bandLabel, _skinLabel, _cardsLabel, _relicsLabel })
+        foreach (var label in new[] { _skinLabel, _cardsLabel, _relicsLabel })
         {
             label?.AddThemeColorOverride("font_color", accentColor);
         }
@@ -413,7 +372,7 @@ public partial class BangDreamCharacterDetailsPopup : Control
     /// </summary>
     private void RebuildCards(IReadOnlyList<CardModel> deck, IReadOnlyList<CardModel> extraDeck)
     {
-        if (_cardsGrid == null)
+        if (_cardsRow == null)
         {
             return;
         }
@@ -423,14 +382,64 @@ public partial class BangDreamCharacterDetailsPopup : Control
         var entries = MergeCards(deck, extraDeck);
         if (entries.Count == 0)
         {
-            _cardsGrid.AddChild(BuildEmptyHint("该皮肤没有配置初始卡组"));
+            var emptyRow = new HBoxContainer
+            {
+                Alignment = BoxContainer.AlignmentMode.Center,
+                MouseFilter = MouseFilterEnum.Ignore
+            };
+            emptyRow.AddChild(BuildEmptyHint("该皮肤没有配置初始卡组"));
+            _cardsRow.AddChild(emptyRow);
             return;
         }
 
-        foreach (var entry in entries)
+        var (columns, _) = ApplyCardLayout(entries.Count);
+
+        var index = 0;
+        while (index < entries.Count)
         {
-            _cardsGrid.AddChild(BuildCardCell(entry));
+            var row = new HBoxContainer
+            {
+                Alignment = BoxContainer.AlignmentMode.Center,
+                MouseFilter = MouseFilterEnum.Ignore
+            };
+            row.AddThemeConstantOverride("separation", (int)CardGap);
+
+            var countInRow = Mathf.Min(columns, entries.Count - index);
+            for (var i = 0; i < countInRow; i++)
+            {
+                var cell = BuildCardCell(entries[index++]);
+                row.AddChild(cell);
+                _cardCells.Add(cell);
+            }
+
+            _cardsRow.AddChild(row);
         }
+    }
+
+    /// <summary>
+    /// 按卡牌数量与可用空间计算响应式布局：最多 <see cref="MaxCardColumns" /> 列（6 张可单行放下），
+    /// 超过则按行数均衡分列（7→4+3、8→4+4、10→5+5、11→6+5），卡片再按可用宽高等比缩放；
+    /// 每一行都是居中的 <c>HBoxContainer</c>，所以末行不满时也水平居中，不会靠左留空。
+    /// </summary>
+    private (int Columns, int Rows) ApplyCardLayout(int count)
+    {
+        var area = _cardsRow?.Size ?? new Vector2(668f, 358f);
+        var maxColumns = Mathf.Clamp(
+            Mathf.FloorToInt((area.X + CardGap) / (MinCardWidth + CardGap)),
+            1,
+            MaxCardColumns);
+        maxColumns = Mathf.Min(maxColumns, count);
+
+        var rows = Mathf.CeilToInt(count / (float)maxColumns);
+        var columns = Mathf.Clamp(Mathf.CeilToInt(count / (float)rows), 1, maxColumns);
+
+        var fitWidth = (area.X - (columns - 1) * CardGap) / (columns * CardCellBaseSize.X);
+        var fitHeight = (area.Y - (rows - 1) * CardGap) / (rows * CardCellBaseSize.Y);
+        var scale = Mathf.Max(0.1f, Mathf.Min(1f, Mathf.Min(fitWidth, fitHeight)));
+
+        _cardCellSize = CardCellBaseSize * scale;
+        _cardPreviewScale = Vector2.One * (_cardCellSize.X / NCard.defaultSize.X);
+        return (columns, rows);
     }
 
     private static List<CardEntry> MergeCards(IReadOnlyList<CardModel> deck, IReadOnlyList<CardModel> extraDeck)
@@ -473,15 +482,15 @@ public partial class BangDreamCharacterDetailsPopup : Control
     {
         var cell = new Control
         {
-            CustomMinimumSize = CardCellSize,
+            CustomMinimumSize = _cardCellSize,
             MouseFilter = MouseFilterEnum.Stop
         };
 
-        var cardNode = NCard.Create(entry.Card, ModelVisibility.Visible);
+        var cardNode = NCard.Create(entry.Card);
         if (cardNode != null)
         {
             cardNode.MouseFilter = MouseFilterEnum.Ignore;
-            cardNode.Scale = CardPreviewScale;
+            cardNode.Scale = _cardPreviewScale;
             cell.AddChild(cardNode);
 
             // 悬停放大后卡牌会超出单元格；用一块透明"命中垫"接管放大期间的鼠标，
@@ -534,6 +543,12 @@ public partial class BangDreamCharacterDetailsPopup : Control
     private void SetCardHovered(Control cell, NCard cardNode, Control hoverPad, bool hovered)
     {
         cell.ZIndex = hovered ? CardHoverZIndex : 0;
+        // 卡片按行分装在各自 HBox 里，跨行不是兄弟节点；悬停时抬整行的层级，
+        // 否则上排放大的卡会被下排的卡盖住。
+        if (cell.GetParent() is Control row)
+        {
+            row.ZIndex = hovered ? 1 : 0;
+        }
         hoverPad.Visible = hovered;
         foreach (var child in cell.GetChildren())
         {
@@ -554,7 +569,7 @@ public partial class BangDreamCharacterDetailsPopup : Control
         previousTween?.Kill();
         var hoverTween = cardNode.CreateTween();
         hoverTween
-            .TweenProperty(cardNode, "scale", hovered ? Vector2.One : CardPreviewScale, CardHoverDuration)
+            .TweenProperty(cardNode, "scale", hovered ? Vector2.One : _cardPreviewScale, CardHoverDuration)
             .SetEase(Tween.EaseType.Out)
             .SetTrans(Tween.TransitionType.Cubic);
         _cardHoverTweens[cell] = hoverTween;
@@ -667,15 +682,10 @@ public partial class BangDreamCharacterDetailsPopup : Control
     }
 
     /// <summary>
-    /// 清空卡牌网格：NCard 是池化节点，必须先交还给 NodePool 再销毁外层单元格。
+    /// 清空卡牌区：NCard 是池化节点，必须先交还给 NodePool 再销毁承载它的行/单元格。
     /// </summary>
     private void ClearCardGrid()
     {
-        if (_cardsGrid == null)
-        {
-            return;
-        }
-
         foreach (var tween in _cardHoverTweens.Values)
         {
             tween.Kill();
@@ -683,21 +693,33 @@ public partial class BangDreamCharacterDetailsPopup : Control
 
         _cardHoverTweens.Clear();
 
-        foreach (var child in _cardsGrid.GetChildren())
+        if (_cardsRow == null)
         {
-            if (child is Control cell)
+            return;
+        }
+
+        foreach (var cell in _cardCells)
+        {
+            if (!GodotObject.IsInstanceValid(cell))
             {
-                foreach (var inner in cell.GetChildren())
-                {
-                    if (inner is NCard cardNode)
-                    {
-                        cardNode.QueueFreeSafely();
-                    }
-                }
+                continue;
             }
 
-            _cardsGrid.RemoveChild(child);
-            child.QueueFreeSafely();
+            foreach (var inner in cell.GetChildren())
+            {
+                if (inner is NCard cardNode)
+                {
+                    cardNode.QueueFreeSafely();
+                }
+            }
+        }
+
+        _cardCells.Clear();
+
+        foreach (var row in _cardsRow.GetChildren())
+        {
+            _cardsRow.RemoveChild(row);
+            row.QueueFreeSafely();
         }
     }
 
@@ -714,19 +736,19 @@ public partial class BangDreamCharacterDetailsPopup : Control
 
         _cardHoverTweens.Clear();
 
-        if (_cardsGrid == null)
+        foreach (var cell in _cardCells)
         {
-            return;
-        }
-
-        foreach (var child in _cardsGrid.GetChildren())
-        {
-            if (child is not Control cell)
+            if (!GodotObject.IsInstanceValid(cell))
             {
                 continue;
             }
 
             cell.ZIndex = 0;
+
+            if (cell.GetParent() is Control row)
+            {
+                row.ZIndex = 0;
+            }
 
             foreach (var inner in cell.GetChildren())
             {
@@ -736,7 +758,7 @@ public partial class BangDreamCharacterDetailsPopup : Control
                 }
                 else if (inner is NCard cardNode && GodotObject.IsInstanceValid(cardNode))
                 {
-                    cardNode.Scale = CardPreviewScale;
+                    cardNode.Scale = _cardPreviewScale;
                 }
             }
         }
