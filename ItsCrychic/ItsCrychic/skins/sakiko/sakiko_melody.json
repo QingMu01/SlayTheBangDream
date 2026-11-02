@@ -1,4 +1,6 @@
-﻿{
+{
+  "NameKey": "SKIN_SAKIKO_MELODY_NAME",
+  "DescriptionKey": "SKIN_SAKIKO_MELODY_DESCRIPTION",
   "MultiplayerVisual": {
     "VisualScene": "res://ItsCrychic/scenes/creature/sakiko_skin_melody.tscn",
     "RestSiteScene": "res://ItsCrychic/scenes/rest_site/sakiko_rest_melody.tscn",

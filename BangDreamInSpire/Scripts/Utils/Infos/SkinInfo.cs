@@ -52,7 +52,9 @@ public class SkinInfo
             RewardRareCardIcon: skinTemplate.Ui.RewardRareCardIcon?.EmptyStringFilter()
         );
 
-        SkinTemplate = new SkinTemplate(multiplayerVisual, multiplayerVfx, ui, skinTemplate.Starting);
+        SkinTemplate = new SkinTemplate(multiplayerVisual, multiplayerVfx, ui, skinTemplate.Starting,
+            skinTemplate.NameKey?.EmptyStringFilter(),
+            skinTemplate.DescriptionKey?.EmptyStringFilter());
     }
 
     public IEnumerable<string> GetAllVisualResourcePaths()
@@ -130,11 +132,14 @@ public class SkinInfo
 }
 
 // Json模板
+// NameKey / DescriptionKey 是本地化键（gameplay_ui 表），不是显示文本；皮肤名与说明随语言切换。
 public record SkinTemplate(
     MultiplayerVisual MultiplayerVisual,
     MultiplayerVfx MultiplayerVfx,
     Ui Ui,
-    StartingInfo Starting
+    StartingInfo Starting,
+    string? NameKey = null,
+    string? DescriptionKey = null
 );
 
 // 可配置项 所有人可见的视觉资源

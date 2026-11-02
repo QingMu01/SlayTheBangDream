@@ -4,6 +4,7 @@ using BangDreamInSpire.Scripts.Utils;
 using BangDreamInSpire.Scripts.Utils.Infos;
 using Godot;
 using MegaCrit.Sts2.Core.Helpers;
+using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Multiplayer.Game.Lobby;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
@@ -26,6 +27,15 @@ public partial class BangDreamSkinSelector : Control
 
     private Control? _skinContainer;
 
+    private Label? _skinNameLabel;
+
+    private Label? _skinDescriptionLabel;
+
+    private Label? _indexLabel;
+
+    // 皮肤名与说明的本地化表：皮肤 JSON 里只存键名，实际文本在 localization/<lang>/gameplay_ui.json。
+    private const string SkinLocTable = "gameplay_ui";
+
     private int _currentSkinIndex;
 
     private StartRunLobby? _lobby;
@@ -46,10 +56,13 @@ public partial class BangDreamSkinSelector : Control
 
     public override void _Ready()
     {
-        _leftArrow = GetNode<BangDreamGoldArrowButton>("VSplitContainer/HBoxContainer/LeftArrowContainer/LeftArrow");
-        _rightArrow = GetNode<BangDreamGoldArrowButton>("VSplitContainer/HBoxContainer/RightArrowContainer/RightArrow");
+        _leftArrow = GetNode<BangDreamGoldArrowButton>("%LeftArrow");
+        _rightArrow = GetNode<BangDreamGoldArrowButton>("%RightArrow");
 
         _skinContainer = GetNode<Control>("%SkinContainer");
+        _skinNameLabel = GetNode<Label>("%SkinNameLabel");
+        _skinDescriptionLabel = GetNodeOrNull<Label>("%SkinDescriptionLabel");
+        _indexLabel = GetNode<Label>("%IndexLabel");
 
         _leftArrow.Connect(NClickableControl.SignalName.Released,
             Callable.From<NButton>(delegate { DecrementSkinIndex(); }));
@@ -144,6 +157,27 @@ public partial class BangDreamSkinSelector : Control
                 }
             }
 
+            if (_indexLabel != null)
+            {
+                _indexLabel.Text = $"{_currentSkinIndex + 1} / {_skinInfos.Count}";
+            }
+
+            var (currentSkinPath, currentSkinInfo) = _skinInfos[_currentSkinIndex];
+
+            if (_skinNameLabel != null)
+            {
+                // 本地化键优先；未配置或未翻译时回退到 JSON 文件名，避免显示空白。
+                _skinNameLabel.Text = ResolveSkinLocText(currentSkinInfo.SkinTemplate.NameKey)
+                                      ?? currentSkinPath.GetFile().GetBaseName();
+            }
+
+            if (_skinDescriptionLabel != null)
+            {
+                var description = ResolveSkinLocText(currentSkinInfo.SkinTemplate.DescriptionKey);
+                _skinDescriptionLabel.Text = description ?? string.Empty;
+                _skinDescriptionLabel.Visible = description != null;
+            }
+
             if (_skinContainer != null)
             {
                 var visualScene = _skinInfos[_currentSkinIndex].Item2.SkinTemplate.MultiplayerVisual.VisualScene;
@@ -189,6 +223,8 @@ public partial class BangDreamSkinSelector : Control
             if (_leftArrow != null) _leftArrow.Visible = false;
             if (_rightArrow != null) _rightArrow.Visible = false;
             if (_skinContainer != null) _skinContainer.Visible = false;
+            if (_skinNameLabel != null) _skinNameLabel.Visible = false;
+            if (_indexLabel != null) _indexLabel.Visible = false;
         }
     }
 
@@ -197,4 +233,20 @@ public partial class BangDreamSkinSelector : Control
         visuals.SpineAnimation.SetAnimation(anim);
         visuals.Position = new Vector2(120, 200);
     }
+
+    /// <summary>
+    /// 读取皮肤名/说明的本地化文本（gameplay_ui 表）。键缺失或译文为空时返回 null，
+    /// 由调用方决定回退（名字回退到文件名，说明则隐藏）。
+    /// </summary>
+    private static string? ResolveSkinLocText(string? key)
+    {
+        if (string.IsNullOrWhiteSpace(key) || !LocString.Exists(SkinLocTable, key))
+        {
+            return null;
+        }
+
+        var text = new LocString(SkinLocTable, key).GetFormattedText();
+        return string.IsNullOrWhiteSpace(text) ? null : text;
+    }
+
 }

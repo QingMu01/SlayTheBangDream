@@ -1,11 +1,14 @@
 using BangDreamInSpire.Scripts.Cards;
 using BangDreamInSpire.Scripts.Extensions;
+using BangDreamInSpire.Scripts.Interfaces.CharacterAugment;
 using BangDreamInSpire.Scripts.Mechanics.MusicNote;
 using BangDreamInSpire.Scripts.Utils;
 using BangDreamInSpire.Scripts.Utils.Infos;
+using ItsCrychic.Scripts.Character;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
+using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.CardPools;
 using STS2RitsuLib.Combat.SecondaryResources;
 using STS2RitsuLib.Interop.AutoRegistration;
@@ -18,6 +21,9 @@ public sealed class BasicScale() : MusicCardModel(CustomCost, CustomRarity, Cust
     private const int CustomCost = 0;
     private const CardRarity CustomRarity = CardRarity.Token;
     private const TargetType CustomTarget = TargetType.None;
+
+    /// <summary>该 Token 注册在 <c>TokenCardPool</c>，无法由卡池反查来源角色；它只由祥子的牌生成。</summary>
+    public override ISkinSupportCharacter? OriginCharacter => ModelDb.Character<TogawaSakiko>();
 
     protected override IEnumerable<DynamicVar> CardVars => [QuickVar.Repeat.Create(3)];
 

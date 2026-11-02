@@ -1,10 +1,12 @@
-[gd_scene load_steps=8 format=3 uid="uid://bfq1kub0qqf3m"]
+[gd_scene load_steps=10 format=3 uid="uid://bfq1kub0qqf3m"]
 
 [ext_resource type="Script" uid="uid://bfud75nlnqvyj" path="res://Scripts/Nodes/MegeScript/BangDreamGoldArrowButton.cs" id="1_g0ugm"]
 [ext_resource type="Script" uid="uid://btg1yndbt2aic" path="res://Scripts/Nodes/BangDreamSkinSelector.cs" id="1_meeur"]
 [ext_resource type="Shader" uid="uid://c66gb6g7tup3n" path="res://shaders/hsv.gdshader" id="2_meeur"]
 [ext_resource type="Texture2D" uid="uid://b4ffylh" path="res://images/atlases/ui_atlas.sprites/settings_tiny_left_arrow.tres" id="3_4rpgq"]
 [ext_resource type="Texture2D" uid="uid://kjsi4o" path="res://images/atlases/ui_atlas.sprites/settings_tiny_right_arrow.tres" id="5_jmns7"]
+[ext_resource type="FontVariation" uid="uid://bxphqqry0qswt" path="res://themes/fonts/zhs/source_han_serif_sc_bold_shared.tres" id="6_serif"]
+[ext_resource type="FontVariation" uid="uid://7k0n7sxph05k" path="res://themes/fonts/rus/fira_sans_extra_condensed_bold_shared.tres" id="7_fira"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_m28hs"]
 resource_local_to_scene = true
@@ -29,111 +31,107 @@ anchor_right = 0.5
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 0
-pivot_offset = Vector2(190, 0)
+pivot_offset = Vector2(206, 0)
 script = ExtResource("1_meeur")
 
-[node name="VSplitContainer" type="HSplitContainer" parent="."]
+[node name="Layout" type="VBoxContainer" parent="."]
 layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
 offset_right = 412.0
 offset_bottom = 276.0
-grow_horizontal = 2
-collapsed = true
-dragging_enabled = false
-dragger_visibility = 1
+theme_override_constants/separation = 12
 
-[node name="SkinContainer" type="Control" parent="VSplitContainer"]
+[node name="SkinContainer" type="Control" parent="Layout"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(280, 200)
 layout_mode = 2
 size_flags_horizontal = 4
 
-[node name="HBoxContainer" type="VBoxContainer" parent="VSplitContainer"]
+[node name="SkinNameLabel" type="Label" parent="Layout"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 26)
 layout_mode = 2
-size_flags_horizontal = 0
-theme_override_constants/separation = 84
+theme_override_colors/font_color = Color(0.086, 0.125, 0.18, 1)
+theme_override_fonts/font = ExtResource("6_serif")
+theme_override_font_sizes/font_size = 16
+text = "—"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SkinDescriptionLabel" type="Label" parent="Layout"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.42, 0.46, 0.52, 1)
+theme_override_fonts/font = ExtResource("6_serif")
+theme_override_font_sizes/font_size = 13
+autowrap_mode = 3
+horizontal_alignment = 1
+
+[node name="IndexRow" type="HBoxContainer" parent="Layout"]
+layout_mode = 2
+theme_override_constants/separation = 10
 alignment = 1
 
-[node name="LeftArrowContainer" type="Control" parent="VSplitContainer/HBoxContainer"]
+[node name="LeftArrow" type="Control" parent="Layout/IndexRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(44, 44)
 layout_mode = 2
-mouse_filter = 2
-
-[node name="LeftArrow" type="Control" parent="VSplitContainer/HBoxContainer/LeftArrowContainer"]
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -42.0
-offset_top = -42.0
-offset_right = 42.0
-offset_bottom = 42.0
-grow_horizontal = 2
-grow_vertical = 2
-rotation = 1.5707964
-pivot_offset = Vector2(42, 42)
 script = ExtResource("1_g0ugm")
 
-[node name="TextureRect" type="TextureRect" parent="VSplitContainer/HBoxContainer/LeftArrowContainer/LeftArrow"]
+[node name="TextureRect" type="TextureRect" parent="Layout/IndexRow/LeftArrow"]
 material = SubResource("ShaderMaterial_m28hs")
-custom_minimum_size = Vector2(32, 32)
+custom_minimum_size = Vector2(22, 22)
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -16.0
-offset_top = -16.0
-offset_right = 16.0
-offset_bottom = 16.0
+offset_left = -11.0
+offset_top = -11.0
+offset_right = 11.0
+offset_bottom = 11.0
 grow_horizontal = 2
 grow_vertical = 2
-pivot_offset = Vector2(16, 16)
+pivot_offset = Vector2(11, 11)
 mouse_filter = 2
 texture = ExtResource("3_4rpgq")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="RightArrowContainer" type="Control" parent="VSplitContainer/HBoxContainer"]
+[node name="IndexLabel" type="Label" parent="Layout/IndexRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 0)
 layout_mode = 2
-mouse_filter = 2
+theme_override_colors/font_color = Color(0.42, 0.46, 0.52, 1)
+theme_override_fonts/font = ExtResource("7_fira")
+theme_override_font_sizes/font_size = 15
+text = "1 / 1"
+horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="RightArrow" type="Control" parent="VSplitContainer/HBoxContainer/RightArrowContainer"]
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -42.0
-offset_top = -42.0
-offset_right = 42.0
-offset_bottom = 42.0
-grow_horizontal = 2
-grow_vertical = 2
-rotation = 1.5707964
-pivot_offset = Vector2(42, 42)
+[node name="RightArrow" type="Control" parent="Layout/IndexRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(44, 44)
+layout_mode = 2
 script = ExtResource("1_g0ugm")
 
-[node name="TextureRect" type="TextureRect" parent="VSplitContainer/HBoxContainer/RightArrowContainer/RightArrow"]
+[node name="TextureRect" type="TextureRect" parent="Layout/IndexRow/RightArrow"]
 material = SubResource("ShaderMaterial_mub7k")
-custom_minimum_size = Vector2(32, 32)
+custom_minimum_size = Vector2(22, 22)
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -16.0
-offset_top = -16.0
-offset_right = 16.0
-offset_bottom = 16.0
+offset_left = -11.0
+offset_top = -11.0
+offset_right = 11.0
+offset_bottom = 11.0
 grow_horizontal = 2
 grow_vertical = 2
-pivot_offset = Vector2(16, 16)
+pivot_offset = Vector2(11, 11)
 mouse_filter = 2
 texture = ExtResource("5_jmns7")
 expand_mode = 1

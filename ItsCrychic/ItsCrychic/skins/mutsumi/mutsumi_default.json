@@ -1,4 +1,6 @@
-﻿{
+{
+  "NameKey": "SKIN_MUTSUMI_DEFAULT_NAME",
+  "DescriptionKey": "SKIN_MUTSUMI_DEFAULT_DESCRIPTION",
   "MultiplayerVisual": {
     "VisualScene": "res://ItsCrychic/scenes/creature/mutsumi_skin_default.tscn",
     "RestSiteScene": "res://ItsCrychic/scenes/rest_site/mutsumi_rest_default.tscn",

@@ -4,6 +4,7 @@ using BangDreamInSpire.Scripts.Nodes;
 using BangDreamInSpire.Scripts.Utils;
 using BangDreamInSpire.Scripts.Utils.Infos;
 using Godot;
+using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Nodes.Combat;
@@ -38,6 +39,7 @@ public sealed class PerformMechanic : IBangDreamMechanic
 
     public void RegisterContent(BangDreamMechanicContext context)
     {
+        BangDreamConst.MusicCardType = RitsuLibFramework.RegisterDynamicEnumValue<CardType>(context.ModId, "Music");
         BangDreamConst.Music = context.RegisterCardKeyword("Music");
         BangDreamConst.Instant = context.RegisterCardKeyword("Instant");
         BangDreamConst.Perform = context.RegisterCardKeyword("Perform");

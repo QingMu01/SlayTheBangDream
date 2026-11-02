@@ -3,14 +3,15 @@ using BangDreamInSpire.Scripts.Extensions;
 using BangDreamInSpire.Scripts.Interfaces.CharacterAugment;
 using BangDreamInSpire.Scripts.Nodes.MegeScript;
 using BangDreamInSpire.Scripts.Utils;
-using BangDreamInSpire.Scripts.Utils.Infos;
 using Godot;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Multiplayer.Game.Lobby;
+using MegaCrit.Sts2.Core.Nodes.Cards;
 using STS2RitsuLib;
+using STS2RitsuLib.Scaffolding.Characters;
 
 namespace BangDreamInSpire.Scripts.Nodes;
 
@@ -39,6 +40,34 @@ public partial class BangDreamCharacterDetailsPopup : Control
 
     private const float PanelOpenScale = 0.96f;
 
+    // 卡牌预览用游戏标准卡节点（NCard，本体尺寸 300x422）统一缩小到网格单元格大小；
+    // 悬停时放大回标准比例。NCard 根节点的局部原点就是卡面中心，所以统一以 Scale 缩放即可。
+    // 卡牌单元格的基准尺寸；实际尺寸与列数由张数和可用空间动态决定（见 ApplyCardLayout）。
+    private static readonly Vector2 CardCellBaseSize = new(110f, 155f);
+    private const float CardGap = 12f;
+    private const int MaxCardColumns = 6;
+    private const float MinCardWidth = 96f;
+    // 卡牌区的高度预算：行数决定实际占用，缩放以此为上限，避免撑掉下方遗物区。
+    private const float CardAreaMaxHeight = 358f;
+
+    // 面板高度按内容收缩：右栏内容自 y=112 起依次是「小标题 24 + 间距 8 + 卡牌区 + 间距 8 + 小标题 24 + 间距 8 + 遗物区」，
+    // 左栏（皮肤选择器）从 y=166 起；取两栏较长者加底部留白，再在父容器内垂直居中，避免面板下半部大片空白。
+    private const float PanelContentTop = 112f;
+    private const float SectionLabelHeight = 24f;
+    private const float SectionGap = 8f;
+    private const float PanelBottomPadding = 36f;
+    private const float SkinColumnTop = 166f;
+    private const float SkinColumnFallbackHeight = 280f;
+    private const float PanelMinHeight = 420f;
+    private const float PanelMaxHeight = 720f;
+    private const float EmptyHintHeight = 20f;
+    private const float RelicTileHeight = 72f;
+    private const float CardHoverDuration = 0.12f;
+    private const int CardHoverZIndex = 80;
+    private const string HoverPadName = "HoverPad";
+    private const string ExtraBadgeName = "ExtraBadge";
+    private const string CountBadgeName = "CountBadge";
+
     private ColorRect? _scrim;
     private Panel? _panel;
     private ColorRect? _topAccent;
@@ -46,22 +75,26 @@ public partial class BangDreamCharacterDetailsPopup : Control
     private TextureRect? _emblem;
     private Label? _title;
     private Label? _roman;
-    private Panel? _classChip;
-    private StyleBoxFlat? _classChipStyleBox;
-    private BangDreamLabel? _classLabel;
-    private Label? _bandLabel;
     private Button? _closeButton;
     private Label? _skinLabel;
-    private BangDreamLabel? _skinIndex;
-    private Label? _extraLabel;
+    private Color _accentColor = Colors.White;
     private Label? _cardsLabel;
     private Label? _relicsLabel;
     private BangDreamSkinSelector? _skinSelector;
-    private HBoxContainer? _extraRow;
-    private GridContainer? _cardsGrid;
+    private VBoxContainer? _cardsRow;
     private VBoxContainer? _relicsBox;
 
+    // 卡牌区响应式布局：列数/行数与单元格缩放每次重建时按张数/可用空间重算。
+    private readonly List<Control> _cardCells = new();
+    private Vector2 _cardCellSize = CardCellBaseSize;
+    private Vector2 _cardPreviewScale = Vector2.One * (CardCellBaseSize.X / NCard.defaultSize.X);
+
+    // 右栏两段的实际内容高度，重建时记录，供面板高度自适应使用。
+    private float _cardsAreaHeight = CardCellBaseSize.Y;
+    private float _relicsAreaHeight = RelicTileHeight;
+
     private Tween? _tween;
+    private readonly Dictionary<Control, Tween> _cardHoverTweens = new();
     private CharacterModel? _character;
     private bool _suppressSkinRefresh;
 
@@ -69,9 +102,7 @@ public partial class BangDreamCharacterDetailsPopup : Control
 
     public override void _EnterTree()
     {
-        // 见 BangDreamTools.ConfigureMegaText：Mega 导出属性写在 tscn 里会被编辑器保存时置空。
         BangDreamTools.ConfigureMegaText(GetNodeOrNull<Control>("%ClassLabel"), maxFontSize: 15, minFontSize: 9);
-        BangDreamTools.ConfigureMegaText(GetNodeOrNull<Control>("%SkinIndex"), maxFontSize: 14, minFontSize: 10);
     }
 
     public override void _Ready()
@@ -83,25 +114,13 @@ public partial class BangDreamCharacterDetailsPopup : Control
         _emblem = GetNode<TextureRect>("%Emblem");
         _title = GetNode<Label>("%Title");
         _roman = GetNode<Label>("%Roman");
-        _classChip = GetNode<Panel>("%ClassChip");
-        _classLabel = GetNode<BangDreamLabel>("%ClassLabel");
-        _bandLabel = GetNode<Label>("%BandLabel");
         _closeButton = GetNode<Button>("%CloseButton");
         _skinLabel = GetNode<Label>("%SkinLabel");
-        _skinIndex = GetNode<BangDreamLabel>("%SkinIndex");
-        _extraLabel = GetNode<Label>("%ExtraLabel");
         _cardsLabel = GetNode<Label>("%CardsLabel");
         _relicsLabel = GetNode<Label>("%RelicsLabel");
         _skinSelector = GetNode<BangDreamSkinSelector>("%SkinSelector");
-        _extraRow = GetNode<HBoxContainer>("%ExtraRow");
-        _cardsGrid = GetNode<GridContainer>("%CardsGrid");
+        _cardsRow = GetNode<VBoxContainer>("%CardsRow");
         _relicsBox = GetNode<VBoxContainer>("%RelicsBox");
-
-        if (_classChip.GetThemeStylebox("panel") is StyleBoxFlat chipStyleBox)
-        {
-            _classChipStyleBox = (StyleBoxFlat)chipStyleBox.Duplicate();
-            _classChip.AddThemeStyleboxOverride("panel", _classChipStyleBox);
-        }
 
         _scrim.GuiInput += OnScrimGuiInput;
         _closeButton.Pressed += Close;
@@ -131,26 +150,16 @@ public partial class BangDreamCharacterDetailsPopup : Control
             _title.Text = new LocString("characters", character.CharacterSelectTitle).GetFormattedText();
         }
 
-        if (_bandLabel != null)
-        {
-            _bandLabel.Text = group?.GetGroupInfo().Name.ToUpperInvariant() ?? string.Empty;
-        }
-
         if (character is IBangDreamMateData mateData)
         {
             if (_roman != null)
             {
                 _roman.Text = mateData.MemberNameRoman.ToUpperInvariant();
             }
-
-            _classLabel?.SetTextAutoSize(mateData.MemberClass);
-
-            if (_emblem != null)
-            {
-                _emblem.Texture = BangDreamCharacterSelector.LoadTexture(mateData.SelectLogo);
-                _emblem.Visible = _emblem.Texture != null;
-            }
         }
+
+        ApplyEmblem(character);
+        AlignHeader();
 
         var skinSupportCharacter = character as ISkinSupportCharacter;
         var hasSkins = skinSupportCharacter != null;
@@ -173,6 +182,55 @@ public partial class BangDreamCharacterDetailsPopup : Control
         }
 
         RefreshContent();
+    }
+
+    /// <summary>
+    /// 名字左侧的头像：优先用角色声明的 <see cref="IModCharacterAssetOverrides.CustomIconPath" /> 图标场景，
+    /// 没配时回退到乐队 logo。
+    /// </summary>
+    private void ApplyEmblem(CharacterModel character)
+    {
+        if (_emblem == null)
+        {
+            return;
+        }
+
+        ClearChildren(_emblem);
+        _emblem.Texture = null;
+
+        var iconPath = (character as IModCharacterAssetOverrides)?.CustomIconPath;
+        if (!string.IsNullOrWhiteSpace(iconPath) && ResourceLoader.Exists(iconPath)
+                                                 && ResourceLoader.Load<PackedScene>(iconPath) is { } iconScene)
+        {
+            _emblem.AddChild(iconScene.Instantiate());
+            _emblem.Modulate = Colors.White;
+            _emblem.Visible = true;
+            return;
+        }
+
+        if (character is IBangDreamMateData mateData)
+        {
+            _emblem.Texture = BangDreamCharacterSelector.LoadTexture(mateData.SelectLogo);
+        }
+
+        _emblem.Visible = _emblem.Texture != null;
+    }
+
+    /// <summary>
+    /// 顶部标题区对齐：罗马字与标题左对齐；班级胶囊与乐队名按标题中心线垂直居中，
+    /// 胶囊宽度跟随班级文字实际宽度，避免不同角色的班级名溢出固定宽度。
+    /// </summary>
+    private void AlignHeader()
+    {
+        if (_title == null)
+        {
+            return;
+        }
+
+        if (_roman != null)
+        {
+            _roman.Position = new Vector2(_title.Position.X, _roman.Position.Y);
+        }
     }
 
     public void Open()
@@ -221,6 +279,7 @@ public partial class BangDreamCharacterDetailsPopup : Control
         }
 
         _tween?.Kill();
+        ResetCardHover();
         if (_panel != null)
         {
             _panel.PivotOffset = _panel.Size * 0.5f;
@@ -266,8 +325,6 @@ public partial class BangDreamCharacterDetailsPopup : Control
 
     private void OnSkinSelected(string skinPath)
     {
-        UpdateSkinIndex();
-
         if (_suppressSkinRefresh)
         {
             return;
@@ -279,6 +336,8 @@ public partial class BangDreamCharacterDetailsPopup : Control
 
     private void ApplyPalette(Color accentColor, Color memberColor)
     {
+        _accentColor = accentColor;
+
         if (_topAccent != null)
         {
             _topAccent.Color = accentColor;
@@ -289,12 +348,8 @@ public partial class BangDreamCharacterDetailsPopup : Control
             _divider.Color = new Color(accentColor.R, accentColor.G, accentColor.B, 0.35f);
         }
 
-        if (_classChipStyleBox != null)
-        {
-            _classChipStyleBox.BgColor = accentColor;
-        }
 
-        foreach (var label in new[] { _bandLabel, _skinLabel, _extraLabel, _cardsLabel, _relicsLabel })
+        foreach (var label in new[] { _skinLabel, _cardsLabel, _relicsLabel })
         {
             label?.AddThemeColorOverride("font_color", accentColor);
         }
@@ -325,64 +380,446 @@ public partial class BangDreamCharacterDetailsPopup : Control
         var relics = relicSource.Where(RitsuLibFramework.IsRelicVisible).ToList();
         var extraDeck = skinInfo?.GetStartingExtraDeck().ToList() ?? [];
 
-        RebuildCards(deck);
-        RebuildExtraCards(extraDeck);
+        RebuildCards(deck, extraDeck);
         RebuildRelics(relics);
-        UpdateSkinIndex();
+        FitPanelHeight();
     }
 
-    private void UpdateSkinIndex()
+    /// <summary>
+    /// 面板高度按左右两栏的内容收缩并垂直居中：固定 1160x650 的旧高度会让单行卡牌/单个遗物的皮肤剩下一大片空白。
+    /// 内容高度直接由两栏已知段落的高度相加（不依赖同帧的布局结果），面板宽度保持不变。
+    /// </summary>
+    private void FitPanelHeight()
     {
-        if (_skinIndex == null)
+        if (_panel == null)
         {
             return;
         }
 
-        if (_skinSelector is { SkinCount: > 0 })
+        var cardsContentBottom = PanelContentTop + SectionLabelHeight + SectionGap + _cardsAreaHeight;
+        var relicsContentBottom = cardsContentBottom + SectionGap + SectionLabelHeight + SectionGap + _relicsAreaHeight;
+
+        // 左栏高度取皮肤选择器的组合最小高度（spine 容器 + 皮肤名 + 序号行），取不到时用场景里的经验值。
+        var skinSelectorHeight = _skinSelector?.GetChildOrNull<Control>(0)?.GetCombinedMinimumSize().Y
+            ?? SkinColumnFallbackHeight;
+        var skinContentBottom = SkinColumnTop + skinSelectorHeight;
+
+        var height = Mathf.Clamp(
+            Mathf.Max(relicsContentBottom, skinContentBottom) + PanelBottomPadding,
+            PanelMinHeight,
+            PanelMaxHeight);
+
+        var parentHeight = (_panel.GetParent() as Control)?.Size.Y ?? 0f;
+        var top = parentHeight > 0f ? Mathf.Max(8f, (parentHeight - height) * 0.5f) : _panel.Position.Y;
+        _panel.Position = new Vector2(_panel.Position.X, top);
+        _panel.Size = new Vector2(_panel.Size.X, height);
+
+        // 纸张噪点着色器把面板尺寸当 uniform 用，改高后要同步，否则纹理会被拉伸。
+        if (_panel.GetNodeOrNull<ColorRect>("%PaperGrain")?.Material is ShaderMaterial paperMaterial)
         {
-            _skinIndex.Visible = _skinSelector.Visible;
-            _skinIndex.SetTextAutoSize($"{_skinSelector.SkinIndex} / {_skinSelector.SkinCount}");
+            paperMaterial.SetShaderParameter("area_size", _panel.Size);
+        }
+    }
+
+    private readonly record struct CardEntry(CardModel Card, int Count, bool IsExtra);
+
+    /// <summary>
+    /// 初始卡组与额外卡组合并展示：按「卡牌 id + 是否升级」去重计数，额外卡组来源的卡在右上角打标。
+    /// </summary>
+    private void RebuildCards(IReadOnlyList<CardModel> deck, IReadOnlyList<CardModel> extraDeck)
+    {
+        if (_cardsRow == null)
+        {
+            return;
+        }
+
+        ClearCardGrid();
+
+        var entries = MergeCards(deck, extraDeck);
+        if (entries.Count == 0)
+        {
+            var emptyRow = new HBoxContainer
+            {
+                Alignment = BoxContainer.AlignmentMode.Center,
+                MouseFilter = MouseFilterEnum.Ignore
+            };
+            emptyRow.AddChild(BuildEmptyHint("该皮肤没有配置初始卡组"));
+            _cardsRow.AddChild(emptyRow);
+            _cardsAreaHeight = EmptyHintHeight;
+            return;
+        }
+
+        var (columns, rows) = ApplyCardLayout(entries.Count);
+        _cardsAreaHeight = rows * _cardCellSize.Y + (rows - 1) * CardGap;
+
+        var index = 0;
+        while (index < entries.Count)
+        {
+            var row = new HBoxContainer
+            {
+                Alignment = BoxContainer.AlignmentMode.Center,
+                MouseFilter = MouseFilterEnum.Ignore
+            };
+            row.AddThemeConstantOverride("separation", (int)CardGap);
+
+            var countInRow = Mathf.Min(columns, entries.Count - index);
+            for (var i = 0; i < countInRow; i++)
+            {
+                var cell = BuildCardCell(entries[index++]);
+                row.AddChild(cell);
+                _cardCells.Add(cell);
+            }
+
+            _cardsRow.AddChild(row);
+        }
+    }
+
+    /// <summary>
+    /// 按卡牌数量与可用空间计算响应式布局：最多 <see cref="MaxCardColumns" /> 列（6 张可单行放下），
+    /// 超过则按行数均衡分列（7→4+3、8→4+4、10→5+5、11→6+5），卡片再按可用宽高等比缩放；
+    /// 每一行都是居中的 <c>HBoxContainer</c>，所以末行不满时也水平居中，不会靠左留空。
+    /// </summary>
+    private (int Columns, int Rows) ApplyCardLayout(int count)
+    {
+        var columnWidth = _cardsRow?.GetParent<Control>()?.Size.X ?? 668f;
+        var area = new Vector2(columnWidth, CardAreaMaxHeight);
+        var maxColumns = Mathf.Clamp(
+            Mathf.FloorToInt((area.X + CardGap) / (MinCardWidth + CardGap)),
+            1,
+            MaxCardColumns);
+        maxColumns = Mathf.Min(maxColumns, count);
+
+        var rows = Mathf.CeilToInt(count / (float)maxColumns);
+        var columns = Mathf.Clamp(Mathf.CeilToInt(count / (float)rows), 1, maxColumns);
+
+        var fitWidth = (area.X - (columns - 1) * CardGap) / (columns * CardCellBaseSize.X);
+        var fitHeight = (area.Y - (rows - 1) * CardGap) / (rows * CardCellBaseSize.Y);
+        var scale = Mathf.Max(0.1f, Mathf.Min(1f, Mathf.Min(fitWidth, fitHeight)));
+
+        _cardCellSize = CardCellBaseSize * scale;
+        _cardPreviewScale = Vector2.One * (_cardCellSize.X / NCard.defaultSize.X);
+        return (columns, rows);
+    }
+
+    private static List<CardEntry> MergeCards(IReadOnlyList<CardModel> deck, IReadOnlyList<CardModel> extraDeck)
+    {
+        var entries = new List<CardEntry>();
+        var indexByKey = new Dictionary<(string Id, bool Upgraded), int>();
+
+        void Add(CardModel card, bool isExtra)
+        {
+            var key = (card.Id.Entry, card.IsUpgraded);
+            if (indexByKey.TryGetValue(key, out var index))
+            {
+                var existing = entries[index];
+                entries[index] = existing with
+                {
+                    Count = existing.Count + 1,
+                    IsExtra = existing.IsExtra || isExtra
+                };
+                return;
+            }
+
+            indexByKey[key] = entries.Count;
+            entries.Add(new CardEntry(card, 1, isExtra));
+        }
+
+        foreach (var card in deck)
+        {
+            Add(card, false);
+        }
+
+        foreach (var card in extraDeck)
+        {
+            Add(card, true);
+        }
+
+        return entries;
+    }
+
+    private Control BuildCardCell(CardEntry entry)
+    {
+        var cell = new Control
+        {
+            CustomMinimumSize = _cardCellSize,
+            MouseFilter = MouseFilterEnum.Stop
+        };
+
+        var cardNode = NCard.Create(entry.Card);
+        if (cardNode != null)
+        {
+            cardNode.MouseFilter = MouseFilterEnum.Ignore;
+            cardNode.Scale = _cardPreviewScale;
+            cell.AddChild(cardNode);
+
+            // 悬停放大后卡牌会超出单元格；用一块透明"命中垫"接管放大期间的鼠标，
+            // 否则指针一离开单元格就会立刻缩回、来回闪烁。
+            var hoverPad = new Control
+            {
+                Name = HoverPadName,
+                MouseFilter = MouseFilterEnum.Stop,
+                Visible = false
+            };
+            cell.AddChild(hoverPad);
+
+            // 单元格尺寸由 GridContainer 决定，布局完成后再把卡牌中心对准单元格中心。
+            cell.Resized += () => cardNode.Position = cell.Size * 0.5f;
+            cell.MouseEntered += () => SetCardHovered(cell, cardNode, hoverPad, true);
+            hoverPad.MouseExited += () => SetCardHovered(cell, cardNode, hoverPad, false);
+            // NCard._Ready 内的 Reload 在节点未就绪时会提前返回，需要显式刷新一次标题/描述。
+            Callable.From(() =>
+            {
+                try
+                {
+                    cardNode.UpdateVisuals(PileType.None, CardPreviewMode.Normal);
+                    ApplyMusicCardFrame(cardNode, entry.Card);
+                }
+                catch (Exception exception)
+                {
+                    GD.PushWarning($"刷新卡片预览失败：{entry.Card.Id.Entry} - {exception.Message}");
+                }
+            }).CallDeferred();
         }
         else
         {
-            _skinIndex.Visible = false;
+            // 卡节点池不可用（如 TestMode）时退回手绘小卡，避免空窗。
+            cell.AddChild(BuildMiniCard(entry.Card));
+        }
+
+        if (entry.IsExtra)
+        {
+            cell.AddChild(BuildExtraBadge());
+        }
+
+        if (entry.Count > 1)
+        {
+            cell.AddChild(BuildCountBadge(entry.Count));
+        }
+
+        return cell;
+    }
+
+    private void SetCardHovered(Control cell, NCard cardNode, Control hoverPad, bool hovered)
+    {
+        cell.ZIndex = hovered ? CardHoverZIndex : 0;
+        // 卡片按行分装在各自 HBox 里，跨行不是兄弟节点；悬停时抬整行的层级，
+        // 否则上排放大的卡会被下排的卡盖住。
+        if (cell.GetParent() is Control row)
+        {
+            row.ZIndex = hovered ? 1 : 0;
+        }
+        hoverPad.Visible = hovered;
+        foreach (var child in cell.GetChildren())
+        {
+            if (child is Control badge
+                && (badge.Name == ExtraBadgeName || badge.Name == CountBadgeName))
+            {
+                badge.Visible = !hovered;
+            }
+        }
+
+        if (hovered)
+        {
+            hoverPad.Position = cell.Size * 0.5f - NCard.defaultSize * 0.5f;
+            hoverPad.Size = NCard.defaultSize;
+        }
+
+        _cardHoverTweens.TryGetValue(cell, out var previousTween);
+        previousTween?.Kill();
+        var hoverTween = cardNode.CreateTween();
+        hoverTween
+            .TweenProperty(cardNode, "scale", hovered ? Vector2.One : _cardPreviewScale, CardHoverDuration)
+            .SetEase(Tween.EaseType.Out)
+            .SetTrans(Tween.TransitionType.Cubic);
+        _cardHoverTweens[cell] = hoverTween;
+    }
+
+    private Control BuildExtraBadge()
+    {
+        var badge = CreateBadge(_accentColor, lightText: true);
+        badge.Name = ExtraBadgeName;
+        badge.SetAnchorsPreset(LayoutPreset.TopRight);
+        badge.OffsetLeft = -52f;
+        badge.OffsetTop = -6f;
+        badge.OffsetRight = 3f;
+        badge.OffsetBottom = 18f;
+
+        var label = CreateBadgeLabel("EXTRA", 10);
+        label.AddThemeColorOverride("font_outline_color", new Color(0f, 0f, 0f, 0.55f));
+        label.AddThemeConstantOverride("outline_size", 3);
+        badge.AddChild(label);
+        return badge;
+    }
+
+    private Control BuildCountBadge(int count)
+    {
+        var badge = CreateBadge(new Color(0.09f, 0.13f, 0.19f), lightText: true);
+        badge.Name = CountBadgeName;
+        badge.SetAnchorsPreset(LayoutPreset.BottomRight);
+        badge.OffsetLeft = -40f;
+        badge.OffsetTop = -27f;
+        badge.OffsetRight = 3f;
+        badge.OffsetBottom = -3f;
+
+        var label = CreateBadgeLabel($"×{count}", 13);
+        label.AddThemeColorOverride("font_outline_color", new Color(0f, 0f, 0f, 0.55f));
+        label.AddThemeConstantOverride("outline_size", 3);
+        badge.AddChild(label);
+        return badge;
+    }
+
+    private static Panel CreateBadge(Color background, bool lightText)
+    {
+        var badge = new Panel
+        {
+            MouseFilter = MouseFilterEnum.Ignore
+        };
+        badge.AddThemeStyleboxOverride("panel", new StyleBoxFlat
+        {
+            BgColor = new Color(background.R, background.G, background.B, lightText ? 0.96f : 0.95f),
+            CornerRadiusTopLeft = 7,
+            CornerRadiusTopRight = 7,
+            CornerRadiusBottomRight = 7,
+            CornerRadiusBottomLeft = 7,
+            BorderWidthLeft = 1,
+            BorderWidthTop = 1,
+            BorderWidthRight = 1,
+            BorderWidthBottom = 1,
+            BorderColor = lightText ? new Color(1f, 1f, 1f, 0.5f) : new Color(0f, 0f, 0f, 0.2f),
+            AntiAliasing = true,
+            ShadowColor = new Color(0f, 0f, 0f, 0.4f),
+            ShadowSize = 4,
+            ShadowOffset = new Vector2(0f, 2f)
+        });
+        return badge;
+    }
+
+    private static Label CreateBadgeLabel(string text, int fontSize)
+    {
+        var label = new Label
+        {
+            Text = text,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            MouseFilter = MouseFilterEnum.Ignore
+        };
+        label.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        label.AddThemeFontOverride("font", NotoBold);
+        label.AddThemeFontSizeOverride("font_size", fontSize);
+        label.AddThemeColorOverride("font_color", Colors.White);
+        return label;
+    }
+
+    /// <summary>
+    /// 详情页里的音乐牌预览跟随当前展示的皮肤：皮肤配置了 <c>Ui.MusicCardFrame</c> 时替换卡框；
+    /// 否则保留 <c>IPerformCard.PerformCardAssets</c> 提供的默认卡框（预览卡是 canonical 卡，
+    /// 走不到皮肤 patch 的 mutable/owner 判定）。
+    /// </summary>
+    private void ApplyMusicCardFrame(NCard cardNode, CardModel card)
+    {
+        if (!BangDreamConst.IsMusicCardType(card.Type))
+        {
+            return;
+        }
+
+        var skinPath = _skinSelector?.CurrentSkinPath;
+        var framePath = string.IsNullOrWhiteSpace(skinPath)
+            ? null
+            : SkinManager.GetSkinInfo(skinPath)?.SkinTemplate.Ui.MusicCardFrame;
+        if (string.IsNullOrWhiteSpace(framePath) || !ResourceLoader.Exists(framePath))
+        {
+            return;
+        }
+
+        if (cardNode.GetNodeOrNull<TextureRect>("%Frame") is not { } frame)
+        {
+            return;
+        }
+
+        frame.Texture = BangDreamPreloadManager.GetTexture2D(framePath);
+        frame.Material = null;
+    }
+
+    /// <summary>
+    /// 清空卡牌区：NCard 是池化节点，必须先交还给 NodePool 再销毁承载它的行/单元格。
+    /// </summary>
+    private void ClearCardGrid()
+    {
+        foreach (var tween in _cardHoverTweens.Values)
+        {
+            tween.Kill();
+        }
+
+        _cardHoverTweens.Clear();
+
+        if (_cardsRow == null)
+        {
+            return;
+        }
+
+        foreach (var cell in _cardCells)
+        {
+            if (!GodotObject.IsInstanceValid(cell))
+            {
+                continue;
+            }
+
+            foreach (var inner in cell.GetChildren())
+            {
+                if (inner is NCard cardNode)
+                {
+                    cardNode.QueueFreeSafely();
+                }
+            }
+        }
+
+        _cardCells.Clear();
+
+        foreach (var row in _cardsRow.GetChildren())
+        {
+            _cardsRow.RemoveChild(row);
+            row.QueueFreeSafely();
         }
     }
 
-    private void RebuildCards(IReadOnlyList<CardModel> cards)
+    /// <summary>
+    /// 关闭弹窗时若指针正停在卡片上，<c>MouseExited</c> 不会触发；这里统一把悬停状态复位，
+    /// 避免下次打开时残留一张放大卡或一层看不见的命中垫。
+    /// </summary>
+    private void ResetCardHover()
     {
-        if (_cardsGrid == null)
+        foreach (var tween in _cardHoverTweens.Values)
         {
-            return;
+            tween.Kill();
         }
 
-        ClearChildren(_cardsGrid);
+        _cardHoverTweens.Clear();
 
-        if (cards.Count == 0)
+        foreach (var cell in _cardCells)
         {
-            _cardsGrid.AddChild(BuildEmptyHint("该皮肤没有配置初始卡组"));
-            return;
-        }
+            if (!GodotObject.IsInstanceValid(cell))
+            {
+                continue;
+            }
 
-        foreach (var card in cards)
-        {
-            _cardsGrid.AddChild(BuildMiniCard(card));
-        }
-    }
+            cell.ZIndex = 0;
 
-    private void RebuildExtraCards(IReadOnlyList<CardModel> cards)
-    {
-        if (_extraRow == null || _extraLabel == null)
-        {
-            return;
-        }
+            if (cell.GetParent() is Control row)
+            {
+                row.ZIndex = 0;
+            }
 
-        ClearChildren(_extraRow);
-        _extraLabel.Visible = cards.Count > 0;
-
-        foreach (var card in cards)
-        {
-            _extraRow.AddChild(BuildMiniCard(card));
+            foreach (var inner in cell.GetChildren())
+            {
+                if (inner.Name == HoverPadName && inner is Control hoverPad)
+                {
+                    hoverPad.Visible = false;
+                }
+                else if (inner is NCard cardNode && GodotObject.IsInstanceValid(cardNode))
+                {
+                    cardNode.Scale = _cardPreviewScale;
+                }
+            }
         }
     }
 
@@ -398,6 +835,29 @@ public partial class BangDreamCharacterDetailsPopup : Control
         if (relics.Count == 0)
         {
             _relicsBox.AddChild(BuildEmptyHint("该皮肤没有配置初始遗物"));
+            _relicsAreaHeight = EmptyHintHeight;
+            return;
+        }
+
+        // 初始遗物通常只有 1~2 个：并排铺满整行，避免右侧一大片空白；更多时退回纵向列表。
+        if (relics.Count <= 2)
+        {
+            var row = new HBoxContainer
+            {
+                Alignment = BoxContainer.AlignmentMode.Center,
+                MouseFilter = MouseFilterEnum.Ignore
+            };
+            row.AddThemeConstantOverride("separation", 12);
+
+            foreach (var relic in relics)
+            {
+                var tile = BuildRelicTile(relic);
+                tile.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+                row.AddChild(tile);
+            }
+
+            _relicsBox.AddChild(row);
+            _relicsAreaHeight = RelicTileHeight;
             return;
         }
 
@@ -405,6 +865,68 @@ public partial class BangDreamCharacterDetailsPopup : Control
         {
             _relicsBox.AddChild(BuildRelicRow(relic));
         }
+
+        _relicsAreaHeight = relics.Count * 56f + (relics.Count - 1) * 10f;
+    }
+
+    /// <summary>
+    /// 横向遗物条目（1~2 个遗物时并排展示）：图标在左、名称与描述在右，条目按栏宽等分。
+    /// </summary>
+    private Control BuildRelicTile(RelicModel relic)
+    {
+        var tile = new HBoxContainer
+        {
+            CustomMinimumSize = new Vector2(0f, 64f),
+            MouseFilter = MouseFilterEnum.Ignore
+        };
+        tile.AddThemeConstantOverride("separation", 10);
+
+        var icon = new TextureRect
+        {
+            Texture = relic.Icon,
+            CustomMinimumSize = new Vector2(48f, 48f),
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+            StretchMode = TextureRect.StretchModeEnum.KeepAspect,
+            MouseFilter = MouseFilterEnum.Ignore
+        };
+        tile.AddChild(icon);
+
+        var textBox = new VBoxContainer
+        {
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
+            MouseFilter = MouseFilterEnum.Ignore
+        };
+        textBox.AddThemeConstantOverride("separation", 2);
+
+        var title = new Label
+        {
+            Text = relic.Title.GetFormattedText(),
+            MouseFilter = MouseFilterEnum.Ignore
+        };
+        title.AddThemeFontOverride("font", TitleFont);
+        title.AddThemeFontSizeOverride("font_size", 14);
+        title.AddThemeColorOverride("font_color", TextPrimary);
+        textBox.AddChild(title);
+
+        var description = new BangDreamRichTextLabel
+        {
+            BbcodeEnabled = true,
+            FitContent = true,
+            AutoSizeEnabled = false,
+            ScrollActive = false,
+            AutowrapMode = TextServer.AutowrapMode.WordSmart,
+            MouseFilter = MouseFilterEnum.Ignore,
+            MaxFontSize = 12,
+            MinFontSize = 10
+        };
+        description.AddThemeFontOverride("normal_font", NotoMedium);
+        description.AddThemeFontSizeOverride("normal_font_size", 12);
+        description.AddThemeColorOverride("default_color", TextMuted);
+        description.Text = relic.DynamicDescription.GetFormattedText();
+        textBox.AddChild(description);
+
+        tile.AddChild(textBox);
+        return tile;
     }
 
     private Control BuildMiniCard(CardModel card)
@@ -582,6 +1104,11 @@ public partial class BangDreamCharacterDetailsPopup : Control
 
     private static Color GetTypeColor(CardType type)
     {
+        if (BangDreamConst.IsMusicCardType(type))
+        {
+            return new Color(0.86f, 0.5f, 0.76f);
+        }
+
         return type switch
         {
             CardType.Attack => new Color(0.85f, 0.31f, 0.31f),

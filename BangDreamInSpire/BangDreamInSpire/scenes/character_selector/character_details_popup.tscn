@@ -1,13 +1,20 @@
-[gd_scene load_steps=16 format=3 uid="uid://c8p0m3xq6v1ba"]
+[gd_scene load_steps=12 format=3 uid="uid://c8p0m3xq6v1ba"]
 
-[ext_resource type="Script" path="res://Scripts/Nodes/BangDreamCharacterDetailsPopup.cs" id="1_script"]
+[ext_resource type="Script" uid="uid://befnt8xwepvm3" path="res://Scripts/Nodes/BangDreamCharacterDetailsPopup.cs" id="1_script"]
 [ext_resource type="PackedScene" uid="uid://bfq1kub0qqf3m" path="res://BangDreamInSpire/scenes/character_selector/skin_selector.tscn" id="2_skin"]
 [ext_resource type="FontVariation" uid="uid://bxphqqry0qswt" path="res://themes/fonts/zhs/source_han_serif_sc_bold_shared.tres" id="4_serif"]
-[ext_resource type="FontVariation" uid="uid://7k0n7sxph05k" path="res://themes/fonts/rus/fira_sans_extra_condensed_bold_shared.tres" id="5_fira"]
-[ext_resource type="FontVariation" uid="uid://ciql5khgewwbm" path="res://themes/kreon_bold_glyph_space_two.tres" id="6_kreon"]
 [ext_resource type="FontVariation" uid="uid://c71uw4aqpsn1b" path="res://themes/spectral_glphy_space_two.tres" id="7_track"]
-[ext_resource type="Script" uid="uid://cr26tfi6bv8im" path="res://Scripts/Nodes/MegeScript/BangDreamLabel.cs" id="8_label"]
 [ext_resource type="Shader" uid="uid://bqp7rap4er2x" path="res://BangDreamInSpire/shaders/paper_grain.gdshader" id="9_paper"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+bg_color = Color(0.984, 0.976, 0.957, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_color = Color(0.03, 0.05, 0.09, 0.34)
+shadow_size = 48
+shadow_offset = Vector2(0, 16)
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_paper"]
 resource_local_to_scene = true
@@ -24,24 +31,7 @@ shader_parameter/edge_width = 20.0
 shader_parameter/grain_scale = 1.0
 shader_parameter/rim_color = Color(0.78, 0.749, 0.694, 1)
 shader_parameter/rim_strength = 0.0
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
-bg_color = Color(0.984, 0.976, 0.957, 1)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
-shadow_color = Color(0.03, 0.05, 0.09, 0.34)
-shadow_size = 48
-shadow_offset = Vector2(0, 16)
-anti_aliasing = true
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_chip"]
-bg_color = Color(0.29, 0.45, 0.46, 1)
-corner_radius_top_left = 14
-corner_radius_top_right = 14
-corner_radius_bottom_right = 14
-corner_radius_bottom_left = 14
+shader_parameter/opacity = 1.0
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_close_normal"]
 bg_color = Color(0.945, 0.937, 0.918, 1)
@@ -57,18 +47,6 @@ corner_radius_top_right = 20
 corner_radius_bottom_right = 20
 corner_radius_bottom_left = 20
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_placeholder_card"]
-bg_color = Color(0.984, 0.976, 0.961, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.831, 0.808, 0.765, 1)
-corner_radius_top_left = 6
-corner_radius_top_right = 6
-corner_radius_bottom_right = 6
-corner_radius_bottom_left = 6
-
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_relic_row"]
 bg_color = Color(0.969, 0.961, 0.945, 1)
 corner_radius_top_left = 6
@@ -77,12 +55,12 @@ corner_radius_bottom_right = 6
 corner_radius_bottom_left = 6
 
 [node name="CharacterDetailsPopup" type="Control"]
-visible = false
-layout_mode = 0
-offset_left = -349.0
-offset_top = -98.0
-offset_right = 2211.0
-offset_bottom = 1102.0
+layout_mode = 3
+anchors_preset = 0
+offset_left = -740.0
+offset_top = 2.0
+offset_right = 1820.0
+offset_bottom = 1202.0
 mouse_filter = 2
 script = ExtResource("1_script")
 
@@ -102,7 +80,7 @@ layout_mode = 0
 offset_left = 778.0
 offset_top = 170.0
 offset_right = 1938.0
-offset_bottom = 936.0
+offset_bottom = 820.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
 [node name="PaperGrain" type="ColorRect" parent="Panel"]
@@ -129,8 +107,8 @@ unique_name_in_owner = true
 layout_mode = 0
 offset_left = 28.0
 offset_top = 16.0
-offset_right = 100.0
-offset_bottom = 42.0
+offset_right = 92.0
+offset_bottom = 80.0
 mouse_filter = 2
 expand_mode = 1
 stretch_mode = 5
@@ -139,10 +117,9 @@ stretch_mode = 5
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 108.0
-offset_top = 8.0
+offset_top = 13.0
 offset_right = 620.0
-offset_bottom = 56.0
-mouse_filter = 2
+offset_bottom = 62.583332
 theme_override_colors/font_color = Color(0.086, 0.125, 0.18, 1)
 theme_override_fonts/font = ExtResource("4_serif")
 theme_override_font_sizes/font_size = 34
@@ -151,55 +128,14 @@ text = "丰川祥子"
 [node name="Roman" type="Label" parent="Panel"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 110.0
-offset_top = 54.0
+offset_left = 108.0
+offset_top = 66.0
 offset_right = 560.0
-offset_bottom = 78.0
-mouse_filter = 2
+offset_bottom = 90.0
 theme_override_colors/font_color = Color(0.42, 0.46, 0.52, 1)
 theme_override_fonts/font = ExtResource("7_track")
 theme_override_font_sizes/font_size = 13
 text = "SAKIKO TOGAWA"
-
-[node name="ClassChip" type="Panel" parent="Panel"]
-unique_name_in_owner = true
-layout_mode = 0
-offset_left = 620.0
-offset_top = 20.0
-offset_right = 674.0
-offset_bottom = 48.0
-mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_chip")
-
-[node name="ClassLabel" type="Label" parent="Panel/ClassChip"]
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_fonts/font = ExtResource("6_kreon")
-theme_override_font_sizes/font_size = 15
-text = "Key."
-horizontal_alignment = 1
-vertical_alignment = 1
-script = ExtResource("8_label")
-
-[node name="BandLabel" type="Label" parent="Panel"]
-unique_name_in_owner = true
-layout_mode = 0
-offset_left = 686.0
-offset_top = 22.0
-offset_right = 966.0
-offset_bottom = 46.0
-mouse_filter = 2
-theme_override_colors/font_color = Color(0.29, 0.45, 0.46, 1)
-theme_override_fonts/font = ExtResource("7_track")
-theme_override_font_sizes/font_size = 14
-text = "CRYCHIC"
 
 [node name="CloseButton" type="Button" parent="Panel"]
 unique_name_in_owner = true
@@ -211,9 +147,9 @@ offset_bottom = 54.0
 focus_mode = 0
 theme_override_colors/font_color = Color(0.25, 0.29, 0.36, 1)
 theme_override_font_sizes/font_size = 24
-theme_override_styles/hover = SubResource("StyleBoxFlat_close_hover")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_close_normal")
 theme_override_styles/normal = SubResource("StyleBoxFlat_close_normal")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_close_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_close_hover")
 text = "×"
 
 [node name="Divider" type="ColorRect" parent="Panel"]
@@ -233,7 +169,6 @@ offset_left = 36.0
 offset_top = 112.0
 offset_right = 436.0
 offset_bottom = 136.0
-mouse_filter = 2
 theme_override_colors/font_color = Color(0.29, 0.45, 0.46, 1)
 theme_override_fonts/font = ExtResource("7_track")
 theme_override_font_sizes/font_size = 15
@@ -247,136 +182,48 @@ anchor_left = 0.0
 anchor_top = 0.0
 anchor_right = 0.0
 anchor_bottom = 0.0
-offset_left = 32.0
-offset_top = 140.0
-offset_right = 32.0
-offset_bottom = 140.0
-pivot_offset = Vector2(0, 0)
+offset_left = -3.0
+offset_top = 166.0
+offset_right = -3.0
+offset_bottom = 166.0
 grow_horizontal = 1
 grow_vertical = 1
-scale = Vector2(1, 1)
+pivot_offset = Vector2(0, 0)
 
-[node name="SkinIndex" type="Label" parent="Panel"]
-unique_name_in_owner = true
-layout_mode = 0
-offset_left = 36.0
-offset_top = 426.0
-offset_right = 436.0
-offset_bottom = 450.0
-mouse_filter = 2
-theme_override_colors/font_color = Color(0.42, 0.46, 0.52, 1)
-theme_override_fonts/font = ExtResource("5_fira")
-theme_override_font_sizes/font_size = 14
-text = "1 / 2"
-script = ExtResource("8_label")
-
-[node name="ExtraLabel" type="Label" parent="Panel"]
-unique_name_in_owner = true
-layout_mode = 0
-offset_left = 36.0
-offset_top = 468.0
-offset_right = 436.0
-offset_bottom = 492.0
-mouse_filter = 2
-theme_override_colors/font_color = Color(0.29, 0.45, 0.46, 1)
-theme_override_fonts/font = ExtResource("7_track")
-theme_override_font_sizes/font_size = 15
-text = "EXTRA DECK"
-
-[node name="ExtraRow" type="HBoxContainer" parent="Panel"]
-unique_name_in_owner = true
-layout_mode = 0
-offset_left = 36.0
-offset_top = 496.0
-offset_right = 436.0
-offset_bottom = 656.0
-mouse_filter = 2
-theme_override_constants/separation = 12
-
-[node name="ExtraPlaceholder" type="Panel" parent="Panel/ExtraRow"]
-custom_minimum_size = Vector2(100, 134)
-layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_placeholder_card")
-
-[node name="CardsLabel" type="Label" parent="Panel"]
+[node name="ContentColumn" type="VBoxContainer" parent="Panel"]
 unique_name_in_owner = true
 layout_mode = 0
 offset_left = 460.0
 offset_top = 112.0
 offset_right = 1128.0
-offset_bottom = 136.0
+offset_bottom = 740.0
 mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="CardsLabel" type="Label" parent="Panel/ContentColumn"]
+unique_name_in_owner = true
+layout_mode = 2
 theme_override_colors/font_color = Color(0.29, 0.45, 0.46, 1)
 theme_override_fonts/font = ExtResource("7_track")
 theme_override_font_sizes/font_size = 15
 text = "STARTER CARDS"
 
-[node name="CardsGrid" type="GridContainer" parent="Panel"]
+[node name="CardsRow" type="VBoxContainer" parent="Panel/ContentColumn"]
 unique_name_in_owner = true
-layout_mode = 0
-offset_left = 460.0
-offset_top = 146.0
-offset_right = 1128.0
-offset_bottom = 434.0
+layout_mode = 2
 mouse_filter = 2
-theme_override_constants/h_separation = 12
-theme_override_constants/v_separation = 12
-columns = 5
+theme_override_constants/separation = 12
 
-[node name="CardPlaceholder1" type="Panel" parent="Panel/CardsGrid"]
-custom_minimum_size = Vector2(100, 134)
-layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_placeholder_card")
-
-[node name="CardPlaceholder2" type="Panel" parent="Panel/CardsGrid"]
-custom_minimum_size = Vector2(100, 134)
-layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_placeholder_card")
-
-[node name="CardPlaceholder3" type="Panel" parent="Panel/CardsGrid"]
-custom_minimum_size = Vector2(100, 134)
-layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_placeholder_card")
-
-[node name="CardPlaceholder4" type="Panel" parent="Panel/CardsGrid"]
-custom_minimum_size = Vector2(100, 134)
-layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_placeholder_card")
-
-[node name="CardPlaceholder5" type="Panel" parent="Panel/CardsGrid"]
-custom_minimum_size = Vector2(100, 134)
-layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_placeholder_card")
-
-[node name="RelicsLabel" type="Label" parent="Panel"]
+[node name="RelicsLabel" type="Label" parent="Panel/ContentColumn"]
 unique_name_in_owner = true
-layout_mode = 0
-offset_left = 460.0
-offset_top = 446.0
-offset_right = 1128.0
-offset_bottom = 470.0
-mouse_filter = 2
+layout_mode = 2
 theme_override_colors/font_color = Color(0.29, 0.45, 0.46, 1)
 theme_override_fonts/font = ExtResource("7_track")
 theme_override_font_sizes/font_size = 15
 text = "RELICS"
 
-[node name="RelicsBox" type="VBoxContainer" parent="Panel"]
+[node name="RelicsBox" type="VBoxContainer" parent="Panel/ContentColumn"]
 unique_name_in_owner = true
-layout_mode = 0
-offset_left = 460.0
-offset_top = 478.0
-offset_right = 1128.0
-offset_bottom = 700.0
+layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 10
-
-[node name="RelicPlaceholder1" type="Panel" parent="Panel/RelicsBox"]
-custom_minimum_size = Vector2(0, 56)
-layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_relic_row")
-
-[node name="RelicPlaceholder2" type="Panel" parent="Panel/RelicsBox"]
-custom_minimum_size = Vector2(0, 56)
-layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_relic_row")

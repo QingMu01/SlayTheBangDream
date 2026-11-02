@@ -1,4 +1,6 @@
-﻿{
+{
+  "NameKey": "SKIN_MUTSUMI_PUPPETEER_NAME",
+  "DescriptionKey": "SKIN_MUTSUMI_PUPPETEER_DESCRIPTION",
   "MultiplayerVisual": {
     "VisualScene": "res://ItsCrychic/scenes/creature/mutsumi_skin_puppeteer.tscn",
     "RestSiteScene": "res://ItsCrychic/scenes/rest_site/mutsumi_rest_puppeteer.tscn",

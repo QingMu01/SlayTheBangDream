@@ -1,14 +1,17 @@
-using System.Reflection;
+﻿using System.Reflection;
+using BangDreamInSpire.Scripts.Cards;
 using BangDreamInSpire.Scripts.Interfaces.CardAugment;
 using BangDreamInSpire.Scripts.Interfaces.CharacterAugment;
 using BangDreamInSpire.Scripts.Nodes.MegeScript;
 using BangDreamInSpire.Scripts.Utils;
+using BangDreamInSpire.Scripts.Utils.Infos;
 using Godot;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Context;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Entities.TreasureRelicPicking;
+using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Nodes.Cards;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.CommonUi;
@@ -308,6 +311,86 @@ internal class ArmFightTexturePatch : IPatchMethod
         }
     }
 }
+internal static class MusicCardSkinFrames
+{
+    public static bool TryResolveFramePath(CardModel card, out string path)
+    {
+        path = string.Empty;
+        if (card is not MusicCardModel { IsMutable: true } music)
+        {
+            return false;
+        }
+
+        var origin = music.OriginCharacter ?? FindCharacterByPool(card.VisualCardPool);
+        if (origin == null)
+        {
+            return false;
+        }
+
+        var framePath = ResolveSkin(card, origin)?.SkinTemplate.Ui.MusicCardFrame;
+        if (string.IsNullOrEmpty(framePath) || !ResourceLoader.Exists(framePath))
+        {
+            return false;
+        }
+
+        path = framePath;
+        return true;
+    }
+
+    private static ISkinSupportCharacter? FindCharacterByPool(CardPoolModel? pool)
+    {
+        if (pool == null)
+        {
+            return null;
+        }
+
+        foreach (var character in ModelDb.AllCharacters)
+        {
+            if (character is not ISkinSupportCharacter skinSupport)
+            {
+                continue;
+            }
+
+            if (ReferenceEquals(character.CardPool, pool))
+            {
+                return skinSupport;
+            }
+
+            if (character is IExtraDeckSupportCharacter extraDeckSupport && ReferenceEquals(extraDeckSupport.ExtraCardPool, pool))
+            {
+                return skinSupport;
+            }
+        }
+
+        return null;
+    }
+
+    private static SkinInfo? ResolveSkin(CardModel card, ISkinSupportCharacter origin)
+    {
+        // 来源角色就在本局：用"该角色玩家"当前选择的皮肤（A 的卡被 B 拿到 → 仍用 A 的配置）。
+        if (card.Owner is { RunState: RunState runState })
+        {
+            foreach (var player in runState.Players)
+            {
+                if (ReferenceEquals(player.Character, origin))
+                {
+                    return BangDreamConst.PlayerSkinOrNull?.Get(player).GetSkin();
+                }
+            }
+        }
+
+        // 来源角色不在本局（如 Token 牌、角色未参战）→ 用该角色首个已注册皮肤兜底。
+        foreach (var skinPath in origin.CharacterSkinList)
+        {
+            if (SkinManager.GetSkinInfo(skinPath) is { } defaultSkin)
+            {
+                return defaultSkin;
+            }
+        }
+
+        return null;
+    }
+}
 
 internal class MusicCardFramePatch : IPatchMethod
 {
@@ -315,24 +398,20 @@ internal class MusicCardFramePatch : IPatchMethod
 
     public static ModPatchTarget[] GetTargets()
     {
-        return [new ModPatchTarget(typeof(NCard), "UpdatePortrait"),];
+        return [new ModPatchTarget(typeof(NCard), "UpdatePortrait")];
     }
 
+    // 必须晚于 RitsuLib 的 CardVisualRefreshPatch（同一方法的 Normal 优先级 postfix 会按 asset profile 重刷默认卡框）。
+    [HarmonyPriority(Priority.Last)]
     public static void Postfix(NCard __instance, ref TextureRect? ____frame)
     {
-        if (__instance.Model is IPerformCard && __instance.Model is
-                { IsMutable: true, Owner.Character: ISkinSupportCharacter })
+        if (__instance.Model is not { } model || !MusicCardSkinFrames.TryResolveFramePath(model, out var path))
         {
-            if (__instance.Model.Owner.RunState is not RunState)
-                return;
-
-            var path = BangDreamConst.PlayerSkin.Get(__instance.Model.Owner).GetSkin()?.SkinTemplate.Ui.MusicCardFrame;
-            if (path != null)
-            {
-                ____frame ??= new TextureRect();
-                ____frame.Texture = BangDreamPreloadManager.GetTexture2D(path);
-            }
+            return;
         }
+
+        ____frame ??= new TextureRect();
+        ____frame.Texture = BangDreamPreloadManager.GetTexture2D(path);
     }
 }
 
@@ -342,22 +421,15 @@ internal class MusicCardFrameMaterialPatch : IPatchMethod
 
     public static ModPatchTarget[] GetTargets()
     {
-        return [new ModPatchTarget(typeof(NCard), "Reload"),];
+        return [new ModPatchTarget(typeof(CardModel), "FrameMaterial", MethodType.Getter)];
     }
 
-    public static void Postfix(NCard __instance, ref TextureRect? ____frame)
+    public static void Postfix(CardModel __instance, ref Material __result)
     {
-        if (__instance.Model is IPerformCard && __instance.Model is
-                { IsMutable: true, Owner.Character: ISkinSupportCharacter })
+        // 皮肤卡框替换了纹理时同步清空池染色材质，让"纹理"和"材质"出自同一条皮肤解析链。
+        if (MusicCardSkinFrames.TryResolveFramePath(__instance, out _))
         {
-            if (__instance.Model.Owner.RunState is not RunState)
-                return;
-
-            var path = BangDreamConst.PlayerSkin.Get(__instance.Model.Owner).GetSkin()?.SkinTemplate.Ui.MusicCardFrame;
-            if (path != null)
-            {
-                if (____frame != null) ____frame.Material = null;
-            }
+            __result = null!;
         }
     }
 }
