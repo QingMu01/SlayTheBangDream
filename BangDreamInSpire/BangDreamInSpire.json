@@ -1,15 +1,15 @@
 {
   "id": "BangDreamInSpire",
   "name": "BangDreamInSpire",
-  "author": "QingMu_",
-  "description": "SlayTheBangDream 企划的核心模组：通用前置依赖（组件 / 机制 / 特效）与新层级、新怪物等内容。",
+  "author": "QingMu",
+  "description": "SlayTheBangDream 企划的核心模组：通用前置依赖（组件 / 机制 / 特效）与可选的新层级、新怪物等内容。",
   "version": "0.3.0",
   "has_pck": true,
   "has_dll": true,
   "dependencies": [
     {
       "id": "STS2-RitsuLib",
-      "min_version": "0.5.20"
+      "min_version": "0.6.10"
     }
   ],
   "affects_gameplay": true,

@@ -10,12 +10,12 @@ SlayTheBangDream.sln          — 企划总解决方案（两个模组一起构�
 │   └── BangDreamInSpire.sln  — 只构建核心模组
 ├── ItsCrychic/               — 角色内容模组（祥子、睦、灯、立希、素世），依赖 BangDreamInSpire
 │   └── ItsCrychic.sln        — 只构建角色模组
-├── tools/                    — sync-sts2-assets.sh（同步本体解包资源）
+├── tools/                    — 构建前使用的工具
 ├── docs/                     — 项目级规范（卡牌 / 机制 / 特效 / 清理）
 └── .agents/skills/           — 工作流 skill（card-development、vfx-authoring、obsolete-file-cleanup），已入库
 ```
 
-企划名 **SlayTheBangDream**；两个 mod 的 id 分别是 `BangDreamInSpire`（核心）与 `ItsCrychic`（角色）。
+企划名 **SlayTheBangDream**；两个 mod 的 id 分别是 `BangDreamInSpire`（核心依赖）与 `ItsCrychic`（角色与内容）。
 mod id 是存档与本地化键的前缀（`BANG_DREAM_IN_SPIRE_*` / `ITS_CRYCHIC_*`），**改名等于破坏性变更**，不要随手动。
 
 C# 代码位于各项目的 `Scripts/` 目录下，Godot 资源（图片、场景、本地化 JSON）位于以 mod-id 命名的子文件夹中（如
@@ -35,11 +35,12 @@ C# 代码位于各项目的 `Scripts/` 目录下，Godot 资源（图片、场�
 ## 分支与游戏版本
 
 本体进入双版本并行期（稳定版 / beta 版，存在 API 变动），分支与目标版本对应如下。**改动前先确认当前分支该对哪个版本**。
+分支结构保留以应对未来分叉，当前两分支目标版本相同。
 
 | 分支 | 用途 | 游戏本体 | 解包源 | 备注 |
 |---|---|---|---|---|
-| `main` | 稳定版发布线 | 0.111.0 | `../sts2unpack/0.111.0/src` | 与本体稳定版 API 对齐 |
-| `beta` | 本体 beta 版适配线（长期并行） | `0.111.0` | `../sts2unpack/0.111.0/src` | 目前本体双版本为合并状态，暂无新beta版 |
+| `main` | 游戏本体稳定分支发布线 | 0.111.0 | `../sts2unpack/0.111.0/src` | 与本体稳定版 API 对齐 |
+| `beta` | 游戏本体测试分支发布线 | `0.111.0` | `../sts2unpack/0.111.0/src` | 与本体测试版 API 对齐 |
 
 - 版本切换走 `Directory.Build.local.props` 或环境变量（见下节），**不要**改被跟踪的 `Directory.Build.props` 默认值。
 - 跨分支同步共享改动时，只合并源码、文档与场景文本；合并后必须在目标版本上重新构建 + 无头运行，不能只看能编译。
@@ -60,18 +61,23 @@ C# 代码位于各项目的 `Scripts/` 目录下，Godot 资源（图片、场�
   查本体实现读解包源 `../sts2unpack/<版本>/src`（当前 0.111.0；可用 `$STS2_UNPACKED` 覆盖，或用
   `tools/sync-sts2-assets.sh -s` 指定）。
 - **日志**：当前环境下，游戏日志默认放置于`~/.local/share/SlayTheSpire2/logs`
-## 关键约定
+
+## 开发约定
 
 - **命名空间**与 `Scripts/` 下目录结构完全对应，且第一段等于 mod 目录名（`BangDreamInSpire` / `ItsCrychic`）；卡图路径依赖它，写错会静默回退默认立绘（见 `docs/card-authoring.md` 第 1.1 节）
-- **抽象类命名**：`ItsCrychic` 的角色卡 / 圣物基类用 `Abstract` 前缀（`AbstractSakikoCard` 等，见 `docs/card-authoring.md` 第 1.1 节）；`BangDreamInSpire` 的共享抽象类**不带**前缀（`BandCardModel`、`MusicCardModel`、`BandPowerModel`、`BandRelicModel`、`BandTemporaryPowerModel`、`HiddenRelic`、`BandMemberModel`）
+- **抽象类命名**：`ItsCrychic` 的角色卡 / 遗物基类用 `Abstract` 前缀（`AbstractSakikoCard` 等，见 `docs/card-authoring.md` 第 1.1 节）；`BangDreamInSpire` 的共享抽象类**不带**前缀（`BandCardModel`、`MusicCardModel`、`BandPowerModel`、`BandRelicModel`、`BandTemporaryPowerModel`、`HiddenRelic`、`BandMemberModel`）
 - 项目全局启用 `<Nullable>enable</Nullable>`、`<LangVersion>13.0</LangVersion>`、`<ImplicitUsings>true</ImplicitUsings>`
-- 保持程序风格一致
-- 执行修改任务前，先定制修改方案再进行修改工作
-- 每次改动项目后，以表格的形式列举被修改的文件
 - **特效基类默认继承 `Node2D`**；仅当明确需要「飞行道具」或「异步伤害」（即命中时刻要驱动玩法结算）时才继承 `NBangDreamFlyingVfx`。详见 `docs/vfx-authoring.md` 第 2 节；预览机制见 `docs/vfx-preview-mechanism.md`。
 - **新增、修改、重构卡牌**遵循 `docs/card-authoring.md`（规范与验收）；执行流程见 `.agents/skills/card-development/SKILL.md`。
 - **特效素材入库**：从资产库导出的素材，先用 `.agents/skills/vfx-authoring/scripts/check_asset_origin.py` 判定——命中本体的**不复制**、直接引用本体 uid；未命中的才复制进 `images/vfx/<特效名>/`。特效目录**不产出** `README.md` / `SOURCES.md`（来源凭据写进计划文件）。详见 `docs/vfx-authoring.md` 第 4 节。
 - **删除任何文件前**遵循 `docs/cleanup-authoring.md`（判定与安全域）；执行流程见 `.agents/skills/obsolete-file-cleanup/SKILL.md`。要点：以引用图为唯一判据（不得凭 grep 无命中）、四态分流、三档分档、**签字后才删**、sidecar 与源同生共死、删除后必须残留搜索 + 构建验证。本体同步目录与用户未跟踪的 WIP 一律不碰。
+
+## Git 约定
+
+- 一切改动以`beta`分支作为基准点，日常开发从 beta 开分支并合回 beta；main 只在发布时从 beta 合并，不直接接收 feature。
+- 改动前：确认 `git status` 干净 ，然后根据任务类型新开一条分支。
+- 改动中：按逻辑单元提交，message 写明改了什么、为什么；不改历史、不自动 push。
+- 改动后：使用表格汇报变更内容。
 
 ## 本地化
 
