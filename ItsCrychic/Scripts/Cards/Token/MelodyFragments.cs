@@ -19,7 +19,7 @@ public class MelodyFragments() : MusicCardModel(CustomCost, CustomRarity, Custom
 {
     private const int CustomCost = 0;
     private const CardRarity CustomRarity = CardRarity.Token;
-    private const TargetType CustomTarget = TargetType.None;
+    private static readonly TargetType CustomTarget = PerformTargetTypes.RequestGroup;
 
     public override bool IsInstant => true;
 

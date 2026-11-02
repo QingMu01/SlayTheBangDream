@@ -1,5 +1,6 @@
 using BangDreamInSpire.Scripts.Utils;
 using ItsCrychic.Scripts.Cards.Token;
+using ItsCrychic.Scripts.Enchantments;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
@@ -10,14 +11,15 @@ namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
 public class BandPractice() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget)
 {
-    private const int CustomCost = 1;
+    private const int CustomCost = 0;
     private const CardType CustomType = CardType.Skill;
     private const CardRarity CustomRarity = CardRarity.Common;
     private const TargetType CustomTarget = TargetType.None;
 
     protected override IEnumerable<IHoverTip> CardHoverTips =>
     [
-        HoverTipFactory.FromCard<MelodyFragments>(IsUpgraded)
+        // 变化结果恒为旋律片段+，与自身是否升级无关。
+        HoverTipFactory.FromCard<MelodyFragments>(true)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
@@ -34,6 +36,7 @@ public class BandPractice() : AbstractSakikoCard(CustomCost, CustomType, CustomR
         {
             NCombatRoom.Instance?.Ui.Hand.Remove(selectedCard);
 
+            // 先放到曲库顶部，再原地变化：变化结果继承原牌位，因此仍停留在曲库顶部。
             await CardPileCmd.Add(selectedCard, BangDreamConst.ExtraDraw, CardPilePosition.Top, skipVisuals: true);
 
             var transformResult = await CardCmd.TransformTo<MelodyFragments>(selectedCard);
@@ -41,7 +44,15 @@ public class BandPractice() : AbstractSakikoCard(CustomCost, CustomType, CustomR
             if (transformResult is { success: true })
             {
                 var transformedCard = transformResult.Value.cardAdded;
-                if (IsUpgraded) CardCmd.Upgrade(transformedCard);
+
+                // 始终变化为升级后的旋律片段+。
+                CardCmd.Upgrade(transformedCard);
+
+                // 升级后：给变化出的旋律片段+附上「插曲」。
+                if (IsUpgraded)
+                {
+                    CardCmd.Enchant<InsertSong>(transformedCard, 1m);
+                }
             }
         }
     }

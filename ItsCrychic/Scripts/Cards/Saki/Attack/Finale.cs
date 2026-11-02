@@ -10,7 +10,7 @@ namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
 public class Finale() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget)
 {
-    private const int CustomCost = 3;
+    private const int CustomCost = 2;
     private const CardType CustomType = CardType.Attack;
     private const CardRarity CustomRarity = CardRarity.Rare;
     private const TargetType CustomTarget = TargetType.AllEnemies;
@@ -23,7 +23,7 @@ public class Finale() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity,
     protected override IEnumerable<DynamicVar> CardVars =>
     [
         ModCardVars.Int("IncreaseStep", 2),
-        ComputedDynamicVarHelper.CreateDamageVar("CalcDamage", 8m, ctx =>
+        ComputedDynamicVarHelper.CreateDamageVar("CalcDamage", 10m, ctx =>
         {
             if (ctx.IsInCombat() && ctx.ActiveCard.DynamicVars.TryGetValue("IncreaseStep", out var dynamicVar))
             {
@@ -49,6 +49,6 @@ public class Finale() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity,
 
     protected override void OnUpgrade()
     {
-        EnergyCost.UpgradeBy(-1);
+        DynamicVars["IncreaseStep"].UpgradeValueBy(1m);
     }
 }

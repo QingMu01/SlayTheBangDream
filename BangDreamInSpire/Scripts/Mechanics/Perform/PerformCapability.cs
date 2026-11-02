@@ -50,7 +50,7 @@ public class PerformCapability : CardCapability, ICardDescriptionContributor, IC
                 : HoverTipFactory.FromKeyword(BangDreamConst.Perform);
 
             // 手动落位卡牌额外说明"出牌时要自己选落位"。
-            switch (PerformTargetTypes.ResolveMode(card.TargetType))
+            switch (InsertSongRules.ResolveSlotSelectionMode(card))
             {
                 case PerformSlotSelectionMode.Slot:
                     yield return HoverTipFactory.FromKeyword(BangDreamConst.AnySlot);

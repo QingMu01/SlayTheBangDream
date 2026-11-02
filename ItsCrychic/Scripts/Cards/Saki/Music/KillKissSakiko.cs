@@ -13,7 +13,7 @@ namespace ItsCrychic.Scripts.Cards.Saki.Music;
 public class KillKissSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTarget), IPerformHookListener
 {
     private const CardRarity CustomRarity = CardRarity.Rare;
-    private static readonly TargetType CustomTarget = PerformTargetTypes.AnySlot;
+    private static readonly TargetType CustomTarget = PerformTargetTypes.RequestGroup;
 
     protected override bool ShouldGlowGoldInternal
     {

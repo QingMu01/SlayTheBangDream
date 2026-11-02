@@ -4,9 +4,8 @@ using BangDreamInSpire.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using MegaCrit.Sts2.Core.Hooks;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using MegaCrit.Sts2.Core.ValueProps;
+using STS2RitsuLib.Combat.SecondaryResources;
 using STS2RitsuLib.Scaffolding.Characters;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
@@ -15,12 +14,12 @@ public class Pulverise() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
 {
     private const int CustomCost = 0;
     private const CardType CustomType = CardType.Attack;
-    private const CardRarity CustomRarity = CardRarity.Rare;
+    private const CardRarity CustomRarity = CardRarity.Uncommon;
     private const TargetType CustomTarget = TargetType.AnyEnemy;
 
     private int _resolvedEnergyX;
 
-    public int LingeredResourceCost => 5;
+    public int LingeredResourceCost => 4;
 
     protected override bool HasEnergyCostX => true;
 
@@ -28,23 +27,8 @@ public class Pulverise() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Damage.Create(10),
-        QuickVar.Energy.Create(1),
-        ComputedDynamicVarHelper.CreateDamageVar("CalcDamage", 0, ctx =>
-        {
-            if (ctx.IsInCombat() && ctx.ActiveCard.DynamicVars.TryGetValue(DamageVar.defaultName, out var damageVar))
-            {
-                Hook.ModifyDamage(ctx.ActiveRunState, ctx.ActiveCombatState,
-                    ctx.Target, ctx.ActiveCard.Owner.Creature,
-                    damageVar.BaseValue, ValueProp.Move, ctx.ActiveCard,
-                    null,
-                    ModifyDamageHookType.All, CardPreviewMode.Normal,
-                    out _);
-                return damageVar.BaseValue * ctx.ActiveCard.Owner.GetEnergy();
-            }
-
-            return ctx.BaseValue;
-        })
+        QuickVar.Damage.Create(5),
+        QuickVar.Energy.Create(1)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
@@ -54,9 +38,10 @@ public class Pulverise() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
         _resolvedEnergyX = ResolveEnergyXValue();
         if (_resolvedEnergyX <= 0) return;
 
-        var attack = await DamageCmd.Attack(DynamicVars.Damage.BaseValue * _resolvedEnergyX)
+        var attack = await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
             .FromCard(this, play)
             .Targeting(play.Target)
+            .WithHitCount(_resolvedEnergyX)
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
 
@@ -78,5 +63,11 @@ public class Pulverise() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
     {
         if (play.Card == this) _resolvedEnergyX = 0;
         return Task.CompletedTask;
+    }
+
+    protected override void OnUpgrade()
+    {
+        // 升级后休止所需余音减少 1 点。
+        this.SecondaryCosts().Set(BangDreamConst.LingeredResource, 3);
     }
 }

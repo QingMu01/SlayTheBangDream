@@ -108,7 +108,8 @@ public class PerformManager : SingletonModel, IInCombatManager
         _initialPerformAreaAdditions.Add(cardModel);
         try
         {
-            await CardPileCmd.Add(cardModel, BangDreamConst.PerformPile);
+            // 统一入口：带「插曲」附魔的牌从曲库放入歌单时改为进入手牌。
+            await InsertSongRules.MoveIntoPerformArea(cardModel);
             if (cardModel.Pile != PerformPile) return;
 
             var context = CardContexts.GetOrCreate(cardModel);
@@ -761,7 +762,7 @@ public class PerformManager : SingletonModel, IInCombatManager
     {
         ArgumentNullException.ThrowIfNull(cardModel);
 
-        var mode = PerformTargetTypes.ResolveMode(cardModel.TargetType);
+        var mode = InsertSongRules.ResolveSlotSelectionMode(cardModel);
         if (mode == PerformSlotSelectionMode.None) return;
         if (NControllerManager.Instance?.IsUsingDirectionalNavigation == true)
         {

@@ -22,27 +22,33 @@ public class Legato() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity,
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Damage.Create(5),
-        ComputedDynamicVarHelper.CreateBaseVar("RepeatCount", 1m,
-            ctx => ctx.IsInCombat()
-                ? BangDreamConst.PerformPile.GetPile(ctx.ActiveCard.Owner).Cards.Count + ctx.BaseValue
-                : ctx.BaseValue)
-    ];
+        QuickVar.Damage.Create(4),
+        ComputedDynamicVarHelper.CreateBaseVar("Count", 0, ctx =>
+        {
+            if (ctx.IsInCombat())
+            {
+                return BangDreamConst.PerformPile.GetPile(ctx.ActiveCard.Owner).Cards.Count;
+            }
 
-    // TODO 攻击特效
-    public Task BeforeAttackHit(AttackHitContext context)
-    {
-        return Task.CompletedTask;
-    }
+            return ctx.BaseValue;
+        })
+    ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
         ArgumentNullException.ThrowIfNull(play.Target);
 
+        // 打击次数等于歌单中的牌数，歌单为空时不造成伤害。
+        var hitCount = DynamicVars.ComputedValue("Count");
+        if (hitCount <= 0)
+        {
+            return;
+        }
+
         await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
             .FromCard(this, play)
             .Targeting(play.Target)
-            .WithHitCount((int)DynamicVars.ComputedValue("RepeatCount"))
+            .WithHitCount((int)hitCount)
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
     }

@@ -15,7 +15,7 @@ namespace ItsCrychic.Scripts.Cards.Saki.Music;
 public class SheetMusicSun() : AbstractSakikoMusicCard(CustomRarity, CustomTarget), IPerformHookListener
 {
     private const CardRarity CustomRarity = CardRarity.Basic;
-    private static readonly TargetType CustomTarget = PerformTargetTypes.AnySlot;
+    private static readonly TargetType CustomTarget = PerformTargetTypes.RequestGroup;
 
     private decimal _grantedAmount;
 

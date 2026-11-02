@@ -6,6 +6,7 @@ using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using STS2RitsuLib.Cards.DynamicVars;
+using STS2RitsuLib.Combat.SecondaryResources;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
@@ -17,7 +18,7 @@ public class RisingTone() : AbstractSakikoCard(CustomCost, CustomType, CustomRar
     private const CardRarity CustomRarity = CardRarity.Common;
     private const TargetType CustomTarget = TargetType.AllEnemies;
 
-    public int LingeredResourceCost => 2;
+    public int LingeredResourceCost => IsUpgraded ? 1 : 2;
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
@@ -26,7 +27,7 @@ public class RisingTone() : AbstractSakikoCard(CustomCost, CustomType, CustomRar
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Repeat.Create(2),
+        QuickVar.Repeat.Create(3),
         ModCardVars.Int("Count", 0),
         ComputedDynamicVarHelper.CreateBaseVar("CalcNote", 4m, ctx =>
         {
@@ -55,6 +56,7 @@ public class RisingTone() : AbstractSakikoCard(CustomCost, CustomType, CustomRar
 
     protected override void OnUpgrade()
     {
-        DynamicVars.Repeat.UpgradeValueBy(1m);
+        // 升级后休止所需余音：2 → 1。
+        this.SecondaryCosts().Set(BangDreamConst.LingeredResource, 1);
     }
 }

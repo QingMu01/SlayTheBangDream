@@ -13,7 +13,7 @@ public class OctagramDanceSakiko() : AbstractSakikoMusicCard(CustomRarity, Custo
     IPerformHookListener
 {
     private const CardRarity CustomRarity = CardRarity.Uncommon;
-    private static readonly TargetType CustomTarget = PerformTargetTypes.AnySlot;
+    private static readonly TargetType CustomTarget = PerformTargetTypes.RequestGroup;
 
     private bool _isReplayingAdjacent;
 

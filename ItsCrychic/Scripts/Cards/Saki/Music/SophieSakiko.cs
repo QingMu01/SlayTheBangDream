@@ -2,7 +2,6 @@ using BangDreamInSpire.Scripts.Extensions;
 using BangDreamInSpire.Scripts.Utils.Infos;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
-using MegaCrit.Sts2.Core.Factories;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 
@@ -11,7 +10,10 @@ namespace ItsCrychic.Scripts.Cards.Saki.Music;
 public class SophieSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
 {
     private const CardRarity CustomRarity = CardRarity.Uncommon;
-    private static readonly TargetType CustomTarget = PerformTargetTypes.AnySlot;
+    private static readonly TargetType CustomTarget = PerformTargetTypes.RequestGroup;
+
+    // 升级后获得即兴：入场时也会结算一次。
+    public override bool IsInstant => IsUpgraded;
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
@@ -20,21 +22,6 @@ public class SophieSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTarget
 
     public override async Task OnPerform(PlayerChoiceContext choiceContext, CardPerform perform)
     {
-        ArgumentNullException.ThrowIfNull(CombatState);
-        var powerCards = Owner.Character.CardPool.AllCards.Where(card => card.Type == CardType.Power).ToList();
-        var candidates = CardFactory.FilterForCombat(powerCards);
-        var selectedCard = Owner.RunState.Rng.CombatCardGeneration.NextItem(candidates);
-        if (selectedCard != null)
-        {
-            var generatedCard = CombatState.CreateCard(selectedCard, Owner);
-            if (IsUpgraded && generatedCard.IsUpgradable)
-            {
-                CardCmd.Upgrade(generatedCard);
-            }
-
-            generatedCard.AddKeyword(CardKeyword.Ethereal);
-
-            await CardPileCmd.AddGeneratedCardToCombat(generatedCard, PileType.Hand, Owner);
-        }
+        await CardPileCmd.Draw(choiceContext, DynamicVars.Cards.IntValue, Owner);
     }
 }

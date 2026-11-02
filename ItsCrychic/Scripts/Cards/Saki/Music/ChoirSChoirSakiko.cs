@@ -1,10 +1,9 @@
-using BangDreamInSpire.Scripts.Extensions;
+﻿using BangDreamInSpire.Scripts.Extensions;
 using BangDreamInSpire.Scripts.Utils;
 using BangDreamInSpire.Scripts.Utils.Infos;
 using ItsCrychic.Scripts.Power.Debuff;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
-using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
@@ -14,7 +13,7 @@ namespace ItsCrychic.Scripts.Cards.Saki.Music;
 public class ChoirSChoirSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
 {
     private const CardRarity CustomRarity = CardRarity.Uncommon;
-    private static readonly TargetType CustomTarget = PerformTargetTypes.AnySlot;
+    private static readonly TargetType CustomTarget = PerformTargetTypes.RequestGroup;
 
     protected override IEnumerable<IHoverTip> CardHoverTips =>
     [
@@ -23,8 +22,8 @@ public class ChoirSChoirSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomT
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Damage.Create(9),
-        QuickVar.Buff.Create(5)
+        QuickVar.Damage.Create(6),
+        QuickVar.Buff.Create(6)
     ];
 
     public override async Task OnPerform(PlayerChoiceContext choiceContext, CardPerform perform)
@@ -48,17 +47,9 @@ public class ChoirSChoirSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomT
         }
     }
 
-    public override async Task AfterPlayerTurnStart(PlayerChoiceContext choiceContext, Player player)
-    {
-        if (player == Owner && Pile?.Type == BangDreamConst.PerformPile)
-        {
-            await Owner.AttachedData().PerformManager.PerformCard(this);
-        }
-    }
-
     protected override void OnUpgrade()
     {
-        DynamicVars.Damage.UpgradeValueBy(3);
+        DynamicVars.Damage.UpgradeValueBy(2);
         QuickVar.Buff.GetVar(this).UpgradeValueBy(2);
     }
 }

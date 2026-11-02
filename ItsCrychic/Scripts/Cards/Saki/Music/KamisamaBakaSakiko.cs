@@ -11,7 +11,7 @@ namespace ItsCrychic.Scripts.Cards.Saki.Music;
 public class KamisamaBakaSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
 {
     private const CardRarity CustomRarity = CardRarity.Rare;
-    private static readonly TargetType CustomTarget = PerformTargetTypes.AnySlot;
+    private static readonly TargetType CustomTarget = PerformTargetTypes.RequestGroup;
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [

@@ -13,7 +13,7 @@ namespace ItsCrychic.Scripts.Cards.Saki.Music;
 public class ImprisonedXiiSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
 {
     private const CardRarity CustomRarity = CardRarity.Uncommon;
-    private static readonly TargetType CustomTarget = PerformTargetTypes.AnySlot;
+    private static readonly TargetType CustomTarget = PerformTargetTypes.RequestGroup;
 
     protected override IEnumerable<IHoverTip> CardHoverTips =>
     [

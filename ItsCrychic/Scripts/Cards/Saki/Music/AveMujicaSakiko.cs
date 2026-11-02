@@ -12,7 +12,7 @@ namespace ItsCrychic.Scripts.Cards.Saki.Music;
 public class AveMujicaSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTarget), IPerformHookListener
 {
     private const CardRarity CustomRarity = CardRarity.Rare;
-    private static readonly TargetType CustomTarget = PerformTargetTypes.AnySlot;
+    private static readonly TargetType CustomTarget = PerformTargetTypes.RequestGroup;
 
     protected override IEnumerable<IHoverTip> CardHoverTips =>
     [
@@ -27,11 +27,15 @@ public class AveMujicaSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTar
     {
         ArgumentNullException.ThrowIfNull(Owner.PlayerCombatState);
 
-        foreach (var card in Owner.PlayerCombatState.Hand.Cards.Where(card => card.Rarity == CardRarity.Basic))
-        {
-            card.BaseReplayCount += DynamicVars.Repeat.IntValue;
-            _affectedCards[card] = _affectedCards.GetValueOrDefault(card) + DynamicVars.Repeat.IntValue;
-        }
+        // 只随机强化手牌中的一张基础牌。
+        var basics = Owner.PlayerCombatState.Hand.Cards
+            .Where(card => card.Rarity == CardRarity.Basic)
+            .ToList();
+        var selectedCard = Owner.RunState.Rng.CombatCardSelection.NextItem(basics);
+        if (selectedCard == null) return Task.CompletedTask;
+
+        selectedCard.BaseReplayCount += DynamicVars.Repeat.IntValue;
+        _affectedCards[selectedCard] = _affectedCards.GetValueOrDefault(selectedCard) + DynamicVars.Repeat.IntValue;
 
         return Task.CompletedTask;
     }

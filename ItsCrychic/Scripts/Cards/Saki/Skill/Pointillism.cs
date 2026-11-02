@@ -22,6 +22,12 @@ public class Pointillism() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
         await PlayerCmd.GainEnergy(DynamicVars.Energy.BaseValue, Owner);
+    }
+
+    public override async Task AfterCardPlayed(PlayerChoiceContext choiceContext, CardPlay cardPlay)
+    {
+        if (cardPlay.Card != this) return;
+
         var target = (Owner.PlayerCombatState?.Energy ?? 0) + (IsUpgraded ? 1 : 0);
         var current = SecondaryResourceCmd.Get(Owner, BangDreamConst.LingeredResource);
         if (current < target)

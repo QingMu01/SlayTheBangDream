@@ -1,9 +1,8 @@
 using BangDreamInSpire.Scripts.Extensions;
-using BangDreamInSpire.Scripts.Utils;
+using ItsCrychic.Scripts.Power.Buff;
+using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using STS2RitsuLib.Combat.SecondaryResources;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
@@ -14,23 +13,14 @@ public class BeginnerMind() : AbstractSakikoCard(CustomCost, CustomType, CustomR
     private const CardRarity CustomRarity = CardRarity.Uncommon;
     private const TargetType CustomTarget = TargetType.Self;
 
-    protected override IEnumerable<CardKeyword> CardKeywords =>
-    [
-        BangDreamConst.Lingered,
-        BangDreamConst.PerformArea
-    ];
-
-    protected override IEnumerable<DynamicVar> CardVars =>
-    [
-        QuickVar.Buff.Create(1)
-    ];
+    protected override IEnumerable<CardKeyword> CardKeywords => [CardKeyword.Exhaust];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        var lingered = SecondaryResourceCmd.Get(Owner, BangDreamConst.LingeredResource);
-        if (lingered > 0)
-            await SecondaryResourceCmd.Lose(Owner, BangDreamConst.LingeredResource, lingered, this);
-        Owner.AttachedData().PerformManager.AddCapacity(QuickVar.Buff.GetVar(this).IntValue);
+        var manager = Owner.AttachedData().PerformManager;
+        manager.AddCapacity(Math.Max(0, manager.MaxCapacity - manager.Capacity));
+
+        await PowerCmd.Apply<BeginnerMindPower>(choiceContext, Owner.Creature, 1, Owner.Creature, this);
     }
 
     protected override void OnUpgrade()

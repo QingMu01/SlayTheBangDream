@@ -1,55 +1,45 @@
+using BangDreamInSpire.Scripts.Extensions;
 using BangDreamInSpire.Scripts.Utils;
 using BangDreamInSpire.Scripts.Utils.Infos;
-using ItsCrychic.Scripts.Cards.Token;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using MegaCrit.Sts2.Core.HoverTips;
-using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Localization.DynamicVars;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
 public class WonderfulWorldSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
 {
     private const CardRarity CustomRarity = CardRarity.Uncommon;
-    private static readonly TargetType CustomTarget = PerformTargetTypes.AnySlot;
+    private static readonly TargetType CustomTarget = PerformTargetTypes.RequestGroup;
 
-    public override bool IsInstant => IsUpgraded;
-
-    protected override IEnumerable<IHoverTip> CardHoverTips =>
-    [
-        HoverTipFactory.FromCard<Hope>()
-    ];
+    public override bool IsInstant => true;
 
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
         CardKeyword.Exhaust
     ];
 
+    protected override IEnumerable<DynamicVar> CardVars =>
+    [
+        QuickVar.Cards.Create(1)
+    ];
+
     public override async Task OnPerform(PlayerChoiceContext choiceContext, CardPerform perform)
     {
-        ArgumentNullException.ThrowIfNull(CombatState);
-
-        var existingHope = Owner.PlayerCombatState!.AllCards
-            .Concat(BangDreamConst.ExtraDraw.GetPile(Owner).Cards)
-            .Concat(BangDreamConst.PerformPile.GetPile(Owner).Cards)
-            .Concat(PileType.Hand.GetPile(Owner).Cards)
-            .Where(card => card is Hope)
-            .Distinct()
-            .FirstOrDefault();
-
-        if (existingHope != null)
+        for (var i = 0; i < DynamicVars.Cards.IntValue; i++)
         {
-            if (existingHope.Pile?.Type != PileType.Hand)
-            {
-                await CardPileCmd.Add(existingHope, PileType.Hand);
-            }
+            // 曲库即 ExtraDraw 牌堆；打出后音乐牌会自行落位到歌单。
+            var candidates = BangDreamConst.ExtraDraw.GetPile(Owner).Cards.ToList();
+            var selectedCard = Owner.RunState.Rng.CombatCardSelection.NextItem(candidates);
+            if (selectedCard == null) return;
 
-            existingHope.DynamicVars.Cards.BaseValue += 1;
-            return;
+            await CardCmd.AutoPlay(choiceContext, selectedCard, null);
         }
+    }
 
-        var generatedCard = CombatState.CreateCard(ModelDb.Card<Hope>(), Owner);
-        await CardPileCmd.AddGeneratedCardToCombat(generatedCard, PileType.Hand, Owner);
+    protected override void OnUpgrade()
+    {
+        DynamicVars.Cards.UpgradeValueBy(1);
     }
 }

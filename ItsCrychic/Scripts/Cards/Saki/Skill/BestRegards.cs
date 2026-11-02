@@ -1,5 +1,6 @@
 ﻿using BangDreamInSpire.Scripts.Extensions;
 using BangDreamInSpire.Scripts.Interfaces.CardAugment;
+using BangDreamInSpire.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
@@ -32,11 +33,20 @@ public class BestRegards() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
 
     public async Task OnSubside(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        await CardPileCmd.Draw(choiceContext, DynamicVars.Cards.BaseValue, Owner);
+        ArgumentNullException.ThrowIfNull(CombatState);
+
+        var cards = BangDreamConst.PerformPile.GetPile(Owner).Cards.ToList();
+        if (cards.Count == 0) return;
+
+        var card = CombatState.RunState.Rng.CombatCardSelection.NextItem(cards);
+        if (card != null)
+        {
+            await CardPileCmd.Add(card, PileType.Hand);
+        }
     }
 
     protected override void OnUpgrade()
     {
-        DynamicVars.Block.UpgradeValueBy(3m);
+        DynamicVars.Cards.UpgradeValueBy(1);
     }
 }

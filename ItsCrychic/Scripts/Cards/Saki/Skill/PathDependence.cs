@@ -39,6 +39,12 @@ public class PathDependence() : AbstractSakikoCard(CustomCost, CustomType, Custo
     {
         await PowerCmd.Apply<PathDependencePower>(choiceContext, Owner.Creature,
             QuickVar.Buff.GetVar(this).IntValue, Owner.Creature, this);
+    }
+
+    public override async Task AfterCardPlayed(PlayerChoiceContext choiceContext, CardPlay play)
+    {
+        if (play.Card != this) return;
+
         var cardCount = BangDreamConst.PerformPile.GetPile(Owner).Cards.Count;
         if (cardCount > 0)
         {

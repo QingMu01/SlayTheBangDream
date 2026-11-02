@@ -1,6 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 using BangDreamInSpire.Scripts.Interfaces.CardAugment;
 using BangDreamInSpire.Scripts.Interfaces.CharacterAugment;
+using BangDreamInSpire.Scripts.Mechanics.Perform;
 using BangDreamInSpire.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -77,7 +78,8 @@ public sealed class LingeredResourcesRule() : HookedSingletonModel(HookType.Comb
                 var topCardInPile = BangDreamConst.ExtraDraw.GetPile(context.Player).Cards.FirstOrDefault();
                 if (topCardInPile != null)
                 {
-                    await CardPileCmd.Add(topCardInPile, BangDreamConst.PerformPile);
+                    // 统一入口：带「插曲」附魔的牌改为进入手牌。
+                    await InsertSongRules.MoveIntoPerformArea(topCardInPile);
                     await Cmd.CustomScaledWait(0.05f, 0.1f);
                 }
 
