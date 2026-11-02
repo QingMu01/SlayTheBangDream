@@ -1,5 +1,6 @@
 using BangDreamInSpire.Scripts.Utils;
 using Godot;
+using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Helpers;
 using STS2RitsuLib.Combat.SecondaryResources;
 
@@ -21,10 +22,13 @@ public partial class SakikoLingeredCounterSpecial : LingeredCounter
     {
         _counterImg = GetNode<Control>("%CounterImg");
         LoadCounterTextures();
+    }
 
-        var styleSeed = Player!.RunState.Rng.Seed;
+    protected override void OnPlayerBound(Player player)
+    {
+        var styleSeed = player.RunState.Rng.Seed;
         var useDarkStyle = new Random((int)styleSeed).Next(99) < 50;
-        ItsCrychic.Logger.Info($"Seed: {styleSeed} .Use {(useDarkStyle ? DarkStyle : LightStyle)} style.");
+        ItsCrychic.Logger.Debug($"Seed: {styleSeed} .Use {(useDarkStyle ? DarkStyle : LightStyle)} style.");
         foreach (var node in GetTree().GetNodesInGroup(useDarkStyle ? DarkStyle : LightStyle))
         {
             if (node is TextureRect textureRect)
@@ -41,7 +45,7 @@ public partial class SakikoLingeredCounterSpecial : LingeredCounter
             }
         }
 
-        TaskHelper.RunSafely(SecondaryResourceCmd.Reset(Player!, BangDreamConst.LingeredResource));
+        TaskHelper.RunSafely(SecondaryResourceCmd.Reset(player, BangDreamConst.LingeredResource));
     }
 
     protected override void OnEnergyChanged(SecondaryResourceChangedEvent changedEvent)

@@ -3,14 +3,12 @@ using BangDreamInSpire.Scripts.Enums;
 using BangDreamInSpire.Scripts.Extensions;
 using BangDreamInSpire.Scripts.Utils;
 using ItsCrychic.Scripts.Character;
-using ItsCrychic.Scripts.Patches;
 using ItsCrychic.Scripts.Relics.Sakiko;
 using ItsCrychic.Scripts.Utils;
 using MegaCrit.Sts2.Core.Modding;
 using MegaCrit.Sts2.Core.Models.Relics;
 using STS2RitsuLib;
 using STS2RitsuLib.Interop;
-using STS2RitsuLib.Patching.Core;
 using STS2RitsuLib.Scaffolding.Content;
 using Logger = MegaCrit.Sts2.Core.Logging.Logger;
 
@@ -26,14 +24,6 @@ public static class ItsCrychic
         var executingAssembly = Assembly.GetExecutingAssembly();
         RitsuLibFramework.EnsureGodotScriptsRegistered(executingAssembly, Logger);
         ModTypeDiscoveryHub.RegisterModAssembly(CrychicConst.ModId, executingAssembly);
-
-        //Patches
-        var skinSupport = RitsuLibFramework.CreatePatcher(CrychicConst.ModId, "setup_sakiko_lingered_energy_counter");
-        skinSupport.RegisterPatch<SakikoLingeredEnergyCounterPatch>();
-        if (!skinSupport.PatchAll())
-        {
-            throw new InvalidOperationException("sakiko lingered energy counter setup failed.");
-        }
 
         // 注册祥子相关内容
         var sakikoContent = RitsuLibFramework.GetContentRegistry(CrychicConst.ModId);
