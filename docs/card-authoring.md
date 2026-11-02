@@ -31,7 +31,8 @@
 - 角色抽象基类带 `[RegisterCard(typeof(XxxPool), Inherit = true)]`，子类**自动注册**，不要在具体卡类上重复标注。
 - Token 卡不走角色基类，必须自己标 `[RegisterCard(typeof(TokenCardPool))]`。
 - 基础契约：`BandCardModel(int baseCost, CardType type, CardRarity rarity, TargetType target, bool showInCardLibrary = true)`。
-- 音乐牌：`MusicCardModel(int baseCost, CardRarity rarity, TargetType target, ...)`，类型固定为运行时扩展值 `BangDreamConst.MusicCardType`（`(CardType)7`，本体枚举无法扩展），实现 `IPerformCard`，效果写在 `OnPerform`；`GetResultLocationForCardPlay` 已被 sealed 为进入 `PerformPile`。
+- 音乐牌：`MusicCardModel(int baseCost, CardRarity rarity, TargetType target, ...)`，类型固定为运行时动态注册值 `BangDreamConst.MusicCardType`（本体枚举无法扩展；`PerformMechanic` 内容注册阶段用 `RitsuLibFramework.RegisterDynamicEnumValue<CardType>` 分配，**不要写死数值**），实现 `IPerformCard`，效果写在 `OnPerform`；`GetResultLocationForCardPlay` 已被 sealed 为进入 `PerformPile`。
+- 音乐牌默认卡框由 `IPerformCard.PerformCardAssets`（`CardAssetProfile`）保证；`MusicCardModel` 默认给本体 quest 卡框，具体卡可覆写。
 
 ### 1.3 抽象基类职责
 
@@ -55,10 +56,10 @@ public class BandPractice() : AbstractSakikoCard(CustomCost, CustomType, CustomR
 ```
 
 音乐牌没有 `CustomType`（基类已固定为 `Music` 运行时值）。
-音乐牌卡框由**来源角色**的皮肤配置 `Ui.MusicCardFrame` 决定（`MusicCardModel.CustomFramePath`），
-来源角色默认由卡池反查；注册在 `TokenCardPool`、无法靠卡池识别的音乐 Token 需
-`public override ISkinSupportCharacter? OriginCharacter => ModelDb.Character<Xxx角色>();` 显式声明，
-否则回退本体 quest 卡框。
+音乐牌默认卡框由 `IPerformCard.PerformCardAssets`（`CardAssetProfile`，`MusicCardModel` 默认本体 quest 卡框）保证；
+皮肤系统只做替换：`SkinVisualSupportPatches` 校验**来源角色**的皮肤配置 `Ui.MusicCardFrame`，命中才动态替换纹理，
+未配置/资源缺失时保留 asset profile 的默认卡框。来源角色默认由卡池反查；注册在 `TokenCardPool`、无法靠卡池识别的音乐 Token 需
+`public override ISkinSupportCharacter? OriginCharacter => ModelDb.Character<Xxx角色>();` 显式声明。
 
 ### 2.2 取值与语义
 
@@ -83,7 +84,7 @@ public class BandPractice() : AbstractSakikoCard(CustomCost, CustomType, CustomR
 |---|---|---|
 | 立绘 | `res://<ModId>/images/card_portraits/<ClassName>.png` | 是（缺失回退 `BangDreamInSpire/images/sceneui/default_portrait.png`，即缺陷） |
 | 升级立绘 | `res://<ModId>/images/card_portraits/<ClassName>_Bate.png` | 否 |
-| 卡框 | 由角色抽象基类按 `Type` 给出；音乐牌由来源角色的皮肤配置 `Ui.MusicCardFrame` 接管，未配置时回退本体 quest 卡框 | 由基类负责 |
+| 卡框 | 由角色抽象基类按 `Type` 给出；音乐牌默认由 `IPerformCard.PerformCardAssets` 给出（本体 quest 卡框），来源角色玩家配置了 `Ui.MusicCardFrame` 时由皮肤 patch 动态替换 | 由基类/asset profile 负责 |
 
 - 磁盘路径为 `<ModId>/<ModId>/images/card_portraits/<ClassName>.png`（`res://` 第二段是 Mod 目录）。
 - 新增 PNG 后必须经 Godot 导入生成 `.import`，不要只把文件拷进仓库。

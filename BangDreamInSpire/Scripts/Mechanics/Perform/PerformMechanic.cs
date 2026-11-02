@@ -4,6 +4,7 @@ using BangDreamInSpire.Scripts.Nodes;
 using BangDreamInSpire.Scripts.Utils;
 using BangDreamInSpire.Scripts.Utils.Infos;
 using Godot;
+using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Nodes.Combat;
@@ -38,6 +39,10 @@ public sealed class PerformMechanic : IBangDreamMechanic
 
     public void RegisterContent(BangDreamMechanicContext context)
     {
+        // 音乐牌使用动态卡牌类型：值由 RitsuLib 按 "Music" 分配到高值段（0x4000_0000+），
+        // 不写死具体数值，也就不会与本体后续新增的 CardType 或其它模组撞值。
+        BangDreamConst.MusicCardType = RitsuLibFramework.RegisterDynamicEnumValue<CardType>(context.ModId, "Music");
+
         BangDreamConst.Music = context.RegisterCardKeyword("Music");
         BangDreamConst.Instant = context.RegisterCardKeyword("Instant");
         BangDreamConst.Perform = context.RegisterCardKeyword("Perform");

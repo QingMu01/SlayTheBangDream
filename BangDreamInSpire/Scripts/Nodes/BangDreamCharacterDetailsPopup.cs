@@ -582,12 +582,17 @@ public partial class BangDreamCharacterDetailsPopup : Control
 
     private static Color GetTypeColor(CardType type)
     {
+        // Music 是运行时动态注册的枚举值，不是编译期常量，无法作为 switch 分支。
+        if (BangDreamConst.IsMusicCardType(type))
+        {
+            return new Color(0.86f, 0.5f, 0.76f);
+        }
+
         return type switch
         {
             CardType.Attack => new Color(0.85f, 0.31f, 0.31f),
             CardType.Skill => new Color(0.3f, 0.55f, 0.85f),
             CardType.Power => new Color(0.6f, 0.42f, 0.86f),
-            BangDreamConst.MusicCardType => new Color(0.86f, 0.5f, 0.76f),
             CardType.Status => new Color(0.55f, 0.57f, 0.62f),
             CardType.Curse => new Color(0.45f, 0.28f, 0.5f),
             CardType.Quest => new Color(0.8f, 0.55f, 0.25f),

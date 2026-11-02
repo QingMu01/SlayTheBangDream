@@ -28,7 +28,7 @@ internal class MusicCardTypePatch : IPatchMethod
 
     public static void Postfix(CardType cardType, ref LocString __result)
     {
-        if (cardType == BangDreamConst.MusicCardType)
+        if (BangDreamConst.IsMusicCardType(cardType))
         {
             __result = MusicType;
         }
