@@ -118,6 +118,18 @@ jq -r '.frames.spikes[]
    ~/.local/share/SlayTheSpire2/logs/bangdream/ab/fifo-*/perf-*.json | sort -k2 -nr | head
 ```
 
+### 4.3 同时采集逐帧 GPU 时间（可选）
+
+游戏内的 perf 工具支持默认关闭的 GPU 计时。用脚本跑时把它 `export` 到当前 shell 即可被子进程继承（脚本用 `env ...` 启动，不清空父进程环境）：
+
+```bash
+export BDS_PERF_GPU_TIMING=1
+./tools/perf-linux-ab.sh run baseline
+unset BDS_PERF_GPU_TIMING
+```
+
+归档报告里的长帧表会多出 `GPU(ms)` 列、1Hz 表会多出 `GPU avg/max(ms)` 列。测量本身有开销，**只在这组实验里开**，并和同模式关闭时的结果对比，别把它当默认配置。判读：长帧 `GPU(ms)` 高 → GPU 真忙；`GPU(ms)` 低而 `Present(×周期)` 高 → 等合成器/驱动。
+
 ## 5. 判读顺序（建议照做）
 
 1. 先确认 `baseline` 重复 2–3 次的离散程度：若单次之间 `p99` 波动就很大，任何单次对比都不可信，先加次数。
