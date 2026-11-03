@@ -68,6 +68,38 @@ internal sealed class FrameSpike
     public long ManagedBytes;
     public long RenderSubmitUs;
     public long PresentWaitUs;
+
+    /// <summary>
+    /// 本帧 <c>RenderingServer.GetFrameSetupTimeCpu()</c>（该 API 的原始单位是毫秒，这里统一换算成微秒）。
+    /// 这是引擎提供的唯一 GPU/渲染侧 CPU 开销读数；取不到时记 0（负值/NaN 一律归 0）。
+    /// </summary>
+    public long FrameSetupCpuUs;
+
+    /// <summary>
+    /// Present 等待折合成的「刷新周期数」= <see cref="PresentWaitUs" /> / 单周期微秒。
+    /// 1.0 ≈ 正常等一次 vsync；大于 2 说明呈现路径被卡住（GPU 队列/合成器/驱动），而不是帧逻辑慢。
+    /// </summary>
+    public double PresentWaitedPeriods;
+
+    /// <summary>
+    /// 根视口上一帧的 GPU 渲染时间（ms，来自 <c>RenderingServer.ViewportGetMeasuredRenderTimeGpu()</c>）。
+    /// 仅在启用 <c>BDS_PERF_GPU_TIMING=1</c> 时有意义；未启用、读取失败或值为负/NaN 时恒为 0。
+    /// </summary>
+    public double GpuRenderTimeMs;
+
+    /// <summary>
+    /// GPU 时间折算成的「刷新周期数」= <see cref="GpuRenderTimeMs" /> / 单周期毫秒。
+    /// 大于 1 表示这一帧的 GPU 工作量本身超过一个刷新窗口；与 <see cref="PresentWaitedPeriods" />
+    /// 对比可区分「GPU 真忙」与「等合成器/驱动」。
+    /// </summary>
+    public double GpuPeriods;
+
+    /// <summary>上一秒 1Hz 采样时统计到的 <c>SubViewport</c> 数量（渲染路径复杂度的代理）。</summary>
+    public int ViewportNodes;
+
+    /// <summary>上一秒 1Hz 采样时统计到的 <c>CanvasGroup</c> 数量（额外 draw call / 离屏合成的常见来源）。</summary>
+    public int CanvasGroupNodes;
+
     public int Gc2Delta;
     public double GcPauseMs;
     public string RecentLog = "";
@@ -101,6 +133,24 @@ internal sealed class SecondSample
     public int MicroStutters;
     public double GcPauseMs;
     public int Gc2Delta;
+
+    /// <summary>本秒内每帧 <c>RenderingServer.GetFrameSetupTimeCpu()</c> 的平均值（ms；API 不可用时为 0）。</summary>
+    public double FrameSetupCpuMsAvg;
+
+    /// <summary>本秒内每帧 GPU 渲染时间的平均值（ms；仅启用 <c>BDS_PERF_GPU_TIMING=1</c> 时非 0）。</summary>
+    public double GpuRenderTimeMsAvg;
+
+    /// <summary>本秒内每帧 GPU 渲染时间的最大值（ms；未启用 GPU 计时时为 0）。</summary>
+    public double GpuRenderTimeMsMax;
+
+    /// <summary>本秒场景树里的 <c>SubViewport</c> 数量（每秒遍历一次根节点统计，不做逐帧成本）。</summary>
+    public int ViewportNodes;
+
+    /// <summary>本秒场景树里的 <c>CanvasGroup</c> 数量（每秒遍历一次）。</summary>
+    public int CanvasGroupNodes;
+
+    /// <summary>本秒场景树里的 <c>WorldEnvironment</c> 数量（每秒遍历一次）。</summary>
+    public int WorldEnvironmentNodes;
 }
 
 /// <summary>阶段维度的帧统计（按 1Hz 采样聚合，开销很低）。</summary>
