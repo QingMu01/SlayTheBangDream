@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using BangDreamInSpire.Scripts.Enums;
+using BangDreamInSpire.Scripts.Nodes.Cards;
 using STS2RitsuLib.Interop.AutoRegistration;
 using STS2RitsuLib.Models.Capabilities;
 
@@ -16,9 +17,12 @@ namespace BangDreamInSpire.Scripts.Mechanics.Perform.Chord;
 /// </para>
 /// </summary>
 [RegisterModelCapability]
-public sealed class ChordCapability : CardCapability
+public sealed class ChordCapability : CardCapability, ICardOverlayContributor
 {
     private const string ChordStateKey = "chord";
+
+    /// <summary>角标覆盖层的稳定 ID（同一能力内排序与诊断用）。</summary>
+    private const string OverlayId = "chord_corner_badge";
 
     /// <summary>当前和弦；未赋予时为 <see cref="PerformChord.None" />。</summary>
     public PerformChord Chord { get; private set; } = PerformChord.None;
@@ -38,6 +42,25 @@ public sealed class ChordCapability : CardCapability
 
         Chord = chord;
         MarkDirty();
+    }
+
+    /// <summary>
+    /// 卡面覆盖层：在卡牌右上角画出和弦角标（多和弦时按数量切分包角带）。
+    /// 覆盖层由 RitsuLib 在 <c>NCard.ReloadOverlay</c> 之后重建，因此卡牌模型刷新时角标会自动跟随；
+    /// 工厂每次返回新节点（同一张卡可能同时被多个 <c>NCard</c> 显示）。
+    /// </summary>
+    public IEnumerable<CardOverlayContribution> GetCardOverlays(CardOverlayContext context)
+    {
+        if (Chord == PerformChord.None)
+        {
+            yield break;
+        }
+
+        yield return CardOverlayContribution.FromFactory(
+            OverlayId,
+            static overlayContext => NChordCornerBadge.Create(overlayContext.Card),
+            order: 0,
+            fullRect: false);
     }
 
     /// <inheritdoc />

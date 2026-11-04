@@ -173,3 +173,19 @@ rewardCard.GetOrCreateCapability<ChordCapability>().SetChord(randomChord);
 - 和弦不参与入组判定，因此与 `RequestGroup` 目标类型正交：手动落位只换分组，不改写和弦。
 - 奏响由 `PerformManager.PerformChordSlots(mask)` 执行：逐个奏响掩码覆盖分组内**已落位卡牌所在的槽位**（按槽位升序，跳过即兴牌），并输出 `Chord perform <mask> : slots [...]` 日志便于核对。
 
+### 9.1 卡面角标
+
+和弦通过能力实现的**卡面覆盖层**（`ICardOverlayContributor`）画在卡牌右上角：`ChordCapability` 返回一个
+`CardOverlayContribution`（`FromFactory`），节点是 `NChordCornerBadge`；RitsuLib 在 `NCard.ReloadOverlay()` 之后
+把能力覆盖层挂到 `%OverlayContainer` 下并重建，所以卡牌模型刷新时角标自动跟随，无需自己订阅事件。
+
+| 项 | 约定 |
+|---|---|
+| 包角带几何 | 右上角的**等臂** L 形带（上臂沿卡牌上边 + 右臂沿右边），带宽 26px、两臂各从拐角量 120px：上臂 `x∈[30,150] y∈[-211,-185]`、右臂 `x∈[124,150] y∈[-211,-91]`（卡中心坐标；卡框 `x±150`、`y±211`）。角标画布 = 120×120 正方形，包角带占其上边与右边。 |
+| 切分 | 所有切缝都是 `x + y = c` 的 **45° 斜线**，按**面积均分**：n 个和弦 = n 段等面积。1=整条 L；2=一条斜接缝正好落在拐角（c = -61，上臂/右臂各一段）；3=两刀（c = -96.67 / -25.33，中间段绕拐角）；4=三刀（c = -114.5 / -61 / -7.5，上臂两段 + 右臂两段）。实现见 `NChordCornerBadge.BuildSlots`。 |
+| 渲染 | 单张白色包角带贴图 `res://BangDreamInSpire/images/sceneui/chord_corner.png`（画布恰好 120×120，按 2× 导出），每段作为 `Polygon2D` 的多边形（顶点 UV 映射到贴图）并 `Color` 染色；贴图缺失时退化为纯色多边形（形状与成品一致，可直接验收切分）。`images/**` 不入库，新克隆缺图会自动走占位。 |
+| 配色 | `PerformChordColors` 是唯一来源：C `#7799CC`（祥子）、D `#FFDD88`（素世）、F `#77BBDD`（灯）、G `#7777AA`（立希）。`MutsumiPerformScheme.GetSlotColor`（演奏区四组槽位）与 `CrychicMemberEnum`（角色色）都引用这张表。 |
+| 层级 | 能力覆盖层挂在 `%OverlayContainer`（层级低于 `TitleBanner`），角标设 `ZIndex = 1` 才能压住标题横幅。 |
+| 调试 | 控制台 `chord CDF` / `chord 13` / `chord none`：给手牌设和弦并强制重建覆盖层，用于预览 1~4 个和弦的切分（`ChordConsoleCmd`）。 |
+
+
