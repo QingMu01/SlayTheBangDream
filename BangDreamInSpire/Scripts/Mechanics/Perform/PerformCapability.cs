@@ -1,4 +1,6 @@
+using BangDreamInSpire.Scripts.Cards;
 using BangDreamInSpire.Scripts.Interfaces.CardAugment;
+using BangDreamInSpire.Scripts.Interfaces.CharacterAugment;
 using BangDreamInSpire.Scripts.Utils;
 using BangDreamInSpire.Scripts.Utils.Infos;
 using MegaCrit.Sts2.Core.HoverTips;
@@ -49,16 +51,28 @@ public class PerformCapability : CardCapability, ICardDescriptionContributor, IC
                 ? HoverTipFactory.FromKeyword(BangDreamConst.Instant)
                 : HoverTipFactory.FromKeyword(BangDreamConst.Perform);
 
-            // 手动落位卡牌额外说明"出牌时要自己选落位"。
+            // 手动落位卡牌额外说明"出牌时要自己选落位"；只有会出现分组选择时才播报「指定分组」。
             switch (PerformTargetTypes.ResolveMode(card.TargetType))
             {
                 case PerformSlotSelectionMode.Slot:
                     yield return HoverTipFactory.FromKeyword(BangDreamConst.AnySlot);
                     break;
-                case PerformSlotSelectionMode.Group:
+                case PerformSlotSelectionMode.Group when HasMultipleGroups(card):
                     yield return HoverTipFactory.FromKeyword(BangDreamConst.RequestGroup);
                     break;
             }
         }
+    }
+
+    /// <summary>该卡是否会出现分组选择，即是否存在多个可达分组。</summary>
+    private static bool HasMultipleGroups(CardModel card)
+    {
+        if (card.IsMutable && card.Owner?.Character is IPerformableCharacter ownerPerformable)
+        {
+            return ownerPerformable.CreatePerformScheme().Groups.Count > 1;
+        }
+
+        return MusicCardModel.ResolveOriginCharacter(card) is IPerformableCharacter performable &&
+               performable.CreatePerformScheme().Groups.Count > 1;
     }
 }

@@ -5,6 +5,7 @@ using BangDreamInSpire.Scripts.Utils;
 using BangDreamInSpire.Scripts.Utils.Infos;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using MegaCrit.Sts2.Core.Models;
 using STS2RitsuLib.Scaffolding.Content;
 
 namespace BangDreamInSpire.Scripts.Cards;
@@ -49,6 +50,44 @@ public abstract class MusicCardModel(
     ///     以便皮肤纹理仍按"来源角色"而不是"当前持有者"解析。
     /// </summary>
     public virtual ISkinSupportCharacter? OriginCharacter => null;
+
+    /// <summary>
+    ///     解析任意卡牌的来源角色：音乐牌优先取自身声明的 <see cref="OriginCharacter" />，否则按卡池反查。
+    ///     无法判定时返回 <see langword="null" />。
+    /// </summary>
+    public static ISkinSupportCharacter? ResolveOriginCharacter(CardModel card)
+    {
+        return (card as MusicCardModel)?.OriginCharacter ?? FindCharacterByPool(card.VisualCardPool);
+    }
+
+    private static ISkinSupportCharacter? FindCharacterByPool(CardPoolModel? pool)
+    {
+        if (pool == null)
+        {
+            return null;
+        }
+
+        foreach (var character in ModelDb.AllCharacters)
+        {
+            if (character is not ISkinSupportCharacter skinSupport)
+            {
+                continue;
+            }
+
+            if (ReferenceEquals(character.CardPool, pool))
+            {
+                return skinSupport;
+            }
+
+            if (character is IExtraDeckSupportCharacter extraDeckSupport &&
+                ReferenceEquals(extraDeckSupport.ExtraCardPool, pool))
+            {
+                return skinSupport;
+            }
+        }
+
+        return null;
+    }
 
     public virtual bool IsInstant => false;
     public virtual int AspirationSlot => 0;

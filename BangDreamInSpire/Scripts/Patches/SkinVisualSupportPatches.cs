@@ -316,12 +316,12 @@ internal static class MusicCardSkinFrames
     public static bool TryResolveFramePath(CardModel card, out string path)
     {
         path = string.Empty;
-        if (card is not MusicCardModel { IsMutable: true } music)
+        if (card is not MusicCardModel { IsMutable: true })
         {
             return false;
         }
 
-        var origin = music.OriginCharacter ?? FindCharacterByPool(card.VisualCardPool);
+        var origin = MusicCardModel.ResolveOriginCharacter(card);
         if (origin == null)
         {
             return false;
@@ -335,34 +335,6 @@ internal static class MusicCardSkinFrames
 
         path = framePath;
         return true;
-    }
-
-    private static ISkinSupportCharacter? FindCharacterByPool(CardPoolModel? pool)
-    {
-        if (pool == null)
-        {
-            return null;
-        }
-
-        foreach (var character in ModelDb.AllCharacters)
-        {
-            if (character is not ISkinSupportCharacter skinSupport)
-            {
-                continue;
-            }
-
-            if (ReferenceEquals(character.CardPool, pool))
-            {
-                return skinSupport;
-            }
-
-            if (character is IExtraDeckSupportCharacter extraDeckSupport && ReferenceEquals(extraDeckSupport.ExtraCardPool, pool))
-            {
-                return skinSupport;
-            }
-        }
-
-        return null;
     }
 
     private static SkinInfo? ResolveSkin(CardModel card, ISkinSupportCharacter origin)

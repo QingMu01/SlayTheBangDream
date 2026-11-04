@@ -24,12 +24,13 @@ namespace BangDreamInSpire.Scripts.Mechanics.Perform;
 /// （<see cref="PerformTargetingArrow" />）——卡牌归位到屏幕下方中央、隐藏系统指针、箭头从卡牌指向鼠标，
 /// 指向候选槽位时高亮；松手时按指向给出落位请求；</item>
 /// <item><c>NMouseCardPlay.IsCardInPlayZone</c> / <c>get_PlayZoneThreshold</c>：原版要求松手时鼠标
-/// 位于屏幕上方 75% 的"出牌区"，而角色旁的槽位可能低于该阈值，故对这两种卡放宽；</item>
+/// 位于屏幕上方 75% 的"出牌区"，而角色旁的槽位可能低于该阈值，故在选择态激活时放宽；未进入选择态
+/// （如 <see cref="PerformTargetTypes.RequestGroup" /> 只有一个可达分组）时按原版规则判定；</item>
 /// <item><c>NCardPlay.TryPlayCard</c> / <c>NCardPlay.Cleanup</c>：读取选择结果、结束选择态；</item>
-/// <item><c>NHandCardHolder.BeginDrag</c>：兜底入口——即使目标选择钩子未生效，也能在选择态下按常规流程出牌。</item>
+/// <item><c>NHandCardHolder.BeginDrag</c>：兜底入口——拖拽开始时先进入选择态，不依赖 <c>TargetSelection</c> 的触发时机。</item>
 /// </list>
-/// 注意：<c>BeginDrag</c>、<c>IsCardInPlayZone</c> 这类极小方法可能被 JIT 内联，补丁不保证在所有调用点生效，
-/// 因此真正的选择交互不依赖它们。
+/// 注意：<c>BeginDrag</c>、<c>IsCardInPlayZone</c> 这类极小方法可能被 JIT 内联，补丁不保证在所有调用点生效；
+/// 任一钩子未生效时按原版出牌规则处理（不会再出现出牌区放宽）。
 /// </remarks>
 public sealed class PerformSlotTargetingPatches : IModPatches
 {
@@ -58,6 +59,13 @@ public sealed class PerformSlotTargetingPatches : IModPatches
     {
         var card = GetPlayedCard(cardPlay);
         return card != null && PerformTargetTypes.IsManualSlotTarget(card.TargetType);
+    }
+
+    /// <summary>本次出牌的卡牌是否正处于手动落位选择态。</summary>
+    internal static bool IsSelectionActive(NCardPlay cardPlay)
+    {
+        var card = GetPlayedCard(cardPlay);
+        return card != null && card.Owner.AttachedData().PerformManager.IsManualSlotSelectionActive(card);
     }
 
     /// <summary>原版指示箭头的起点：拖拽中的卡牌节点，缺省时退回卡牌持有节点。</summary>
@@ -266,9 +274,9 @@ internal sealed class ManualSlotTargetSelectionPatch : IPatchMethod
 }
 
 /// <summary>
-/// 手动落位卡牌不再要求鼠标位于原版出牌区（屏幕上方 75%）：角色旁的槽位可能低于该阈值。
-/// 真正的"必须指向候选槽位"由 <see cref="ManualSlotTargetSelectionPatch" /> 与
-/// <see cref="ManualSlotTryPlayCardPatch" /> 保证。
+/// 手动落位卡牌进入选择态后不再要求鼠标位于原版出牌区（屏幕上方 75%）：角色旁的槽位可能低于该阈值。
+/// 未进入选择态时按原版规则判定。真正的"必须指向候选槽位"由
+/// <see cref="ManualSlotTargetSelectionPatch" /> 与 <see cref="ManualSlotTryPlayCardPatch" /> 保证。
 /// </summary>
 internal sealed class ManualSlotPlayZonePatch : IPatchMethod
 {
@@ -283,7 +291,8 @@ internal sealed class ManualSlotPlayZonePatch : IPatchMethod
 
     public static bool Prefix(NMouseCardPlay __instance, ref bool __result)
     {
-        if (!PerformSlotTargetingPatches.IsManualSlotCard(__instance)) return true;
+        if (!PerformSlotTargetingPatches.IsManualSlotCard(__instance) ||
+            !PerformSlotTargetingPatches.IsSelectionActive(__instance)) return true;
 
         __result = true;
         return false;
@@ -292,7 +301,7 @@ internal sealed class ManualSlotPlayZonePatch : IPatchMethod
 
 /// <summary>
 /// 与 <see cref="ManualSlotPlayZonePatch" /> 同义，但改在阈值来源处放宽：即使
-/// <c>IsCardInPlayZone</c> 被 JIT 内联到调用点，判定仍会读取本属性。
+/// <c>IsCardInPlayZone</c> 被 JIT 内联到调用点，判定仍会读取本属性。仅在选择态激活时放宽。
 /// </summary>
 internal sealed class ManualSlotPlayZoneThresholdPatch : IPatchMethod
 {
@@ -307,7 +316,8 @@ internal sealed class ManualSlotPlayZoneThresholdPatch : IPatchMethod
 
     public static bool Prefix(NMouseCardPlay __instance, ref float __result)
     {
-        if (!PerformSlotTargetingPatches.IsManualSlotCard(__instance)) return true;
+        if (!PerformSlotTargetingPatches.IsManualSlotCard(__instance) ||
+            !PerformSlotTargetingPatches.IsSelectionActive(__instance)) return true;
 
         __result = float.MaxValue;
         return false;
