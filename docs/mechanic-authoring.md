@@ -22,7 +22,7 @@ public sealed class TogawaSakiko()
     : BandMemberModel<SakikoStandardCardPool, SakikoRelicPool, SakikoPotionPool>(...),
       IPerformableCharacter, ILingeredResourceCharacter
 {
-    public int GetDefaultCapacity => 3;                 // IPerformableCharacter：歌单容量
+    public IPerformScheme CreatePerformScheme() => new SakikoPerformScheme(); // IPerformableCharacter：歌单分组与容量
     public bool AutoGenerateSubsideResource => true;    // ILingeredResourceCharacter：自动生成余音
     public CardPoolModel ExtraCardPool => ModelDb.CardPool<SakikoMusicalCardPool>(); // IExtraDeckSupportCharacter
     public bool ShouldAlwaysShowExtraDeck => true;
@@ -102,7 +102,7 @@ public sealed class MyMechanic : IBangDreamMechanic
 
 能力判定的统一入口，库内所有角色/卡牌判定都经由它，避免散落 `is IXxxCharacter`：
 
-`HasExtraDeck`、`HasPerform`（含 `GetDefaultCapacity > 0`）、`HasLingered`、`IsPerformCard`、`IsSubsideCard`（均有 `CharacterModel`/`Player`/`CardModel` 重载）。
+`HasExtraDeck`、`HasPerform`（含 `CreatePerformScheme().TotalSlotCount > 0`）、`HasLingered`、`IsPerformCard`、`IsSubsideCard`（均有 `CharacterModel`/`Player`/`CardModel` 重载）。
 
 ## 5. 兼容性约束
 
@@ -143,12 +143,12 @@ public sealed class MyMechanic : IBangDreamMechanic
 
 - **枚举值来源**：`CustomTargetType.RegisterMultiTargetType(BangDreamConst.ModId, "<stem>", _ => false)`，ID 形如 `BANG_DREAM_IN_SPIRE_TARGETTYPE_ANY_SLOT`，数值由 ID 确定性生成。词干（`any_slot` / `request_group`）**冻结**：改名会破坏存档与联机一致性。
 - **为什么注册为「群体目标类型 + 恒假谓词」**：RitsuLib 的目标类型只表达生物目标（单体/群体），无法表达槽位目标；注册为群体且不选任何生物，可让原版与 RitsuLib 的全部目标判定（`IsValidTarget(null)`、`CanPlayTargeting(null)`、目标指示器）都按「无需生物目标」处理——出牌不会被目标校验拦住，生物指示器也不会误显示。
-- **出牌交互**：`PerformSlotTargetingPatches` 接入四处——`NMouseCardPlay.TargetSelection`（进入选择态，随后沿用原版「拖拽跟随鼠标、松开结束」的群体目标循环，结束时按松手位置写入请求或取消出牌）、`NMouseCardPlay.IsCardInPlayZone` 与私有的 `get_PlayZoneThreshold`（角色旁的槽位可能位于原版出牌区阈值下方，对这两种卡放宽；`TargetSelection` 内成功取到请求后还会置位原版「正在尝试出牌」标记，避免随后因不在出牌区而取消）、`NCardPlay.TryPlayCard`（读取选择结果）、`NCardPlay.Cleanup`（结束/取消选择态）；另以 `NHandCardHolder.BeginDrag` 作为兜底入口。
-- **不依赖极小方法**：`BeginDrag`、`IsCardInPlayZone` 这类方法体极小，可能被 JIT 内联到调用点，Harmony 补丁在那些调用点不生效；因此选择交互的主入口是 `TargetSelection`（与 RitsuLib 处理自定义目标类型的方式一致），`BeginDrag` / 出牌区放宽只作兜底。任一钩子未生效时最坏退化为「按常规规则出牌」，不会出现打不出去的情况。
+- **出牌交互**：`PerformSlotTargetingPatches` 接入四处——`NMouseCardPlay.TargetSelection`（进入选择态，随后沿用原版「拖拽跟随鼠标、松开结束」的群体目标循环，结束时按松手位置写入请求或取消出牌）、`NMouseCardPlay.IsCardInPlayZone` 与私有的 `get_PlayZoneThreshold`（角色旁的槽位可能位于原版出牌区阈值下方，仅在选择态激活时放宽；`TargetSelection` 内成功取到请求后还会置位原版「正在尝试出牌」标记，避免随后因不在出牌区而取消）、`NCardPlay.TryPlayCard`（读取选择结果）、`NCardPlay.Cleanup`（结束/取消选择态）；另以 `NHandCardHolder.BeginDrag` 作为兜底入口。
+- **不依赖极小方法**：`BeginDrag`、`IsCardInPlayZone` 这类方法体极小，可能被 JIT 内联到调用点，Harmony 补丁在那些调用点不生效；因此选择交互的主入口是 `TargetSelection`（与 RitsuLib 处理自定义目标类型的方式一致），`BeginDrag` / 出牌区放宽只作兜底。任一钩子未生效时按常规规则出牌，不会出现打不出去的情况。
 - **选择态 UI**：`NPerformArea` 在候选槽位上叠加高亮，并按两种来源确定"指向"：`NPerformItem` 的 `MouseEntered/MouseExited`（Godot 自身拾取，不受缩放/镜像/父级变换影响），以及"卡片容器全局中心 + 全局变换基向量长度换算半尺寸"的手算命中；两者都未命中时再用视口坐标兜底判定一次。半尺寸必须用**全局变换的基向量长度**而非节点自身的 `Scale`，否则父级带缩放时命中框会被算小。
 - **原版交互（点击/拖拽两种模式，逐条复刻单体目标）**：接管 `NMouseCardPlay.TargetSelection` 后先 `CenterCard()` 把卡牌归位到屏幕下方中央，再按原版 `NTargetManager._Input` 的判定等待结束——① **拖拽模式**（按住卡牌开始）：松开左键时指向候选槽位即选定；未指向则与原版一致**转入点击模式继续等待**（不是结束）；② **点击模式**（点击卡牌或快捷键开始）：移动鼠标后点击候选槽位即选定，**点空则取消本次出牌**；③ 中途右键、Esc、手牌快捷键取消，或拖到底部取消区，都取消本次出牌并把牌留在手牌（不耗能）；判定复用原版 `_isLeftMouseDown` 字段与 `IsCardInCancelZone()`。指示反馈见下条。
 - **原版指示器**：`PerformTargetingArrow` 复用原版目标指示箭头（`NTargetManager` 私有持有的 `TargetingArrow` 子节点）：箭头自卡牌指向鼠标、隐藏系统指针、指向候选槽位时高亮（友方配色），结束/取消时恢复指针。**不复用原版群体目标循环 `MultiCreatureTargeting`**：它每帧把卡牌位置设为鼠标位置，会让箭头起点与终点重合而退化。只驱动箭头绘制，不进入原版目标选择会话（该会话要求单体目标类型，本机制的类型是群体类型）；手柄方向导航下不绘制。
-- **回退规则**：容量为 0、无候选槽位、手柄方向导航、自动出牌（`CardCmd.AutoPlay` / `--autoslay`）、以及 `RequestGroup` 只有一个可达分组时**不进入选择态**，出牌按卡牌自身规则处理；一旦进入选择态，则完全按原版单体目标的判定收尾（选定 / 点空取消 / 取消区取消 / 右键取消，均不耗能）。每一次进入/跳过/模式切换/收尾都写日志（`Manual slot selection ...` / `Manual slot targeting ...`，含候选槽位的中心与半尺寸），便于排查。
+- **回退规则**：容量为 0、无候选槽位、手柄方向导航、自动出牌（`CardCmd.AutoPlay` / `--autoslay`）、以及 `RequestGroup` 只有一个可达分组时**不进入选择态**，出牌按卡牌自身规则处理：不放宽出牌区，卡面也不显示「指定分组」提示（单分组角色的 `RequestGroup` 因此等价于 `TargetType.None`）；一旦进入选择态，则完全按原版单体目标的判定收尾（选定 / 点空取消 / 取消区取消 / 右键取消，均不耗能）。每一次进入/跳过/模式切换/收尾都写日志（`Manual slot selection ...` / `Manual slot targeting ...`，含候选槽位的中心与半尺寸），便于排查。
 - **联机**：落位随 `Enter` 生命周期动作下发（`PerformNetworkActionPayload.RequestSlotIndex` / `RequestGroupMask`），各端在 `HandleCardAddedInternal` 内使用同一请求计算落位；缺字段（旧版本 payload）等价于无覆盖。
 - **一次性语义**：请求写在卡牌的 `PerformContext.Request` 上，入队规划消费后即清空；出牌被取消时一并清空（`CancelManualSlotSelection`）。
 
