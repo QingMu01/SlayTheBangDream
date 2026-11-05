@@ -25,6 +25,13 @@ set -euo pipefail
 readonly SCRIPT_NAME="${0##*/}"
 readonly STEAM_APPID=2868840
 readonly GAME_BIN_NAME="SlayTheSpire2"
+# 直跑固定参数：关闭 Steam 初始化，与 .run/单人.run.xml 保持一致。
+# 不加的后果（本机 0.111.0 实测）：
+#   * Steam 客户端未运行 → Steamworks 初始化硬失败、弹错误框，游戏在启动处退出，
+#     mod 不加载 ⇒ 不可能写出 perf 报告；
+#   * Steam 客户端在运行 → user:// 切到 steam/<id> profile，其 mod_data 与存档都不是
+#     基线所用的 default/<slot>，BDS-Perf 很可能处于关闭状态 ⇒ 同样没有报告。
+readonly -a BASE_ARGS=(--force-steam=off)
 readonly DEFAULT_GAME_DIR="${HOME}/.local/share/Steam/steamapps/common/Slay the Spire 2"
 readonly DEFAULT_LOGS_DIR="${HOME}/.local/share/SlayTheSpire2/logs"
 readonly -a MODES=(baseline fifo mailbox immediate wayland gamescope mangohud nocache psocache)
@@ -121,8 +128,12 @@ ${SCRIPT_NAME} —— Linux present 路径 A/B 对照实验启动器
   <logs-dir>/bangdream/ab/results.md          每个模式一行的累积结果表
 
 说明：
-  * 直接启动（不经 Steam 客户端）不会加载 Steam 覆盖层/Steam Input，日志里出现
+  * 直跑固定加 --force-steam=off（与 .run/单人.run.xml 一致）：不初始化 Steam，
+    日志里出现 "Steam initialization skipped (editor mode)"、随后
     "Steamworks is not initialized" 属预期，不影响 perf 报告。
+    去掉该参数会出问题：Steam 客户端未运行时游戏会在启动处因 Steamworks 初始化
+    失败弹错退出（mod 不加载、无报告）；Steam 运行时又会切到 steam/<id> profile，
+    那里的 perf_settings.json/存档都与基线用的 default/<slot> 不同。
   * 游戏退出时写出的 perf 报告可能比进程退出晚几百毫秒，脚本会最多等 10 秒。
   * 找不到新报告时仍会保留 meta.txt，并以非零状态退出，方便批处理发现问题。
 EOF
@@ -238,6 +249,9 @@ build_arrays() {
     done
     CMD_ARR+=("$bin")
     local a
+    for a in "${BASE_ARGS[@]}"; do
+        CMD_ARR+=("$a")
+    done
     for a in "${MODE_ARGS[@]}"; do
         CMD_ARR+=("$a")
     done
@@ -618,7 +632,7 @@ cmd_run() {
     started="$(date '+%Y-%m-%d %H:%M:%S%z')"
     info "模式：$MODE —— $MODE_DESC"
     info "启动：$(shell_join "${CMD_ARR[@]}")"
-    info "（等待游戏退出；直接启动没有 Steam 覆盖层/Steam Input 属预期）"
+    info "（等待游戏退出；直跑已加 --force-steam=off，无 Steam 覆盖层/Steam Input 属预期）"
 
     rc=0
     ( cd "$GAME_DIR" && exec env "${ENV_ARR[@]}" "${CMD_ARR[@]}" ) || rc=$?

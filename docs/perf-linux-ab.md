@@ -144,7 +144,7 @@ unset BDS_PERF_GPU_TIMING
 两种方式都支持，但不要混用：
 
 - **Steam 启动选项**：`show <mode>` 打印的 `%command%` 一行，粘到 Steam 库 → 右键游戏 → 属性 → 通用 → 启动选项。这种方式由 Steam 启动，天然带 `SteamAppId`、Steam 覆盖层与 Steam Input；但**不会自动收集报告**，需要手动去日志目录找。
-- **脚本直跑**：`run <mode>` 直接在终端启动，脚本额外设置 `SteamAppId=2868840 SteamGameId=2868840`，并在退出后自动归档。缺点是没有 Steam 覆盖层/Steam Input，日志里出现 `Cannot initialize Steam Input ... Falling back to standard input` / `Steamworks is not initialized` 属**预期**，不影响 perf 数据。
+- **脚本直跑**：`run <mode>` 直接在终端启动，脚本设置 `SteamAppId=2868840 SteamGameId=2868840`，并固定追加 `--force-steam=off`（与 `.run/单人.run.xml` 一致），退出后自动归档。因此日志里出现 `Steam initialization skipped (editor mode)`、`Cannot initialize Steam Input ... Falling back to standard input` 属**预期**，不影响 perf 数据。**不要去掉 `--force-steam=off`**：Steam 客户端未运行时，游戏会在启动处因 Steamworks 初始化失败（`k_ESteamAPIInitResult_NoSteamClient`）弹错并退出，mod 根本不加载，必然没有报告；Steam 客户端运行时，游戏会切到 `user://steam/<id>` profile，其 `perf_settings.json` 默认关闭、存档也与直跑所用 `default/<slot>` 不同，同样会「未找到报告」。
 
 无论哪种方式，实验期间都不要再叠加其他环境变量（例如同时设了 `MESA_VK_WSI_PRESENT_MODE` 又设 `vblank_mode`），否则不再是单变量对照。
 
@@ -172,6 +172,8 @@ unset BDS_PERF_GPU_TIMING
 | 现象 | 处理 |
 | --- | --- |
 | `未找到比启动时刻更新的 perf 报告` | 确认 BDS-Perf 已开启并重启过；确认 `--logs-dir` 指向正确的日志根目录；确认游戏是正常退出（不是被 kill）；`meta.txt` 已保留 |
+| 未找到报告，日志里有 `[BDS-Perf] 未启用` | 采样在 mod 初始化时就读开关、之后不再变：去 RitsuLib 设置 → BangDreamInSpire → 诊断 → 性能诊断 打开并**重启游戏**。注意直跑与 Steam 启动用的是不同 profile（`user://default/<slot>` vs `user://steam/<id>`），开关互不相通 |
+| 日志里有 `Steamworks initialization failed! ... k_ESteamAPIInitResult_NoSteamClient` / `Failed to initialize Steam!` | 启动参数缺 `--force-steam=off` 且 Steam 客户端没运行：游戏在启动处弹错退出，mod 未加载，必然无报告。跑脚本时不要去掉该参数 |
 | `jq` 缺失导致摘要为 `n/a` | 安装 `jq` 后重新解析归档 json：`jq '.frames | {p50_ms,p95_ms,p99_ms,spike_count}' <json>` |
 | `wayland` 模式起不来/闪退 | 当前会话需在 Wayland 下（`echo $WAYLAND_DISPLAY`）；部分 Godot/驱动组合不支持直连，改用 `baseline`/`fifo` 对照组，或试 `--game-dir` 指向的 `launch_vulkan.sh` 方式 |
 | `gamescope` 起不来 | 确认在图形会话内运行；`gamescope` 嵌套 Wayland 时可能需要额外参数（本脚本按 1920x1080@90 固定，与实验设置一致） |
