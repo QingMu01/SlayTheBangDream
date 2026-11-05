@@ -16,6 +16,12 @@ public partial class PerfFrameSampler : Node
     private const long StartupReportDelayUsec = 20_000_000;
     private const long SuspendedFrameUsec = 2_000_000;
 
+    /// <summary>
+    /// GPU 计时是否已成功启用（供报告 environment 段的 <c>gpu_timing_enabled</c> 使用）。
+    /// 默认关闭；只有设置环境变量 <c>BDS_PERF_GPU_TIMING=1</c> 且根视口测量开启成功时才为 <c>true</c>。
+    /// </summary>
+    internal static bool GpuTimingEnabled { get; private set; }
+
     private readonly int[] _frameUs = new int[FrameCapacity];
     private readonly int[] _medianBuffer = new int[MedianWindow];
     private readonly List<FrameSpike> _spikes = new(MaxSpikes);
@@ -51,6 +57,20 @@ public partial class PerfFrameSampler : Node
     private long _lastPostDrawUsec;
     private long _renderSubmitUs;
     private long _presentWaitUs;
+    private double _lastFrameSetupCpuMs;
+    private double _secondFrameSetupMsSum;
+    private int _secondFrameSetupSamples;
+    private double _refreshRateHz = 60.0;
+    private int _cachedViewportNodes;
+    private int _cachedCanvasGroupNodes;
+
+    // GPU 计时默认关闭（测量本身有开销）：只有 BDS_PERF_GPU_TIMING=1 时才初始化并逐帧读取。
+    private bool _gpuTimingEnabled;
+    private Rid _rootViewportRid;
+    private double _lastGpuMs;
+    private double _secondGpuMsSum;
+    private int _secondGpuSamples;
+    private double _secondGpuMsMax;
     private long _gcPauseTicksAtLastSecond;
     private int _gc2AtLastSecond;
     private long _totalFrames;
@@ -82,6 +102,10 @@ public partial class PerfFrameSampler : Node
         _textureMemAtLastSecond = ReadTextureMem();
         _gcPauseTicksAtLastSecond = GC.GetTotalPauseDuration().Ticks;
         _gc2AtLastSecond = GC.CollectionCount(2);
+        _refreshRateHz = ReadRefreshRateHz();
+
+        // GPU 计时默认关闭（见 SetupGpuTiming）；未启用时下面 _Process 里只多一次布尔判断。
+        SetupGpuTiming();
 
         try
         {
@@ -188,6 +212,33 @@ public partial class PerfFrameSampler : Node
         _renderSubmitUs = preDraw > 0 && postDraw >= preDraw ? postDraw - preDraw : 0;
         _presentWaitUs = postDraw > 0 && now >= postDraw ? now - postDraw : 0;
 
+        // 帧 setup 是 CPU 侧读数（单位 ms），任何平台都不需要开启测量即可读；GPU 时间则要显式开测量，
+        // 见下方 SetupGpuTiming / ReadGpuRenderTimeMs。这里每帧读一次用于本秒平均，长帧快照里再换算成 µs。
+        // 取不到（-1/NaN/异常）时按 0 处理，不污染平均。
+        _lastFrameSetupCpuMs = ReadFrameSetupCpuMs();
+        if (_lastFrameSetupCpuMs >= 0)
+        {
+            _secondFrameSetupMsSum += _lastFrameSetupCpuMs;
+            _secondFrameSetupSamples++;
+        }
+        else
+        {
+            _lastFrameSetupCpuMs = 0;
+        }
+
+        // GPU 计时默认关闭（测量本身有开销）：开启时每帧读一次根视口上一帧的 GPU 时间，
+        // 并累计当秒的平均/最大值；异常/负值/NaN 由读取函数统一归 0，不会抛进渲染循环。
+        if (_gpuTimingEnabled)
+        {
+            _lastGpuMs = ReadGpuRenderTimeMs(_rootViewportRid);
+            _secondGpuMsSum += _lastGpuMs;
+            _secondGpuSamples++;
+            if (_lastGpuMs > _secondGpuMsMax)
+            {
+                _secondGpuMsMax = _lastGpuMs;
+            }
+        }
+
         _histogram[Math.Min(usec / 1000L, 5000L)]++;
         _histogramFrames++;
 
@@ -239,7 +290,7 @@ public partial class PerfFrameSampler : Node
 
         if (usec >= _dynamicSpikeThresholdUs)
         {
-            CaptureSpike(usec);
+            CaptureSpike(usec, _lastFrameSetupCpuMs);
         }
 
         if (now - _secondStartUsec >= 1_000_000)
@@ -252,6 +303,21 @@ public partial class PerfFrameSampler : Node
 
     public override void _ExitTree()
     {
+        if (_gpuTimingEnabled)
+        {
+            try
+            {
+                RenderingServer.ViewportSetMeasureRenderTime(_rootViewportRid, false);
+            }
+            catch
+            {
+                // 视口可能已随场景销毁；关闭失败不影响退出流程。
+            }
+
+            _gpuTimingEnabled = false;
+            GpuTimingEnabled = false;
+        }
+
         try
         {
             GetTree().NodeAdded -= OnNodeAdded;
@@ -305,9 +371,11 @@ public partial class PerfFrameSampler : Node
         snapshot.WindowFrames = (int)Math.Min(int.MaxValue, _histogramFrames);
         if (_histogramFrames > 0)
         {
-            snapshot.P50Ms = HistogramPercentile(50) / 1000.0;
-            snapshot.P95Ms = HistogramPercentile(95) / 1000.0;
-            snapshot.P99Ms = HistogramPercentile(99) / 1000.0;
+            // HistogramPercentile 返回的是直方图桶号，而桶号本身就是「毫秒」（见 _Process 里的 usec/1000），
+            // 不能再除以 1000（旧版这行把 p50/p95/p99 缩小了 1000 倍）。
+            snapshot.P50Ms = HistogramPercentile(50);
+            snapshot.P95Ms = HistogramPercentile(95);
+            snapshot.P99Ms = HistogramPercentile(99);
         }
 
         snapshot.Spikes = new List<FrameSpike>(_spikes);
@@ -352,7 +420,7 @@ public partial class PerfFrameSampler : Node
         _contextLoading = PerfTimeline.ActivePreload ?? "";
     }
 
-    private void CaptureSpike(long usec)
+    private void CaptureSpike(long usec, double frameSetupCpuMs)
     {
         _spikeTotal++;
         double ms = usec / 1000.0;
@@ -405,6 +473,12 @@ public partial class PerfFrameSampler : Node
             ManagedBytes = managedBytes,
             RenderSubmitUs = _renderSubmitUs,
             PresentWaitUs = _presentWaitUs,
+            FrameSetupCpuUs = (long)Math.Round(Math.Max(0, frameSetupCpuMs) * 1000.0),
+            PresentWaitedPeriods = PresentPeriods(_presentWaitUs, _refreshRateHz),
+            GpuRenderTimeMs = _lastGpuMs,
+            GpuPeriods = GpuPeriods(_lastGpuMs, _refreshRateHz),
+            ViewportNodes = _cachedViewportNodes,
+            CanvasGroupNodes = _cachedCanvasGroupNodes,
             Gc2Delta = Math.Max(0, GC.CollectionCount(2) - _gc2AtLastSecond),
             GcPauseMs = Math.Max(0, (GC.GetTotalPauseDuration().Ticks - _gcPauseTicksAtLastSecond)
                                     / (double)TimeSpan.TicksPerMillisecond),
@@ -467,6 +541,20 @@ public partial class PerfFrameSampler : Node
             // 忽略。
         }
 
+        // 场景树遍历放在 1Hz 聚合里（不做逐帧成本）：SubViewport/CanvasGroup/WorldEnvironment 的数量
+        // 能解释「同样帧数更贵」的渲染路径差异，也用于长帧快照引用上一秒的缓存值。
+        CountSceneNodes(out int viewportNodes, out int canvasGroupNodes, out int worldEnvironmentNodes);
+        _cachedViewportNodes = viewportNodes;
+        _cachedCanvasGroupNodes = canvasGroupNodes;
+        _refreshRateHz = ReadRefreshRateHz();
+
+        double frameSetupCpuMsAvg = _secondFrameSetupSamples == 0
+            ? 0
+            : _secondFrameSetupMsSum / _secondFrameSetupSamples;
+
+        // GPU 计时未启用时采样数为 0，平均值/最大值都保持 0，与 task-1 版本的行为一致。
+        double gpuRenderTimeMsAvg = _secondGpuSamples == 0 ? 0 : _secondGpuMsSum / _secondGpuSamples;
+
         var sample = new SecondSample
         {
             AtMs = PerfTimeline.ElapsedMs,
@@ -492,7 +580,13 @@ public partial class PerfFrameSampler : Node
             MicroStutters = _secondMicroStutters,
             GcPauseMs = Math.Max(0, (GC.GetTotalPauseDuration().Ticks - _gcPauseTicksAtLastSecond)
                                    / (double)TimeSpan.TicksPerMillisecond),
-            Gc2Delta = Math.Max(0, GC.CollectionCount(2) - _gc2AtLastSecond)
+            Gc2Delta = Math.Max(0, GC.CollectionCount(2) - _gc2AtLastSecond),
+            FrameSetupCpuMsAvg = frameSetupCpuMsAvg,
+            GpuRenderTimeMsAvg = gpuRenderTimeMsAvg,
+            GpuRenderTimeMsMax = _secondGpuMsMax,
+            ViewportNodes = viewportNodes,
+            CanvasGroupNodes = canvasGroupNodes,
+            WorldEnvironmentNodes = worldEnvironmentNodes
         };
 
         _seconds.Add(sample);
@@ -533,6 +627,11 @@ public partial class PerfFrameSampler : Node
         _secondMicroStutters = 0;
         _secondAllocBytes = 0;
         _secondNodesAdded = 0;
+        _secondFrameSetupMsSum = 0;
+        _secondFrameSetupSamples = 0;
+        _secondGpuMsSum = 0;
+        _secondGpuSamples = 0;
+        _secondGpuMsMax = 0;
 
         MaybeWriteAutoReport(now);
     }
@@ -656,6 +755,174 @@ public partial class PerfFrameSampler : Node
         }
     }
 
+    /// <summary>
+    /// 读取帧 setup 的 CPU 耗时（毫秒）。GodotSharp.xml：该 API 返回的是<b>毫秒</b>，
+    /// 与 viewport 无关、不需要开启 render time 测量；部分平台/驱动可能返回 -1 或非有限值，
+    /// 这里统一返回 -1 表示「无数据」，由调用方决定按 0 处理还是跳过平均。
+    /// </summary>
+    private static double ReadFrameSetupCpuMs()
+    {
+        try
+        {
+            double ms = RenderingServer.GetFrameSetupTimeCpu();
+            return double.IsFinite(ms) && ms >= 0 ? ms : -1;
+        }
+        catch
+        {
+            return -1;
+        }
+    }
+
+    /// <summary>
+    /// 当前屏幕刷新率（Hz）。GodotSharp.xml：屏幕无效或取不到时返回 -1.0；
+    /// 这里回落到 60Hz，保证 <see cref="PresentPeriods" /> 不会除零或给出荒谬周期数。
+    /// </summary>
+    private static double ReadRefreshRateHz()
+    {
+        try
+        {
+            double hz = DisplayServer.ScreenGetRefreshRate(DisplayServer.WindowGetCurrentScreen());
+            return double.IsFinite(hz) && hz >= 20 ? hz : 60.0;
+        }
+        catch
+        {
+            return 60.0;
+        }
+    }
+
+    /// <summary>
+    /// 把 Present 等待时长折算成「等了几次刷新周期」：≈1 是正常 vsync 等待，
+    /// 明显 &gt;2 说明卡在呈现/合成路径（GPU 队列、合成器、驱动），而不是本帧逻辑慢。
+    /// </summary>
+    private static double PresentPeriods(long presentWaitUs, double refreshRateHz)
+    {
+        if (presentWaitUs <= 0 || !double.IsFinite(refreshRateHz) || refreshRateHz <= 0)
+        {
+            return 0;
+        }
+
+        return presentWaitUs * refreshRateHz / 1_000_000.0;
+    }
+
+    /// <summary>
+    /// 只有显式设置环境变量 <c>BDS_PERF_GPU_TIMING=1</c> 才开启逐帧 GPU 测量——默认关闭，
+    /// 因为 <c>ViewportSetMeasureRenderTime</c> 的测量本身会引入开销/同步，不该影响玩家默认体验。
+    /// GodotSharp.xml：开启后 <c>ViewportGetMeasuredRenderTimeGpu</c> 返回「上一帧」的 GPU 时间（ms），
+    /// 未开启时恒为 0。这里只测根视口（其它 SubViewport 的 GPU 时间目前不汇总）。
+    /// </summary>
+    private void SetupGpuTiming()
+    {
+        try
+        {
+            if (!string.Equals(OS.GetEnvironment("BDS_PERF_GPU_TIMING"), "1", StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            Viewport? viewport = GetViewport();
+            if (viewport == null)
+            {
+                return;
+            }
+
+            _rootViewportRid = viewport.GetViewportRid();
+            RenderingServer.ViewportSetMeasureRenderTime(_rootViewportRid, true);
+            _gpuTimingEnabled = true;
+            GpuTimingEnabled = true;
+        }
+        catch
+        {
+            // 开启失败只意味着报告里 GPU 列恒为 0，不影响其他采样。
+            _gpuTimingEnabled = false;
+            GpuTimingEnabled = false;
+        }
+    }
+
+    /// <summary>
+    /// 读根视口上一帧的 GPU 渲染时间（ms）。GodotSharp.xml：需要先开启
+    /// <c>ViewportSetMeasureRenderTime</c>，否则返回 0；驱动/平台异常或未启用时统一返回 0，
+    /// 保证异常不会抛进渲染循环。
+    /// </summary>
+    private static double ReadGpuRenderTimeMs(Rid viewportRid)
+    {
+        try
+        {
+            double ms = RenderingServer.ViewportGetMeasuredRenderTimeGpu(viewportRid);
+            return double.IsFinite(ms) && ms >= 0 ? ms : 0;
+        }
+        catch
+        {
+            return 0;
+        }
+    }
+
+    /// <summary>
+    /// 把 GPU 时间折算成「刷新周期数」：&gt;1 表示本帧 GPU 工作量超过一个刷新窗口（GPU 真忙），
+    /// 与 Present 周期数对比可区分「GPU 忙」与「等合成器/驱动」。
+    /// </summary>
+    private static double GpuPeriods(double gpuMs, double refreshRateHz)
+    {
+        if (gpuMs <= 0 || !double.IsFinite(gpuMs) || !double.IsFinite(refreshRateHz) || refreshRateHz <= 0)
+        {
+            return 0;
+        }
+
+        return gpuMs * refreshRateHz / 1000.0;
+    }
+
+    /// <summary>
+    /// 1Hz 遍历一次场景树，统计 <c>SubViewport</c> / <c>CanvasGroup</c> / <c>WorldEnvironment</c> 的数量。
+    /// 这些节点会显著改变渲染路径成本（离屏渲染、离屏合成），但按帧遍历代价太高，所以只做每秒一次。
+    /// </summary>
+    private void CountSceneNodes(out int viewports, out int canvasGroups, out int worldEnvironments)
+    {
+        viewports = 0;
+        canvasGroups = 0;
+        worldEnvironments = 0;
+        try
+        {
+            Node? root = GetTree()?.Root;
+            if (root == null)
+            {
+                return;
+            }
+
+            CountSceneNodesRecursive(root, ref viewports, ref canvasGroups, ref worldEnvironments);
+        }
+        catch
+        {
+            // 遍历期间节点被释放等情况：保留已统计到的数字，不影响采样本身。
+        }
+    }
+
+    private static void CountSceneNodesRecursive(
+        Node node,
+        ref int viewports,
+        ref int canvasGroups,
+        ref int worldEnvironments)
+    {
+        if (node is SubViewport)
+        {
+            viewports++;
+        }
+
+        if (node is CanvasGroup)
+        {
+            canvasGroups++;
+        }
+
+        if (node is WorldEnvironment)
+        {
+            worldEnvironments++;
+        }
+
+        int childCount = node.GetChildCount();
+        for (int i = 0; i < childCount; i++)
+        {
+            CountSceneNodesRecursive(node.GetChild(i), ref viewports, ref canvasGroups, ref worldEnvironments);
+        }
+    }
+
     private void ResetSecondWindow(long now)
     {
         _secondStartUsec = now;
@@ -668,6 +935,11 @@ public partial class PerfFrameSampler : Node
         _secondMicroStutters = 0;
         _secondAllocBytes = 0;
         _secondNodesAdded = 0;
+        _secondFrameSetupMsSum = 0;
+        _secondFrameSetupSamples = 0;
+        _secondGpuMsSum = 0;
+        _secondGpuSamples = 0;
+        _secondGpuMsMax = 0;
     }
 
     private void MaybeWriteAutoReport(long now)

@@ -266,8 +266,8 @@ internal static class PerfReporter
             builder.AppendLine();
             builder.AppendLine("### 6.2 长帧 Top 20（含当时上下文）");
             builder.AppendLine();
-            builder.AppendLine("| T+ms | 时长(ms) | 阶段(前→后) | 场景(前→后) | 加载(前→后) | 节点(Δ) | DrawCall | pipelineΔ | 纹理Δ(MB) | 渲染(ms) | Present(ms) | GC暂停(ms) | GC0Δ | 分配(KB) | 最近日志 |");
-            builder.AppendLine("| ---: | ---: | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |");
+            builder.AppendLine("| T+ms | 时长(ms) | 阶段(前→后) | 场景(前→后) | 加载(前→后) | 节点(Δ) | DrawCall | pipelineΔ | 纹理Δ(MB) | 渲染(ms) | 帧setup(ms) | GPU(ms) | Present(ms) | Present(×周期) | GC暂停(ms) | GC0Δ | 分配(KB) | 最近日志 |");
+            builder.AppendLine("| ---: | ---: | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |");
             foreach (FrameSpike spike in frames.Spikes.Take(20))
             {
                 builder.AppendLine(
@@ -276,20 +276,24 @@ internal static class PerfReporter
                     $"{Escape(Transition(spike.LoadingBefore, spike.LoadingAfter))} | " +
                     $"{spike.Nodes}({Delta(spike.NodeDelta)}) | {spike.DrawCalls} | {spike.PipelineDelta} | " +
                     $"{spike.TextureMemDelta / 1048576.0:F1} | {spike.RenderSubmitUs / 1000.0:F1} | " +
-                    $"{spike.PresentWaitUs / 1000.0:F1} | {spike.GcPauseMs:F1} | {Delta(spike.Gc0Delta)} | " +
+                    $"{spike.FrameSetupCpuUs / 1000.0:F2} | {spike.GpuRenderTimeMs:F2} | {spike.PresentWaitUs / 1000.0:F1} | " +
+                    $"{spike.PresentWaitedPeriods:F1} | {spike.GcPauseMs:F1} | {Delta(spike.Gc0Delta)} | " +
                     $"{spike.AllocBytes / 1024.0:F1} | {Escape(spike.RecentLog)} |");
             }
 
             builder.AppendLine();
             builder.AppendLine("### 6.3 每秒采样（最近 30 秒）");
             builder.AppendLine();
-            builder.AppendLine("| T+ms | 帧数 | 平均(ms) | 最大(ms) | FPS | 阶段 | 节点 | orphan | DrawCall | pipelineΔ | 纹理(MB) | 分配(KB) | 新增节点 | >33/>50/>100 | 微卡 | GC暂停(ms) |");
-            builder.AppendLine("| ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: |");
+            builder.AppendLine("| T+ms | 帧数 | 平均(ms) | 最大(ms) | FPS | 帧setup(ms) | GPU avg/max(ms) | 阶段 | 节点 | 视口/CG/世界环境 | orphan | DrawCall | pipelineΔ | 纹理(MB) | 分配(KB) | 新增节点 | >33/>50/>100 | 微卡 | GC暂停(ms) |");
+            builder.AppendLine("| ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: |");
             foreach (SecondSample sample in frames.Seconds.TakeLast(30))
             {
                 builder.AppendLine(
                     $"| {sample.AtMs} | {sample.Frames} | {sample.AvgMs:F2} | {sample.MaxMs:F2} | {sample.Fps:F1} | " +
-                    $"{Escape(sample.Phase)} | {sample.Nodes} | {sample.OrphanNodes} | {sample.DrawCalls} | " +
+                    $"{sample.FrameSetupCpuMsAvg:F2} | " +
+                    $"{sample.GpuRenderTimeMsAvg:F2}/{sample.GpuRenderTimeMsMax:F2} | {Escape(sample.Phase)} | {sample.Nodes} | " +
+                    $"{sample.ViewportNodes}/{sample.CanvasGroupNodes}/{sample.WorldEnvironmentNodes} | " +
+                    $"{sample.OrphanNodes} | {sample.DrawCalls} | " +
                     $"{sample.PipelineDelta} | {sample.TextureMemBytes / 1048576.0:F1} | {sample.AllocBytes / 1024.0:F1} | {sample.NodesAdded} | " +
                     $"{sample.Over33}/{sample.Over50}/{sample.Over100} | {sample.MicroStutters} | {sample.GcPauseMs:F1} |");
             }
@@ -316,6 +320,18 @@ internal static class PerfReporter
         builder.AppendLine("## 7. 警告/错误");
         builder.AppendLine();
         builder.AppendLine($"- 警告 {timeline.WarnCount} 条，错误 {timeline.ErrorCount} 条。");
+        List<string> environmentWarnings = CollectEnvironmentWarnings(environment);
+        if (environmentWarnings.Count > 0)
+        {
+            builder.AppendLine();
+            builder.AppendLine("环境相关提示（不是游戏日志里的警告，而是平台/显示后端推断）：");
+            builder.AppendLine();
+            foreach (string warning in environmentWarnings)
+            {
+                builder.AppendLine($"- {Escape(warning)}");
+            }
+        }
+
         if (timeline.ModWarnings.Count > 0)
         {
             builder.AppendLine();
@@ -378,7 +394,8 @@ internal static class PerfReporter
             {
                 ["warning_count"] = timeline.WarnCount,
                 ["error_count"] = timeline.ErrorCount,
-                ["mod_samples"] = ToJsonArray(timeline.ModWarnings)
+                ["mod_samples"] = ToJsonArray(timeline.ModWarnings),
+                ["environment_warnings"] = ToJsonArray(CollectEnvironmentWarnings(environment))
             }
         };
 
@@ -467,6 +484,12 @@ internal static class PerfReporter
                     ["managed_bytes"] = spike.ManagedBytes,
                     ["render_submit_ms"] = Math.Round(spike.RenderSubmitUs / 1000.0, 2),
                     ["present_wait_ms"] = Math.Round(spike.PresentWaitUs / 1000.0, 2),
+                    ["frame_setup_cpu_us"] = spike.FrameSetupCpuUs,
+                    ["present_waited_periods"] = Math.Round(spike.PresentWaitedPeriods, 2),
+                    ["gpu_render_time_ms"] = Math.Round(spike.GpuRenderTimeMs, 2),
+                    ["gpu_periods"] = Math.Round(spike.GpuPeriods, 2),
+                    ["viewport_nodes"] = spike.ViewportNodes,
+                    ["canvas_group_nodes"] = spike.CanvasGroupNodes,
                     ["gc2_delta"] = spike.Gc2Delta,
                     ["gc_pause_ms"] = Math.Round(spike.GcPauseMs, 2),
                     ["recent_log"] = spike.RecentLog
@@ -500,7 +523,13 @@ internal static class PerfReporter
                     ["over_100ms"] = sample.Over100,
                     ["micro_stutters"] = sample.MicroStutters,
                     ["gc_pause_ms"] = Math.Round(sample.GcPauseMs, 2),
-                    ["gc2_delta"] = sample.Gc2Delta
+                    ["gc2_delta"] = sample.Gc2Delta,
+                    ["frame_setup_cpu_ms_avg"] = Math.Round(sample.FrameSetupCpuMsAvg, 3),
+                    ["gpu_render_time_ms_avg"] = Math.Round(sample.GpuRenderTimeMsAvg, 3),
+                    ["gpu_render_time_ms_max"] = Math.Round(sample.GpuRenderTimeMsMax, 3),
+                    ["viewport_nodes"] = sample.ViewportNodes,
+                    ["canvas_group_nodes"] = sample.CanvasGroupNodes,
+                    ["world_environment_nodes"] = sample.WorldEnvironmentNodes
                 });
             }
 
@@ -565,6 +594,11 @@ internal static class PerfReporter
         Try(() => environment["gpu"] = RenderingServer.GetVideoAdapterName());
         Try(() => environment["gpu_vendor"] = RenderingServer.GetVideoAdapterVendor());
         Try(() => environment["gpu_driver"] = string.Join(" | ", OS.GetVideoAdapterDriverInfo()));
+        Try(() => environment["display_server"] = DisplayServer.GetName());
+        Try(() => environment["session_type"] = EnvironmentVariable("XDG_SESSION_TYPE"));
+        Try(() => environment["wayland_display"] = EnvironmentVariable("WAYLAND_DISPLAY"));
+        Try(() => environment["xdg_current_desktop"] = EnvironmentVariable("XDG_CURRENT_DESKTOP"));
+        Try(() => environment["gpu_timing_enabled"] = PerfFrameSampler.GpuTimingEnabled ? "yes" : "no");
         Try(() => environment["window"] =
             $"{DisplayServer.WindowGetSize().X}x{DisplayServer.WindowGetSize().Y}");
         Try(() => environment["refresh_rate_hz"] = DisplayServer
@@ -575,6 +609,73 @@ internal static class PerfReporter
         Try(() => environment["static_memory_mb"] =
             (OS.GetStaticMemoryUsage() / 1048576.0).ToString("F1", CultureInfo.InvariantCulture));
         return environment;
+    }
+
+    /// <summary>读一个环境变量；未设置时返回 <c>unset</c>，便于报告中区分「没有」与「没读到」。</summary>
+    private static string EnvironmentVariable(string name)
+    {
+        try
+        {
+            string value = OS.GetEnvironment(name);
+            return string.IsNullOrEmpty(value) ? "unset" : value;
+        }
+        catch
+        {
+            return "unknown";
+        }
+    }
+
+    /// <summary>
+    /// 根据环境判断「XWayland」这类会改变呈现路径解释的场景，追加到报告的警告段。
+    /// 注意 Godot 的 <c>DisplayServer.GetName()</c> 返回的是 <c>X11</c>（首字母大写），比较必须忽略大小写。
+    /// </summary>
+    private static List<string> CollectEnvironmentWarnings(Dictionary<string, string> environment)
+    {
+        var warnings = new List<string>();
+        try
+        {
+            environment.TryGetValue("display_server", out string? displayServer);
+            environment.TryGetValue("session_type", out string? sessionType);
+            bool isX11 = string.Equals(displayServer, "x11", StringComparison.OrdinalIgnoreCase);
+            bool isWaylandSession = string.Equals(sessionType, "wayland", StringComparison.OrdinalIgnoreCase);
+            if (isX11 && isWaylandSession)
+            {
+                warnings.Add(
+                    "显示后端是 X11，但桌面会话是 Wayland（即通过 XWayland 运行）：出牌卡顿里的 Present 等待可能被合成器放大，" +
+                    "不能直接当作「GPU 忙」。建议用原生 Wayland（--display-driver wayland）或 gamescope 做一次对照；" +
+                    "参考 https://gitlab.gnome.org/GNOME/mutter/-/work_items/1636 与 " +
+                    "https://github.com/godotengine/godot/issues/80550");
+            }
+        }
+        catch
+        {
+            // 环境告警是附加信息，失败不影响报告其他部分。
+        }
+
+        // GPU 计时默认关闭：无论是否启用都给出说明，避免读者把「GPU 列全 0」误读成「GPU 没花时间」。
+        try
+        {
+            environment.TryGetValue("gpu_timing_enabled", out string? gpuTiming);
+            if (string.Equals(gpuTiming, "yes", StringComparison.OrdinalIgnoreCase))
+            {
+                warnings.Add(
+                    "GPU 计时已启用（BDS_PERF_GPU_TIMING=1）：长帧表的 `GPU(ms)` 与 1Hz 表的 `GPU avg/max(ms)` " +
+                    "来自 `RenderingServer.ViewportGetMeasuredRenderTimeGpu()`（上一帧、仅根视口、单位 ms）。" +
+                    "测量本身有开销，做帧时间 A/B 时建议关闭后再对比。");
+            }
+            else
+            {
+                warnings.Add(
+                    "GPU 计时默认关闭：启用环境变量 `BDS_PERF_GPU_TIMING=1` 可记录逐帧 GPU 时间；" +
+                    "未启用时 GPU 列为 0。要区分「GPU 忙」与「等合成器」可结合 `Present(×周期)` 与外部工具（MangoHud / gamescope --mangoapp）。");
+            }
+        }
+        catch
+        {
+            // GPU 计时提示是附加信息，失败不影响报告其他部分。
+        }
+
+        return warnings;
     }
 
     private static Dictionary<string, string> CollectSettings()
