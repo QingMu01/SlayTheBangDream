@@ -22,7 +22,7 @@ public class Resonance() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Buff.Create(2)
+        QuickVar.Buff.Create(1)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)

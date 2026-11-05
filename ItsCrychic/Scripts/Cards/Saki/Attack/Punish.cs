@@ -37,7 +37,6 @@ public class Punish() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity,
 
     protected override void OnUpgrade()
     {
-        DynamicVars.Damage.UpgradeValueBy(2m);
-        DynamicVars["Punish"].UpgradeValueBy(1);
+        DynamicVars["Punish"].UpgradeValueBy(2);
     }
 }

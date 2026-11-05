@@ -58,7 +58,7 @@ public sealed class PerformSlotTargetingPatches : IModPatches
     internal static bool IsManualSlotCard(NCardPlay cardPlay)
     {
         var card = GetPlayedCard(cardPlay);
-        return card != null && PerformTargetTypes.IsManualSlotTarget(card.TargetType);
+        return card != null && InsertSongRules.IsManualSlotCard(card);
     }
 
     /// <summary>本次出牌的卡牌是否正处于手动落位选择态。</summary>
@@ -102,7 +102,7 @@ internal sealed class BeginManualSlotSelectionPatch : IPatchMethod
     public static void Postfix(NHandCardHolder __instance)
     {
         var card = __instance.CardModel;
-        if (card == null || !PerformTargetTypes.IsManualSlotTarget(card.TargetType)) return;
+        if (card == null || !InsertSongRules.IsManualSlotCard(card)) return;
 
         var manager = card.Owner.AttachedData().PerformManager;
         manager.BeginManualSlotSelection(card);
@@ -156,7 +156,7 @@ internal sealed class ManualSlotTargetSelectionPatch : IPatchMethod
     public static bool Prefix(NMouseCardPlay __instance, TargetMode targetMode, ref Task __result)
     {
         var card = PerformSlotTargetingPatches.GetPlayedCard(__instance);
-        if (card == null || !PerformTargetTypes.IsManualSlotTarget(card.TargetType)) return true;
+        if (card == null || !InsertSongRules.IsManualSlotCard(card)) return true;
 
         var manager = card.Owner.AttachedData().PerformManager;
         manager.BeginManualSlotSelection(card);

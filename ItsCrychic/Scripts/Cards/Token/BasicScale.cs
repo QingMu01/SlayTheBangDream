@@ -20,7 +20,7 @@ public sealed class BasicScale() : MusicCardModel(CustomCost, CustomRarity, Cust
 {
     private const int CustomCost = 0;
     private const CardRarity CustomRarity = CardRarity.Token;
-    private const TargetType CustomTarget = TargetType.None;
+    private static readonly TargetType CustomTarget = PerformTargetTypes.RequestGroup;
 
     /// <summary>该 Token 注册在 <c>TokenCardPool</c>，无法由卡池反查来源角色；它只由祥子的牌生成。</summary>
     public override ISkinSupportCharacter? OriginCharacter => ModelDb.Character<TogawaSakiko>();

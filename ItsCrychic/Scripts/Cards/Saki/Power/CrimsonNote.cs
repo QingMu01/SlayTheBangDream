@@ -19,7 +19,7 @@ public class CrimsonNote() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Buff.Create(5)
+        QuickVar.Buff.Create(3)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
@@ -30,6 +30,6 @@ public class CrimsonNote() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
 
     protected override void OnUpgrade()
     {
-        QuickVar.Buff.GetVar(this).UpgradeValueBy(2);
+        QuickVar.Buff.GetVar(this).UpgradeValueBy(1);
     }
 }

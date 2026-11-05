@@ -1,3 +1,4 @@
+using BangDreamInSpire.Scripts.Enchantments;
 using BangDreamInSpire.Scripts.Utils;
 using ItsCrychic.Scripts.Cards.Token;
 using MegaCrit.Sts2.Core.Commands;
@@ -10,14 +11,14 @@ namespace ItsCrychic.Scripts.Cards.Saki.Skill;
 
 public class BandPractice() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget)
 {
-    private const int CustomCost = 1;
+    private const int CustomCost = 0;
     private const CardType CustomType = CardType.Skill;
     private const CardRarity CustomRarity = CardRarity.Common;
     private const TargetType CustomTarget = TargetType.None;
 
     protected override IEnumerable<IHoverTip> CardHoverTips =>
     [
-        HoverTipFactory.FromCard<MelodyFragments>(IsUpgraded)
+        HoverTipFactory.FromCard<MelodyFragments>(true)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
@@ -41,7 +42,13 @@ public class BandPractice() : AbstractSakikoCard(CustomCost, CustomType, CustomR
             if (transformResult is { success: true })
             {
                 var transformedCard = transformResult.Value.cardAdded;
-                if (IsUpgraded) CardCmd.Upgrade(transformedCard);
+
+                CardCmd.Upgrade(transformedCard);
+
+                if (IsUpgraded)
+                {
+                    CardCmd.Enchant<InsertSong>(transformedCard, 1m);
+                }
             }
         }
     }

@@ -1,67 +1,42 @@
 using BangDreamInSpire.Scripts.Extensions;
-using BangDreamInSpire.Scripts.Interfaces.GameHook;
 using BangDreamInSpire.Scripts.Utils;
-using BangDreamInSpire.Scripts.Utils.Infos;
+using ItsCrychic.Scripts.Power.Buff;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using MegaCrit.Sts2.Core.Models;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
-public class SoundWave() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget), IPerformHookListener
+public class SoundWave() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget)
 {
-    private const int CustomCost = 4;
+    private const int CustomCost = 0;
     private const CardType CustomType = CardType.Attack;
     private const CardRarity CustomRarity = CardRarity.Uncommon;
-    private const TargetType CustomTarget = TargetType.AllEnemies;
+    private const TargetType CustomTarget = TargetType.AnyEnemy;
 
-    private int _performDiscount;
-
-    protected override IEnumerable<CardKeyword> CardKeywords =>
-    [
-        BangDreamConst.PerformArea
-    ];
+    protected override IEnumerable<CardKeyword> CardKeywords => [BangDreamConst.MusicNote];
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Damage.Create(21),
+        QuickVar.Damage.Create(5)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        _performDiscount = 0;
-
-        ArgumentNullException.ThrowIfNull(CombatState);
+        ArgumentNullException.ThrowIfNull(play.Target);
 
         await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
             .FromCard(this, play)
-            .TargetingAllOpponents(CombatState)
+            .Targeting(play.Target)
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
+
+        await PowerCmd.Apply<SoundWavePower>(choiceContext, Owner.Creature, 1, Owner.Creature, this);
     }
 
     protected override void OnUpgrade()
     {
-        DynamicVars.Damage.UpgradeValueBy(4m);
-    }
-
-    public Task OnCardPerform(PlayerChoiceContext choiceContext, CardPerform perform)
-    {
-        _performDiscount++;
-        return Task.CompletedTask;
-    }
-
-    public override bool TryModifyEnergyCostInCombat(CardModel card, decimal originalCost, out decimal modifiedCost)
-    {
-        if (card != this)
-        {
-            modifiedCost = originalCost;
-            return false;
-        }
-
-        modifiedCost = Math.Max(0m, originalCost - _performDiscount);
-        return modifiedCost != originalCost;
+        DynamicVars.Damage.UpgradeValueBy(3m);
     }
 }

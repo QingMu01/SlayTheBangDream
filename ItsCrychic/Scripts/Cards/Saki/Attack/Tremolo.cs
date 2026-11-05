@@ -12,14 +12,14 @@ public class Tremolo() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity
 {
     private const int CustomCost = 0;
     private const CardType CustomType = CardType.Attack;
-    private const CardRarity CustomRarity = CardRarity.Uncommon;
+    private const CardRarity CustomRarity = CardRarity.Rare;
     private const TargetType CustomTarget = TargetType.AllEnemies;
 
     protected override bool HasEnergyCostX => true;
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        new DamageVar(5m, ValueProp.Move)
+        new DamageVar(4m, ValueProp.Move)
     ];
 
     private readonly List<Creature> _enemiesSnapshot = [];

@@ -14,7 +14,7 @@ public class InYourBlueEyesSakiko() : AbstractSakikoMusicCard(CustomRarity, Cust
     IPerformHookListener
 {
     private const CardRarity CustomRarity = CardRarity.Uncommon;
-    private static readonly TargetType CustomTarget = PerformTargetTypes.AnySlot;
+    private static readonly TargetType CustomTarget = PerformTargetTypes.RequestGroup;
 
     private CardModel? _boundCard;
 

@@ -12,7 +12,7 @@ namespace ItsCrychic.Scripts.Cards.Saki.Music;
 public class MasqueradeRhapsodyRequestSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
 {
     private const CardRarity CustomRarity = CardRarity.Uncommon;
-    private static readonly TargetType CustomTarget = PerformTargetTypes.AnySlot;
+    private static readonly TargetType CustomTarget = PerformTargetTypes.RequestGroup;
 
     protected override IEnumerable<IHoverTip> CardHoverTips =>
     [
@@ -21,7 +21,7 @@ public class MasqueradeRhapsodyRequestSakiko() : AbstractSakikoMusicCard(CustomR
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Buff.Create(2)
+        QuickVar.Buff.Create(1)
     ];
 
     public override async Task OnPerform(PlayerChoiceContext choiceContext, CardPerform perform)

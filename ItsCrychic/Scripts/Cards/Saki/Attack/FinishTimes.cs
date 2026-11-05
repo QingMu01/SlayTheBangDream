@@ -1,5 +1,4 @@
 using BangDreamInSpire.Scripts.Extensions;
-using BangDreamInSpire.Scripts.Interfaces.CardAugment;
 using BangDreamInSpire.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -27,21 +26,7 @@ public class FinishTimes() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
     {
         ArgumentNullException.ThrowIfNull(play.Target);
 
-        var performPile = BangDreamConst.PerformPile.GetPile(Owner);
-        var hasBonus = performPile.Cards.Count >= 3;
-        if (hasBonus)
-        {
-            var discarded = Owner.RunState.Rng.CombatCardSelection.NextItem(performPile.Cards);
-            if (discarded is IPerformCard performCard)
-            {
-                var location = performCard.StopPerformanceNextPile();
-                await CardPileCmd.Add(discarded, location.pileType, location.position);
-            }
-            else if (discarded != null)
-            {
-                await CardPileCmd.Add(discarded, PileType.Discard);
-            }
-        }
+        var hasBonus = BangDreamConst.PerformPile.GetPile(Owner).Cards.Count >= 3;
 
         await DamageCmd.Attack(DynamicVars.Damage.BaseValue * (hasBonus ? 2 : 1))
             .FromCard(this, play)

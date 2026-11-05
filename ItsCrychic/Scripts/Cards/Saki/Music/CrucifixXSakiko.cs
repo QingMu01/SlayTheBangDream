@@ -12,9 +12,7 @@ namespace ItsCrychic.Scripts.Cards.Saki.Music;
 public class CrucifixXSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
 {
     private const CardRarity CustomRarity = CardRarity.Uncommon;
-    private static readonly TargetType CustomTarget = PerformTargetTypes.AnySlot;
-
-    public override bool IsInstant => true;
+    private static readonly TargetType CustomTarget = PerformTargetTypes.RequestGroup;
 
     protected override IEnumerable<IHoverTip> CardHoverTips =>
     [
@@ -23,22 +21,18 @@ public class CrucifixXSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTar
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Buff.Create(10)
+        QuickVar.Buff.Create(1)
     ];
 
     public override async Task OnPerform(PlayerChoiceContext choiceContext, CardPerform perform)
     {
-        ArgumentNullException.ThrowIfNull(CombatState);
-
-        foreach (var target in CombatState.HittableEnemies)
-        {
-            await PowerCmd.Apply<CrucifixXPower>(choiceContext, target,
-                QuickVar.Buff.GetVar(this).BaseValue, Owner.Creature, this);
-        }
+        // 作用在拥有者自身：本回合内攻击伤害与音符伤害提高。
+        await PowerCmd.Apply<CrucifixXPower>(choiceContext, Owner.Creature,
+            QuickVar.Buff.GetVar(this).BaseValue, Owner.Creature, this);
     }
 
     protected override void OnUpgrade()
     {
-        QuickVar.Buff.GetVar(this).UpgradeValueBy(10);
+        QuickVar.Buff.GetVar(this).UpgradeValueBy(1);
     }
 }

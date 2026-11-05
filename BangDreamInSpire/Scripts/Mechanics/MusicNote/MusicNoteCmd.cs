@@ -43,25 +43,31 @@ public static class MusicNoteCmd
     }
 
     public static Task FromCard(CardModel source, int baseCount, int bounceCount = 0, decimal baseDamage = 1m,
-        Creature? target = null)
+        Creature? target = null, bool shouldImmediate = false)
     {
-        return Submit(source.Owner.Creature, baseCount, bounceCount, baseDamage, null, target, source);
+        return shouldImmediate
+            ? SubmitImmediate(source.Owner.Creature, baseCount, bounceCount, baseDamage, target, source)
+            : Submit(source.Owner.Creature, baseCount, bounceCount, baseDamage, null, target, source);
     }
 
     public static Task FromPower(PowerModel source, int baseCount, int bounceCount = 0, decimal baseDamage = 1m,
-        Creature? target = null)
+        Creature? target = null, bool shouldImmediate = false)
     {
-        return Submit(source.Owner, baseCount, bounceCount, baseDamage, null, target, source);
+        return shouldImmediate
+            ? SubmitImmediate(source.Owner, baseCount, bounceCount, baseDamage, target, source)
+            : Submit(source.Owner, baseCount, bounceCount, baseDamage, null, target, source);
     }
 
     public static Task FromRelic(RelicModel source, int baseCount, int bounceCount = 0, decimal baseDamage = 1m,
-        Creature? target = null)
+        Creature? target = null, bool shouldImmediate = false)
     {
-        return Submit(source.Owner.Creature, baseCount, bounceCount, baseDamage, null, target, source);
+        return shouldImmediate
+            ? SubmitImmediate(source.Owner.Creature, baseCount, bounceCount, baseDamage, target, source)
+            : Submit(source.Owner.Creature, baseCount, bounceCount, baseDamage, null, target, source);
     }
 
     public static Task CustomShot(Creature dealer, int baseCount, int bounceCount = 0, decimal baseDamage = 1m,
-        Creature? target = null)
+        Creature? target = null, bool shouldImmediate = false)
     {
         return Submit(dealer, baseCount, bounceCount, baseDamage, null, target);
     }
@@ -95,6 +101,33 @@ public static class MusicNoteCmd
         }
 
         return Execute(dealer, payload, visualDealer, target, source);
+    }
+
+    /// <summary>
+    /// 不经动作队列、直接在调用方的同步上下文内发射，并等待整批结算完成。
+    /// 仅可用于所有端都会以相同顺序执行的上下文（hook / 同步 Action 内部）。
+    /// </summary>
+    private static async Task SubmitImmediate(Creature dealer, int count, int bounceCount, decimal baseDamage,
+        Creature? target, AbstractModel? source)
+    {
+        ArgumentNullException.ThrowIfNull(dealer);
+
+        var combatState = dealer.CombatState;
+        if (combatState == null || dealer.Player?.RunState == null)
+            return;
+
+        var payload = new MusicNoteRequestPayload(
+            dealer.CombatId,
+            count,
+            bounceCount,
+            baseDamage,
+            target?.CombatId,
+            source is CardModel sourceCard ? NetCombatCard.FromModel(sourceCard).CombatCardIndex : null,
+            source?.Id.Category,
+            source?.Id.Entry);
+
+        await Execute(dealer, payload, visualDealer: null, target: target, source: source);
+        await CombatResolutionBarrier.WaitAsync(combatState);
     }
 
     private static Task ExecuteNetworkRequest(RitsuLibManagedNetActionContext<MusicNoteRequestPayload> context)

@@ -1,25 +1,22 @@
 using BangDreamInSpire.Scripts.Extensions;
-using BangDreamInSpire.Scripts.Utils;
-using ItsCrychic.Scripts.Power.Buff;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
+using MegaCrit.Sts2.Core.Models.Powers;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Attack;
 
 public class StringEmpowerment() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, CustomTarget)
 {
-    private const int CustomCost = 2;
+    private const int CustomCost = 1;
     private const CardType CustomType = CardType.Attack;
     private const CardRarity CustomRarity = CardRarity.Uncommon;
     private const TargetType CustomTarget = TargetType.AnyEnemy;
 
-    protected override IEnumerable<CardKeyword> CardKeywords => [BangDreamConst.Lingered];
-
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Damage.Create(15),
+        QuickVar.Damage.Create(10),
         QuickVar.Energy.Create(1)
     ];
 
@@ -33,12 +30,13 @@ public class StringEmpowerment() : AbstractSakikoCard(CustomCost, CustomType, Cu
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
 
-        await PowerCmd.Apply<LingeredReductionEnergyPower>(choiceContext, Owner.Creature,
+        // 下回合开始时获得能量。
+        await PowerCmd.Apply<EnergyNextTurnPower>(choiceContext, Owner.Creature,
             DynamicVars.Energy.IntValue, Owner.Creature, this);
     }
 
     protected override void OnUpgrade()
     {
-        DynamicVars.Damage.UpgradeValueBy(3);
+        DynamicVars.Damage.UpgradeValueBy(2m);
     }
 }

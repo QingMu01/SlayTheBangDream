@@ -1,3 +1,4 @@
+using BangDreamInSpire.Scripts.Extensions;
 using BangDreamInSpire.Scripts.Utils;
 using ItsCrychic.Scripts.Power.Buff;
 using MegaCrit.Sts2.Core.Commands;
@@ -22,15 +23,17 @@ public class AdAstra() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
+        QuickVar.Buff.Create(1)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        await PowerCmd.Apply<AdAstraPower>(choiceContext, Owner.Creature, 1, Owner.Creature, this);
+        await PowerCmd.Apply<AdAstraPower>(choiceContext, Owner.Creature,
+            QuickVar.Buff.GetVar(this).IntValue, Owner.Creature, this);
     }
 
     protected override void OnUpgrade()
     {
-        EnergyCost.UpgradeBy(-1);
+        QuickVar.Buff.GetVar(this).UpgradeValueBy(1);
     }
 }

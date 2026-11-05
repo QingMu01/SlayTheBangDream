@@ -51,7 +51,6 @@ public class PerformCapability : CardCapability, ICardDescriptionContributor, IC
                 ? HoverTipFactory.FromKeyword(BangDreamConst.Instant)
                 : HoverTipFactory.FromKeyword(BangDreamConst.Perform);
 
-            // 手动落位卡牌额外说明"出牌时要自己选落位"；只有会出现分组选择时才播报「指定分组」。
             switch (PerformTargetTypes.ResolveMode(card.TargetType))
             {
                 case PerformSlotSelectionMode.Slot:
@@ -67,7 +66,7 @@ public class PerformCapability : CardCapability, ICardDescriptionContributor, IC
     /// <summary>该卡是否会出现分组选择，即是否存在多个可达分组。</summary>
     private static bool HasMultipleGroups(CardModel card)
     {
-        if (card.IsMutable && card.Owner?.Character is IPerformableCharacter ownerPerformable)
+        if (card is { IsMutable: true, Owner.Character: IPerformableCharacter ownerPerformable })
         {
             return ownerPerformable.CreatePerformScheme().Groups.Count > 1;
         }
