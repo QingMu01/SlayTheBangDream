@@ -25,6 +25,12 @@ namespace BangDreamInSpire.Scripts.Nodes.Cards;
 /// 顶点 UV 直接映射到贴图，再用 <see cref="Polygon2D.Color" /> 染成和弦色；贴图未就位时
 /// 同一个多边形退化为纯色填充，形状与成品完全一致，可直接用来验收切分。
 /// </para>
+/// <para>
+/// 层级：角标挂在卡面的 <c>%OverlayContainer</c> 下，该节点在 <c>card.tscn</c> 里排在
+/// <c>TitleBanner</c> / <c>TitleLabel</c> **之前**——也就是角标会被标题横幅压住一角，这是**设计预期**：
+/// 角标只负责给卡面右上角的背景着色，不抢前景。不要用 <see cref="CanvasItem.ZIndex" /> 去抬高它
+/// （Godot 的 z_index 在同一 canvas 内全局排序，会把角标抬到面板 / HUD 之上），也不要重排画布顺序。
+/// </para>
 /// </summary>
 public partial class NChordCornerBadge : Control
 {
@@ -88,15 +94,26 @@ public partial class NChordCornerBadge : Control
     /// </summary>
     public static NChordCornerBadge Create(CardModel card)
     {
-        var badge = new NChordCornerBadge
-        {
-            Name = NodeName,
-            MouseFilter = MouseFilterEnum.Ignore,
-            ZIndex = 1 // 抬到标题横幅之上：能力覆盖层挂在 OverlayContainer 下，层级比 TitleBanner 低
-        };
+        var badge = CreateEmpty();
         badge.Refresh(card);
         return badge;
     }
+
+    /// <summary>
+    /// 按一个显式和弦掩码创建角标节点，用于不修改卡牌数据的结果预览（例如和弦设计面板的结果展示）。
+    /// </summary>
+    public static NChordCornerBadge Create(PerformChord chord)
+    {
+        var badge = CreateEmpty();
+        badge.Refresh(chord);
+        return badge;
+    }
+
+    private static NChordCornerBadge CreateEmpty() => new()
+    {
+        Name = NodeName,
+        MouseFilter = MouseFilterEnum.Ignore
+    };
 
     /// <summary>
     /// 按和弦数量返回每个和弦占用的多边形（卡面坐标系）。
@@ -136,15 +153,21 @@ public partial class NChordCornerBadge : Control
     /// <summary>按卡牌当前的和弦重建角标；无和弦时隐藏。</summary>
     public void Refresh(CardModel? card)
     {
+        var chord = card != null && card.TryGetCapability<ChordCapability>(out var capability)
+            ? capability.Chord
+            : PerformChord.None;
+        Refresh(chord);
+    }
+
+    /// <summary>按显式和弦掩码重建角标；无和弦时隐藏。不读写卡牌能力，可用于结果预览。</summary>
+    public void Refresh(PerformChord chord)
+    {
         foreach (var child in GetChildren())
         {
             RemoveChild(child);
             child.QueueFree();
         }
 
-        var chord = card != null && card.TryGetCapability<ChordCapability>(out var capability)
-            ? capability.Chord
-            : PerformChord.None;
         var groups = chord.EnumerateGroups().ToArray();
         if (groups.Length == 0)
         {

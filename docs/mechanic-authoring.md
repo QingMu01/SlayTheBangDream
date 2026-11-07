@@ -161,7 +161,7 @@ public sealed class MyMechanic : IBangDreamMechanic
 | 用途 | **只**用于卡牌打出后激活对应分组中音乐牌的奏响（角色规则经 `IPerformTriggerListener` 读取，如 `MutsumiSpecialRules`）：该分组内**全部**已落位卡牌一起奏响；多和弦卡牌会同时激活其全部和弦分组。 |
 | 不参与入组 | 音乐牌进入哪个分组由 `PerformTargetTypes.RequestGroup` 指定，未指定时落回 `IPerformScheme.DefaultGroup`（`PerformCapacityState.ResolveDefaultGroup()`，不读取和弦）。 |
 | 赋值 | `card.GetOrCreateCapability<ChordCapability>().SetChord(chord)`；传 `PerformChord.None` 会移除该能力。 |
-| 赋值时机 | 和弦在**卡牌奖励随机生成**时赋予，跟随该卡牌实例进入卡组；没有设计期/静态赋值入口。 |
+| 赋值时机 | 卡牌奖励生成时可随机赋予（跟随卡牌实例进入卡组）；另有**休息处选项「和弦设计」**（仅睦）让玩家手动给卡组里的一张牌指定和弦（见 §9.2）。 |
 | 读取 | `card.TryGetCapability<ChordCapability>(out var capability)`，没有该能力即无和弦。 |
 
 ```csharp
@@ -185,7 +185,24 @@ rewardCard.GetOrCreateCapability<ChordCapability>().SetChord(randomChord);
 | 切分 | 所有切缝都是 `x + y = c` 的 **45° 斜线**，按**面积均分**：n 个和弦 = n 段等面积。1=整条 L；2=一条斜接缝正好落在拐角（c = -61，上臂/右臂各一段）；3=两刀（c = -96.67 / -25.33，中间段绕拐角）；4=三刀（c = -114.5 / -61 / -7.5，上臂两段 + 右臂两段）。实现见 `NChordCornerBadge.BuildSlots`。 |
 | 渲染 | 单张白色包角带贴图 `res://BangDreamInSpire/images/sceneui/chord_corner.png`（画布恰好 120×120，按 2× 导出），每段作为 `Polygon2D` 的多边形（顶点 UV 映射到贴图）并 `Color` 染色；贴图缺失时退化为纯色多边形（形状与成品一致，可直接验收切分）。`images/**` 不入库，新克隆缺图会自动走占位。 |
 | 配色 | `PerformChordColors` 是唯一来源：C `#7799CC`（祥子）、D `#FFDD88`（素世）、F `#77BBDD`（灯）、G `#7777AA`（立希）。`MutsumiPerformScheme.GetSlotColor`（演奏区四组槽位）与 `CrychicMemberEnum`（角色色）都引用这张表。 |
-| 层级 | 能力覆盖层挂在 `%OverlayContainer`（层级低于 `TitleBanner`），角标设 `ZIndex = 1` 才能压住标题横幅。 |
+| 层级 | 能力覆盖层挂在 `%OverlayContainer` 下，而该节点在 `card.tscn` 里排在 `TitleBanner`/`TitleLabel` **之前**——角标会被标题横幅压住一角，这是**设计预期**（角标只给卡面右上角背景着色，不抢前景，类似一层「贴在卡面上的色带」）。**不要**用 `ZIndex` 抬高它：Godot 的 z_index 在同一 canvas 内全局排序，会把角标抬到面板、HUD 等所有界面之上；也**不要**重排 `OverlayContainer` 的画布顺序（卡牌入场时父节点正处在 AddChild 构建阶段，同步 `MoveChild` 会被 Godot 拒绝并报 `Parent node is busy setting up children, move_child() failed`，结果只会让不同界面表现不一致）。 |
 | 调试 | 控制台 `chord CDF` / `chord 13` / `chord none`：给手牌设和弦并强制重建覆盖层，用于预览 1~4 个和弦的切分（`ChordConsoleCmd`）。 |
+
+### 9.2 和弦设计（休息处选项）
+
+睦的休息处多出「和弦设计」选项（`ChordDesignOption : ModRestSiteOptionTemplate`，由
+`MutsumiSpecialRules.TryModifyRestSiteOptions` 在 `player.Character is WakabaMutsumi` 时注入）。
+选择后打开自绘覆盖层面板 `NChordDesignScreen`（`BangDreamInSpire/Scripts/Nodes/Screens/`）：
+
+| 项 | 约定 |
+|---|---|
+| 布局 | 三行居中排布（场景 `BangDreamInSpire/scenes/screens/chord_design_screen.tscn`，代码只填内容）：顶部和弦筹码（C/D/F/G，**始终同一行，不拆行**）→ 中央箭头 → 卡组卡牌行（**一格一张牌、始终同一行**）→ 箭头 → 居中结果预览卡。点筹码时**整行水平平移**，让选中筹码对齐到中央箭头正上方（其余筹码按原顺序让位、不交换；取消选中后整行回正）；点卡牌同样**整行水平平移**，让那张牌对齐下方箭头并保持常驻行内，结果区同步显示它的预览与和弦。打开时默认 C 和弦 + 第一张牌，两者都停在中轴上。左右分别是原版 `NBackButton` / `NConfirmButton`（取消返回、确定应用）。卡牌带高 406px（y294–700），行内容再乘 `CardLayerScale = 0.9`（静止 0.8×0.9 = 0.72 倍、悬停 1.0×0.9 = 0.9 倍），余量按「悬停放大后不被 `clip_contents` 裁切」定；箭头在 274–310 / 748–784，三行在 1080 高内紧凑分布。 |
+| 结果 | `ChordDesignResult(CardIndex, Chord, Additive)`；面板返回后由选项在 `Player.Deck.Cards` 上 `GetOrCreateCapability<ChordCapability>().SetChord(...)`——**确定之前卡组模型完全不变**。面板内的卡牌只是 `NCard` 视图（`NodePool` 复用节点）；结果预览先隐掉卡面自带的能力角标，再把按「结果和弦」构建的角标挂到**预览卡的 `%OverlayContainer`**（继承卡的缩放/变换，和真实卡牌一样被标题横幅压住一角）。预览卡回池前与新建卡后都会 `RemoveStaleChordBadges` 清掉直挂的残留角标，避免旧角标随节点复用被带到别的卡上。 |
+| 收尾 | 确定后在 `DoLocalPostSelectVfx` 复用本体 `NCardUpgradeVfx`（与升级卡牌同一套表现）：屏幕中央放大展示（此时角标已是新和弦）→ 停留片刻 → `NCardFlyVfx` 飞入顶部卡组图标；选项 `AssetPaths` 追加 `NCardUpgradeVfx.AssetPaths` 以便预载，`DoLocalPostSelectVfx` 只等展示段结束（约 1.4–1.9s），飞行交给后场继续。 |
+| 增加 / 覆盖 | 结果右侧开关默认「覆盖」，`Additive=true` 时与现有和弦取并集。开关默认隐藏（`NChordDesignScreen.ModeToggleUnlocked = false`），留给后续事件遗物解锁。 |
+| 联机 | `OnSelect()` 在每个 peer 执行：本地玩家用 `ReserveChoiceId` + 面板结果 + `SyncLocalChoice(PlayerChoiceResult.FromIndexes([cardIndex, mask, additive]))`，其余 peer `WaitForRemoteChoice` 后以相同参数改卡（与 `ExtraPileCmd` 同款范式）。取消时同步空列表并 `return false`（选项保留）。 |
+| 滚动 | 本体滚动容器只有纵向，面板自绘 `NChordScrollbar`（横向轨道）表现「当前停在哪一格」：滚轮按格步进、拖条吸附到最近的牌、键盘/手柄焦点进入某张牌也会把整行带到它上面；滚动条滑块位置 = 选中牌在卡组里的序号比例，可视比例按 `1/牌数` 计算（内容不足一屏时隐藏）。 |
+| 接线 | 注入依赖玩家**拥有** `MutsumiSpecialRules`（`Hook.ModifyRestSiteOptions` 只遍历 `runState.IterateHookListeners` 里的已拥有模型）。该遗物已加 `[RegisterRelic(typeof(DeprecatedRelicPool))]`，两个睦皮肤 `skins/mutsumi/*.json` 的 `StartingRelics` 追加了 `ITS_CRYCHIC_RELIC_MUTSUMI_SPECIAL_RULES`（保留 `ITS_CRYCHIC_RELIC_SAKIKO_SPECIAL_RULES` 以复用音乐牌奖励逻辑）。 |
+| 素材 | 选项图标 `res://BangDreamInSpire/images/sceneui/music_draw.png`（`images/**` 不入库，缺图时图标缺失但不影响逻辑）。 |
 
 
