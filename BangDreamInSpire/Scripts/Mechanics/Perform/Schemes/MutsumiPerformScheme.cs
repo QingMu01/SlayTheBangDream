@@ -27,21 +27,13 @@ public sealed class MutsumiPerformScheme : IPerformScheme
         new(PerformChord.G, 1 + GroupCapacityLimit * 3, GroupCapacityLimit, 1)
     ];
 
+    /// <summary>和弦分组四角锚点，槽位配色统一取 <see cref="PerformChordColors" />。</summary>
     private static readonly Dictionary<PerformChord, PerformSlotCorner> GroupCorners = new()
     {
         [PerformChord.C] = PerformSlotCorner.TopLeft,
         [PerformChord.D] = PerformSlotCorner.BottomLeft,
         [PerformChord.F] = PerformSlotCorner.TopRight,
         [PerformChord.G] = PerformSlotCorner.BottomRight
-    };
-
-    /// <summary>和弦分组配色，与槽位所属和弦种类一一对应。</summary>
-    private static readonly Dictionary<PerformChord, Color> GroupColors = new()
-    {
-        [PerformChord.C] = new("#7799CC"),
-        [PerformChord.D] = new("#779977"),
-        [PerformChord.F] = new("#FFDD88"),
-        [PerformChord.G] = new("#FF8899")
     };
 
     /// <inheritdoc />
@@ -79,8 +71,8 @@ public sealed class MutsumiPerformScheme : IPerformScheme
     public Color GetSlotColor(int slotIndex, CardModel? card)
     {
         var descriptor = FindDescriptor(slotIndex);
-        return descriptor != null && GroupColors.TryGetValue(descriptor.Value.Chord, out var color)
-            ? color
+        return descriptor != null
+            ? PerformChordColors.ColorOf(descriptor.Value.Chord)
             : PerformSlotColors.Default;
     }
 
