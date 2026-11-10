@@ -23,18 +23,25 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1_script")
 
-[node name="Character" type="Sprite2D" parent="."]
+[node name="BottomLeftAnchor" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Character" type="Sprite2D" parent="BottomLeftAnchor"]
 unique_name_in_owner = true
 material = SubResource("ShaderMaterial_environment")
-position = Vector2(225, 855)
+position = Vector2(225, -225)
 scale = Vector2(0.55, 0.55)
 texture = ExtResource("3_ogha2")
 
-[node name="ClickArea" type="Control" parent="."]
+[node name="ClickArea" type="Control" parent="BottomLeftAnchor"]
 unique_name_in_owner = true
 anchors_preset = 0
 offset_left = -3.25
-offset_top = 626.75
+offset_top = -453.25
 offset_right = 453.25
-offset_bottom = 1083.25
+offset_bottom = 3.25
 mouse_filter = 1
