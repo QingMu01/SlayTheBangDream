@@ -8,6 +8,7 @@ using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Multiplayer.Game.Lobby;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
+using STS2RitsuLib.Scaffolding.Characters.Visuals;
 using STS2RitsuLib.Scaffolding.Godot;
 
 namespace BangDreamInSpire.Scripts.Nodes;
@@ -230,7 +231,17 @@ public partial class BangDreamSkinSelector : Control
 
     private void SetAnim(NCreatureVisuals visuals, string anim)
     {
-        visuals.SpineAnimation.SetAnimation(anim);
+        // SpineAnimation 是 null-safe 包装：静态纹理皮肤下 SetAnimation 会静默空转，
+        // 预览就一直停在第一帧。非 Spine 时改走 RitsuLib 的播放层（AnimatedSprite2D / AnimationPlayer）。
+        if (visuals.SpineAnimation.IsValid)
+        {
+            visuals.SpineAnimation.SetAnimation(anim);
+        }
+        else
+        {
+            ModCreatureVisualPlayback.TryPlayCue(visuals, null, anim, loop: true);
+        }
+
         visuals.Position = new Vector2(120, 200);
     }
 

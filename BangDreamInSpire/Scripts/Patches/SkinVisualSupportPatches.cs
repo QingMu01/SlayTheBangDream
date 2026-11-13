@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using BangDreamInSpire.Scripts.Cards;
 using BangDreamInSpire.Scripts.Interfaces.CardAugment;
 using BangDreamInSpire.Scripts.Interfaces.CharacterAugment;
@@ -9,6 +9,7 @@ using Godot;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Context;
 using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Entities.TreasureRelicPicking;
 using MegaCrit.Sts2.Core.Models;
@@ -36,7 +37,7 @@ public class SkinVisualSupportPatches : IModPatches
 {
     public static void AddTo(ModPatcher patcher)
     {
-        patcher.RegisterPatch<VisualPatch>();
+        patcher.RegisterPatch<CreatureVisualsPatch>();
         patcher.RegisterPatch<EnergyCounterPatch>();
         patcher.RegisterPatch<RestSiteScenePatch>();
         patcher.RegisterPatch<RestSiteAnimPatch>();
@@ -54,26 +55,50 @@ public class SkinVisualSupportPatches : IModPatches
     }
 }
 
-internal class VisualPatch : IPatchMethod
+internal class CreatureVisualsPatch : IPatchMethod
 {
-    public static string PatchId => "create_visual_by_skin_info";
+    public static string PatchId => "create_creature_visuals_by_skin_info";
 
     public static ModPatchTarget[] GetTargets()
     {
-        return [new ModPatchTarget(typeof(NCreature), nameof(NCreature.Create))];
+        return [new ModPatchTarget(typeof(Creature), nameof(Creature.CreateVisuals))];
     }
 
-    public static void Postfix(ref NCreature? __result)
+    /// <summary>
+    /// 把「按玩家取角色视觉」的唯一入口收敛到 <see cref="Creature.CreateVisuals" />。
+    /// <para>
+    /// 原先只补 <c>NCreature.Create</c>，而该路径之外还有直接调用方会绕过皮肤：
+    /// <c>NGameOverScreen</c> 在 <c>NCombatRoom.Instance == null</c>（战斗外死亡 / 战斗节点已释放）
+    /// 时会用 <c>player.Creature.CreateVisuals()</c> 重建角色视觉来播死亡动画。
+    /// 模组角色的 <c>AssetProfile</c> 为空，RitsuLib 会用 <c>ironclad</c> 占位补全路径，
+    /// 于是死亡动画会播在**铁甲**模型上。
+    /// </para>
+    /// <para>
+    /// <see cref="NCreature.Create" /> 内部同样是 <c>Visuals = entity.CreateVisuals()</c>，
+    /// 因此这里替换后无需再单独补 <c>NCreature.Create</c>（两处都补会重复实例化并泄漏一个节点）。
+    /// </para>
+    /// </summary>
+    public static void Postfix(Creature __instance, ref NCreatureVisuals? __result)
     {
-        if (__result?.Entity.Player?.Character is ISkinSupportCharacter)
+        // TestMode 下本体返回 null（不要在这里凭空造视觉），怪物没有 Player。
+        if (__result == null || __instance.Player is not { } player)
         {
-            var path = BangDreamConst.PlayerSkin.Get(__result.Entity.Player).GetSkin()?.SkinTemplate.MultiplayerVisual
-                .VisualScene;
-            if (path != null)
-            {
-                var visuals = RitsuGodotNodeFactories.CreateFromScenePath<NCreatureVisuals>(path);
-                Traverse.Create(__result).Property("Visuals").SetValue(visuals);
-            }
+            return;
+        }
+
+        var path = SkinManager.ResolvePlayerVisualScene(player);
+        if (path == null)
+        {
+            return;
+        }
+
+        var placeholder = __result;
+        __result = RitsuGodotNodeFactories.CreateFromScenePath<NCreatureVisuals>(path);
+
+        // 占位视觉从未入树，直接回收，避免每次创建角色都泄漏一个 creature visuals。
+        if (GodotObject.IsInstanceValid(placeholder))
+        {
+            placeholder.QueueFree();
         }
     }
 }
@@ -241,20 +266,35 @@ internal class FakeMerchantScenePatch : IPatchMethod
     {
         var players = ____players.ToList();
         players.Reverse();
-        var nodeContainer = ____characterContainer.GetChildren().OfType<NMerchantCharacter>().ToList();
-        for (var i = 0; i < players.Count; i++)
+
+        // 本体在 NFakeMerchant 里挂的是 NCreatureVisuals（不是 NMerchantCharacter，后者只用于
+        // NMerchantRoom.PlayerVisuals），且逐个 MoveChildSafely(..., 0)，因此容器顺序与 _players 相反。
+        // 这里若按 NMerchantCharacter 过滤会拿到空列表，模组角色下 nodeContainer[i] 直接越界。
+        var nodeContainer = ____characterContainer.GetChildren().OfType<NCreatureVisuals>().ToList();
+        var count = Math.Min(players.Count, nodeContainer.Count);
+        for (var i = 0; i < count; i++)
         {
             var currentPlayer = players[i];
-            var merchantCharacter = BangDreamMerchant.Create(currentPlayer);
-            if (merchantCharacter != null)
-            {
-                var currentNode = nodeContainer[i];
-                var index = currentNode.GetIndex();
-                ____characterContainer.AddChild(merchantCharacter);
-                ____characterContainer.MoveChild(merchantCharacter, index);
 
-                currentNode.QueueFree();
+            // 优先换成皮肤自带的商人场景；皮肤没配 MerchantScene 时退回皮肤的 creature 视觉，
+            // 否则该事件会把模组角色显示成本体的占位模型（铁甲）。
+            Node replacement = BangDreamMerchant.Create(currentPlayer);
+            if (replacement == null)
+            {
+                var visualScene = SkinManager.ResolvePlayerVisualScene(currentPlayer);
+                if (visualScene == null)
+                {
+                    continue;
+                }
+
+                replacement = RitsuGodotNodeFactories.CreateFromScenePath<NCreatureVisuals>(visualScene);
             }
+
+            var currentNode = nodeContainer[i];
+            var index = currentNode.GetIndex();
+            ____characterContainer.AddChild(replacement);
+            ____characterContainer.MoveChild(replacement, index);
+            currentNode.QueueFree();
         }
     }
 }
