@@ -1,9 +1,7 @@
-using System.Reflection;
 using BangDreamInSpire.Scripts.Interfaces.CharacterAugment;
 using BangDreamInSpire.Scripts.Nodes.Merchant;
 using BangDreamInSpire.Scripts.Utils;
 using Godot;
-using HarmonyLib;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Merchant;
 using MegaCrit.Sts2.Core.Entities.Players;
@@ -32,9 +30,6 @@ internal static class SakikoMerchantManager
         "res://BangDreamInSpire/scenes/merchant/merchant_sakiko_button.tscn";
 
     private const string NotOpenLocKey = "BANG_DREAM_IN_SPIRE_EXTRA_CARD_MERCHANT_NOT_OPEN";
-
-    private static readonly FieldInfo ColorlessCardEntriesField =
-        AccessTools.Field(typeof(MerchantInventory), "_colorlessCardEntries");
 
     public static void AttachToRoom(NMerchantRoom room)
     {
@@ -87,8 +82,19 @@ internal static class SakikoMerchantManager
         inventoryNode.GetNode<Label>("%NotOpenZone1Label").Text = notOpenText;
         inventoryNode.GetNode<Label>("%NotOpenZone4Label").Text = notOpenText;
 
-        var inventory = new MerchantInventory(player);
-        var colorlessEntries = PopulateColorlessEntries(inventory, player);
+        // 0.113 起 MerchantInventory 提供公开的全参构造，模组可以直接持有自己的无色牌条目列表，
+        // 不必再反射写入私有的 _colorlessCardEntries。构造函数保存的是列表引用，
+        // 因此先构造库存、再逐条 Populate 追加，与原先的时序等价。
+        var colorlessEntries = new List<MerchantCardEntry>();
+        var inventory = new MerchantInventory(
+            player,
+            characterCardEntries: [],
+            colorlessCardEntries: colorlessEntries,
+            relicEntries: [],
+            potionEntries: [],
+            cardRemovalEntry: null,
+            blitzEntries: []);
+        PopulateColorlessEntries(inventory, colorlessEntries, player);
         var musicEntries = new List<MusicCardMerchantEntry>();
         ExtraDeckRemovalMerchantEntry? removalEntry = null;
         if (supportsExtraCardPool)
@@ -137,20 +143,18 @@ internal static class SakikoMerchantManager
         return new MerchantBinding(inventoryNode, removalEntry != null);
     }
 
-    private static List<MerchantCardEntry> PopulateColorlessEntries(MerchantInventory inventory, Player player)
+    private static void PopulateColorlessEntries(MerchantInventory inventory, List<MerchantCardEntry> entries,
+        Player player)
     {
         var colorlessPool = ModelDb.CardPool<ColorlessCardPool>()
             .GetUnlockedCards(player.UnlockState, player.RunState.CardMultiplayerConstraint)
             .ToList();
-        var entries = (List<MerchantCardEntry>)ColorlessCardEntriesField.GetValue(inventory)!;
         foreach (var rarity in new[] { CardRarity.Uncommon, CardRarity.Rare })
         {
             var entry = new MerchantCardEntry(player, colorlessPool, rarity);
             entry.Populate(inventory);
             entries.Add(entry);
         }
-
-        return entries;
     }
 
     private static void BindSlots(NMerchantInventory inventoryNode, List<MusicCardMerchantEntry> musicEntries,

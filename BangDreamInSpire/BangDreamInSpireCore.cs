@@ -197,31 +197,43 @@ public static class BangDreamInSpireCore
         }
 
         var preload = RitsuLibFramework.CreatePatcher(BangDreamConst.ModId, "preload_assets");
-        preload.RegisterPatches<PreloadPatches>();
-        preload.PatchAll();
+        ApplyPatches(preload, p => p.RegisterPatches<PreloadPatches>());
 
         var submenuSupport = RitsuLibFramework.CreatePatcher(BangDreamConst.ModId, "character_selector_submenu");
-        submenuSupport.RegisterPatches<GroupableCharacterSelectorPatches>();
-        if (!submenuSupport.PatchAll())
-        {
-            throw new InvalidOperationException("character selector submenu patches failed.");
-        }
+        ApplyPatches(submenuSupport, p => p.RegisterPatches<GroupableCharacterSelectorPatches>());
 
         var skinSupport = RitsuLibFramework.CreatePatcher(BangDreamConst.ModId, "skin_support");
-        skinSupport.RegisterPatches<SkinVisualSupportPatches>();
-        skinSupport.RegisterPatches<SkinStartingContentPopulatePatches>();
-        if (!skinSupport.PatchAll())
+        ApplyPatches(skinSupport, p =>
         {
-            throw new InvalidOperationException("skins support patches failed.");
-        }
+            p.RegisterPatches<SkinVisualSupportPatches>();
+            p.RegisterPatches<SkinStartingContentPopulatePatches>();
+        });
 
         var runHistoryPatcher = RitsuLibFramework.CreatePatcher(BangDreamConst.ModId, "run_history_extra_deck");
-        runHistoryPatcher.RegisterPatches<ExtraDeckRunHistoryPatches>();
-        runHistoryPatcher.PatchAll();
+        ApplyPatches(runHistoryPatcher, p => p.RegisterPatches<ExtraDeckRunHistoryPatches>());
 
         var commonPatcher = RitsuLibFramework.CreatePatcher(BangDreamConst.ModId, "common_patch");
-        commonPatcher.RegisterPatch<CardHoverTipPatch>();
-        commonPatcher.RegisterPatch<MainMenuEnvironmentCharacterPatch>();
-        commonPatcher.PatchAll();
+        ApplyPatches(commonPatcher, p =>
+        {
+            p.RegisterPatch<CardHoverTipPatch>();
+            p.RegisterPatch<MainMenuEnvironmentCharacterPatch>();
+        });
+    }
+
+    /// <summary>
+    /// 注册一个补丁集合并应用。
+    /// <para>
+    /// <c>PatchAll()</c> 只在**关键补丁**失败时返回 false（并回滚该集合内的补丁）；可选补丁失败仍返回 true，
+    /// 由 RitsuLib 自行记日志。因此这里的返回值必须检查——否则将来有人把某个补丁标成 <c>IsCritical</c> 后，
+    /// 它失配的表现会是「功能静默缺失」而不是启动期报错。
+    /// </para>
+    /// </summary>
+    private static void ApplyPatches(ModPatcher patcher, Action<ModPatcher> register)
+    {
+        register(patcher);
+        if (!patcher.PatchAll())
+        {
+            throw new InvalidOperationException($"patch set '{patcher.PatcherId}' failed to apply.");
+        }
     }
 }

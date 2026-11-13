@@ -10,8 +10,11 @@ public class CardHoverTipPatch : IPatchMethod
     private const float CardPadding = 4f;
 
     public static string PatchId => "batter_card_hover_tips_container_layout";
-    
-    public static bool IsCritical => true;
+
+    // 纯排版补丁：失败只该退化成「悬停提示用本体默认排版」，绝不能拖垮模组。
+    // 若声明为 critical，RitsuLib 会回滚同一 patcher 内的其他补丁（本 patcher 还有主菜单看板娘补丁），
+    // 且注册侧一旦按返回值 fail-fast，一个排版补丁失配就会让整个模组加载失败——代价与收益不成比例。
+    public static bool IsCritical => false;
 
     public static ModPatchTarget[] GetTargets()
     {
