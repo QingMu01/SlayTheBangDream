@@ -8,12 +8,20 @@ using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using STS2RitsuLib.Combat.SecondaryResources;
+using STS2RitsuLib.Interop.AutoRegistration;
+using STS2RitsuLib.Models;
 using STS2RitsuLib.Scaffolding.Godot.NodeAttachments;
 
 namespace BangDreamInSpire.Scripts.Mechanics.Lingered;
 
-public class LingeredOrbitManager : SingletonModel, IInCombatManager
+[RegisterSingleton]
+public class LingeredOrbitManager : HookedSingletonModel, IInCombatManager
 {
+    public LingeredOrbitManager() : base(HookType.None)
+    {
+    }
+
+
     private Player? _player;
     private CardModel? _previewCard;
     private bool _isSubscribed;

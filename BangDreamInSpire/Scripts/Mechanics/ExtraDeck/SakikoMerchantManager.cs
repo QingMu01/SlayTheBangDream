@@ -98,7 +98,7 @@ internal static class SakikoMerchantManager
             foreach (var rarity in new[] { CardRarity.Uncommon, CardRarity.Uncommon, CardRarity.Rare })
             {
                 var entry = new MusicCardMerchantEntry(player, cardPool, rarity, duplicateGuard);
-                entry.Populate();
+                entry.Populate(inventory);
                 musicEntries.Add(entry);
             }
 
@@ -145,8 +145,8 @@ internal static class SakikoMerchantManager
         var entries = (List<MerchantCardEntry>)ColorlessCardEntriesField.GetValue(inventory)!;
         foreach (var rarity in new[] { CardRarity.Uncommon, CardRarity.Rare })
         {
-            var entry = new MerchantCardEntry(player, inventory, colorlessPool, rarity);
-            entry.Populate();
+            var entry = new MerchantCardEntry(player, colorlessPool, rarity);
+            entry.Populate(inventory);
             entries.Add(entry);
         }
 

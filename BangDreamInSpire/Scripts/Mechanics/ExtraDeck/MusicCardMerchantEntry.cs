@@ -28,13 +28,13 @@ public sealed class MusicCardMerchantEntry(
 
     public override bool IsStocked => CreationResult != null;
 
-    public void Populate()
+    public void Populate(MerchantInventory? inventory = null)
     {
         var options = cardPool
             .GetUnlockedCards(_player.UnlockState, _player.RunState.CardMultiplayerConstraint)
             .Where(card => !duplicateGuard.Contains(card.CanonicalInstance))
             .ToList();
-        CreationResult = CardFactory.CreateForMerchant(_player, options, rarity);
+        CreationResult = CardFactory.CreateForMerchant(_player, options, [], rarity);
         duplicateGuard.Add(CreationResult.Card.CanonicalInstance);
         var results = new List<CardCreationResult> { CreationResult };
         Hook.ModifyMerchantCardCreationResults(_player.RunState, _player, results);
@@ -68,7 +68,7 @@ public sealed class MusicCardMerchantEntry(
         _cost = Mathf.RoundToInt(baseCost * PriceMultiplier * _player.PlayerRng.Shops.NextFloat(0.95f, 1.05f));
     }
 
-    protected override async Task<(bool, int)> OnTryPurchase(MerchantInventory? inventory, bool ignoreCost)
+    protected override async Task<(bool, int)> OnTryPurchaseInternal(MerchantInventory? inventory, bool ignoreCost)
     {
         var addResult = await CardPileCmd.Add(CreationResult!.Card, BangDreamConst.ExtraDeck);
         if (!addResult.success)
@@ -97,6 +97,6 @@ public sealed class MusicCardMerchantEntry(
 
     protected override void RestockAfterPurchase(MerchantInventory? inventory)
     {
-        Populate();
+        Populate(inventory);
     }
 }

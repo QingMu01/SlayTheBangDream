@@ -1,4 +1,4 @@
-﻿<Project>
+<Project>
     <PropertyGroup>
         <ImplicitUsings>true</ImplicitUsings>
         <LangVersion>13.0</LangVersion>
@@ -55,7 +55,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="STS2.RitsuLib" Version="0.6.10"/>
+        <PackageReference Include="STS2.RitsuLib" Version="0.6.11"/>
         <!--        <PackageReference Include="Krafs.Publicizer" Version="2.3.0" PrivateAssets="all"/>-->
     </ItemGroup>
 

@@ -38,13 +38,11 @@ public class BangDreamComputedVar : DynamicVar
         bool runGlobalHooks)
     {
         var computedVarsContext = new ComputedVarsContext(card, target, BaseValue);
-        PreviewValue = _previewValueFactory?.Invoke(computedVarsContext, previewMode, runGlobalHooks) ??
-                       _currentValueFactory(computedVarsContext);
-    }
-
-    protected override decimal GetBaseValueForIConvertible()
-    {
-        return Calculate();
+        var value = _previewValueFactory?.Invoke(computedVarsContext, previewMode, runGlobalHooks) ??
+                    _currentValueFactory(computedVarsContext);
+        // 0.113 起 DynamicVar 的 IConvertible 一律读 PreviewValue（ShownValue），
+        // 不再有 GetBaseValueForIConvertible 钩子，故把计算结果写进 PreviewValue 即可。
+        PreviewValue = value;
     }
 
     public override string ToString()

@@ -20,7 +20,7 @@ public sealed class MusicNoteMechanic : IBangDreamMechanic
 
     public IEnumerable<AbstractModel> InstantiatePlayerState(Player player)
     {
-        yield return ModelDb.Singleton<MusicNoteDamageTracker>().MutableClone();
+        yield return ModelDb.RunModel<MusicNoteDamageTracker>().MutableClone();
     }
 
     public void RegisterContent(BangDreamMechanicContext context)

@@ -28,6 +28,8 @@ using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.CommonUi;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 using MegaCrit.Sts2.Core.Runs;
+using STS2RitsuLib.Interop.AutoRegistration;
+using STS2RitsuLib.Models;
 using STS2RitsuLib.Networking.ManagedActions;
 using STS2RitsuLib.Scaffolding.Godot.NodeAttachments;
 using STS2RitsuLib.Utils;
@@ -39,8 +41,14 @@ namespace BangDreamInSpire.Scripts.Mechanics.Perform;
 /// 不决定"何时演奏"（由角色的 <see cref="IPerformTriggerListener" /> 规则发起）、
 /// 也不决定"有多少容量、如何摆放"（由角色的 <see cref="IPerformScheme" /> 提供）。
 /// </summary>
-public class PerformManager : SingletonModel, IInCombatManager
+[RegisterSingleton]
+public class PerformManager : HookedSingletonModel, IInCombatManager
 {
+    public PerformManager() : base(HookType.Combat)
+    {
+    }
+
+
     private enum PerformNetworkActionKind
     {
         Enter,

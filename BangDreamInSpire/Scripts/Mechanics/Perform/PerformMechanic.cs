@@ -32,7 +32,7 @@ public sealed class PerformMechanic : IBangDreamMechanic
 
     public IEnumerable<AbstractModel> InstantiatePlayerState(Player player)
     {
-        var manager = (PerformManager)ModelDb.Singleton<PerformManager>().MutableClone();
+        var manager = (PerformManager)ModelDb.RunModel<PerformManager>().MutableClone();
         manager.Player = player;
         yield return manager;
     }

@@ -29,7 +29,7 @@ public sealed class LingeredMechanic : IBangDreamMechanic
 
     public IEnumerable<AbstractModel> InstantiatePlayerState(Player player)
     {
-        var manager = (LingeredOrbitManager)ModelDb.Singleton<LingeredOrbitManager>().MutableClone();
+        var manager = (LingeredOrbitManager)ModelDb.RunModel<LingeredOrbitManager>().MutableClone();
         manager.Player = player;
         yield return manager;
     }

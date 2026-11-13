@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using BangDreamInSpire.Scripts.Character;
 using BangDreamInSpire.Scripts.Enums;
 using BangDreamInSpire.Scripts.Extensions;
@@ -286,10 +286,9 @@ internal class InterceptGroupButtonPatch : IPatchMethod
         return [new ModPatchTarget(typeof(NCharacterSelectScreen), nameof(NCharacterSelectScreen.SelectCharacter))];
     }
 
-    public static bool Prefix(NCharacterSelectScreen __instance, NCharacterSelectButton charSelectButton,
-        ref CharacterModel characterModel)
+    public static bool Prefix(NCharacterSelectScreen __instance, NCharacterSelectButton charSelectButton)
     {
-        return characterModel is not GroupCharacterPlaceholder;
+        return charSelectButton.Character is not GroupCharacterPlaceholder;
     }
 }
 
@@ -312,7 +311,7 @@ internal class AscensionPanelHostModePatch : IPatchMethod
         if (GroupableCharacterSelectorPatches.Instance != null)
         {
             GroupableCharacterSelectorPatches.Instance.Lobby = ____lobby;
-            GroupableCharacterSelectorPatches.Instance.AscensionPanel.Initialize(MultiplayerUiMode.Host);
+            GroupableCharacterSelectorPatches.Instance.AscensionPanel.Initialize(MultiplayerUiMode.Host, ____lobby.GameMode);
         }
     }
 }
@@ -335,7 +334,7 @@ internal class AscensionPanelMultiplayerModePatch : IPatchMethod
         if (GroupableCharacterSelectorPatches.Instance != null)
         {
             GroupableCharacterSelectorPatches.Instance.Lobby = ____lobby;
-            GroupableCharacterSelectorPatches.Instance.AscensionPanel.Initialize(MultiplayerUiMode.Client);
+            GroupableCharacterSelectorPatches.Instance.AscensionPanel.Initialize(MultiplayerUiMode.Client, ____lobby.GameMode);
         }
     }
 }
@@ -357,7 +356,7 @@ internal class AscensionPanelSingleplayerModePatch : IPatchMethod
         if (GroupableCharacterSelectorPatches.Instance != null)
         {
             GroupableCharacterSelectorPatches.Instance.Lobby = ____lobby;
-            GroupableCharacterSelectorPatches.Instance.AscensionPanel.Initialize(MultiplayerUiMode.Singleplayer);
+            GroupableCharacterSelectorPatches.Instance.AscensionPanel.Initialize(MultiplayerUiMode.Singleplayer, ____lobby.GameMode);
         }
     }
 }

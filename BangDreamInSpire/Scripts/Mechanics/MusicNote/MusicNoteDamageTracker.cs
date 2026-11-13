@@ -1,11 +1,19 @@
-﻿using MegaCrit.Sts2.Core.Entities.Creatures;
+using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Rooms;
+using STS2RitsuLib.Interop.AutoRegistration;
+using STS2RitsuLib.Models;
 
 namespace BangDreamInSpire.Scripts.Mechanics.MusicNote;
 
-public class MusicNoteDamageTracker : SingletonModel
+[RegisterSingleton]
+public class MusicNoteDamageTracker : HookedSingletonModel
 {
+    public MusicNoteDamageTracker() : base(HookType.Combat)
+    {
+    }
+
+
     public override bool ShouldReceiveCombatHooks => true;
 
     public readonly Dictionary<int, List<DamageResult>> CombatHistory = new();

@@ -95,11 +95,6 @@ public partial class NMusicCardSlot : NMerchantSlot
         _costLabel.Modulate = _entry.EnoughGold ? StsColors.cream : StsColors.red;
     }
 
-    protected override async Task OnTryPurchase(MerchantInventory? inventory)
-    {
-        await _entry.OnTryPurchaseWrapper(inventory);
-    }
-
     protected override void OnPreview()
     {
         ClearHoverTip();

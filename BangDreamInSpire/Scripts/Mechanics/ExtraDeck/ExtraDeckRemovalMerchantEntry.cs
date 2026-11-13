@@ -41,7 +41,7 @@ public sealed class ExtraDeckRemovalMerchantEntry : MerchantEntry
         Used = true;
     }
 
-    protected override async Task<(bool, int)> OnTryPurchase(MerchantInventory? inventory, bool ignoreCost)
+    protected override async Task<(bool, int)> OnTryPurchaseInternal(MerchantInventory? inventory, bool ignoreCost)
     {
         if (Used)
         {

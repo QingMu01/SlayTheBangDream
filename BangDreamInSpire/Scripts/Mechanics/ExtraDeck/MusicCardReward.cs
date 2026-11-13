@@ -129,7 +129,7 @@ public class MusicCardReward : ModCustomReward
                 }
                 else
                 {
-                    var selection = CardSelectCmd.Selector?.GetSelectedCardReward(_musicCards, cardRewardOption);
+                    var selection = RunManager.Instance.CardSelectorStack.GetSelector(Player)?.GetSelectedCardReward(_musicCards, cardRewardOption);
                     if (!selection.HasValue)
                     {
                         throw new InvalidOperationException("Card selector unset during test!");

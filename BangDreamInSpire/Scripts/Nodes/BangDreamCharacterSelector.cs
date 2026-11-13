@@ -235,7 +235,7 @@ public partial class BangDreamCharacterSelector : Control
 
         if (_delegate != null && _sourceButton != null)
         {
-            _delegate.SelectCharacter(_sourceButton, character);
+            _delegate.SelectCharacter(_sourceButton);
         }
 
         // 弹窗同步角色数据（皮肤 / 初始卡组 / 初始遗物），关闭时也保持最新。

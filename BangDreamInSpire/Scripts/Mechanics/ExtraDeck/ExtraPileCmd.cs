@@ -37,18 +37,20 @@ public static class ExtraPileCmd
             return cards;
         }
 
-        if (CardSelectCmd.Selector != null)
+        var selector = RunManager.Instance.CardSelectorStack.GetSelector(player);
+        if (selector != null)
         {
-            return await CardSelectCmd.Selector.GetSelectedCards(cards, prefs.MinSelect, prefs.MaxSelect);
+            return await selector.GetSelectedCards(cards, prefs.MinSelect, prefs.MaxSelect);
         }
 
         var choiceId = RunManager.Instance.PlayerChoiceSynchronizer.ReserveChoiceId(player);
         IEnumerable<CardModel> selected;
         if (LocalContext.IsMe(player) && RunManager.Instance.NetService.Type != NetGameType.Replay)
         {
-            if (CardSelectCmd.LocalSelector != null)
+            var localSelector = RunManager.Instance.CardSelectorStack.LocalSelector;
+            if (localSelector != null)
             {
-                selected = await CardSelectCmd.LocalSelector.GetSelectedCards(cards, prefs.MinSelect, prefs.MaxSelect);
+                selected = await localSelector.GetSelectedCards(cards, prefs.MinSelect, prefs.MaxSelect);
             }
             else
             {
@@ -118,9 +120,9 @@ public static class ExtraPileCmd
         {
             selectedCards = upgradableCards;
         }
-        else if (CardSelectCmd.Selector != null)
+        else if (RunManager.Instance.CardSelectorStack.GetSelector(player) is { } selector)
         {
-            selectedCards = await CardSelectCmd.Selector.GetSelectedCards(
+            selectedCards = await selector.GetSelectedCards(
                 upgradableCards, prefs.MinSelect, prefs.MaxSelect);
         }
         else
@@ -128,9 +130,10 @@ public static class ExtraPileCmd
             var choiceId = RunManager.Instance.PlayerChoiceSynchronizer.ReserveChoiceId(player);
             if (ShouldSelectLocalCard(player))
             {
-                if (CardSelectCmd.LocalSelector != null)
+                var localSelector = RunManager.Instance.CardSelectorStack.LocalSelector;
+                if (localSelector != null)
                 {
-                    selectedCards = await CardSelectCmd.LocalSelector.GetSelectedCards(
+                    selectedCards = await localSelector.GetSelectedCards(
                         upgradableCards, prefs.MinSelect, prefs.MaxSelect);
                 }
                 else

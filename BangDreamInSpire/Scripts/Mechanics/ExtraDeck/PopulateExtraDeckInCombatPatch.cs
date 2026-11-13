@@ -19,7 +19,7 @@ internal class PopulateExtraDeckInCombatPatch : IPatchMethod
         return [new ModPatchTarget(typeof(Player), nameof(Player.PopulateCombatState))];
     }
 
-    public static void Postfix(Player __instance, Rng rng, CombatState state)
+    public static void Postfix(Player __instance, Rng rng, ICombatState state)
     {
         var extraDeck = BangDreamConst.ExtraDeck.GetPile(__instance);
         var extraDraw = BangDreamConst.ExtraDraw.GetPile(__instance);

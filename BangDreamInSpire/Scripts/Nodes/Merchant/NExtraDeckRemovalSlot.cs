@@ -89,11 +89,6 @@ public partial class NExtraDeckRemovalSlot : NMerchantSlot
         ClearHoverTip();
     }
 
-    protected override async Task OnTryPurchase(MerchantInventory? inventory)
-    {
-        await _entry.OnTryPurchaseWrapper(inventory);
-    }
-
     protected override void CreateHoverTip()
     {
         LocString description = Description;

@@ -7,6 +7,7 @@ using MegaCrit.Sts2.Core.Entities.UI;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Nodes.CommonUi;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
+using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Saves;
 
 namespace BangDreamInSpire.Scripts.Nodes;
@@ -30,6 +31,8 @@ public partial class BangDreamAscensionPanel : Control
     public delegate void AscensionLevelChangedEventHandler();
 
     private int _maxAscension;
+
+    private GameMode _gameMode = GameMode.Standard;
 
     private BangDreamGoldArrowButton? _leftArrow;
     private BangDreamGoldArrowButton? _rightArrow;
@@ -88,9 +91,10 @@ public partial class BangDreamAscensionPanel : Control
         UpdateControllerButton();
     }
 
-    public void Initialize(MultiplayerUiMode mode)
+    public void Initialize(MultiplayerUiMode mode, GameMode gameMode = GameMode.Standard)
     {
         _mode = mode;
+        _gameMode = gameMode;
         switch (_mode)
         {
             case MultiplayerUiMode.Host:
@@ -233,8 +237,8 @@ public partial class BangDreamAscensionPanel : Control
 
         if (_info != null)
         {
-            var formattedText = AscensionHelper.GetTitle(Ascension).GetFormattedText();
-            var formattedText2 = AscensionHelper.GetDescription(Ascension).GetFormattedText();
+            var formattedText = AscensionHelper.GetTitle(Ascension, _gameMode).GetFormattedText();
+            var formattedText2 = AscensionHelper.GetDescription(Ascension, _gameMode).GetFormattedText();
             _info.SetTextAutoSize("[b]" + formattedText + "[/b]\n" + formattedText2);
         }
     }
