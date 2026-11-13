@@ -176,6 +176,15 @@ public static class ExtraPileCmd
         BangDreamInSpireCore.Logger.Info($"Player {player.NetId} chose extra deck cards [{cardIds}]");
     }
 
+    /// <summary>
+    /// 从额外抽牌堆抽牌。逐行镜像本体的 <c>CardPileCmd.DrawInternal</c>（抽牌堆来源是写死的
+    /// <c>PileType.Draw.GetPile(player)</c>，本体没有「从任意牌堆抽牌」的参数化入口）。
+    /// <para>
+    /// 0.113.0 复核结论：<c>CardPileCmd</c> 的抽牌入口仍然全部锁死 <c>PileType.Draw</c>，
+    /// 只新增了同为抽牌堆的 <c>AutoPlayFromDrawPile</c>。因此本方法不可删除、不可改调本体 API，
+    /// 且**本体每次改动抽牌流程时必须同步这里**（对照本体 <c>CardPileCmd.DrawInternal</c>）。
+    /// </para>
+    /// </summary>
     public static async Task<IEnumerable<CardModel>> Draw(PlayerChoiceContext choiceContext,
         decimal count,
         Player player,

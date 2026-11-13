@@ -31,6 +31,13 @@ namespace BangDreamInSpire.Scripts.Mechanics.Perform;
 /// </list>
 /// 注意：<c>BeginDrag</c>、<c>IsCardInPlayZone</c> 这类极小方法可能被 JIT 内联，补丁不保证在所有调用点生效；
 /// 任一钩子未生效时按原版出牌规则处理（不会再出现出牌区放宽）。
+/// <para>
+/// 0.113.0 复核结论（勿再重复调研）：本体仍未开放「群体/非生物目标」的卡牌出牌入口。
+/// <c>NTargetManager.StartTargeting</c> 依旧对非单目标类型抛 <c>InvalidOperationException</c>；
+/// <c>NMouseCardPlay.SingleCreatureTargeting</c> 依旧传 <c>nodeFilter: null</c> 并把非生物节点硬转后抛
+/// <c>ArgumentOutOfRangeException</c>。能力在（<c>AllowedToTargetNode</c> 对任意节点返回 true），但入口不传。
+/// 因此本文件的补丁与自建箭头必须保留；只有本体愿意把 <c>nodeFilter</c> 透传给卡牌路径时才可移除。
+/// </para>
 /// </remarks>
 public sealed class PerformSlotTargetingPatches : IModPatches
 {
