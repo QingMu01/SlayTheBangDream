@@ -1,4 +1,5 @@
 using BangDreamInSpire.Scripts.Extensions;
+using BangDreamInSpire.Scripts.Nodes.VFX;
 using BangDreamInSpire.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -36,7 +37,8 @@ public class Oscillation()
         await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
             .FromCard(this, play)
             .TargetingAllOpponents(CombatState)
-            .WithHitFx("vfx/vfx_attack_slash")
+            .WithAttackerFx(() => OscillationWaveVfx.Create(Owner.Creature))
+            .WithHitVfxNode(target => OscillationHitVfx.Create(target, Owner.Creature))
             .Execute(choiceContext);
 
         await SecondaryResourceCmd.Gain(Owner, BangDreamConst.LingeredResource,

@@ -53,6 +53,8 @@ public static class BangDreamPreloadManager
         // 以下资源原先只在首次使用时走主线程同步加载（BDS-Perf 报告里反复出现 Asset not cached），
         // 提前放进 run 资源集，把首次触碰的卡顿挪到房间预加载阶段。
         "res://BangDreamInSpire/scenes/vfx/strike_sakiko_vfx.tscn",
+        "res://BangDreamInSpire/scenes/vfx/oscillation_wave_vfx.tscn",
+        "res://BangDreamInSpire/scenes/vfx/oscillation_hit_vfx.tscn",
         "res://BangDreamInSpire/scenes/vfx/card_trail_sakiko.tscn",
         "res://BangDreamInSpire/images/sceneui/xz-energy_lingered_small.png",
         "res://BangDreamInSpire/images/sceneui/xz-energy_lingered.png",
