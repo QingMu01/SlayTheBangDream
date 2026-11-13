@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using BangDreamInSpire.Scripts.Character;
 using BangDreamInSpire.Scripts.Enums;
 using BangDreamInSpire.Scripts.Extensions;
@@ -12,7 +13,9 @@ using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Characters;
 using MegaCrit.Sts2.Core.Multiplayer.Game.Lobby;
+using MegaCrit.Sts2.Core.Nodes.Screens.Blitz;
 using MegaCrit.Sts2.Core.Nodes.Screens.CharacterSelect;
+using MegaCrit.Sts2.Core.Nodes.Screens.Dread;
 using STS2RitsuLib.Patching.Core;
 using STS2RitsuLib.Patching.Models;
 using STS2RitsuLib.Utils;
@@ -21,24 +24,30 @@ namespace BangDreamInSpire.Scripts.Patches;
 
 public class GroupableCharacterSelectorPatches : IModPatches
 {
-    internal static readonly FieldInfo CacheInfoPanel =
-        AccessTools.Field(typeof(NCharacterSelectScreen), "_infoPanel");
-
-    internal static readonly FieldInfo CacheAscensionPanel =
-        AccessTools.Field(typeof(NCharacterSelectScreen), "_ascensionPanel");
-
-    internal static readonly FieldInfo CacheBgContainer =
-        AccessTools.Field(typeof(NCharacterSelectScreen), "_bgContainer");
-
     internal static readonly AttachedState<NCharacterSelectButton, CharacterGroup?> GroupState = new(_ => null);
 
-    internal static BangDreamCharacterSelector? Instance;
+    /// <summary>
+    /// 每个角色选择屏各自的定制选择器。
+    /// <para>
+    /// **不能用单一静态字段**：<c>NMainMenuSubmenuStack._Ready</c> 会在启动时同时实例化
+    /// <see cref="NCharacterSelectScreen" /> 与 <see cref="NDreadScreen" />，两个屏的 <c>_Ready</c> 后置都会跑，
+    /// 单一静态会被后跑的那个覆盖，导致在某屏里操作到另一屏的节点。
+    /// </para>
+    /// </summary>
+    private static readonly ConditionalWeakTable<object, BangDreamCharacterSelector> Selectors = new();
+
+    internal static BangDreamCharacterSelector? GetSelector(object? screen) =>
+        screen != null && Selectors.TryGetValue(screen, out var selector) ? selector : null;
+
+    internal static void SetSelector(object screen, BangDreamCharacterSelector selector) =>
+        Selectors.AddOrUpdate(screen, selector);
 
     public static void AddTo(ModPatcher patcher)
     {
         patcher.RegisterPatch<HiddenUiPatch>();
         patcher.RegisterPatch<SetupGroupableCharacterSelectorPatch>();
         patcher.RegisterPatch<SetupGroupableCharacterSelectButtonPatch>();
+        patcher.RegisterPatch<SetupGroupableCharacterSelectButtonForModeScreensPatch>();
         patcher.RegisterPatch<InitSelectorPatch>();
         patcher.RegisterPatch<SelectGroupButtonIconPatch>();
         patcher.RegisterPatch<InterceptGroupButtonPatch>();
@@ -48,21 +57,183 @@ public class GroupableCharacterSelectorPatches : IModPatches
     }
 }
 
+/// <summary>
+/// 角色选择屏的共用逻辑。
+/// <para>
+/// 本体 0.113 把角色选择屏复制成了多份：标准 <see cref="NCharacterSelectScreen" />、
+/// <see cref="NBlitzScreen" />、<see cref="NDreadScreen" />（另有 <c>NCustomRunScreen</c>，本模组不支持）。
+/// 三者都继承 <c>NSubmenu</c> 并实现 <c>ICharacterSelectButtonDelegate</c>，
+/// <c>SelectCharacter</c> / <c>InitCharacterButtons</c> / <c>_Ready</c> 同名同签名，
+/// 但**私有字段集合不同**：
+/// </para>
+/// <list type="bullet">
+/// <item>Dread 没有 <c>_infoPanel</c> 与 <c>_ascensionPanel</c>；</item>
+/// <item>Blitz / Dread 没有 <c>_charSelectButtonScene</c>（改用 <c>SceneHelper</c> + 常量路径建按钮）。</item>
+/// </list>
+/// <para>
+/// 因此这里按**实例运行时类型**反射取字段，缺失即返回 null，让同一份补丁体服务三个屏幕，
+/// 避免为每个屏复制一遍补丁逻辑（否则三份私有方法名各改一次就要维护三处）。
+/// </para>
+/// </summary>
+internal static class CharacterSelectScreenSupport
+{
+    private static readonly Dictionary<Type, Dictionary<string, FieldInfo?>> FieldCache = new();
+
+    private static FieldInfo? FindField(object screen, string name)
+    {
+        var type = screen.GetType();
+        if (!FieldCache.TryGetValue(type, out var fields))
+        {
+            fields = new Dictionary<string, FieldInfo?>();
+            FieldCache[type] = fields;
+        }
+
+        if (fields.TryGetValue(name, out var cached))
+        {
+            return cached;
+        }
+
+        FieldInfo? field = null;
+        for (var current = type; current != null; current = current.BaseType)
+        {
+            field = current.GetField(name,
+                BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.DeclaredOnly);
+            if (field != null)
+            {
+                break;
+            }
+        }
+
+        fields[name] = field;
+        return field;
+    }
+
+    internal static Control? GetBgContainer(object screen) =>
+        FindField(screen, "_bgContainer")?.GetValue(screen) as Control;
+
+    internal static Control? GetInfoPanel(object screen) =>
+        FindField(screen, "_infoPanel")?.GetValue(screen) as Control;
+
+    internal static NAscensionPanel? GetAscensionPanel(object screen) =>
+        FindField(screen, "_ascensionPanel")?.GetValue(screen) as NAscensionPanel;
+
+    /// <summary>
+    /// 为每个角色分组建一个占位按钮并挂到按钮容器末尾，随后隐藏本体为 <see cref="IGroupableCharacter" /> 生成的按钮，
+    /// 再按可见按钮重排焦点环。
+    /// </summary>
+    /// <param name="buttonScene">
+    /// 本体的按钮场景。标准屏有 <c>_charSelectButtonScene</c> 字段，直接透传即可；
+    /// Blitz / Dread 没有该字段，传 null 时按本体的常量路径实例化。
+    /// </param>
+    internal static void SetupGroupButtons(Control container, ICharacterSelectButtonDelegate screenDelegate,
+        PackedScene? buttonScene)
+    {
+        var insertIndex = GetInsertIndex(container.GetChildren().OfType<NCharacterSelectButton>().ToList());
+        var alreadyGroupName = new HashSet<string>();
+
+        foreach (var groupableCharacter in ModelDb.AllCharacters.OfType<IGroupableCharacter>())
+        {
+            var buttonName = groupableCharacter.Group.GetGroupInfo().Name;
+            if (!alreadyGroupName.Add(buttonName))
+            {
+                continue;
+            }
+
+            var child = buttonScene != null
+                ? buttonScene.Instantiate<NCharacterSelectButton>(PackedScene.GenEditState.Disabled)
+                : SceneHelper.Instantiate<NCharacterSelectButton>("screens/char_select/char_select_button");
+
+            child.Name = buttonName + "_button";
+            container.AddChildSafely(child);
+            container.MoveChild(child, ++insertIndex);
+            child.Init(ModelDb.Character<GroupCharacterPlaceholder>(), screenDelegate);
+            GroupableCharacterSelectorPatches.GroupState.Set(child, groupableCharacter.Group);
+
+            BangDreamInSpireCore.Logger.Info($"Add Group Button: {buttonName}");
+
+            var groupSelectIcon = groupableCharacter.Group.GetGroupSelectIcon();
+            if (!string.IsNullOrEmpty(groupSelectIcon) && ResourceLoader.Exists(groupSelectIcon))
+            {
+                if (SelectGroupButtonIconPatch.IconField.GetValue(child) is TextureRect icon)
+                {
+                    icon.Texture = BangDreamPreloadManager.GetTexture2D(groupSelectIcon);
+                }
+            }
+        }
+
+        // 隐藏本体生成的按钮：
+        // - IGroupableCharacter：模组角色，已由上面的分组按钮代表；
+        // - GroupCharacterPlaceholder：分组占位角色。标准屏由 RitsuLib 的可见性策略在 InitCharacterButtons
+        //   阶段过滤掉（它只识别 NCharacterSelectScreen），而 Blitz / Dread 屏不在其识别范围内，
+        //   占位按钮会真的出现在界面上，故这里统一兜底隐藏。
+        foreach (var button in container.GetChildren().OfType<NCharacterSelectButton>())
+        {
+            if (button.Character is IGroupableCharacter or GroupCharacterPlaceholder)
+            {
+                button.Visible = false;
+            }
+        }
+
+        RewireFocus(container);
+    }
+
+    private static int GetInsertIndex(List<NCharacterSelectButton> buttons)
+    {
+        var lastCharacterIndex = -1;
+        for (var i = buttons.Count - 1; i >= 0; --i)
+        {
+            var button = buttons[i];
+            if (!button.IsLocked && SetupGroupableCharacterSelectButtonPatch.VanillaCharacters.Contains(button.Character))
+            {
+                lastCharacterIndex = i;
+                break;
+            }
+        }
+
+        return lastCharacterIndex;
+    }
+
+    /// <summary>按可见按钮重排四向焦点环（本体原逻辑的等价重放）。</summary>
+    internal static void RewireFocus(Control container)
+    {
+        var visible = container.GetChildren().OfType<NCharacterSelectButton>()
+            .Where(c => c.Visible)
+            .ToList();
+        if (visible.Count == 0)
+        {
+            return;
+        }
+
+        for (var index = 0; index < visible.Count; ++index)
+        {
+            var button = visible[index];
+            button.FocusNeighborTop = button.GetPath();
+            button.FocusNeighborBottom = button.GetPath();
+            button.FocusNeighborLeft = index <= 0 ? visible[^1].GetPath() : visible[index - 1].GetPath();
+            button.FocusNeighborRight = index < visible.Count - 1 ? visible[index + 1].GetPath() : visible[0].GetPath();
+        }
+    }
+}
+
 internal class HiddenUiPatch : IPatchMethod
 {
     public static string PatchId => "on_selected_hidden_vanilla_ui";
 
     public static ModPatchTarget[] GetTargets()
     {
-        return [new ModPatchTarget(typeof(NCharacterSelectScreen), nameof(NCharacterSelectScreen.SelectCharacter))];
+        return
+        [
+            new ModPatchTarget(typeof(NCharacterSelectScreen), nameof(NCharacterSelectScreen.SelectCharacter)),
+            new ModPatchTarget(typeof(NBlitzScreen), nameof(NBlitzScreen.SelectCharacter)),
+            new ModPatchTarget(typeof(NDreadScreen), nameof(NDreadScreen.SelectCharacter))
+        ];
     }
 
-    public static void Postfix(NCharacterSelectScreen __instance, NCharacterSelectButton charSelectButton)
+    public static void Postfix(object __instance, NCharacterSelectButton charSelectButton)
     {
-        var infoPanel = GroupableCharacterSelectorPatches.CacheInfoPanel.GetValue(__instance) as Control;
-        var ascensionPanel =
-            GroupableCharacterSelectorPatches.CacheAscensionPanel.GetValue(__instance) as NAscensionPanel;
-        var bgContainer = GroupableCharacterSelectorPatches.CacheBgContainer.GetValue(__instance) as Control;
+        var infoPanel = CharacterSelectScreenSupport.GetInfoPanel(__instance);
+        var ascensionPanel = CharacterSelectScreenSupport.GetAscensionPanel(__instance);
+        var bgContainer = CharacterSelectScreenSupport.GetBgContainer(__instance);
 
         if (infoPanel != null)
         {
@@ -78,9 +249,10 @@ internal class HiddenUiPatch : IPatchMethod
         if (bgContainer != null)
         {
             bgContainer.Visible = charSelectButton.Character is not GroupCharacterPlaceholder;
-            if (GroupableCharacterSelectorPatches.Instance != null)
+            var selector = GroupableCharacterSelectorPatches.GetSelector(__instance);
+            if (selector != null)
             {
-                GroupableCharacterSelectorPatches.Instance.Visible = !bgContainer.Visible;
+                selector.Visible = !bgContainer.Visible;
             }
         }
     }
@@ -92,24 +264,42 @@ internal class SetupGroupableCharacterSelectorPatch : IPatchMethod
 
     public static ModPatchTarget[] GetTargets()
     {
-        return [new ModPatchTarget(typeof(NCharacterSelectScreen), nameof(NCharacterSelectScreen._Ready))];
+        return
+        [
+            new ModPatchTarget(typeof(NCharacterSelectScreen), nameof(NCharacterSelectScreen._Ready)),
+            new ModPatchTarget(typeof(NBlitzScreen), nameof(NBlitzScreen._Ready)),
+            new ModPatchTarget(typeof(NDreadScreen), nameof(NDreadScreen._Ready))
+        ];
     }
 
-    public static void Postfix(NCharacterSelectScreen __instance, Control ____bgContainer)
+    public static void Postfix(object __instance)
     {
-        var customControl = new Control();
-        customControl.Position = new Vector2(____bgContainer.Position.X, ____bgContainer.Position.Y);
-        customControl.Size = new Vector2(____bgContainer.Size.X, ____bgContainer.Size.Y);
+        var screen = (Node)__instance;
+        var bgContainer = CharacterSelectScreenSupport.GetBgContainer(__instance);
 
-        __instance.AddChildSafely(customControl);
-        var originalIndex = __instance.GetChildren().IndexOf(____bgContainer);
-        __instance.MoveChild(customControl, originalIndex + 1);
+        var customControl = new Control();
+        if (bgContainer != null)
+        {
+            customControl.Position = new Vector2(bgContainer.Position.X, bgContainer.Position.Y);
+            customControl.Size = new Vector2(bgContainer.Size.X, bgContainer.Size.Y);
+        }
+
+        screen.AddChildSafely(customControl);
+        if (bgContainer != null)
+        {
+            var originalIndex = screen.GetChildren().IndexOf(bgContainer);
+            if (originalIndex >= 0)
+            {
+                screen.MoveChild(customControl, originalIndex + 1);
+            }
+        }
+
         var characterSelector = PreloadKey.CharacterSelector.GetScene().Instantiate<BangDreamCharacterSelector>();
         characterSelector.Name = "BangDreamSelector";
         characterSelector.Visible = false;
         customControl.AddChildSafely(characterSelector);
 
-        GroupableCharacterSelectorPatches.Instance = characterSelector;
+        GroupableCharacterSelectorPatches.SetSelector(__instance, characterSelector);
     }
 }
 
@@ -123,7 +313,7 @@ internal class SetupGroupableCharacterSelectButtonPatch : IPatchMethod
     }
 
     // 原版所有角色
-    private static readonly List<CharacterModel> VanillaCharacters =
+    internal static readonly List<CharacterModel> VanillaCharacters =
     [
         ModelDb.Character<Ironclad>(),
         ModelDb.Character<Silent>(),
@@ -132,84 +322,36 @@ internal class SetupGroupableCharacterSelectButtonPatch : IPatchMethod
         ModelDb.Character<Defect>()
     ];
 
-    private static readonly FieldInfo IconField = AccessTools.Field(typeof(NCharacterSelectButton), "_icon");
-
     [HarmonyPriority(1024)]
     public static void Postfix(NCharacterSelectScreen __instance,
         PackedScene ____charSelectButtonScene, Control ____charButtonContainer)
     {
-        SetupButtons(__instance, ____charSelectButtonScene, ____charButtonContainer);
+        CharacterSelectScreenSupport.SetupGroupButtons(____charButtonContainer, __instance, ____charSelectButtonScene);
+    }
+}
 
-        foreach (var button in ____charButtonContainer.GetChildren().OfType<NCharacterSelectButton>())
-        {
-            if (button.Character is IGroupableCharacter)
-            {
-                button.Visible = false;
-            }
-        }
+/// <summary>
+/// Blitz / Dread 的角色选择屏各有一份自己的 <c>InitCharacterButtons</c>（私有，且不通过
+/// <c>_charSelectButtonScene</c> 字段建按钮）。此处复用同一套分组逻辑，按钮场景按本体的常量路径实例化。
+/// </summary>
+internal class SetupGroupableCharacterSelectButtonForModeScreensPatch : IPatchMethod
+{
+    public static string PatchId => "on_init_mode_select_screen_setup_group_button";
 
-        var list = ____charButtonContainer.GetChildren().OfType<NCharacterSelectButton>()
-            .Where(c => c.Visible)
-            .ToList();
-
-        for (var index = 0; index < list.Count; ++index)
-        {
-            list[index].FocusNeighborTop = list[index].GetPath();
-            list[index].FocusNeighborBottom = list[index].GetPath();
-            var ncharacterSelectButton = list[index];
-            var path = index <= 0 ? list[^1].GetPath() : list[index - 1].GetPath();
-            ncharacterSelectButton.FocusNeighborLeft = path;
-            list[index].FocusNeighborRight = index < list.Count - 1 ? list[index + 1].GetPath() : list[0].GetPath();
-        }
+    public static ModPatchTarget[] GetTargets()
+    {
+        return
+        [
+            new ModPatchTarget(typeof(NBlitzScreen), "InitCharacterButtons"),
+            new ModPatchTarget(typeof(NDreadScreen), "InitCharacterButtons")
+        ];
     }
 
-    private static void SetupButtons(NCharacterSelectScreen screen, PackedScene buttonScene, Control container)
+    [HarmonyPriority(1024)]
+    public static void Postfix(object __instance, Control ____charButtonContainer)
     {
-        var insertIndex = GetInsertIndex(container.GetChildren().OfType<NCharacterSelectButton>().ToList());
-
-        var effectiveGroups = ModelDb.AllCharacters.OfType<IGroupableCharacter>();
-        var alreadyGroupName = new HashSet<string>();
-
-        foreach (var groupableCharacter in effectiveGroups)
-        {
-            var buttonName = groupableCharacter.Group.GetGroupInfo().Name;
-            if (alreadyGroupName.Add(buttonName))
-            {
-                var child = buttonScene.Instantiate<NCharacterSelectButton>();
-                child.Name = buttonName + "_button";
-                container.AddChildSafely(child);
-                container.MoveChild(child, ++insertIndex);
-                child.Init(ModelDb.Character<GroupCharacterPlaceholder>(), screen);
-                GroupableCharacterSelectorPatches.GroupState.Set(child, groupableCharacter.Group);
-
-                BangDreamInSpireCore.Logger.Info($"Add Group Button: {buttonName}");
-
-                var groupSelectIcon = groupableCharacter.Group.GetGroupSelectIcon();
-                if (!string.IsNullOrEmpty(groupSelectIcon) && ResourceLoader.Exists(groupSelectIcon))
-                {
-                    if (IconField.GetValue(child) is TextureRect icon)
-                    {
-                        icon.Texture = BangDreamPreloadManager.GetTexture2D(groupSelectIcon);
-                    }
-                }
-            }
-        }
-    }
-
-    private static int GetInsertIndex(List<NCharacterSelectButton> buttons)
-    {
-        var lastCharacterIndex = -1;
-        for (var i = buttons.Count - 1; i >= 0; --i)
-        {
-            var button = buttons[i];
-            if (!button.IsLocked && VanillaCharacters.Contains(button.Character))
-            {
-                lastCharacterIndex = i;
-                break;
-            }
-        }
-
-        return lastCharacterIndex;
+        CharacterSelectScreenSupport.SetupGroupButtons(____charButtonContainer,
+            (ICharacterSelectButtonDelegate)__instance, buttonScene: null);
     }
 }
 
@@ -222,15 +364,18 @@ internal class InitSelectorPatch : IPatchMethod
         return [new ModPatchTarget(typeof(NCharacterSelectButton), nameof(NCharacterSelectButton.Select))];
     }
 
+    private static bool IsSupportedScreen(ICharacterSelectButtonDelegate? candidate) =>
+        candidate is NCharacterSelectScreen or NBlitzScreen or NDreadScreen;
+
     public static void Prefix(NCharacterSelectButton __instance, bool ____isSelected,
         ICharacterSelectButtonDelegate ____delegate, CharacterModel ____character)
     {
-        if (!____isSelected && ____delegate is NCharacterSelectScreen && ____character is GroupCharacterPlaceholder)
+        if (!____isSelected && IsSupportedScreen(____delegate) && ____character is GroupCharacterPlaceholder)
         {
             var characterGroup = GroupableCharacterSelectorPatches.GroupState.GetOrCreate(__instance);
             if (characterGroup.HasValue)
             {
-                GroupableCharacterSelectorPatches.Instance?.Init(characterGroup.Value, __instance, ____delegate);
+                GroupableCharacterSelectorPatches.GetSelector(____delegate)?.Init(characterGroup.Value, __instance, ____delegate);
             }
             else
             {
@@ -243,6 +388,8 @@ internal class InitSelectorPatch : IPatchMethod
 internal class SelectGroupButtonIconPatch : IPatchMethod
 {
     public static string PatchId => "select_group_button_icon";
+
+    internal static readonly FieldInfo IconField = AccessTools.Field(typeof(NCharacterSelectButton), "_icon");
 
     public static ModPatchTarget[] GetTargets()
     {
@@ -283,10 +430,15 @@ internal class InterceptGroupButtonPatch : IPatchMethod
 
     public static ModPatchTarget[] GetTargets()
     {
-        return [new ModPatchTarget(typeof(NCharacterSelectScreen), nameof(NCharacterSelectScreen.SelectCharacter))];
+        return
+        [
+            new ModPatchTarget(typeof(NCharacterSelectScreen), nameof(NCharacterSelectScreen.SelectCharacter)),
+            new ModPatchTarget(typeof(NBlitzScreen), nameof(NBlitzScreen.SelectCharacter)),
+            new ModPatchTarget(typeof(NDreadScreen), nameof(NDreadScreen.SelectCharacter))
+        ];
     }
 
-    public static bool Prefix(NCharacterSelectScreen __instance, NCharacterSelectButton charSelectButton)
+    public static bool Prefix(NCharacterSelectButton charSelectButton)
     {
         return charSelectButton.Character is not GroupCharacterPlaceholder;
     }
@@ -296,22 +448,24 @@ internal class AscensionPanelHostModePatch : IPatchMethod
 {
     public static string PatchId => "bang_dream_style_ascension_panel_setup_host_mode";
 
+    // Dread 屏没有飞升面板，故只挂标准屏与 Blitz 屏。
     public static ModPatchTarget[] GetTargets()
     {
         return
         [
             new ModPatchTarget(typeof(NCharacterSelectScreen),
-                nameof(NCharacterSelectScreen.InitializeMultiplayerAsHost))
+                nameof(NCharacterSelectScreen.InitializeMultiplayerAsHost)),
+            new ModPatchTarget(typeof(NBlitzScreen), nameof(NBlitzScreen.InitializeMultiplayerAsHost))
         ];
     }
 
-
-    public static void Postfix(NCharacterSelectScreen __instance, StartRunLobby ____lobby)
+    public static void Postfix(object __instance, StartRunLobby ____lobby)
     {
-        if (GroupableCharacterSelectorPatches.Instance != null)
+        var selector = GroupableCharacterSelectorPatches.GetSelector(__instance);
+        if (selector != null)
         {
-            GroupableCharacterSelectorPatches.Instance.Lobby = ____lobby;
-            GroupableCharacterSelectorPatches.Instance.AscensionPanel.Initialize(MultiplayerUiMode.Host, ____lobby.GameMode);
+            selector.Lobby = ____lobby;
+            selector.AscensionPanel.Initialize(MultiplayerUiMode.Host, ____lobby.GameMode);
         }
     }
 }
@@ -325,16 +479,18 @@ internal class AscensionPanelMultiplayerModePatch : IPatchMethod
         return
         [
             new ModPatchTarget(typeof(NCharacterSelectScreen),
-                nameof(NCharacterSelectScreen.InitializeMultiplayerAsClient))
+                nameof(NCharacterSelectScreen.InitializeMultiplayerAsClient)),
+            new ModPatchTarget(typeof(NBlitzScreen), nameof(NBlitzScreen.InitializeMultiplayerAsClient))
         ];
     }
 
-    public static void Postfix(NCharacterSelectScreen __instance, StartRunLobby ____lobby)
+    public static void Postfix(object __instance, StartRunLobby ____lobby)
     {
-        if (GroupableCharacterSelectorPatches.Instance != null)
+        var selector = GroupableCharacterSelectorPatches.GetSelector(__instance);
+        if (selector != null)
         {
-            GroupableCharacterSelectorPatches.Instance.Lobby = ____lobby;
-            GroupableCharacterSelectorPatches.Instance.AscensionPanel.Initialize(MultiplayerUiMode.Client, ____lobby.GameMode);
+            selector.Lobby = ____lobby;
+            selector.AscensionPanel.Initialize(MultiplayerUiMode.Client, ____lobby.GameMode);
         }
     }
 }
@@ -347,16 +503,18 @@ internal class AscensionPanelSingleplayerModePatch : IPatchMethod
     {
         return
         [
-            new ModPatchTarget(typeof(NCharacterSelectScreen), nameof(NCharacterSelectScreen.InitializeSingleplayer))
+            new ModPatchTarget(typeof(NCharacterSelectScreen), nameof(NCharacterSelectScreen.InitializeSingleplayer)),
+            new ModPatchTarget(typeof(NBlitzScreen), nameof(NBlitzScreen.InitializeSingleplayer))
         ];
     }
 
-    public static void Postfix(NCharacterSelectScreen __instance, StartRunLobby ____lobby)
+    public static void Postfix(object __instance, StartRunLobby ____lobby)
     {
-        if (GroupableCharacterSelectorPatches.Instance != null)
+        var selector = GroupableCharacterSelectorPatches.GetSelector(__instance);
+        if (selector != null)
         {
-            GroupableCharacterSelectorPatches.Instance.Lobby = ____lobby;
-            GroupableCharacterSelectorPatches.Instance.AscensionPanel.Initialize(MultiplayerUiMode.Singleplayer, ____lobby.GameMode);
+            selector.Lobby = ____lobby;
+            selector.AscensionPanel.Initialize(MultiplayerUiMode.Singleplayer, ____lobby.GameMode);
         }
     }
 }
