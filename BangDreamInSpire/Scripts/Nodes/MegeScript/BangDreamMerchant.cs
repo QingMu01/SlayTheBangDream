@@ -41,20 +41,19 @@ public partial class BangDreamMerchant : NMerchantCharacter
 
     public static NMerchantCharacter? Create(Player player)
     {
-        if (player.Character is ISkinSupportCharacter)
+        // 走与战斗视觉同一个「按玩家」解析入口，避免「战斗里是默认皮肤、商人房里却是本体角色」的不一致。
+        var skinTemplate = SkinManager.ResolvePlayerSkin(player)?.SkinTemplate;
+        var path = skinTemplate?.MultiplayerVisual.MerchantScene;
+        var name = skinTemplate?.MultiplayerVisual.MerchantAnimName;
+        if (path != null)
         {
-            var skinInfo = BangDreamConst.PlayerSkin.Get(player).GetSkin()?.SkinTemplate;
-            var path = skinInfo?.MultiplayerVisual.MerchantScene;
-            var name = skinInfo?.MultiplayerVisual.MerchantAnimName;
-            if (path != null)
+            var merchant = BangDreamPreloadManager.GetScene(path).Instantiate<BangDreamMerchant>();
+            if (!string.IsNullOrEmpty(name))
             {
-                var merchant = BangDreamPreloadManager.GetScene(path).Instantiate<BangDreamMerchant>();
-                if (!string.IsNullOrEmpty(name))
-                {
-                    merchant._animName = name;
-                    BangDreamInSpireCore.Logger.Info($"Use Skin Support Merchant Replace Merchant Scene({path})");
-                    return merchant;
-                }
+                merchant._animName = name;
+                BangDreamInSpireCore.Logger.Info(
+                    $"Use Skin Support Merchant Replace Merchant Scene({path}) for player {player.NetId}");
+                return merchant;
             }
         }
 
