@@ -141,8 +141,6 @@ approved_at: ""
 - `BangDreamInSpire/scenes/vfx/<场景>.tscn` + 脚本
 - `images/vfx/<特效名>/`（**仅当校验判定为非本体素材时**）+ `tuning-log.md`（有调参时）
 - `.vfx_staging/out/<slug>.mp4` + `.gif`
-
-> **交付物不涉及 git**：不执行任何 git 操作（`add`/`commit`/`stash`/分支都不要碰），交付说明里也不附 git 状态、`diff` 或提交记录。版本控制由用户自己决定。
 ```
 
 ---

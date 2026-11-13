@@ -132,7 +132,7 @@ ffmpeg -y -loglevel error -framerate 60 -i frame%08d.png \
   `ffmpeg -i frame00000030.png -vf "crop=760:760:580:160" crop/c30.png`
 - 判断「某元素是否按时消失」时，**裁切目视比采样亮度更可靠**——
   中心区域往往同时有粒子/闪光，亮度采样会被污染，得出错误结论。
-- 录制输出目录建议放 `.vfx_staging/`（已在 `.gitignore` 内），不要污染仓库。
+- 录制输出目录建议放 `.vfx_staging/`，不要污染仓库。
 - 若命令在启动阶段就崩在 `RotatedFileLogger::rotate_file()` 或 `Failed to open 'user://logs/...'`
   （受限环境 / 沙箱写不了 Godot 的日志与用户目录），两条出路：加 `--log-file <工作区内的路径>`，
   或把 `XDG_CONFIG_HOME`、`XDG_DATA_HOME`、`XDG_CACHE_HOME` 指到可写目录（如 `$(mktemp -d)`）。
@@ -169,7 +169,7 @@ ffmpeg -y -loglevel error -framerate 60 -i frame%08d.png \
 6. 场景里引用资源用**引擎生成的 uid**（从 `.import` 的 `uid=` 行读），`path=` 同时保留作可读性兜底。
 7. **复制进工程之前先做本体归属校验**（见 4.1）：命中本体的素材**不复制**，改为直接引用本体 uid。
 
-`.import` 文件必须随 PNG 一起提交，否则他人拉取后 Godot 需要重新导入才能打开场景。
+`.import` 文件必须与 PNG 留在同一目录，否则场景引用会失效。
 
 ### 4.1 本体归属校验（复制素材前必做）
 
@@ -233,7 +233,7 @@ python .agents/skills/vfx-authoring/scripts/check_asset_origin.py <导出目录>
 > 口径与交叉校验见 `.agents/skills/vfx-authoring/references/selection-contract.md`。
 
 **五、`export_assets` 会自动创建目标目录。** `directory` 传绝对路径，不存在时自动建。
-导出到 `.vfx_staging/`（已在 `.gitignore` 内），不要在资产库内改名或删除。
+导出到 `.vfx_staging/`，不要在资产库内改名或删除。
 
 > **同名不覆盖**：已存在同名文件/文件夹的资产会报错，其余继续。重导出前先清掉旧目录，
 > 否则拿到的可能是上一次的产物。

@@ -161,7 +161,7 @@ alpha 状态：alpha_has_non_opaque ?
 
 ## 导出、本体归属校验与命名
 
-导出到仓库外的暂存目录（`.vfx_staging` 已在 `.gitignore` 内）；`export_assets` 的 `directory` 给绝对路径。
+导出到仓库外的暂存目录（`.vfx_staging`）；`export_assets` 的 `directory` 给绝对路径。
 
 **复制进工程之前必须跑本体归属校验**（结论与判定表见 `SKILL.md` S1 第 9 步）：
 

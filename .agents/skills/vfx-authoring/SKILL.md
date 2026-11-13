@@ -230,7 +230,6 @@ bash .agents/skills/vfx-authoring/scripts/stage.sh \
 2. 交付物：场景 + 脚本 +（**仅非本体素材**）贴图与 `.import` + `tuning-log.md`（有调参时）+ mp4/gif。
 3. **交付时内联 mp4 与 gif**，不要只给文件名；一句话总结实际观感与验收结论。
 4. 特效目录**不产出** `README.md` / `SOURCES.md`；来源凭据写在计划文件里。
-5. **全程不执行任何 git 操作**，交付说明里不附 git 状态/diff/提交记录。
 
 ## 12. 反模式
 
@@ -267,5 +266,4 @@ bash .agents/skills/vfx-authoring/scripts/stage.sh \
 - [ ] 全仓库有调用点，或明确声明"未接入"
 - [ ] 每个素材过 `check_asset_origin.py`（BODY 引用本体 / LOCAL 才复制）
 - [ ] mp4 + gif 已生成并**内联**在交付回复里
-- [ ] 未执行任何 git 操作
 - [ ] 通用坑已回写 `docs/vfx-authoring.md` §5（不写 per-effect README）
