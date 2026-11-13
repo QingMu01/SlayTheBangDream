@@ -13,7 +13,7 @@
 #   -s, --scene   场景 res:// 路径（必填）
 #   -n, --frames  帧数，默认 130
 #   -f, --fps     帧率，默认 60
-#   -o, --out     输出 mp4 路径，默认 .vfx_staging/out/<场景名>.mp4
+#   -o, --out     输出 mp4 路径，默认 .scratch/vfx/out/<场景名>.mp4
 #   -c, --crop    ffmpeg crop 参数，如 "760:760:580:160"
 #       --gif     额外合成 gif
 #       --godot   Godot 可执行文件路径；默认读 Directory.Build.props 的 <GodotExe>
@@ -66,7 +66,7 @@ fi
 
 SLUG="$(basename "$SCENE" .tscn)"
 STAMP="$(date +%Y%m%d-%H%M%S)"
-REC="$REPO/.vfx_staging/rec/$SLUG-$STAMP"
+REC="$REPO/.scratch/vfx/rec/$SLUG-$STAMP"
 mkdir -p "$REC"
 
 echo "[record] 工程   $PROJECT_DIR"
@@ -121,8 +121,8 @@ case "$ENC" in
     *)           VOPTS=() ;;
 esac
 
-mkdir -p "$REPO/.vfx_staging/out"
-[[ -n "$OUT" ]] || OUT="$REPO/.vfx_staging/out/$SLUG.mp4"
+mkdir -p "$REPO/.scratch/vfx/out"
+[[ -n "$OUT" ]] || OUT="$REPO/.scratch/vfx/out/$SLUG.mp4"
 
 ENCODE=(-y -loglevel error -framerate "$FPS" -i "$REC/frame%08d.png")
 if [[ -n "$CROP" ]]; then

@@ -6,13 +6,13 @@
   `scan_orphans.py`（判定）→ `cleanup_manifest.py`（分档 + 生成签字表）
   → **人工填 tsv** → `sign_off.py --dry-run`（核对）→ `sign_off.py --apply`（执行 + 记账）
 
-⚠️ 临时目录语义：扫描快照与 `cleanup_decisions.tsv` 默认落在 `.vfx_staging/`（体检目录本来就是
+⚠️ 临时目录语义：扫描快照与 `cleanup_decisions.tsv` 默认落在 `.scratch/cleanup/`（体检目录本来就是
 特效设计的临时目录，**随时可能被整体清理**）。因此必须在**同一次会话**内完成
 「扫描 → 签字 → dry-run → apply」；**长期留档靠 `docs/cleanup-log.md`**（本脚本 apply 后追加）。
 
 安全域硬校验（即使 `--force` 也拒删）：
   本体同步目录 `BangDreamInSpire/{addons,animations,fonts,images,materials,models,scenes,shaders,themes,src}`、
-  `.git` / `.godot` / `bin` / `obj` / `.vfx_staging`、以及**用户未跟踪 WIP**。
+  `.git` / `.godot` / `bin` / `obj` / `.scratch/cleanup`、以及**用户未跟踪 WIP**。
   出处：docs/cleanup-authoring.md 第 7 节安全域、references/keep-list.md 第 1 节。
 
 行为约定：
@@ -44,13 +44,13 @@ BODY_SYNC_DIRS = {
     "addons", "animations", "fonts", "images", "materials",
     "models", "scenes", "shaders", "themes", "src",
 }
-FORBIDDEN_PARTS = {".git", ".godot", "bin", "obj", ".vfx_staging"}
+FORBIDDEN_PARTS = {".git", ".godot", "bin", "obj", ".scratch"}
 SIDECAR_EXTS = (".import", ".uid")
 
 TSV_COLUMNS = ("id", "bucket", "path", "sidecar", "bytes", "reason", "action", "note")
 
 TEMPDIR_NOTICE = (
-    "扫描快照与 decisions 默认落在 .vfx_staging/（临时目录，随时可能被整体清理）；"
+    "扫描快照与 decisions 默认落在 .scratch/cleanup/（临时目录，随时可能被整体清理）；"
     "必须在同一次会话内完成「扫描 → 签字 → dry-run → apply」，长期留档靠 docs/cleanup-log.md。"
 )
 
@@ -300,7 +300,7 @@ def main(argv: list[str] | None = None) -> int:
     if new_file:
         lines.append("# 过时文件清理账本")
         lines.append("")
-        lines.append("本文件是清理执行的**长期留档**（`.vfx_staging/` 是临时目录，随时可能被清理）。")
+        lines.append("本文件是清理执行的**长期留档**（`.scratch/cleanup/` 是临时目录，随时可能被清理）。")
         lines.append("由 `.agents/skills/obsolete-file-cleanup/scripts/sign_off.py` 追加；**不自动 git commit**。")
         lines.append("")
     lines.append(f"## {local.strftime('%Y-%m-%d %H:%M:%S%z')} —— 删除 {len(deleted)} 项 / {mb(total_bytes)}")

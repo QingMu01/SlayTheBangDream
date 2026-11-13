@@ -70,7 +70,7 @@
 3. 读 `risks` / `required_review`：未知证据不算通过，标了待复核的必须目视。
 4. `render_contact_sheet`（≤256 个）**只用来粗筛淘汰**，分辨率不够下结论；缩小到少数候选后 `render_asset_preview`（`max_size` 到 2048）逐个看高清，**这步不能跳**。
 5. 图集/序列帧用 `get_asset_group_preview` 拿帧结构——**这是设 `hframes`/`vframes` 的唯一依据**。
-6. `export_assets` 到 `.vfx_staging/`（自动带 `_provenance.json`）；不在库内改名/删除。
+6. `export_assets` 到 `.scratch/vfx/`（自动带 `_provenance.json`）；不在库内改名/删除。
 7. **入库前跑本体归属校验**：`python .agents/skills/vfx-authoring/scripts/check_asset_origin.py <导出目录>`
    - `BODY`：**不复制**，场景里直接引本体 uid + path；
    - `LOCAL`：重命名为语义名，复制进 `images/vfx/<特效名>/`；
@@ -96,7 +96,7 @@
 | 代价 | 需要的素材数、放大倍数风险、实现复杂度 |
 
 - 三个方向必须有**真实差异**（例如：几何刚硬 vs 有机流动 vs 节奏驱动），不是同一方案的亮度差异。
-- 节奏/运动本身就是方案关键时（如"脉冲跟拍"），允许在 `.vfx_staging/` 搭**只含图层的原型场景**录 ≤2s mp4——正式资源仍然不碰。
+- 节奏/运动本身就是方案关键时（如"脉冲跟拍"），允许在 `.scratch/vfx/` 搭**只含图层的原型场景**录 ≤2s mp4——正式资源仍然不碰。
 - 提案图必须内联给用户看；文字只说"会看到什么"，不要罗列参数。
 
 ### 7.2 用户怎么回
@@ -137,7 +137,7 @@
 
 ## 9. S3 计划与契约块
 
-写 `<repo>/.vfx_staging/plans/<slug>.md`，模板见 [references/plan-template.md](references/plan-template.md)。
+写 `<repo>/.scratch/vfx/plans/<slug>.md`，模板见 [references/plan-template.md](references/plan-template.md)。
 
 **闸门只锁契约块**（`<!-- gate:begin -->` 与 `<!-- gate:end -->` 之间），四节：
 

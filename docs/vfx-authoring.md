@@ -114,7 +114,7 @@ GODOT=$(dotnet msbuild BangDreamInSpire/BangDreamInSpire.csproj -getProperty:God
 # 录成 PNG 序列（注意：--write-movie 与 --headless 不能同时用，headless 无渲染录不到画面）
 "$GODOT" \
   --path BangDreamInSpire \
-  --write-movie "$PWD/.vfx_staging/rec/frame.png" \
+  --write-movie "$PWD/.scratch/vfx/rec/frame.png" \
   --fixed-fps 60 --quit-after 90 \
   "res://BangDreamInSpire/scenes/vfx/<场景>.tscn"
 
@@ -132,7 +132,7 @@ ffmpeg -y -loglevel error -framerate 60 -i frame%08d.png \
   `ffmpeg -i frame00000030.png -vf "crop=760:760:580:160" crop/c30.png`
 - 判断「某元素是否按时消失」时，**裁切目视比采样亮度更可靠**——
   中心区域往往同时有粒子/闪光，亮度采样会被污染，得出错误结论。
-- 录制输出目录建议放 `.vfx_staging/`，不要污染仓库。
+- 录制输出目录建议放 `.scratch/vfx/`，不要污染仓库。
 - 若命令在启动阶段就崩在 `RotatedFileLogger::rotate_file()` 或 `Failed to open 'user://logs/...'`
   （受限环境 / 沙箱写不了 Godot 的日志与用户目录），两条出路：加 `--log-file <工作区内的路径>`，
   或把 `XDG_CONFIG_HOME`、`XDG_DATA_HOME`、`XDG_CACHE_HOME` 指到可写目录（如 `$(mktemp -d)`）。
@@ -163,7 +163,7 @@ ffmpeg -y -loglevel error -framerate 60 -i frame%08d.png \
    > `polaris://spec/selection.json`）——**不要凭记忆猜取值**。返回里重点看 `risks` 与
    > `required_review`（未知证据不会被当作通过），以及 `effective_constraints` 里候选池是否被截断。
 2. `get_asset_group_preview` 读取图集的切分参数（行列数、单帧尺寸）——**这是设置 `hframes`/`vframes` 的唯一依据**，不要目测。
-3. `export_assets` 导出到项目外的临时目录（如 `.vfx_staging`），**不要在资产库内改名**。每个资产的导出子目录里会附带 `_provenance.json`（uuid / 名称 / 标签 / 描述 / 逐文件 hash），这是溯源依据。
+3. `export_assets` 导出到项目外的临时目录（如 `.scratch/vfx`），**不要在资产库内改名**。每个资产的导出子目录里会附带 `_provenance.json`（uuid / 名称 / 标签 / 描述 / 逐文件 hash），这是溯源依据。
 4. 复制进 `BangDreamInSpire/BangDreamInSpire/images/vfx/<特效名>/` 并重命名为语义化文件名（`music_slash_main.png` 而非 `fx_301403_tex_002.png`）。资产库中的数字名对项目无意义，语义名才便于后续维护。
 5. 运行 `--headless --import` 让引擎生成 `.import` 与 uid，**不要手写 uid**。手写的 uid 不保证合法，且可能与全库冲突。
 6. 场景里引用资源用**引擎生成的 uid**（从 `.import` 的 `uid=` 行读），`path=` 同时保留作可读性兜底。
@@ -189,7 +189,7 @@ python .agents/skills/vfx-authoring/scripts/check_asset_origin.py <导出目录>
 
 - 本体根缺省为 `BangDreamInSpire/images`（编辑器同步目录，其 `.import` 里的 uid 就是本体 uid）；也可 `--body-root ../sts2unpack/<版本>` 指向解包源。
 - 引用本体要求编辑器工程里已同步本体资源：新克隆先跑 `tools/sync-sts2-assets.sh`。
-- **特效目录不再产出 `README.md` / `SOURCES.md`**；来源凭据（库内 uuid/名称、语义名、用途、校验判定）写进 `.vfx_staging/plans/<slug>.md`。
+- **特效目录不再产出 `README.md` / `SOURCES.md`**；来源凭据（库内 uuid/名称、语义名、用途、校验判定）写进 `.scratch/vfx/plans/<slug>.md`。
 
 ### 4.2 选材与取证的实操坑
 
@@ -217,7 +217,7 @@ python .agents/skills/vfx-authoring/scripts/check_asset_origin.py <导出目录>
 **三、溯源靠 `_provenance.json`，不必再用文件字节数猜。** `export_assets` 会在每个资产的导出
 子目录里写 `_provenance.json`，记录 uuid / 名称 / 标签 / 描述 / 导出时间 / 网格参数 / 逐文件 hash——
 **素材在项目里被重命名后仍可反查来源**。把 uuid / 名称一列写进本次的计划文件
-（`.vfx_staging/plans/<slug>.md`）即可——**特效目录不再产出 `SOURCES.md` / `README.md`**。
+（`.scratch/vfx/plans/<slug>.md`）即可——**特效目录不再产出 `SOURCES.md` / `README.md`**。
 
 > 旧做法是用文件字节数去全库反查（`music_slash_note.png` 23827 字节 → `oblvns_skin_05`），
 > 仅在没有 `_provenance.json` 的历史导出上才需要。
@@ -233,7 +233,7 @@ python .agents/skills/vfx-authoring/scripts/check_asset_origin.py <导出目录>
 > 口径与交叉校验见 `.agents/skills/vfx-authoring/references/selection-contract.md`。
 
 **五、`export_assets` 会自动创建目标目录。** `directory` 传绝对路径，不存在时自动建。
-导出到 `.vfx_staging/`，不要在资产库内改名或删除。
+导出到 `.scratch/vfx/`，不要在资产库内改名或删除。
 
 > **同名不覆盖**：已存在同名文件/文件夹的资产会报错，其余继续。重导出前先清掉旧目录，
 > 否则拿到的可能是上一次的产物。

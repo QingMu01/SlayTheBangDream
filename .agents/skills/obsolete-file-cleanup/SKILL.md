@@ -46,7 +46,7 @@ python3 .agents/skills/obsolete-file-cleanup/scripts/scan_orphans.py --project-r
 ```
 
 - `exit 0` 表示无「确认无引用」项；`exit 1` 表示有。两者都要读输出文件，不要只看退出码。
-- 输出文件：`referenced.txt`、`convention_referenced.txt`、`weak.txt`、`confirmed_orphan.txt`、`dead_cluster.txt`、`broken.txt`、`sidecar_orphan.txt`、`sidecar_missing.txt`（默认落 `.vfx_staging/audit/`，该目录已被 gitignore）。
+- 输出文件：`referenced.txt`、`convention_referenced.txt`、`weak.txt`、`confirmed_orphan.txt`、`dead_cluster.txt`、`broken.txt`、`sidecar_orphan.txt`、`sidecar_missing.txt`（默认落 `.scratch/cleanup/audit/`，该目录已被 gitignore）。
 - **死簇单独成桶，不属于确认孤儿**：它的引用者本身也在孤儿堆里。级联必须迭代到不动点，且引用者若命中保留规则就不得级联。死簇默认落 B 档。
 - 每份文件头部含「脚本名 + 版本 + 时间 + 输入域」。**没有头部的快照不得作为证据**。
 
@@ -68,7 +68,7 @@ python3 .agents/skills/vfx-authoring/scripts/check_asset_origin.py <导出目录
 python3 .agents/skills/obsolete-file-cleanup/scripts/cleanup_manifest.py
 ```
 
-产出两份东西（默认都在 `.vfx_staging/audit/`，**该目录是临时目录，随时可能被清理**）：
+产出两份东西（默认都在 `.scratch/cleanup/audit/`，**该目录是临时目录，随时可能被清理**）：
 
 - `cleanup_manifest.md` —— **人看**：三档紧凑清单（每项一行，带 sidecar 数与体积、理由短码），`stale` / `broken` 各自成节；
 - `cleanup_decisions.tsv` —— **人改**：签字用，列 `id/bucket/path/sidecar/bytes/reason/action/note`，`action` 填 `delete` / `keep` / `defer`。

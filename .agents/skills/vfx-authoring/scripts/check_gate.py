@@ -231,7 +231,7 @@ def main() -> int:
 
     if status != "approved":
         print(f"[gate] 拒绝：status = {status or '(空)'}，尚未获得用户批准。", file=sys.stderr)
-        print("[gate] 批准前允许：读文件、检索/预览素材、在 .vfx_staging/ 内导出与预演、写计划；不得改动正式特效资源。", file=sys.stderr)
+        print("[gate] 批准前允许：读文件、检索/预览素材、在 .scratch/vfx/ 内导出与预演、写计划；不得改动正式特效资源。", file=sys.stderr)
         return 1
 
     if not has_contract:

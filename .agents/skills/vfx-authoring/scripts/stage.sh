@@ -8,7 +8,7 @@
 # 用法：
 #   bash .agents/skills/vfx-authoring/scripts/stage.sh -s "res://BangDreamInSpire/scenes/vfx/staff_ring_vfx.tscn"
 #   bash .agents/skills/vfx-authoring/scripts/stage.sh -s "<场景>" -n 12 --no-build
-#   bash .agents/skills/vfx-authoring/scripts/stage.sh -s "<场景>" --compare .vfx_staging/stage/<上一轮>
+#   bash .agents/skills/vfx-authoring/scripts/stage.sh -s "<场景>" --compare .scratch/vfx/stage/<上一轮>
 #   bash .agents/skills/vfx-authoring/scripts/stage.sh -s "<场景>" --dry-run
 #
 # 选项：
@@ -18,7 +18,7 @@
 #   -c, --crop     ffmpeg crop 参数，默认 "760:760:580:160"（1920x1080 的中心区域）
 #       --no-build 跳过 build（默认先 build）
 #       --compare  与上一轮对比；传上一轮的 stage 输出目录（读它的 crop/，没有则读 rec/）
-#       --out      输出根目录，默认 .vfx_staging/stage/<场景名>-<时间戳>
+#       --out      输出根目录，默认 .scratch/vfx/stage/<场景名>-<时间戳>
 #       --godot    Godot 可执行文件路径；透传给 record.sh
 #       --dry-run  只打印将执行的命令与解析出的路径，不 build 也不录制
 #   -h, --help     打印本帮助
@@ -158,7 +158,7 @@ fi
 if [[ -n "$OUT" ]]; then
     OUT="$(abspath "$OUT")"
 else
-    OUT="$REPO/.vfx_staging/stage/$SLUG-$STAMP"
+    OUT="$REPO/.scratch/vfx/stage/$SLUG-$STAMP"
 fi
 
 # ---------- --compare 上一轮目录 ----------
@@ -262,7 +262,7 @@ if ((DRY_RUN)); then
         echo "  1) （跳过编译）"
     fi
     echo "  2) bash $RECORD -s \"$SCENE\" -n $FRAMES -f $FPS -o \"$OUT/rec/$SLUG.mp4\"${GODOT:+ --godot \"$GODOT\"}"
-    echo "     # record.sh 会把 PNG 序列写进 $REPO/.vfx_staging/rec/$SLUG-<它自己的时间戳>/"
+    echo "     # record.sh 会把 PNG 序列写进 $REPO/.scratch/vfx/rec/$SLUG-<它自己的时间戳>/"
     echo "     # 之后本脚本把帧移进 $OUT/rec/"
     echo "  3) ffmpeg -y -loglevel error -framerate $FPS -i \"$OUT/rec/frame%08d.png\" -vf \"crop=$CROP\" \"$OUT/crop/frame%08d.png\""
     echo "     # 帧号不连续时退化为逐帧裁切"
@@ -297,7 +297,7 @@ fi
 
 # 2) 录制（复用 record.sh；record.sh 自己决定帧目录名，所以先快照再 diff 出本次目录）
 info "录制" "$SCENE（$FRAMES 帧 @ $FPS fps）"
-REC_ROOT="$REPO/.vfx_staging/rec"
+REC_ROOT="$REPO/.scratch/vfx/rec"
 BEFORE_FILE="$OUT/.rec_dirs_before"
 find "$REC_ROOT" -maxdepth 1 -mindepth 1 -type d -name "$SLUG-*" 2>/dev/null | sort > "$BEFORE_FILE" || true
 

@@ -1,6 +1,6 @@
 # 计划模板（`plan.md`）
 
-落盘到 `<repo>/.vfx_staging/plans/<slug>.md`。
+落盘到 `<repo>/.scratch/vfx/plans/<slug>.md`。
 
 **闸门只锁契约块。** `check_gate.py` 用 `<!-- gate:begin -->` 与 `<!-- gate:end -->` 之间正文的 sha256 前 16 位做指纹：
 
@@ -99,7 +99,7 @@ approved_at: ""
 
 **按风险触发**（见 SKILL.md §8）。命中强制项时本表必填；未触发就写"未触发：无 ≥256px 的 burst/flash/glow/ring"。
 
-预演图：`.vfx_staging/out/<slug>_preview.png`
+预演图：`.scratch/vfx/out/<slug>_preview.png`
 
 | 用途 | 角色 | 场景色调 | 显示尺寸 | 放大倍数 | 洞 | 深色描边 | 判定 |
 |---|---|---|---|---|---|---|---|
@@ -140,7 +140,7 @@ approved_at: ""
 
 - `BangDreamInSpire/scenes/vfx/<场景>.tscn` + 脚本
 - `images/vfx/<特效名>/`（**仅当校验判定为非本体素材时**）+ `tuning-log.md`（有调参时）
-- `.vfx_staging/out/<slug>.mp4` + `.gif`
+- `.scratch/vfx/out/<slug>.mp4` + `.gif`
 ```
 
 ---

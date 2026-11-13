@@ -6,7 +6,7 @@
 
 | # | 补边 | 为什么必须 | 出处 |
 |---|---|---|---|
-| 1 | **剥离 `.import` 自引用** | `.import` 的 `source_file="res://…/X.png"` 就是该资源自己的路径。不剥离时「凡有 `.import` 的资源全部被判被引用」→ 整个扫描结构性失效 | 失败样本 `.vfx_staging/audit/orphan_scan.py`（v1）；修正见同目录 `orphan_scan2.py:76-79`。实例：`ItsCrychic/ItsCrychic/images/card_portraits/DejaVu.png.import` |
+| 1 | **剥离 `.import` 自引用** | `.import` 的 `source_file="res://…/X.png"` 就是该资源自己的路径。不剥离时「凡有 `.import` 的资源全部被判被引用」→ 整个扫描结构性失效 | 失败样本 `.scratch/cleanup/audit/orphan_scan.py`（v1）；修正见同目录 `orphan_scan2.py:76-79`。实例：`ItsCrychic/ItsCrychic/images/card_portraits/DejaVu.png.import` |
 | 2 | **剔除自身与自身 sidecar** | 引用来源等于候选自身、`候选+.import`、`候选+.uid` 时一律不计 | `orphan_scan3.py:108-120` |
 | 3 | **uid 优先 + path 兜底** | 实测 8582 条 `ext_resource` 中 uid-only **0** 条、path-only **1962 条（22.9%）**、uid/path 不一致 0 条、重复 uid 0 条 | uid 三来源：`*.uid` 内容 / `*.import` 的 `uid=` / `*.tscn|*.tres|*.gdshader` 头部 |
 | 4 | **跨工程建图** | `ItsCrychic` 字面引用 `res://BangDreamInSpire/scenes/vfx/flying_music_note_default.tscn`（`MultiplayerVfx.MusicNote`），在 ItsCrychic 工程里该文件不存在 | `ItsCrychic/ItsCrychic/skins/*/*.json` |
@@ -47,7 +47,7 @@
 | 5 | `static class` 扩展按方法名调用 | `PathExtensions`、`AttachedPlayExtensions`、`BangDreamClassExtensions` 等类名零引用 |
 | 6 | JSON 字符串引用 | `RolandKeyboard` / `SwordOfLord` / `SakikoSpecialRules` 只被 skin 的 entry 字符串引用 |
 | 7 | 仅文档/IDE 命中 | `MusicFlashVfx` 等只被 `.md` 与 `.idea/workspace.xml` 提到；「仅 doc 命中」必须单列 |
-| 8 | **共享立绘（最大一类）** | `XSakiko` 用 `X.png` → 旧工具把 27 张有效卡图判「无对应类」、24 张卡判「缺立绘」；真实缺图只有 14 张，样本 `.vfx_staging/audit/portraits_report.txt` |
+| 8 | **共享立绘（最大一类）** | `XSakiko` 用 `X.png` → 旧工具把 27 张有效卡图判「无对应类」、24 张卡判「缺立绘」；真实缺图只有 14 张，样本 `.scratch/cleanup/audit/portraits_report.txt` |
 | 9 | 本地化按 entry + 非标准子键 | `HiddenRelic.cs:10` 把 Title 硬编码为 `gameplay_ui/BANG_DREAM_IN_SPIRE_EMPTY_LOC_STRING`，故 2 个 HiddenRelic「无 loc」是假阳性 |
 | 10 | 基类是游戏本体类型 | `PathDependencePower` / `RhapsodyRequestPower` / `SheetMusicMoonPower` / `SheetMusicSunPower` / `ImprisonedXiiDownPower` 继承游戏 `Temporary*Power`，仓内继承链断裂，只按仓内基类判族会漏 |
 | 11 | 可再生缓存与旁路目录 | `.godot/uid_cache.bin`、`**/.godot/editor/filesystem_cache*`、`.git/index`、`BangDreamInSpire/src`（3508 个解包 `.cs`）、`addons` |
