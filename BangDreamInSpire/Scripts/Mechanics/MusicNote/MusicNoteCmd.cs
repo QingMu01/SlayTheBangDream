@@ -205,7 +205,7 @@ public static class MusicNoteCmd
 
     private static string GetMusicNoteVfxPath(Player player)
     {
-        return BangDreamConst.PlayerSkin.Get(player).GetSkin()?.SkinTemplate.MultiplayerVfx.MusicNote ??
+        return SkinManager.ResolvePlayerSkin(player)?.SkinTemplate.MultiplayerVfx.MusicNote ??
                DefaultPath;
     }
 }

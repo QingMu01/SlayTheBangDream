@@ -52,25 +52,28 @@ internal class PopulateStartingContentPatch : IPatchMethod
     {
         foreach (var player in runState.Players)
         {
-            if (player.Character is ISkinSupportCharacter)
-            {
-                var playerSkinData = BangDreamConst.PlayerSkin.Get(player);
-                BangDreamInSpireCore.Logger.Info(
-                    $"Player {player.NetId} / Character: {player.Character.Title.GetFormattedText()} use skin : {playerSkinData.SkinPath}.");
-                var skinInfo = playerSkinData.GetSkin();
-                if (skinInfo != null)
-                {
-                    PopulateDeck(player, runState, skinInfo.GetStartingDeck());
-                    PopulateExtraDeck(player, runState, skinInfo.GetStartingExtraDeck());
-                    PopulateRelics(player, skinInfo.GetStartingRelics());
-                    PopulatePotions(player, skinInfo.GetStartingPotions());
-                }
-            }
-            else
+            if (player.Character is not ISkinSupportCharacter)
             {
                 BangDreamInSpireCore.Logger.Info(
                     $"Player {player.NetId} / Character: {player.Character.Title} is don't support skin, skip populate.");
+                continue;
             }
+
+            // 与视觉走同一个「按玩家」解析入口：皮肤未选时同样回落到首个皮肤，
+            // 避免出现「角色视觉是默认皮肤、初始牌组却因为 SkinPath 为空而没填充」的错位。
+            var skinInfo = SkinManager.ResolvePlayerSkin(player);
+            BangDreamInSpireCore.Logger.Info(
+                $"Player {player.NetId} / Character: {player.Character.Title.GetFormattedText()} use skin : {skinInfo?.SkinTemplate.MultiplayerVisual.VisualScene ?? "<none>"}.");
+
+            if (skinInfo == null)
+            {
+                continue;
+            }
+
+            PopulateDeck(player, runState, skinInfo.GetStartingDeck());
+            PopulateExtraDeck(player, runState, skinInfo.GetStartingExtraDeck());
+            PopulateRelics(player, skinInfo.GetStartingRelics());
+            PopulatePotions(player, skinInfo.GetStartingPotions());
         }
     }
 

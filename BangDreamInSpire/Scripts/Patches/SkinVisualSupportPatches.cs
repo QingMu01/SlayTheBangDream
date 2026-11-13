@@ -116,7 +116,7 @@ internal class EnergyCounterPatch : IPatchMethod
     {
         if (player.Character is ISkinSupportCharacter)
         {
-            var path = BangDreamConst.PlayerSkin.Get(player).GetSkin()?.SkinTemplate.Ui
+            var path = SkinManager.ResolvePlayerSkin(player)?.SkinTemplate.Ui
                 .EnergyCounterScene;
             if (path != null)
             {
@@ -144,7 +144,7 @@ internal class RestSiteScenePatch : IPatchMethod
     {
         if (player.Character is ISkinSupportCharacter)
         {
-            var path = BangDreamConst.PlayerSkin.Get(player).GetSkin()?.SkinTemplate.MultiplayerVisual.RestSiteScene;
+            var path = SkinManager.ResolvePlayerSkin(player)?.SkinTemplate.MultiplayerVisual.RestSiteScene;
             if (path != null)
             {
                 var restSiteCharacter = RitsuGodotNodeFactories.CreateFromScenePath<NRestSiteCharacter>(path);
@@ -207,7 +207,7 @@ internal class RestSiteAnimPatch : IPatchMethod
     {
         if (player.Character is ISkinSupportCharacter)
         {
-            return BangDreamConst.PlayerSkin.Get(player).GetSkin()?.SkinTemplate.MultiplayerVisual.RestSiteAnimName ??
+            return SkinManager.ResolvePlayerSkin(player)?.SkinTemplate.MultiplayerVisual.RestSiteAnimName ??
                    originalName;
         }
 
@@ -312,7 +312,7 @@ internal class ArmPointingTexturePatch : IPatchMethod
     {
         if (__instance.Player.Character is ISkinSupportCharacter)
         {
-            var path = BangDreamConst.PlayerSkin.Get(__instance.Player).GetSkin()?.SkinTemplate.MultiplayerVisual
+            var path = SkinManager.ResolvePlayerSkin(__instance.Player)?.SkinTemplate.MultiplayerVisual
                 .ArmPointingTexture;
             if (path != null)
             {
@@ -335,7 +335,7 @@ internal class ArmFightTexturePatch : IPatchMethod
     {
         if (__instance.Player.Character is ISkinSupportCharacter)
         {
-            var armTextureSet = BangDreamConst.PlayerSkin.Get(__instance.Player).GetSkin()?.SkinTemplate
+            var armTextureSet = SkinManager.ResolvePlayerSkin(__instance.Player)?.SkinTemplate
                 .MultiplayerVisual;
             var path = move switch
             {
@@ -386,7 +386,7 @@ internal static class MusicCardSkinFrames
             {
                 if (ReferenceEquals(player.Character, origin))
                 {
-                    return BangDreamConst.PlayerSkinOrNull?.Get(player).GetSkin();
+                    return SkinManager.ResolvePlayerSkin(player);
                 }
             }
         }
@@ -459,7 +459,7 @@ internal class MapMarkerPatch : IPatchMethod
     {
         if (player.Character is ISkinSupportCharacter)
         {
-            var path = BangDreamConst.PlayerSkin.Get(player).GetSkin()?.SkinTemplate.Ui.MapMarker;
+            var path = SkinManager.ResolvePlayerSkin(player)?.SkinTemplate.Ui.MapMarker;
             if (path != null)
             {
                 __instance.Texture = BangDreamPreloadManager.GetTexture2D(path);
@@ -482,7 +482,7 @@ internal class TopBarPatch : IPatchMethod
         var player = LocalContext.GetMe(runState);
         if (player?.Character is ISkinSupportCharacter)
         {
-            var ui = BangDreamConst.PlayerSkin.Get(player).GetSkin()?.SkinTemplate.Ui;
+            var ui = SkinManager.ResolvePlayerSkin(player)?.SkinTemplate.Ui;
             if (ui != null)
             {
                 var hpIconPath = ui.TopBarHpIcon;
@@ -553,7 +553,7 @@ internal class TopBarExtraDeckPatch : IPatchMethod
         if (__instance.Definition is { Id: "BANG_DREAM_IN_SPIRE_CARDPILE_EXTRA_DECK", Style: ModCardPileUiStyle.TopBarDeck }
             && LocalContext.IsMe(player) && player.Character is ISkinSupportCharacter)
         {
-            var path = BangDreamConst.PlayerSkin.Get(player).GetSkin()?.SkinTemplate.Ui.TopBarExtraDeckIcon;
+            var path = SkinManager.ResolvePlayerSkin(player)?.SkinTemplate.Ui.TopBarExtraDeckIcon;
             if (path != null && ____icon is TextureRect textureRect)
             {
                 textureRect.Texture = BangDreamPreloadManager.GetTexture2D(path);
@@ -577,7 +577,7 @@ internal class CombatCardPilePatch : IPatchMethod
         {
             if (__instance is NDrawPileButton)
             {
-                var path = BangDreamConst.PlayerSkin.Get(player).GetSkin()?.SkinTemplate.Ui.CombatDrawIcon;
+                var path = SkinManager.ResolvePlayerSkin(player)?.SkinTemplate.Ui.CombatDrawIcon;
                 if (path != null && ____icon is TextureRect textureRect)
                 {
                     textureRect.Texture = BangDreamPreloadManager.GetTexture2D(path);
@@ -585,7 +585,7 @@ internal class CombatCardPilePatch : IPatchMethod
             }
             else if (__instance is NDiscardPileButton)
             {
-                var path = BangDreamConst.PlayerSkin.Get(player).GetSkin()?.SkinTemplate.Ui.CombatDiscardIcon;
+                var path = SkinManager.ResolvePlayerSkin(player)?.SkinTemplate.Ui.CombatDiscardIcon;
                 if (path != null && ____icon is TextureRect textureRect)
                 {
                     textureRect.Texture = BangDreamPreloadManager.GetTexture2D(path);
@@ -608,7 +608,7 @@ internal class CardRewardPatch : IPatchMethod
     {
         if (LocalContext.IsMe(__instance.Player) && __instance.Player.Character is ISkinSupportCharacter)
         {
-            var ui = BangDreamConst.PlayerSkin.Get(__instance.Player).GetSkin()?.SkinTemplate.Ui;
+            var ui = SkinManager.ResolvePlayerSkin(__instance.Player)?.SkinTemplate.Ui;
             if (ui != null)
             {
                 var newIconPath = ____cards[0].Card.Rarity switch

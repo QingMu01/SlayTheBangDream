@@ -243,7 +243,7 @@ public static class BangDreamPreloadManager
         var assets = new HashSet<string>();
         foreach (var player in players)
         {
-            var currentSkin = BangDreamConst.PlayerSkin.Get(player).GetSkin();
+            var currentSkin = SkinManager.ResolvePlayerSkin(player);
             if (currentSkin != null)
             {
                 assets.UnionWith(currentSkin.GetAllVisualResourcePaths());

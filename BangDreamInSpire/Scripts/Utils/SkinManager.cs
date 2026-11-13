@@ -44,35 +44,43 @@ public static class SkinManager
             return null;
         }
 
-        // 玩家数据可能尚未注册（例如极早期的创建流程），失败时退回占位视觉而不是让调用方崩溃。
+        var selected = TryGetSelectedSkin(player);
+        if (selected != null)
+        {
+            return selected;
+        }
+
+        // 回落不依赖跑局数据（只读角色模型上的 CharacterSkinList），因此菜单 / 选角阶段同样可用。
+        foreach (var skinPath in skinSupportCharacter.CharacterSkinList)
+        {
+            var fallback = GetSkinInfo(skinPath);
+            if (fallback == null)
+            {
+                continue;
+            }
+
+            BangDreamInSpireCore.Logger.Warn(
+                $"Player {player.NetId} 尚未选择皮肤，回落到首个皮肤：{skinPath}");
+            return fallback;
+        }
+
+        BangDreamInSpireCore.Logger.Error(
+            $"{player.Character} 没有任何可用皮肤（CharacterSkinList 为空或全部未注册）。");
+        return null;
+    }
+
+    /// <summary>
+    /// 取玩家已选皮肤。跑局数据尚未注册（菜单 / 选角阶段）或读取失败时返回 null，不向调用方抛。
+    /// </summary>
+    private static SkinInfo? TryGetSelectedSkin(Player player)
+    {
         try
         {
-            var selected = BangDreamConst.PlayerSkin.Get(player).GetSkin();
-            if (selected != null)
-            {
-                return selected;
-            }
-
-            foreach (var skinPath in skinSupportCharacter.CharacterSkinList)
-            {
-                var fallback = GetSkinInfo(skinPath);
-                if (fallback == null)
-                {
-                    continue;
-                }
-
-                BangDreamInSpireCore.Logger.Warn(
-                    $"Player {player.NetId} 尚未选择皮肤，回落到首个皮肤：{skinPath}");
-                return fallback;
-            }
-
-            BangDreamInSpireCore.Logger.Error(
-                $"{player.Character} 没有任何可用皮肤（CharacterSkinList 为空或全部未注册）。");
-            return null;
+            return BangDreamConst.PlayerSkinOrNull?.Get(player).GetSkin();
         }
         catch (Exception ex)
         {
-            BangDreamInSpireCore.Logger.Warn($"解析玩家皮肤失败，使用占位视觉：{ex.Message}");
+            BangDreamInSpireCore.Logger.Warn($"读取玩家皮肤失败，按未选择处理：{ex.Message}");
             return null;
         }
     }
