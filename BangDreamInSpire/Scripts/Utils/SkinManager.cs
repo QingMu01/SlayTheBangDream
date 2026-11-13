@@ -59,14 +59,31 @@ public static class SkinManager
                 continue;
             }
 
-            BangDreamInSpireCore.Logger.Warn(
+            // 本方法被十几处 UI/视觉入口每帧或每次创建调用，回落日志按玩家去重，避免刷屏。
+            WarnOnce(player.NetId, "fallback",
                 $"Player {player.NetId} 尚未选择皮肤，回落到首个皮肤：{skinPath}");
             return fallback;
         }
 
-        BangDreamInSpireCore.Logger.Error(
+        WarnOnce(player.NetId, "none",
             $"{player.Character} 没有任何可用皮肤（CharacterSkinList 为空或全部未注册）。");
         return null;
+    }
+
+    private static readonly HashSet<(ulong NetId, string Reason)> WarnedOnce = [];
+    private static readonly object WarnedOnceLock = new();
+
+    private static void WarnOnce(ulong netId, string reason, string message)
+    {
+        lock (WarnedOnceLock)
+        {
+            if (!WarnedOnce.Add((netId, reason)))
+            {
+                return;
+            }
+        }
+
+        BangDreamInSpireCore.Logger.Warn(message);
     }
 
     /// <summary>
