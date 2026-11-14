@@ -1,6 +1,6 @@
 # 睦的三项机制：和弦书签 / 傀儡师 / 破绽
 
-- 状态：进行中（2026-11-14 方案落盘，同日开工）
+- 状态：**机制已落地（占位特效）**，2026-11-14 方案落盘 + 同日实现；三套正式特效待下一轮 vfx 流程
 - 目标分支：`feature/mutsumi-mechanics`（基于 `beta`，本体 **0.113.0**，RitsuLib 0.6.11）
 - 本体源码以 `../sts2unpack/0.113.0/src` 为准（`beta` 已适配 0.113，勿再读 0.111）
 - 本轮范围：**机制代码 + 占位特效**。三套正式特效（歌单冻结 / 分组激活 / 破绽与弱点击破）另开一轮走 `vfx-authoring` 流程出方案图，再替换占位。
@@ -135,6 +135,19 @@ Task<int> Discover(PlayerChoiceContext ctx, Creature target, int amount, Abstrac
 - 关键字：`破绽`、`弱点击破`、`击破`（core `card_keywords.json` + `static_hover_tips.json`）。Power 文本：`powers.json`（core 新建，键前缀 `BANG_DREAM_IN_SPIRE_*`）。
 - 描述约定：卡牌文案用 `击破：……` 句式，由卡牌自身 `ICardDescriptionContributor` 实现（本轮无卡牌实现，先只交付接口与关键字）。
 
+## 3.5 实现落点（落地后回填）
+
+| 事项 | 落点 |
+|---|---|
+| 和弦书签 | `Nodes/Cards/NChordBookmark.cs`（旧 `NChordCornerBadge` 已删）；`ChordCapability` 覆盖层 ID `chord_bookmark`；`NChordDesignScreen` 预览/清理同步改名 |
+| 傀儡师 | `Mechanics/Puppeteer/{PuppeteerMechanic,PuppeteerFormManager,PuppeteerRunData}.cs`；状态模型走 `AttachePlayerData.PuppeteerFormManager` 类型化入口（与 `PerformManager` 同款，未用弱表） |
+| 歌单冻结 | `PerformManager.IsPlaylistFrozen` / `SetPlaylistFrozen` / `SetActivatedGroups`；拦截点见 `docs/mechanic-authoring.md` §10 |
+| 冻结/激活占位表现 | `NPerformArea.SetFrozen` / `SetActivatedGroups`：`FrozenOverlay`、`ActivatedGroupBadge_<和弦>`；正式特效只换内部实现 |
+| 破绽 | `Mechanics/Break/{BreakMechanic,BreakCmd,BreakRules,BreakConst,WeaknessBreakPower,WeakPointBreakPower,NWeaknessBreakVfx}.cs` |
+| Hook | `BangDreamHook.AfterWeaknessBreakDiscovered / AfterWeakPointBroken / AfterWeakPointBreakTriggered`；`IWeaknessBreakHookListener` |
+| 卡牌契约 | `IWeaknessBreakCard`（`HasBreakEffect` + `OnWeakPointBreak`） |
+| 调试入口 | 控制台 `chord` / `break` / `puppet`（`Scripts/Console/`），用于实机验收 |
+
 ## 4. 关键决策与默认值（[自定]）
 
 | 项 | 决定 | 理由 |
@@ -147,15 +160,21 @@ Task<int> Discover(PlayerChoiceContext ctx, Creature target, int amount, Abstrac
 | 复活生命 | `min(HostMaxHp, Capacity × 2)` | 需求原文 4×2=8 |
 | 墨缇丝期间能否继续入组 | 不能（冻结），入组被拒绝的牌按原版去向 | 需求原文 |
 | 书签美术 | 程序化多边形先行 + 可选贴图通道 | 不阻塞机制，后续可换贴图 |
+| 墨缇丝形态 | 复用同一 Spine 的 `Doll_*` 动作（含 `Doll_Die` 只在傀儡形态阵亡时用） | 用户确认 Spine 里 Doll 动作即墨缇丝；不换场景/皮肤 |
+| 冻结时打出音乐牌 | 即视为「试图演奏」，激活该牌对应的分组（RequestGroup > 指定槽位 > 默认组）[自定] | 否则墨缇丝形态下音乐牌完全空转、分组只能靠带和弦的非音乐牌点亮；此实现让音乐牌本身成为复活进度驱动器 |
+| 破绽能力施加 | `silent: true` | 破绽无 Power 图标，非 silent 会给目标一次无来由的受击抖动与 debuff 音效 |
+| 击破命中集合 | `AfterPowerAmountChanged` 里排除「给自己上的增益」[自定] | 自身增益不是「目标被选中」；显式指向自己仍由 `CardPlay.Target` 覆盖 |
 
 ## 5. 验收清单
 
-- [ ] 构建通过：`flock .scratch/build/lock dotnet build ItsCrychic/ItsCrychic.csproj -p:Sts2Dir=$PWD/.scratch/sts2dir -p:Sts2DataDir="<本体 data 目录>"`（0 error）
-- [ ] `grep NChordCornerBadge` 无残留；旧节点类已删除且引用清理完整
-- [ ] 书签 1–4 个和弦的排版预览图 + 实机观感确认
-- [ ] 傀儡师：小睦死亡→墨缇丝→（四组激活）→小睦复活血量=容量×2；胜利切回小睦且 1 血兜底；双池跨战斗保存
+- [x] 构建通过：`ItsCrychic.csproj` 0 error（警告仅 NU1900 与既有 CS8600）
+- [x] `grep NChordCornerBadge` 无残留；旧节点类与 `.uid` 已删
+- [x] 书签 1–4 个和弦的排版预览图（`.scratch/chord-bookmark/preview.png`）
+- [ ] 实机观感确认（书签尺寸 / 尖端是否被裁剪 / 手牌密排时的观感）
+- [ ] 傀儡师实机：小睦死亡→墨缇丝→（四组激活）→小睦复活血量=容量×2；胜利切回小睦且 1 血兜底；双池跨战斗保存
 - [ ] 冻结期间音乐牌不入歌单、歌单不可移除、演奏改为激活分组
-- [ ] 破绽：4 层进弱点击破、期间发现无效、1 回合后清空、VFX 形态切换与淡出、Hover 出 tips
-- [ ] 击破：指向/随机/AOE 三种来源都能触发；发现→进入状态→再触发击破的顺序正确
-- [ ] 本地化 JSON 合法（`python3 -m json.tool`），中英文键齐全
-- [ ] 改动按单元提交，`docs/` 与本文件同步更新
+- [ ] 破绽实机：4 层进弱点击破、期间发现无效、1 回合后清空、VFX 形态切换与淡出、Hover 出 tips
+- [ ] 击破实机：指向/随机/AOE 三种来源都能触发（需要实现 `IWeaknessBreakCard` 的卡牌；当前仓库内暂无此类卡）
+- [x] 本地化 JSON 合法（`python3 -m json.tool`）
+- [ ] 改动按单元提交（已分批提交，见 git log）；`docs/` 与本文件同步更新
+- 实机验收入口：控制台 `chord` / `break` / `puppet`（见 `docs/mechanic-authoring.md` §10 / §11）

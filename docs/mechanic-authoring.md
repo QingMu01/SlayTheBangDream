@@ -8,8 +8,10 @@ BangDreamInSpire 的玩法机制被拆分为若干**机制模块**（mechanic）
 |---|---|---|---|---|---|
 | 额外卡组 | `extra_deck` | 100 | — | `IExtraDeckSupportCharacter` | 额外卡池/额外卡组/额外抽牌堆、小祥商人、额外卡组删牌、音乐牌奖励、额外卡组升级休息选项、战斗开始克隆额外抽牌堆 |
 | 演奏 | `perform` | 200 | `extra_deck` | `IPerformableCharacter` | 歌单容量与入队/重排/溢出、演奏触发、演奏区节点、音乐卡牌类型铭牌、手动落位目标类型（AnySlot / RequestGroup）、卡牌和弦（`ChordCapability`） |
+| 傀儡师 | `puppeteer` | 250 | `perform` | `IPuppeteerCharacter` | 双生命池的跨战斗保存、本体/傀儡形态切换（死亡拦截）、傀儡形态下的歌单冻结与分组激活 |
 | 余音 | `lingered` | 300 | — | `ILingeredResourceCharacter` | 余音二级资源与卡面费用 UI、休止结算与驱动、环绕资源预览 |
 | 音符 | `music_note` | 400 | — | （全局） | 音符发射/弹跳与伤害、命中同拍结算、音符伤害追踪、VFX 容器 |
+| 破绽 | `break` | 600 | — | （全局） | 破绽层数上限与「弱点击破」状态、发现/进入/击破三个 Hook 广播、常驻 VFX、击破效果触发规则 |
 
 `Order` 越小越先装配；`Dependencies` 中的机制必须存在，否则装配阶段抛异常。
 
@@ -173,20 +175,21 @@ rewardCard.GetOrCreateCapability<ChordCapability>().SetChord(randomChord);
 - 和弦不参与入组判定，因此与 `RequestGroup` 目标类型正交：手动落位只换分组，不改写和弦。
 - 奏响由 `PerformManager.PerformChordSlots(mask)` 执行：逐个奏响掩码覆盖分组内**已落位卡牌所在的槽位**（按槽位升序，跳过即兴牌），并输出 `Chord perform <mask> : slots [...]` 日志便于核对。
 
-### 9.1 卡面角标
+### 9.1 卡面书签
 
-和弦通过能力实现的**卡面覆盖层**（`ICardOverlayContributor`）画在卡牌右上角：`ChordCapability` 返回一个
-`CardOverlayContribution`（`FromFactory`），节点是 `NChordCornerBadge`；RitsuLib 在 `NCard.ReloadOverlay()` 之后
-把能力覆盖层挂到 `%OverlayContainer` 下并重建，所以卡牌模型刷新时角标自动跟随，无需自己订阅事件。
+和弦通过能力实现的**卡面覆盖层**（`ICardOverlayContributor`）画在卡牌**右边缘**：`ChordCapability` 返回一个
+`CardOverlayContribution`（`FromFactory`），节点是 `NChordBookmark`；RitsuLib 在 `NCard.ReloadOverlay()` 之后
+把能力覆盖层挂到 `%OverlayContainer` 下并重建，所以卡牌模型刷新时书签自动跟随，无需自己订阅事件。
 
 | 项 | 约定 |
 |---|---|
-| 包角带几何 | 右上角的**等臂** L 形带（上臂沿卡牌上边 + 右臂沿右边），带宽 26px、两臂各从拐角量 120px：上臂 `x∈[30,150] y∈[-211,-185]`、右臂 `x∈[124,150] y∈[-211,-91]`（卡中心坐标；卡框 `x±150`、`y±211`）。角标画布 = 120×120 正方形，包角带占其上边与右边。 |
-| 切分 | 所有切缝都是 `x + y = c` 的 **45° 斜线**，按**面积均分**：n 个和弦 = n 段等面积。1=整条 L；2=一条斜接缝正好落在拐角（c = -61，上臂/右臂各一段）；3=两刀（c = -96.67 / -25.33，中间段绕拐角）；4=三刀（c = -114.5 / -61 / -7.5，上臂两段 + 右臂两段）。实现见 `NChordCornerBadge.BuildSlots`。 |
-| 渲染 | 单张白色包角带贴图 `res://BangDreamInSpire/images/sceneui/chord_corner.png`（画布恰好 120×120，按 2× 导出），每段作为 `Polygon2D` 的多边形（顶点 UV 映射到贴图）并 `Color` 染色；贴图缺失时退化为纯色多边形（形状与成品一致，可直接验收切分）。`images/**` 不入库，新克隆缺图会自动走占位。 |
+| 书签几何 | 卡框**右边缘**的竖直色带 + 右端向右凸出的 `>` 形箭头尖端：矩形段 `x∈[146,156]`（左端压入卡框 4px、右端伸出 6px），尖端 `x=166`（相对右边缘外凸 16px），单枚高 20px。卡框 `x±150`、`y±211`（卡中心坐标）。 |
+| 堆叠 | n 个和弦 = n 枚书签按 `C→D→F→G` 自上而下堆叠，枚间缝 4px，整组在卡框右边缘**垂直居中**（组高 `n×20+(n−1)×4`，1 枚时组顶 −10、4 枚时 −46）；组顶另有 −160 的硬下限，确保 1~4 枚都不会顶到标题横幅（横幅占 `y∈[−207,−124]`）。实现见 `NChordBookmark.BuildBookmarkRects` / `BuildBookmarkShape`。 |
+| 渲染 | 纯程序化 `Polygon2D` 五边形 + 同色系加深的 `Line2D` 描边；可选贴图通道 `res://BangDreamInSpire/images/sceneui/chord_bookmark.png`（单枚画布 20×20，按 2× 导出，顶点 UV 映射），贴图缺失时退化为纯色多边形（形状与成品一致，可直接验收排版）。`images/**` 不入库，新克隆缺图会自动走占位。 |
 | 配色 | `PerformChordColors` 是唯一来源：C `#7799CC`（祥子）、D `#FFDD88`（素世）、F `#77BBDD`（灯）、G `#7777AA`（立希）。`MutsumiPerformScheme.GetSlotColor`（演奏区四组槽位）与 `CrychicMemberEnum`（角色色）都引用这张表。 |
-| 层级 | 能力覆盖层挂在 `%OverlayContainer` 下，而该节点在 `card.tscn` 里排在 `TitleBanner`/`TitleLabel` **之前**——角标会被标题横幅压住一角，这是**设计预期**（角标只给卡面右上角背景着色，不抢前景，类似一层「贴在卡面上的色带」）。**不要**用 `ZIndex` 抬高它：Godot 的 z_index 在同一 canvas 内全局排序，会把角标抬到面板、HUD 等所有界面之上；也**不要**重排 `OverlayContainer` 的画布顺序（卡牌入场时父节点正处在 AddChild 构建阶段，同步 `MoveChild` 会被 Godot 拒绝并报 `Parent node is busy setting up children, move_child() failed`，结果只会让不同界面表现不一致）。 |
-| 调试 | 控制台 `chord CDF` / `chord 13` / `chord none`：给手牌设和弦并强制重建覆盖层，用于预览 1~4 个和弦的切分（`ChordConsoleCmd`）。 |
+| 层级 | 能力覆盖层挂在 `%OverlayContainer` 下（排在 `TitleBanner`/`TitleLabel` 之前），书签是「贴在卡框侧边的书签」，不抢卡面前景。**不要**用 `ZIndex` 抬高它：Godot 的 z_index 在同一 canvas 内全局排序，会把书签抬到面板、HUD 等所有界面之上；也**不要**重排 `OverlayContainer` 的画布顺序（卡牌入场时父节点正处在 AddChild 构建阶段，同步 `MoveChild` 会被 Godot 拒绝并报 `Parent node is busy setting up children, move_child() failed`，结果只会让不同界面表现不一致）。 |
+| 层级风险 | 书签尖端外凸 16px 依赖父级不裁剪。`card.tscn` 的 `%OverlayContainer` / `CardContainer` 均未开 `clip_contents`；若后续宿主容器开启裁剪，把 `BookmarkTipRight` 收到 ≤150 或改为「贴右缘竖直条 + 内凹箭头」即可，不影响其它逻辑。 |
+| 调试 | 控制台 `chord CDF` / `chord 13` / `chord none`：给手牌设和弦并强制重建覆盖层，用于预览 1~4 枚书签的堆叠（`ChordConsoleCmd`）。 |
 
 ### 9.2 和弦设计（休息处选项）
 
@@ -197,8 +200,8 @@ rewardCard.GetOrCreateCapability<ChordCapability>().SetChord(randomChord);
 | 项 | 约定 |
 |---|---|
 | 布局 | 三行居中排布（场景 `BangDreamInSpire/scenes/screens/chord_design_screen.tscn`，代码只填内容）：顶部和弦筹码（C/D/F/G，**始终同一行，不拆行**）→ 中央箭头 → 卡组卡牌行（**一格一张牌、始终同一行**）→ 箭头 → 居中结果预览卡。点筹码时**整行水平平移**，让选中筹码对齐到中央箭头正上方（其余筹码按原顺序让位、不交换；取消选中后整行回正）；点卡牌同样**整行水平平移**，让那张牌对齐下方箭头并保持常驻行内，结果区同步显示它的预览与和弦。打开时默认 C 和弦 + 第一张牌，两者都停在中轴上。左右分别是原版 `NBackButton` / `NConfirmButton`（取消返回、确定应用）。卡牌带高 406px（y294–700），行内容再乘 `CardLayerScale = 0.9`（静止 0.8×0.9 = 0.72 倍、悬停 1.0×0.9 = 0.9 倍），余量按「悬停放大后不被 `clip_contents` 裁切」定；箭头在 274–310 / 748–784，三行在 1080 高内紧凑分布。 |
-| 结果 | `ChordDesignResult(CardIndex, Chord, Additive)`；面板返回后由选项在 `Player.Deck.Cards` 上 `GetOrCreateCapability<ChordCapability>().SetChord(...)`——**确定之前卡组模型完全不变**。面板内的卡牌只是 `NCard` 视图（`NodePool` 复用节点）；结果预览先隐掉卡面自带的能力角标，再把按「结果和弦」构建的角标挂到**预览卡的 `%OverlayContainer`**（继承卡的缩放/变换，和真实卡牌一样被标题横幅压住一角）。预览卡回池前与新建卡后都会 `RemoveStaleChordBadges` 清掉直挂的残留角标，避免旧角标随节点复用被带到别的卡上。 |
-| 收尾 | 确定后在 `DoLocalPostSelectVfx` 复用本体 `NCardUpgradeVfx`（与升级卡牌同一套表现）：屏幕中央放大展示（此时角标已是新和弦）→ 停留片刻 → `NCardFlyVfx` 飞入顶部卡组图标；选项 `AssetPaths` 追加 `NCardUpgradeVfx.AssetPaths` 以便预载，`DoLocalPostSelectVfx` 只等展示段结束（约 1.4–1.9s），飞行交给后场继续。 |
+| 结果 | `ChordDesignResult(CardIndex, Chord, Additive)`；面板返回后由选项在 `Player.Deck.Cards` 上 `GetOrCreateCapability<ChordCapability>().SetChord(...)`——**确定之前卡组模型完全不变**。面板内的卡牌只是 `NCard` 视图（`NodePool` 复用节点）；结果预览先隐掉卡面自带的能力书签，再把按「结果和弦」构建的书签挂到**预览卡的 `%OverlayContainer`**（继承卡的缩放/变换，和真实卡牌一样位于卡面前景之下）。预览卡回池前与新建卡后都会 `RemoveStaleChordBookmarks` 清掉直挂的残留书签，避免旧书签随节点复用被带到别的卡上。 |
+| 收尾 | 确定后在 `DoLocalPostSelectVfx` 复用本体 `NCardUpgradeVfx`（与升级卡牌同一套表现）：屏幕中央放大展示（此时书签已是新和弦）→ 停留片刻 → `NCardFlyVfx` 飞入顶部卡组图标；选项 `AssetPaths` 追加 `NCardUpgradeVfx.AssetPaths` 以便预载，`DoLocalPostSelectVfx` 只等展示段结束（约 1.4–1.9s），飞行交给后场继续。 |
 | 增加 / 覆盖 | 结果右侧开关默认「覆盖」，`Additive=true` 时与现有和弦取并集。开关默认隐藏（`NChordDesignScreen.ModeToggleUnlocked = false`），留给后续事件遗物解锁。 |
 | 联机 | `OnSelect()` 在每个 peer 执行：本地玩家用 `ReserveChoiceId` + 面板结果 + `SyncLocalChoice(PlayerChoiceResult.FromIndexes([cardIndex, mask, additive]))`，其余 peer `WaitForRemoteChoice` 后以相同参数改卡（与 `ExtraPileCmd` 同款范式）。取消时同步空列表并 `return false`（选项保留）。 |
 | 滚动 | 本体滚动容器只有纵向，面板自绘 `NChordScrollbar`（横向轨道）表现「当前停在哪一格」：滚轮按格步进、拖条吸附到最近的牌、键盘/手柄焦点进入某张牌也会把整行带到它上面；滚动条滑块位置 = 选中牌在卡组里的序号比例，可视比例按 `1/牌数` 计算（内容不足一屏时隐藏）。 |
@@ -206,3 +209,35 @@ rewardCard.GetOrCreateCapability<ChordCapability>().SetChord(randomChord);
 | 素材 | 选项图标 `res://BangDreamInSpire/images/sceneui/music_draw.png`（`images/**` 不入库，缺图时图标缺失但不影响逻辑）。 |
 
 
+
+
+## 10. 傀儡师（双形态双生命池）
+
+`puppeteer` 机制由 `IPuppeteerCharacter` 启用（继承 `IPerformableCharacter`，因此自动带演奏与额外卡组）。
+状态分两层：跨战斗的双池在 `PuppeteerRunData`（`RunData.RegisterPerPlayer("PuppeteerState")`，`SyncLobbyOnChange`），
+本场战斗的分组激活位只在每玩家克隆 `PuppeteerFormManager` 上；`Creature` 的 HP 表示**当前登场形态**的生命。
+
+| 项 | 约定 |
+|---|---|
+| 形态与生命 | 本体（`PuppeteerForm.Host`）用角色 `StartingHp`；傀儡（`Puppet`）上限由 `IPuppeteerCharacter.PuppetMaxHp` 给出。切形态时先把旧形态当前血量写回运行数据，再 `SetMaxHpInternal` → `SetCurrentHpInternal` 写入新形态（顺序不能反：写上限会把当前值压进上限）。 |
+| 死亡拦截 | 只拦「战斗内 + 本体形态 + 目标是本玩家角色」：`ShouldDie` 返回 `false`，在 `AfterPreventingDeath` 里切傀儡。**必须在 `AfterPreventingDeath` 里把血量抬到 >0**，否则原版会递归重杀（10 次后抛异常）。傀儡形态阵亡才是真正的失败结算。 |
+| 战斗边界 | 战斗开始强制本体形态（本体 0 血 → 1 血）；胜利 / 战斗结束（`AfterCombatVictory` + `AfterCombatEnd` + 解除订阅，三入口幂等）切回本体，本体已死则按 1 血强制复活。战斗外恒为 `Host`，读档不会卡在傀儡形态。 |
+| 歌单冻结 | `PerformManager.IsPlaylistFrozen`：冻结时音乐牌不再进歌单（`ModifyCardPlayResultLocation` 保持原版去向）、`OnCardAdded` / `HandleCardAddedInternal` 拒绝入组、`Clean` / `RemoveOverflowItems` 整段跳过（歌单内容不可移除）。 |
+| 演奏→激活 | 冻结时所有「演奏」入口（`PerformSlot` / `PerformChordSlots` / `RequestSlotPerform` / `RequestChordPerform` / `PerformCard`，以及打出音乐牌本身）不再发动效果、不再排网络动作，改为 `PuppeteerFormManager.ActivateGroups(...)`。分组来源：卡牌 `RequestGroup` / 指定槽位所属分组 → 该组；和弦掩码 → 掩码覆盖的所有组；都没有 → 方案默认分组。激活幂等，四组全亮触发复活。 |
+| 复活 | 生命 = `min(HostMaxHp, PerformManager.Capacity × 2)`（默认四组各 1 → 8）；切回本体、解冻、清空激活位，播 `PuppetSwitchOutTrigger`。 |
+| 形态动作 | 不换场景、不换皮肤：`IPuppeteerCharacter` 给出 `PuppetSwitchInTrigger` / `PuppetSwitchOutTrigger` / `PuppetIdleTrigger` / `PuppetDieTrigger`，角色在自己的 `GenerateAnimator` 里注册（睦为 Spine 的 `Doll_Switchin` / `Doll_SwitchOut` / `Doll_Idle` / `Doll_Die`）。`Doll_Die` 的 `AddAnyState("Dead", ...)` 带条件 `IsPuppetForm(creature)`，因此只在傀儡形态阵亡时生效，条件失败落回通用死亡动作。 |
+| 占位表现 | `NPerformArea.SetFrozen(bool)`：槽位冷色相乘 + `FrozenOverlay` 覆盖层；`SetActivatedGroups(PerformChord)`：`ActivatedGroupBadge_<和弦>` 角标。正式特效替换点写在 `NPerformArea` 的字段注释里，外部接口不变。 |
+| 调试 | `puppet state` / `puppet kill` / `puppet activate CDFG` / `puppet freeze` / `puppet unfreeze`（`PuppeteerConsoleCmd`）。 |
+
+## 11. 破绽 / 弱点击破
+
+`break` 机制全局启用（不绑角色）：破绽可施加给任意单位，任何角色/敌人都能用。
+
+| 项 | 约定 |
+|---|---|
+| 层数与状态 | `WeaknessBreakPower` 上限 `BreakConst.MaxStacks` = 4（`TryModifyPowerAmountReceived` 截断 + `AfterApplied` 兜底）；满 4 层时由 `BreakCmd` 施加 `WeakPointBreakPower`（1 回合，目标一侧 `AfterSideTurnEnd` 递减，归零移除并清空破绽）。处于弱点击破时 `BreakCmd.CanDiscover` 短路，不能再被发现破绽。 |
+| 唯一入口 | **必须走 `BreakCmd.Discover(ctx, target, amount, source)`**：层数截断、满层进状态、Hook 广播、VFX 刷新都在里面。`source` 传卡牌才能让这次发现计入该牌的「击破」命中集合。 |
+| 广播 | `IWeaknessBreakHookListener`（`Scripts/Interfaces/GameHook/`）三个点：发现、进入弱点击破、击破触发；派发在 `BangDreamHook`，不 push `LastInvolvedModel`（与 `OnCardTriggeredPerform` 同款）。 |
+| 击破触发 | 卡牌实现 `IWeaknessBreakCard`（`HasBreakEffect` + `OnWeakPointBreak(ctx, play, target)`）。`BreakRules` 在 `BeforeCardPlayed` 压帧（先记 `CardPlay.Target`），出牌中按 `cardSource` 从 `AfterDamageReceived` / `AfterPowerAmountChanged` 补记命中目标（覆盖随机 / AOE / 非伤害；给自己上的增益不算），`AfterCardPlayedLate` 出栈逐个触发——此时「发现破绽 → 满层 → 弱点击破」已结算完，因此同张牌可以「先发现凑满、再触发击破」。同一张牌对同一目标只触发一次，不同目标各一次。 |
+| 视觉 | 不占 Power 图标（`IsVisibleInternal = false`）：常驻 `NWeaknessBreakVfx` 挂在 `NCreature` 上，1–3 层是 n 枚指示点、弱点击破换破裂形态；Hover 时 `NHoverTipSet.CreateAndShow` 弹能力同款 tips，移除后淡出。施加能力用 `silent: true`，避免无图标却有受击抖动。 |
+| 调试 | `break 2` / `break 4` / `break self 3` / `break clear`（`BreakConsoleCmd`）。 |
