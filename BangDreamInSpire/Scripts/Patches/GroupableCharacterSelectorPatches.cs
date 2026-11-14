@@ -204,6 +204,22 @@ internal static class CharacterSelectScreenSupport
     internal static Control? GetCharButtonContainer(object screen) =>
         FindField(screen, "_charButtonContainer")?.GetValue(screen) as Control;
 
+    /// <summary>
+    /// 把分组按钮登记进屏幕自己的按钮列表（<c>_charSelectButtons</c>）。
+    /// <para>
+    /// <c>NDreadScreen.SelectCharacter</c> 取消其它按钮选中态时遍历的是这个私有列表、而不是容器；
+    /// 分组按钮直接挂在容器里，不登记的话「选中别的角色后分组按钮仍保持高亮」。
+    /// 其它两个屏幕遍历容器，没有该字段，这里静默跳过。
+    /// </para>
+    /// </summary>
+    internal static void AppendToButtonList(object screen, NCharacterSelectButton button)
+    {
+        if (FindField(screen, "_charSelectButtons")?.GetValue(screen) is List<NCharacterSelectButton> list)
+        {
+            list.Add(button);
+        }
+    }
+
     internal static Control? GetInfoPanel(object screen) =>
         FindField(screen, "_infoPanel")?.GetValue(screen) as Control;
 
@@ -265,6 +281,7 @@ internal static class CharacterSelectScreenSupport
             container.MoveChild(child, ++insertIndex);
             child.Init(ModelDb.Character<GroupCharacterPlaceholder>(), screenDelegate);
             GroupableCharacterSelectorPatches.GroupState.Set(child, groupableCharacter.Group);
+            CharacterSelectScreenSupport.AppendToButtonList(screenDelegate, child);
 
             BangDreamInSpireCore.Logger.Info($"Add Group Button: {buttonName}");
 
