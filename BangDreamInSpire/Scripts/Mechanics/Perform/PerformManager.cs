@@ -6,6 +6,7 @@ using BangDreamInSpire.Scripts.Interfaces.CardAugment;
 using BangDreamInSpire.Scripts.Interfaces.CharacterAugment;
 using BangDreamInSpire.Scripts.Interfaces.GameHook;
 using BangDreamInSpire.Scripts.Mechanics.Perform.Schemes;
+using BangDreamInSpire.Scripts.Mechanics.Puppeteer;
 using BangDreamInSpire.Scripts.Nodes;
 using BangDreamInSpire.Scripts.Nodes.VFX;
 using BangDreamInSpire.Scripts.Utils;
@@ -210,6 +211,7 @@ public class PerformManager : HookedSingletonModel, IInCombatManager
 
     private Player? _player;
     private CardPile? _pile;
+    private bool _isPlaylistFrozen;
 
     private IPerformScheme _scheme = EmptyPerformScheme.Instance;
     private PerformCapacityState _capacity = new(EmptyPerformScheme.Instance);
@@ -251,6 +253,44 @@ public class PerformManager : HookedSingletonModel, IInCombatManager
 
     /// <summary>角色提供的演奏方案（不可变策略）。</summary>
     public IPerformScheme Scheme => _scheme;
+
+    /// <summary>
+    /// 歌单是否被外部机制冻结（傀儡师：傀儡形态）。
+    /// 冻结期间音乐牌不再进入歌单、已入组的牌不能被移除，一切"演奏"尝试改为激活对应分组。
+    /// </summary>
+    public bool IsPlaylistFrozen => _isPlaylistFrozen;
+
+    /// <summary>
+    /// 设置歌单冻结状态，并同步演奏区的占位表现（冻结 = 槽位降饱和 + 冷色覆盖层）。
+    /// 由傀儡师形态管理器在形态切换时调用。
+    /// </summary>
+    public void SetPlaylistFrozen(bool frozen)
+    {
+        if (_isPlaylistFrozen == frozen) return;
+
+        _isPlaylistFrozen = frozen;
+        if (TryGetPerformArea(out var performArea))
+        {
+            // 解冻同时清空分组激活位：激活只在冻结期间有意义（见 NPerformArea.SetFrozen）。
+            performArea.SetFrozen(frozen);
+        }
+
+        BangDreamInSpireCore.Logger.Info(
+            $"Player {_player?.Character} ({_player?.NetId}) playlist frozen : {frozen}.");
+    }
+
+    /// <summary>
+    /// 写回分组激活位并刷新演奏区表现（点亮 / 熄灭分组角标）。
+    /// 由傀儡师形态管理器在分组激活与复活时调用。
+    /// </summary>
+    public void SetActivatedGroups(PerformChord groups)
+    {
+        if (!TryGetPerformArea(out var performArea)) return;
+
+        // 演奏区可能在战斗中被重建（插槽变更 / 节点重挂）：顺手补一次冻结状态，同值时是空操作。
+        performArea.SetFrozen(_isPlaylistFrozen);
+        performArea.SetActivatedGroups(groups);
+    }
 
     public NPerformArea PerformArea { get; private set; } = null!;
 
@@ -309,6 +349,9 @@ public class PerformManager : HookedSingletonModel, IInCombatManager
 
     public async Task Clean()
     {
+        // 冻结期间歌单内容不可移除。
+        if (_isPlaylistFrozen) return;
+
         foreach (var cardModel in PerformPile.Cards.ToList())
         {
             if (cardModel.Pile != PerformPile) continue;
@@ -326,6 +369,21 @@ public class PerformManager : HookedSingletonModel, IInCombatManager
         // 原版 NetCombatCardDb 仅在牌堆 ContentsChanged 时登记 ID，而 CardAdded 早于
         // ContentsChanged 触发；此处提前登记，保证 QueuePerformAreaChange 取索引时已有 ID。
         NetCombatCardDb.Instance.IdCardForTesting(cardModel);
+
+        if (_isPlaylistFrozen)
+        {
+            // 冻结期间不接受新曲目：不登记待入队、不参与溢出与入场表现，但仍要把"入场"动作排出去，
+            // 由 HandleCardAddedInternal 的冻结分支负责把牌移出歌单（需求：不能让牌留在歌单里）。
+            BangDreamInSpireCore.Logger.Info(
+                $"Player {Player.Character} ({Player.NetId}) playlist is frozen, reject card added : " +
+                $"{cardModel.Title}.");
+            if (!_initialPerformAreaAdditions.Contains(cardModel))
+            {
+                QueuePerformAreaChange(cardModel, PerformAreaChangeType.Added);
+            }
+
+            return;
+        }
 
         if (Capacity > 0)
         {
@@ -401,6 +459,9 @@ public class PerformManager : HookedSingletonModel, IInCombatManager
 
     private async Task RemoveOverflowItems()
     {
+        // 冻结期间歌单内容不可移除：容量削减 / 溢出移出整段跳过，恢复解冻后再收敛。
+        if (_isPlaylistFrozen) return;
+
         if (Capacity <= 0)
         {
             await Clean();
@@ -430,6 +491,17 @@ public class PerformManager : HookedSingletonModel, IInCombatManager
 
         var performContext = CardContexts.GetOrCreate(cardModel);
         performContext.Manager = this;
+
+        if (_isPlaylistFrozen)
+        {
+            // 冻结期间拒绝入组：落位覆盖作废，并且不让牌留在歌单里（按原版去向移出）。
+            performContext.Request = default;
+            BangDreamInSpireCore.Logger.Info(
+                $"Player {Player.Character} ({Player.NetId}) playlist is frozen, reject enqueue : " +
+                $"{cardModel.Title}.");
+            if (PerformPile.Cards.Contains(cardModel)) await MoveCardInternal(cardModel);
+            return;
+        }
 
         if (Capacity == 0)
         {
@@ -508,12 +580,18 @@ public class PerformManager : HookedSingletonModel, IInCombatManager
 
     /// <summary>
     /// 演奏指定全局槽位中的卡牌。仅当该槽位存在非即兴牌时生效。
+    /// 歌单被冻结时改为激活该槽位所属分组，不发动演奏效果。
     /// </summary>
     public async Task PerformSlot(
         int slotIndex,
         bool isSubsideTriggered = false,
         PlayerChoiceContext? choiceContext = null)
     {
+        if (TryActivateGroupsWhileFrozen(ResolveGroupOfSlot(slotIndex), $"slot {slotIndex}"))
+        {
+            return;
+        }
+
         var slotCard = (from pileCard in PerformPile.Cards
             let performContext = CardContexts.GetOrCreate(pileCard)
             where performContext.SlotIndex == slotIndex
@@ -546,6 +624,15 @@ public class PerformManager : HookedSingletonModel, IInCombatManager
     public async Task PerformChordSlots(PerformChord? chord = null, PlayerChoiceContext? choiceContext = null)
     {
         var mask = chord ?? PerformChord.None;
+
+        // 冻结时"奏响"退化为激活掩码覆盖的全部分组（None 表示全部分组）。
+        if (TryActivateGroupsWhileFrozen(
+                mask == PerformChord.None ? PerformChord.All : mask,
+                $"chord {mask}"))
+        {
+            return;
+        }
+
         var slotIndices = CollectChordSlotIndices(mask);
         BangDreamInSpireCore.Logger.Info(
             $"Player {Player.Character} ({Player.NetId}) Chord perform {mask} : " +
@@ -594,9 +681,15 @@ public class PerformManager : HookedSingletonModel, IInCombatManager
 
     /// <summary>
     /// 发起一次槽位演奏请求。单机或请求被拒时在本地执行。
+    /// 歌单被冻结时不发网络请求，改为在本地激活该槽位所属分组。
     /// </summary>
     public void RequestSlotPerform(int slotIndex, bool isSubsideTriggered)
     {
+        if (TryActivateGroupsWhileFrozen(ResolveGroupOfSlot(slotIndex), $"slot {slotIndex}"))
+        {
+            return;
+        }
+
         RequestPerformAction(new PerformNetworkActionPayload(
             PerformNetworkActionKind.Trigger,
             null,
@@ -608,9 +701,17 @@ public class PerformManager : HookedSingletonModel, IInCombatManager
     /// <summary>
     /// 发起一次和弦演奏请求：奏响该和弦覆盖的每个分组中的全部卡牌。
     /// 单机或请求被拒时在本地执行。
+    /// 歌单被冻结时不发网络请求，改为在本地激活掩码覆盖的全部分组。
     /// </summary>
     public void RequestChordPerform(PerformChord chord)
     {
+        if (TryActivateGroupsWhileFrozen(
+                chord == PerformChord.None ? PerformChord.All : chord,
+                $"chord {chord}"))
+        {
+            return;
+        }
+
         // 和弦演奏不使用槽位字段，目标分组完全由 ChordMask 决定（SlotIndex 仅供 Trigger 种类使用）。
         RequestPerformAction(new PerformNetworkActionPayload(
             PerformNetworkActionKind.Chord,
@@ -633,8 +734,79 @@ public class PerformManager : HookedSingletonModel, IInCombatManager
     {
         if (cardModel is IPerformCard performCard)
         {
+            // 冻结时"演奏单张牌"同样退化为激活该牌所在槽位的分组。
+            if (TryActivateGroupsWhileFrozen(ResolveGroupOfCard(cardModel), $"card {cardModel.Title}"))
+            {
+                return;
+            }
+
             await PerformCard(cardModel, performCard, isAutoPerform);
         }
+    }
+
+    /// <summary>
+    /// 歌单冻结时把"试图演奏"转换为"激活对应分组"，接管本次演奏。
+    /// 返回 <see langword="true" /> 表示调用方必须直接返回（不得再发动效果、不得再排网络动作）。
+    /// </summary>
+    /// <param name="groups">
+    /// 本次演奏覆盖的分组：<see cref="PerformChord.None" /> 表示未指定，由傀儡师状态按方案默认分组兜底。
+    /// </param>
+    /// <param name="source">诊断用的来源描述。</param>
+    private bool TryActivateGroupsWhileFrozen(PerformChord groups, string source)
+    {
+        if (!_isPlaylistFrozen) return false;
+        if (!CombatManager.Instance.IsInProgress) return true;
+
+        Player.AttachedData().PuppeteerFormManager.ActivateGroups(groups);
+        BangDreamInSpireCore.Logger.Info(
+            $"Player {Player.Character} ({Player.NetId}) frozen playlist, activate groups instead of perform : " +
+            $"{source} → {groups}.");
+        return true;
+    }
+
+    /// <summary>全局槽位所属的和弦分组；索引不在任何分组内时返回方案默认分组。</summary>
+    private PerformChord ResolveGroupOfSlot(int slotIndex)
+    {
+        foreach (var descriptor in _scheme.Groups)
+        {
+            if (slotIndex >= descriptor.BaseSlotIndex &&
+                slotIndex < descriptor.BaseSlotIndex + descriptor.MaxSlots)
+            {
+                return descriptor.Chord;
+            }
+        }
+
+        return _capacity.ResolveDefaultGroup();
+    }
+
+    /// <summary>
+    /// 冻结期间打出的音乐牌「想去的分组」：优先手动指定的分组，其次指定槽位所属分组，
+    /// 都没有时退回方案默认分组（睦为 C 组）。
+    /// </summary>
+    private PerformChord ResolveGroupOfPlayedMusicCard(CardModel card)
+    {
+        var request = CardContexts.GetOrCreate(card).Request;
+        if (request.Group is { } group && group != PerformChord.None)
+        {
+            return group;
+        }
+
+        if (request.SlotIndex is { } slotIndex)
+        {
+            return ResolveGroupOfSlot(slotIndex);
+        }
+
+        return _capacity.ResolveDefaultGroup();
+    }
+
+    /// <summary>
+    /// 牌所在槽位的和弦分组；牌不在歌单里时退回方案默认分组。
+    /// 卡牌和弦不参与分组判定（和弦只用于激活奏响），因此这里不看卡牌自身和弦。
+    /// </summary>
+    private PerformChord ResolveGroupOfCard(CardModel cardModel)
+    {
+        var slotIndex = CardContexts.GetOrCreate(cardModel).SlotIndex;
+        return IsValidSlot(slotIndex) ? ResolveGroupOfSlot(slotIndex) : _capacity.ResolveDefaultGroup();
     }
 
     private async Task PerformCard(
@@ -1110,6 +1282,18 @@ public class PerformManager : HookedSingletonModel, IInCombatManager
             return cardLocation;
         }
 
+        // 歌单冻结：音乐牌不再被送进歌单，落回原版去向（弃牌堆等）；
+        // 同时把这次「试图演奏」转成激活该牌对应的分组——墨缇丝形态的复活进度就是靠这条路径推进的。
+        if (_isPlaylistFrozen)
+        {
+            if (cardLocation.player == Player && card is IPerformCard)
+            {
+                TryActivateGroupsWhileFrozen(ResolveGroupOfPlayedMusicCard(card), $"music card {card.Title}");
+            }
+
+            return cardLocation;
+        }
+
         if (cardLocation.player == Player && card is IPerformCard performanceCard &&
             cardLocation.pileType == PileType.Discard)
         {
@@ -1136,6 +1320,9 @@ public class PerformManager : HookedSingletonModel, IInCombatManager
     {
         PerformPile = BangDreamConst.PerformPile.GetPile(Player);
 
+        // 冻结状态是本场战斗的临时状态：新一场开始一律解冻，由傀儡师机制按形态重新置位。
+        _isPlaylistFrozen = false;
+
         if (ModNodeAttachmentRegistry.For(BangDreamConst.ModId).TryGetAttached<NCreature, NPerformArea>(
                 Player.Creature.GetCreatureNode()!, "perform_area", out var areaNode))
         {
@@ -1150,6 +1337,9 @@ public class PerformManager : HookedSingletonModel, IInCombatManager
         PerformArea.SubmitScheme(_scheme);
         SyncPerformArea();
         PerformArea.SubmitChanged();
+        // 节点可能跨战斗复用：新一场一律清掉上一场残留的冻结 / 分组激活表现。
+        PerformArea.SetFrozen(false);
+        PerformArea.SetActivatedGroups(PerformChord.None);
 
         PerformPile.CardAdded += OnCardAdded;
         PerformPile.CardAddFinished += OnCardAddFinished;
@@ -1175,6 +1365,13 @@ public class PerformManager : HookedSingletonModel, IInCombatManager
         ClearPerformAreaChanges();
         _instantPerformedCards.Clear();
         CardContexts.Clear();
+        // 战斗结束时形态归位由傀儡师机制负责，这里只保证不留冻结状态到战斗外。
+        _isPlaylistFrozen = false;
+        if (TryGetPerformArea(out var performArea))
+        {
+            performArea.SetFrozen(false);
+            performArea.SetActivatedGroups(PerformChord.None);
+        }
     }
 
     private static async Task MoveCardInternal(CardModel cardModel)

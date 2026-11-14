@@ -2,6 +2,7 @@ using BangDreamInSpire.Scripts.Mechanics;
 using BangDreamInSpire.Scripts.Mechanics.Lingered;
 using BangDreamInSpire.Scripts.Mechanics.MusicNote;
 using BangDreamInSpire.Scripts.Mechanics.Perform;
+using BangDreamInSpire.Scripts.Mechanics.Puppeteer;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;
 using STS2RitsuLib.Utils;
@@ -35,6 +36,9 @@ public class AttachePlayerData
 
     /// <summary>音符伤害追踪状态；未启用音符机制的角色访问会抛出异常。</summary>
     public MusicNoteDamageTracker MusicNoteDamageTracker => Get<MusicNoteDamageTracker>();
+
+    /// <summary>傀儡师形态状态（双生命池 / 形态切换 / 歌单冻结）；未启用傀儡师机制的角色访问会抛出异常。</summary>
+    public PuppeteerFormManager PuppeteerFormManager => Get<PuppeteerFormManager>();
 
     private T Get<T>() where T : AbstractModel
     {

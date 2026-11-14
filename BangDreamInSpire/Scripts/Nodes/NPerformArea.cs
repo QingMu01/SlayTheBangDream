@@ -1,3 +1,4 @@
+using BangDreamInSpire.Scripts.Enums;
 using BangDreamInSpire.Scripts.Extensions;
 using BangDreamInSpire.Scripts.Interfaces.CharacterAugment;
 using BangDreamInSpire.Scripts.Mechanics.Perform;
@@ -33,6 +34,16 @@ public partial class NPerformArea : Control
     private const float SlotEntranceHorizontalOffset = 56f;
     private const float HintFadeDuration = 0.12f;
     private const float HintVerticalOffset = 5f;
+
+    /// <summary>冻结时槽位的冷色相乘系数（占位表现：冷却下的降饱和 / 提冷调）。</summary>
+    private static readonly Color FrozenSlotTint = new(0.62f, 0.76f, 0.95f);
+
+    /// <summary>冻结覆盖层颜色（占位表现：半透明冷色覆盖）。</summary>
+    private static readonly Color FrozenOverlayColor = new(0.35f, 0.6f, 0.95f, 0.3f);
+
+    private const float ActivatedBadgeSize = 22f;
+    private const string FrozenOverlayName = "FrozenOverlay";
+    private const string ActivatedBadgeNamePrefix = "ActivatedGroupBadge_";
 
     /// <summary>手动选择时槽位命中框额外放宽的边距（像素）。</summary>
     private const float SlotSelectionHitPadding = 8f;
@@ -81,6 +92,19 @@ public partial class NPerformArea : Control
     private bool _hintNeedsPositionRefresh;
     private bool _isExiting;
 
+    // ── 歌单冻结 / 分组激活（占位表现） ──────────────────────────────────────────
+    //
+    // 正式特效替换点（下一轮 vfx-authoring 只换这一段的内部实现，外部接口保持不变）：
+    //   * 冻结层：子节点名 "FrozenOverlay"（挂在 ItemContainer 下、z_index 高于槽位、鼠标穿透）。
+    //     当前用纯色 ColorRect + 槽位 modulate 冷色相乘表达"降饱和 + 冷色覆盖"。
+    //   * 分组激活角标：子节点名 "ActivatedGroupBadge_<和弦名>"，当前用 ColorRect + Label。
+    // 外部只依赖 SetFrozen(bool) / SetActivatedGroups(PerformChord)；刷新入口是 ApplyItemVisibility。
+    private ColorRect? _frozenOverlay;
+    private bool _isFrozen;
+    private PerformChord _activatedGroups = PerformChord.None;
+    private readonly Dictionary<NPerformItem, Color> _slotBaseModulate = [];
+    private readonly Dictionary<PerformChord, ColorRect> _activatedGroupBadges = [];
+
     private CardModel? _slotSelectionCard;
     private PerformSlotSelectionMode _slotSelectionMode = PerformSlotSelectionMode.None;
     private int _slotSelectionHoveredSlot;
@@ -122,6 +146,7 @@ public partial class NPerformArea : Control
         foreach (var item in _items)
         {
             item.AttachToArea(this);
+            CaptureSlotModulate(item);
         }
 
         Visible = _slotCount > 0;
@@ -146,6 +171,36 @@ public partial class NPerformArea : Control
         }
 
         SecondaryResourceStateStore.Get(_player).Changed += OnSecondaryResourceChanged;
+    }
+
+    /// <summary>
+    /// 设置歌单冻结表现：槽位降饱和 + 一层冷色覆盖。
+    /// 解冻时同时清空分组激活位（激活只在冻结期间有意义）。
+    /// </summary>
+    public void SetFrozen(bool frozen)
+    {
+        if (_isFrozen == frozen) return;
+
+        _isFrozen = frozen;
+        if (!frozen && _activatedGroups != PerformChord.None)
+        {
+            _activatedGroups = PerformChord.None;
+        }
+
+        ApplyFrozenVisuals();
+        ApplyActivatedGroupVisuals();
+    }
+
+    /// <summary>
+    /// 写回已激活的分组（位掩码）：对每个激活分组点亮一枚角标。
+    /// 只影响占位表现，不改变槽位布局与命中框。
+    /// </summary>
+    public void SetActivatedGroups(PerformChord groups)
+    {
+        if (_activatedGroups == groups) return;
+
+        _activatedGroups = groups;
+        ApplyActivatedGroupVisuals();
     }
 
     /// <summary>该演奏区域当前是否处于手动落位选择态。</summary>
@@ -690,6 +745,9 @@ public partial class NPerformArea : Control
             {
                 _layoutTween = null;
             }
+
+            // 槽位布局是逐帧缓动的，冻结覆盖层要在移动结束后再贴一次范围。
+            if (_isFrozen) ApplyFrozenVisuals();
         };
 
         return completion.Task;
@@ -715,6 +773,194 @@ public partial class NPerformArea : Control
         {
             _items[index].Visible = _activeSlots.Contains(index + 1);
         }
+
+        // 槽位集合变化后重新贴一次冻结层与激活角标（新增/移除槽位会改变它们的范围）。
+        ApplyFrozenVisuals();
+        ApplyActivatedGroupVisuals();
+    }
+
+    /// <summary>记录槽位的原始 modulate：冻结表现是相乘冷色，必须先留底才能原样还原。</summary>
+    private void CaptureSlotModulate(NPerformItem item)
+    {
+        _slotBaseModulate.TryAdd(item, item.Modulate);
+    }
+
+    private Color GetSlotBaseModulate(NPerformItem item)
+    {
+        CaptureSlotModulate(item);
+        return _slotBaseModulate[item];
+    }
+
+    /// <summary>冻结表现：槽位冷色相乘 + 覆盖层。占位实现，正式特效替换点见字段注释。</summary>
+    private void ApplyFrozenVisuals()
+    {
+        foreach (var item in _items)
+        {
+            var baseModulate = GetSlotBaseModulate(item);
+            item.Modulate = _isFrozen ? baseModulate * FrozenSlotTint : baseModulate;
+        }
+
+        EnsureFrozenOverlay();
+        if (_frozenOverlay == null) return;
+
+        _frozenOverlay.Visible = _isFrozen;
+        if (_isFrozen) RefreshFrozenOverlayRect();
+    }
+
+    private void EnsureFrozenOverlay()
+    {
+        if (_itemContainer == null) return;
+        if (_frozenOverlay != null && GodotObject.IsInstanceValid(_frozenOverlay)) return;
+
+        var overlay = new ColorRect
+        {
+            Name = FrozenOverlayName,
+            Color = FrozenOverlayColor,
+            MouseFilter = MouseFilterEnum.Ignore,
+            // 槽位在 _itemContainer 里按创建顺序排列，z_index 才能保证覆盖层始终盖在所有槽位上面。
+            ZIndex = 5,
+            Visible = false
+        };
+        _itemContainer.AddChild(overlay);
+        _frozenOverlay = overlay;
+    }
+
+    /// <summary>覆盖层铺在全部可见槽位的并集矩形上（容器局部坐标）。</summary>
+    private void RefreshFrozenOverlayRect()
+    {
+        if (_frozenOverlay == null) return;
+
+        if (!TryGetVisibleSlotBounds(out var bounds))
+        {
+            _frozenOverlay.Visible = false;
+            return;
+        }
+
+        _frozenOverlay.Position = bounds.Position;
+        _frozenOverlay.Size = bounds.Size;
+    }
+
+    private bool TryGetVisibleSlotBounds(out Rect2 bounds)
+    {
+        bounds = default;
+        var hasBounds = false;
+        foreach (var item in _items)
+        {
+            if (!item.Visible) continue;
+
+            var scale = item.Scale;
+            var size = new Vector2(
+                Mathf.Abs(item.LocalSize.X * scale.X),
+                Mathf.Abs(item.LocalSize.Y * scale.Y));
+            if (size.X <= 0f || size.Y <= 0f) continue;
+
+            // 命中框右侧的槽位带负的水平缩放，视觉矩形从锚点向左展开。
+            var position = item.Position + (scale.X < 0f ? new Vector2(-size.X, 0f) : Vector2.Zero);
+            var rect = new Rect2(position, size);
+            bounds = hasBounds ? bounds.Merge(rect) : rect;
+            hasBounds = true;
+        }
+
+        return hasBounds;
+    }
+
+    /// <summary>分组激活表现：每个已激活分组点亮一枚角标。占位实现，正式特效替换点见字段注释。</summary>
+    private void ApplyActivatedGroupVisuals()
+    {
+        if (_itemContainer == null) return;
+
+        // 被点亮的分组按需创建角标并贴到该分组首个已激活槽位的外侧。
+        foreach (var group in _activatedGroups.EnumerateGroups())
+        {
+            if (!TryGetGroupBadgeAnchor(group, out var position))
+            {
+                HideBadge(group);
+                continue;
+            }
+
+            var badge = EnsureActivatedBadge(group);
+            badge.Position = position;
+            badge.Visible = _isFrozen;
+        }
+
+        foreach (var group in _activatedGroupBadges.Keys.ToList())
+        {
+            if (!_activatedGroups.HasFlag(group)) HideBadge(group);
+        }
+    }
+
+    private ColorRect EnsureActivatedBadge(PerformChord group)
+    {
+        if (_activatedGroupBadges.TryGetValue(group, out var existing) && GodotObject.IsInstanceValid(existing))
+        {
+            return existing;
+        }
+
+        var badge = new ColorRect
+        {
+            Name = ActivatedBadgeNamePrefix + group,
+            Color = PerformChordColors.ColorOf(group),
+            Size = new Vector2(ActivatedBadgeSize, ActivatedBadgeSize),
+            MouseFilter = MouseFilterEnum.Ignore,
+            ZIndex = 6,
+            Visible = false
+        };
+
+        var label = new Label
+        {
+            Name = "Label",
+            Text = group.ToString(),
+            MouseFilter = MouseFilterEnum.Ignore,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        label.SetAnchorsPreset(LayoutPreset.FullRect);
+        badge.AddChild(label);
+
+        _itemContainer!.AddChild(badge);
+        _activatedGroupBadges[group] = badge;
+        return badge;
+    }
+
+    private void HideBadge(PerformChord group)
+    {
+        if (_activatedGroupBadges.TryGetValue(group, out var badge) && GodotObject.IsInstanceValid(badge))
+        {
+            badge.Visible = false;
+        }
+    }
+
+    /// <summary>分组角标挂在该分组首个已激活槽位的外侧。</summary>
+    private bool TryGetGroupBadgeAnchor(PerformChord group, out Vector2 position)
+    {
+        position = Vector2.Zero;
+        if (_scheme == null || group == PerformChord.None) return false;
+
+        foreach (var descriptor in _scheme.Groups)
+        {
+            if (descriptor.Chord != group) continue;
+
+            for (var local = 0; local < descriptor.MaxSlots; local++)
+            {
+                var slotIndex = descriptor.BaseSlotIndex + local;
+                if (!_activeSlots.Contains(slotIndex) || slotIndex < 1 || slotIndex > _items.Count) continue;
+
+                var offset = GetCorner(slotIndex) switch
+                {
+                    PerformSlotCorner.TopLeft => new Vector2(-ActivatedBadgeSize - 4f, -6f),
+                    PerformSlotCorner.BottomLeft => new Vector2(-ActivatedBadgeSize - 4f, 6f),
+                    PerformSlotCorner.TopRight => new Vector2(4f, -6f),
+                    PerformSlotCorner.BottomRight => new Vector2(4f, 6f),
+                    _ => new Vector2(0f, -ActivatedBadgeSize - 4f)
+                };
+                position = _items[slotIndex - 1].Position + offset;
+                return true;
+            }
+
+            return false;
+        }
+
+        return false;
     }
 
     private void EnsureSlotCount()
@@ -727,6 +973,8 @@ public partial class NPerformArea : Control
             var slot = NPerformItem.Create(this);
             slot.Position = GetItemPosition(slotIndex);
             ApplySlotScale(slot, slotIndex);
+            // 先留底 modulate：新槽位可能在冻结期间创建，冻结表现是相乘冷色。
+            CaptureSlotModulate(slot);
             _items.Add(slot);
             _itemContainer.AddChild(slot);
             if (_activeSlots.Contains(slotIndex))
@@ -745,6 +993,7 @@ public partial class NPerformArea : Control
 
             _items.RemoveAt(_items.Count - 1);
             _pendingEntranceSlots.Remove(slot);
+            _slotBaseModulate.Remove(slot);
             slot.Visible = false;
             slot.QueueFree();
         }
