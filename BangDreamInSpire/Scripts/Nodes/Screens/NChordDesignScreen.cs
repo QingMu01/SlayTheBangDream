@@ -388,8 +388,8 @@ public sealed partial class NChordDesignScreen : Control, IOverlayScreen
                 continue;
             }
 
-            // NCard 是对象池节点：上一次面板会话里残留的自绘角标要清掉，否则复用节点时会带上旧和弦
-            RemoveStaleChordBadges(cardNode);
+            // NCard 是对象池节点：上一次面板会话里残留的自绘书签要清掉，否则复用节点时会带上旧和弦
+            RemoveStaleChordBookmarks(cardNode);
 
             holder.Connect(NCardHolder.SignalName.Pressed, Callable.From<NCardHolder>(OnHolderPressed));
             holder.Visible = true;
@@ -527,8 +527,8 @@ public sealed partial class NChordDesignScreen : Control, IOverlayScreen
     {
         if (_resultCard != null)
         {
-            // 预览角标是预览卡的子节点：回池前先摘掉，否则池化复用时会带着旧角标跑到别的界面上
-            RemoveStaleChordBadges(_resultCard);
+            // 预览书签是预览卡的子节点：回池前先摘掉，否则池化复用时会带着旧书签跑到别的界面上
+            RemoveStaleChordBookmarks(_resultCard);
             _resultCard.QueueFreeSafely();
             _resultCard = null;
         }
@@ -563,17 +563,17 @@ public sealed partial class NChordDesignScreen : Control, IOverlayScreen
         cardNode.Position = _resultCardHost.Size * 0.5f;
         cardNode.UpdateVisuals(PileType.None, CardPreviewMode.Normal);
 
-        // 预览要显示「结果和弦」而不是卡牌当前和弦：隐掉卡面自带的能力角标，
-        // 再挂一枚按显式和弦构建的角标——挂在卡面 %OverlayContainer 下，继承卡的缩放/变换，
-        // 因此和真实卡牌一样会被标题横幅压住一角（角标只给背景着色，不抢前景）。
+        // 预览要显示「结果和弦」而不是卡牌当前和弦：隐掉卡面自带的能力书签，
+        // 再挂一枚按显式和弦构建的书签——挂在卡面 %OverlayContainer 下，继承卡的缩放/变换，
+        // 因此和真实卡牌一样位于卡面前景之下（书签只给卡框侧边着色，不抢前景）。
         // 只动这张预览卡节点，卡牌模型与卡组数据完全不变。
-        RemoveStaleChordBadges(cardNode);
+        RemoveStaleChordBookmarks(cardNode);
         var overlay = cardNode.GetNodeOrNull<Control>("%OverlayContainer");
         overlay?.GetNodeOrNull<Control>("RitsuLibCapabilityOverlays")?.Hide();
 
         if (finalChord != PerformChord.None && overlay != null)
         {
-            overlay.AddChildSafely(NChordCornerBadge.Create(finalChord));
+            overlay.AddChildSafely(NChordBookmark.Create(finalChord));
         }
 
         cardNode.Modulate = new Color(1f, 1f, 1f, 0f);
@@ -605,10 +605,10 @@ public sealed partial class NChordDesignScreen : Control, IOverlayScreen
     }
 
     /// <summary>
-    /// 清掉池化卡牌节点上残留的自绘角标（直挂 <c>%OverlayContainer</c> 的 <see cref="NChordCornerBadge" />）。
-    /// 能力角标在 <c>RitsuLibCapabilityOverlays</c> 容器里、由 RitsuLib 每次重建，不在这里处理。
+    /// 清掉池化卡牌节点上残留的自绘书签（直挂 <c>%OverlayContainer</c> 的 <see cref="NChordBookmark" />）。
+    /// 能力书签在 <c>RitsuLibCapabilityOverlays</c> 容器里、由 RitsuLib 每次重建，不在这里处理。
     /// </summary>
-    private static void RemoveStaleChordBadges(NCard cardNode)
+    private static void RemoveStaleChordBookmarks(NCard cardNode)
     {
         if (cardNode.GetNodeOrNull<Control>("%OverlayContainer") is not { } overlay)
         {
@@ -617,7 +617,7 @@ public sealed partial class NChordDesignScreen : Control, IOverlayScreen
 
         foreach (var child in overlay.GetChildren())
         {
-            if (child is NChordCornerBadge)
+            if (child is NChordBookmark)
             {
                 child.QueueFreeSafely();
             }

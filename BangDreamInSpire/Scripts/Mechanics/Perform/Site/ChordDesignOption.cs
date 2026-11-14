@@ -117,7 +117,7 @@ public class ChordDesignOption(Player owner) : ModRestSiteOptionTemplate(owner)
 
         card.GetOrCreateCapability<ChordCapability>().SetChord(chord);
 
-        // 卡面角标只在 NCard.ReloadOverlay 后重建；休息处没有手牌，这里防御性地对可能的卡面实例刷新一次
+        // 卡面书签只在 NCard.ReloadOverlay 后重建；休息处没有手牌，这里防御性地对可能的卡面实例刷新一次
         if (NCard.FindOnTable(card) is { } cardNode)
         {
             ReloadOverlay?.Invoke(cardNode);
@@ -125,7 +125,7 @@ public class ChordDesignOption(Player owner) : ModRestSiteOptionTemplate(owner)
     }
 
     /// <summary>
-    /// 与升级卡牌同样的收尾：先在屏幕中央放大展示这张牌（角标已是新和弦），停留片刻后飞入卡组图标。
+    /// 与升级卡牌同样的收尾：先在屏幕中央放大展示这张牌（书签已是新和弦），停留片刻后飞入卡组图标。
     /// 展示与飞行都由本体 <see cref="NCardUpgradeVfx" /> 负责（它内部再调 <c>NCardFlyVfx</c>），
     /// 这里只等展示段结束，把飞行留给后场继续播放。
     /// </summary>

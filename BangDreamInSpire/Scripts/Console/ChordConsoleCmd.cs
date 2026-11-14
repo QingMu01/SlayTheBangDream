@@ -11,10 +11,10 @@ using STS2RitsuLib.Models.Capabilities;
 namespace BangDreamInSpire.Scripts.Console;
 
 /// <summary>
-/// 调试命令：给手牌设置演奏和弦，用来预览卡牌右上角和弦角标的切分效果。
+/// 调试命令：给手牌设置演奏和弦，用来预览卡牌右边缘和弦书签的堆叠效果。
 /// <para>
 /// 用法：<c>chord CDF</c>（和弦字母任意组合）、<c>chord 13</c>（位掩码，C=1/D=2/F=4/G=8）、
-/// <c>chord none</c>（清空）。卡牌角标由能力的卡面覆盖层绘制，只在
+/// <c>chord none</c>（清空）。卡牌书签由能力的卡面覆盖层绘制，只在
 /// <c>NCard.ReloadOverlay</c> 之后重建，因此改完和弦要手动触发一次覆盖层刷新。
 /// </para>
 /// </summary>
@@ -32,7 +32,7 @@ public class ChordConsoleCmd : AbstractConsoleCmd
 
     public override string Args => "<C|D|F|G 组合 / 位掩码 1/2/4/8 / none>";
 
-    public override string Description => "dev: 给手牌设置演奏和弦，预览右上角和弦角标";
+    public override string Description => "dev: 给手牌设置演奏和弦，预览右边缘和弦书签";
 
     public override bool IsNetworked => false;
 
