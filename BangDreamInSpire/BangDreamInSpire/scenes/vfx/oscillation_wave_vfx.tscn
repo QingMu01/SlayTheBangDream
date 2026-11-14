@@ -1,0 +1,43 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Nodes/VFX/OscillationWaveVfx.cs" id="1_script"]
+[ext_resource type="Texture2D" path="res://BangDreamInSpire/images/vfx/oscillation/oscillation_staff_ring.png" id="2_score"]
+[ext_resource type="Texture2D" path="res://BangDreamInSpire/images/vfx/oscillation/oscillation_wave_soft.png" id="3_soft"]
+[ext_resource type="Texture2D" path="res://BangDreamInSpire/images/vfx/oscillation/oscillation_ring.png" id="4_ring"]
+[ext_resource type="Texture2D" path="res://images/packed/vfx/generic/round_glow.png" id="5_glow"]
+[ext_resource type="Material" path="res://themes/canvas_item_material_additive_shared.tres" id="6_add"]
+
+[node name="OscillationWaveVfx" type="Node2D"]
+script = ExtResource("1_script")
+
+[node name="GroundGlow" type="Sprite2D" parent="."]
+z_index = -5
+material = ExtResource("6_add")
+modulate = Color(0.62, 0.72, 0.95, 1)
+scale = Vector2(1.9, 0.85)
+texture = ExtResource("5_glow")
+
+[node name="Score" type="Sprite2D" parent="."]
+z_index = 1
+material = ExtResource("6_add")
+modulate = Color(0.72, 0.8, 1, 1)
+scale = Vector2(1, 0.82)
+texture = ExtResource("2_score")
+
+[node name="WaveA" type="Sprite2D" parent="."]
+z_index = 2
+material = ExtResource("6_add")
+modulate = Color(0.7, 0.78, 1, 1)
+texture = ExtResource("3_soft")
+
+[node name="WaveB" type="Sprite2D" parent="."]
+z_index = 3
+material = ExtResource("6_add")
+modulate = Color(0.66, 0.74, 1, 1)
+texture = ExtResource("4_ring")
+
+[node name="Echo" type="Sprite2D" parent="."]
+z_index = 4
+material = ExtResource("6_add")
+modulate = Color(0.72, 0.8, 1, 1)
+texture = ExtResource("3_soft")

@@ -11,7 +11,7 @@
   * 引用形态与实现出处 .agents/skills/obsolete-file-cleanup/references/reference-graph.md:5-28
   * 输出契约 ......... .agents/skills/card-development/scripts/audit_cards.py:526-546
                        （`key value` 统计行 + `PROBLEM `/`WARN ` 前缀 + 有问题 exit 1）
-  * 参考实现 ......... .vfx_staging/audit/orphan_scan3.py（历史存档，只读）
+  * 参考实现 ......... .scratch/cleanup/audit/orphan_scan3.py（历史存档，只读）
                        本脚本修掉它三个已证实缺陷：
                          (1) 死簇不迭代到不动点 —— 本脚本用 while 循环迭代到不动点（见 dead_cluster_pass）
                          (2) 卡图 startswith 前缀近似过宽 —— 本脚本改为「类名精确相等」+「Sakiko 精确后缀」
@@ -28,12 +28,12 @@
                          (6) 动态排除本次 --out 目录与工具产物，避免「清单自污染判定」
 
 CLI:
-  python3 scan_orphans.py [--project-root .] [--out .vfx_staging/audit] [--json]
+  python3 scan_orphans.py [--project-root .] [--out .scratch/cleanup/audit] [--json]
 
 退出码：1 = 存在 confirmed_orphan（有「确认无引用」项，需分档与人工签字）；
         0 = 无。注意 exit 1 只表示「有东西要人看」，不表示脚本失败。
 
-⚠️ 临时目录语义：本脚本的快照默认落在 `.vfx_staging/audit/` —— `.vfx_staging/` 是特效设计用的
+⚠️ 临时目录语义：本脚本的快照默认落在 `.scratch/cleanup/audit/` —— `.scratch/cleanup/` 是特效设计用的
 临时目录，**随时可能被整体清理**。因此必须在同一次会话内完成
 「扫描 → 分档 → 签字 → dry-run → apply」这条链；**长期留档靠 `docs/cleanup-log.md`**
 （由 `sign_off.py --apply` 追加）。
@@ -62,7 +62,7 @@ SCRIPT_NAME = "scan_orphans.py"
 # ---------------------------------------------------------------------------
 # 搜索域（docs/cleanup-authoring.md:86 硬性条款 1）
 # ---------------------------------------------------------------------------
-EXCLUDED_DIRS = {".git", ".godot", "bin", "obj", ".vfx_staging"}
+EXCLUDED_DIRS = {".git", ".godot", "bin", "obj", ".scratch"}
 # 「清理自述文档」自引用剥离（v1.1.0 新增）。
 #
 # **描述候选的文档不能构成「候选被使用」的证据** —— 与 `.import` 里 `source_file=`
@@ -339,7 +339,7 @@ def parse_type_bases(text: str) -> dict[str, list[str]]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="过时文件引用图扫描（四态分文件落盘）")
     parser.add_argument("--project-root", default=".", help="仓库根目录（默认 .）")
-    parser.add_argument("--out", default=".vfx_staging/audit", help="输出目录（默认 .vfx_staging/audit，是会在清理中被整体删除的临时目录；"
+    parser.add_argument("--out", default=".scratch/cleanup/audit", help="输出目录（默认 .scratch/cleanup/audit，是会在清理中被整体删除的临时目录；"
                              "相对路径相对 --project-root 解析。长期留档请用 sign_off.py 的 docs/cleanup-log.md）")
     parser.add_argument("--json", action="store_true", help="额外输出机器可读 JSON")
     parser.add_argument("--keep-file", action="append", default=[],

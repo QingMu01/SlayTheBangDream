@@ -1,0 +1,52 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Nodes/VFX/OscillationHitVfx.cs" id="1_script"]
+[ext_resource type="Texture2D" path="res://BangDreamInSpire/images/vfx/star_322.png" id="2_star"]
+[ext_resource type="Texture2D" path="res://BangDreamInSpire/images/vfx/oscillation/oscillation_wave_soft.png" id="3_ringsoft"]
+[ext_resource type="Texture2D" path="res://BangDreamInSpire/images/vfx/oscillation/oscillation_ring.png" id="4_ring"]
+[ext_resource type="Texture2D" path="res://BangDreamInSpire/images/vfx/oscillation/oscillation_note.png" id="5_note"]
+[ext_resource type="Texture2D" path="res://images/packed/vfx/generic/round_glow.png" id="6_glow"]
+[ext_resource type="Material" path="res://themes/canvas_item_material_additive_shared.tres" id="7_add"]
+
+[node name="OscillationHitVfx" type="Node2D"]
+script = ExtResource("1_script")
+
+[node name="CoreGlow" type="Sprite2D" parent="."]
+z_index = 6
+material = ExtResource("7_add")
+modulate = Color(0.7, 0.8, 1, 1)
+texture = ExtResource("6_glow")
+
+[node name="RingA" type="Sprite2D" parent="."]
+z_index = 4
+material = ExtResource("7_add")
+modulate = Color(0.72, 0.8, 1, 1)
+texture = ExtResource("3_ringsoft")
+
+[node name="RingB" type="Sprite2D" parent="."]
+z_index = 5
+material = ExtResource("7_add")
+modulate = Color(0.64, 0.74, 0.98, 1)
+texture = ExtResource("4_ring")
+
+[node name="Star" type="Sprite2D" parent="."]
+z_index = 10
+material = ExtResource("7_add")
+texture = ExtResource("2_star")
+
+[node name="Notes" type="Node2D" parent="."]
+
+[node name="Note0" type="Sprite2D" parent="Notes"]
+z_index = 12
+material = ExtResource("7_add")
+modulate = Color(0.79, 0.85, 1, 1)
+scale = Vector2(0.9, 0.9)
+texture = ExtResource("5_note")
+
+[node name="Note1" type="Sprite2D" parent="Notes"]
+z_index = 11
+material = ExtResource("7_add")
+modulate = Color(0.79, 0.85, 1, 1)
+scale = Vector2(0.78, 0.78)
+texture = ExtResource("5_note")
+position = Vector2(16, -24)

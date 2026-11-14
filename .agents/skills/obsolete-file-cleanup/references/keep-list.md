@@ -28,7 +28,7 @@
 | `ItsCrychic/ItsCrychic/images/charui/anon/**`（约 28 张） | 预留待实装 | **未实装角色**的预留素材，不是过时 | 角色实装并接线后 |
 | `ItsCrychic/ItsCrychic/scenes/creature/anon01.tscn`、`anon02.tscn` | 预留待实装 | 同上，预留场景 | 同上 |
 | `ItsCrychic/ItsCrychic/images/charui/img_{soyo,taki,tomori}*.webp`（3 张） | 预留待实装 | 未实装角色的立绘预留 | 对应角色实装后 |
-| `BangDreamInSpire/BangDreamInSpire/scenes/vfx/music_crystal_hit_vfx.tscn` | **活跃保留** | **有意保留的预览件**：有 `.vfx_staging/rec/music_crystal_hit_vfx-*` 录帧记录，等接入卡牌；它引用的 `MusicCrystalHitVfx.cs` 因此是活的 | 接入完成后 |
+| `BangDreamInSpire/BangDreamInSpire/scenes/vfx/music_crystal_hit_vfx.tscn` | **活跃保留** | **有意保留的预览件**：有 `.scratch/vfx/rec/music_crystal_hit_vfx-*` 录帧记录，等接入卡牌；它引用的 `MusicCrystalHitVfx.cs` 因此是活的 | 接入完成后 |
 | `BangDreamInSpire/BangDreamInSpire/skins/skin_template.json` | **活跃保留** | 皮肤模板，供新增角色复制，本身是活的 | 模板机制变更时 |
 | `docs/vfx-authoring.md` / `.agents/skills/vfx-authoring/references/csharp-recipes.md` 提到的 `MusicFlashVfx` / `MusicHitVfx` / `MusicWaveVfx` | 活跃保留（代码侧） | 被文档当作 `Node2D` 参考实现引用。若要删，必须**同批改文档**，否则文档指向不存在的代码 | 文档改写后 |
 
@@ -47,7 +47,7 @@
 问四个问题，任一答不上来就落 C：
 
 1. 它对应的是**已实装**的角色/卡/机制吗？（未实装 → B）
-2. 它在文档、计划文件（`.vfx_staging/plans/`）、录帧记录里被承诺过吗？（被承诺 → B）
+2. 它在文档、计划文件（`.scratch/vfx/plans/`）、录帧记录里被承诺过吗？（被承诺 → B）
 3. 它是模板、参考实现、或给未来复制用的骨架吗？（是 → B）
 4. 删除后会不会让某个**文档或清单**指向不存在的路径？（会 → 先改文档，或落 C）
 
@@ -63,4 +63,4 @@ scenes/vfx/music_crystal_hit_vfx.tscn
 skins/skin_template.json
 ```
 
-本文件第 1 节的「绝对禁止删」由扫描脚本的搜索域排除实现（本体同步目录、`.godot`、`bin`、`obj`、`.vfx_staging` 根本不进候选集），不依赖 keep 规则。
+本文件第 1 节的「绝对禁止删」由扫描脚本的搜索域排除实现（本体同步目录、`.godot`、`bin`、`obj`、`.scratch` 根本不进候选集），不依赖 keep 规则。

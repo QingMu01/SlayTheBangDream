@@ -7,11 +7,11 @@
   "background": "#4B4B4B",
   "composition": {"width": 600, "height": 600},
   "items": [
-    {"path": ".vfx_staging/export/glow.jpg", "label": "glow",
+    {"path": ".scratch/vfx/export/glow.jpg", "label": "glow",
      "role": "glow", "blend": "crush_add", "tint": "#6BCCFF",
      "display": 365, "alpha": 0.55, "black_point": 0.035,
      "softness": 0.07, "intensity": 1.0, "x": 300, "y": 300, "z": 0},
-    {"path": ".vfx_staging/export/ring.png", "label": "ring",
+    {"path": ".scratch/vfx/export/ring.png", "label": "ring",
      "role": "ring", "blend": "alpha_add", "tint": "#6BCCFF",
      "display": 250, "alpha": 0.75, "rotation": 0, "x": 300, "y": 300, "z": 10}
   ]

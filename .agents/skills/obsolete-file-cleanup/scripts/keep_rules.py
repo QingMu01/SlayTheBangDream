@@ -55,7 +55,7 @@ DEFAULT_KEEP_RULES: tuple[KeepRule, ...] = (
     ),
     KeepRule(
         "scenes/vfx/music_crystal_hit_vfx.tscn",
-        "有意保留的预览件：有 .vfx_staging/rec/music_crystal_hit_vfx-* 录帧记录，等接入卡牌",
+        "有意保留的预览件：有 .scratch/vfx/rec/music_crystal_hit_vfx-* 录帧记录，等接入卡牌",
         "接入完成后",
         cascade_blocks=True,
     ),

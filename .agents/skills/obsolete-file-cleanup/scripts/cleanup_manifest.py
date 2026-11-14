@@ -14,8 +14,8 @@
   * 输出契约 ......... .agents/skills/card-development/scripts/audit_cards.py:526-546
 
 CLI:
-  python3 cleanup_manifest.py [--audit-dir .vfx_staging/audit] [--keep-file <path>]
-                              [--out .vfx_staging/audit] [--format {md,tsv,both}]
+  python3 cleanup_manifest.py [--audit-dir .scratch/cleanup/audit] [--keep-file <path>]
+                              [--out .scratch/cleanup/audit] [--format {md,tsv,both}]
 
 产出（默认 `both`）：
   * `cleanup_manifest.md` —— **人看**：每项一行的紧凑清单（`- [ ]` 勾选框 + 路径 + 理由短码），
@@ -23,7 +23,7 @@ CLI:
   * `cleanup_decisions.tsv` —— **人改**：签字表，列 `id bucket path sidecar bytes reason action note`。
     人只需要填 `action`（delete / keep / defer）与必要的 `note`，然后交给 `sign_off.py`。
 
-⚠️ 临时目录语义：上述两份产物默认落在 `.vfx_staging/` —— 特效设计用的临时目录，
+⚠️ 临时目录语义：上述两份产物默认落在 `.scratch/cleanup/` —— 仓库统一的 agent 临时空间（见 `AGENTS.md`），
 **随时可能被整体清理**。必须在同一次会话内完成「扫描 → 签字 → dry-run → apply」；
 **长期留档靠 `docs/cleanup-log.md`**（由 `sign_off.py --apply` 追加）。
 
@@ -63,7 +63,7 @@ BODY_SYNC_DIRS = {
     "addons", "animations", "fonts", "images", "materials",
     "models", "scenes", "shaders", "themes", "src",
 }
-WALK_SKIP_DIRS = {".git", ".godot", "bin", "obj", ".vfx_staging", "node_modules"}
+WALK_SKIP_DIRS = {".git", ".godot", "bin", "obj", ".scratch", "node_modules"}
 
 # C 档结构性冗余（docs/cleanup-authoring.md:82、keep-list.md 第 3 节）
 STRUCTURAL_CANDIDATES = (
@@ -92,7 +92,7 @@ REASON_CODES: dict[str, str] = {
 }
 
 TEMPDIR_NOTICE = (
-    "⚠️ 临时目录提醒：`--out` 默认落在 .vfx_staging/ （特效设计的临时目录，**随时可能被整体清理**）。"
+    "⚠️ 临时目录提醒：`--out` 默认落在 .scratch/cleanup/ （仓库统一的 agent 临时空间，**随时可能被整体清理**）。"
     "必须在同一次会话内完成「扫描 → 签字 → dry-run → apply」；"
     "长期留档靠 `docs/cleanup-log.md`（由 sign_off.py 追加）。"
 )
@@ -222,7 +222,7 @@ def empty_dirs(root: str) -> list[str]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="四态 + 死簇快照 → A/B/C 三档清理清单")
     parser.add_argument("--project-root", default=".", help="仓库根目录（默认 .）")
-    parser.add_argument("--audit-dir", default=".vfx_staging/audit", help="四态 + 死簇快照目录（相对路径相对 --project-root 解析）")
+    parser.add_argument("--audit-dir", default=".scratch/cleanup/audit", help="四态 + 死簇快照目录（相对路径相对 --project-root 解析）")
     parser.add_argument("--out", default=None,
                         help="输出目录（默认与 --audit-dir 相同，是临时目录；相对路径相对 --project-root 解析）")
     parser.add_argument("--keep-file", action="append", default=[],
@@ -503,7 +503,7 @@ def main(argv: list[str] | None = None) -> int:
     tsv.append("#   2) action 取值 delete / keep / defer；填 keep|defer 时必须在 note 列写理由（--force 可跳过）。")
     tsv.append("#   3) 填完先 dry-run 核对：python3 sign_off.py --decisions <本文件> --dry-run")
     tsv.append("#      确认无误再执行：  python3 sign_off.py --decisions <本文件> --apply")
-    tsv.append("#   4) 安全域（本体同步目录/.godot/bin/obj/.vfx_staging/未跟踪 WIP）即使 --force 也拒删。")
+    tsv.append("#   4) 安全域（本体同步目录/.godot/bin/obj/.scratch/cleanup/未跟踪 WIP）即使 --force 也拒删。")
     tsv.append(f"#   5) {TEMPDIR_NOTICE}")
     tsv.append("# 图例（reason 列）：" + "  ".join(f"{c}={REASON_CODES[c]}" for c in sorted(REASON_CODES)))
     tsv.append("# sidecar 列 = 逗号分隔的相对仓库根路径（源文件应连带删除的 .import/.uid）")

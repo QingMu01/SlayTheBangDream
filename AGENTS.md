@@ -70,6 +70,10 @@ C# 代码位于各项目的 `Scripts/` 目录下，Godot 资源（图片、场�
 - **特效基类默认继承 `Node2D`**；仅当明确需要「飞行道具」或「异步伤害」（即命中时刻要驱动玩法结算）时才继承 `NBangDreamFlyingVfx`。详见 `docs/vfx-authoring.md` 第 2 节；预览机制见 `docs/vfx-preview-mechanism.md`。
 - **新增、修改、重构卡牌**遵循 `docs/card-authoring.md`（规范与验收）；执行流程见 `.agents/skills/card-development/SKILL.md`。
 - **特效素材入库**：从资产库导出的素材，先用 `.agents/skills/vfx-authoring/scripts/check_asset_origin.py` 判定——命中本体的**不复制**、直接引用本体 uid；未命中的才复制进 `images/vfx/<特效名>/`。特效目录**不产出** `README.md` / `SOURCES.md`（来源凭据写进计划文件）。详见 `docs/vfx-authoring.md` 第 4 节。
+- **临时文件只落 `.scratch/`**：所有中间产物（录帧、预览、素材导出、扫描快照、探针脚本、一次性验证）统一放仓库根
+  `.scratch/`，按用途分子目录（`.scratch/vfx/`、`.scratch/cleanup/` 等）。不得在仓库根、`docs/`、脚本目录另建 `tmp` /
+  `scratch` / `.tmp` 目录，也不要散落到系统临时目录；需要长期留档的结论写进 `docs/` 或计划文件。该目录已被
+  `.gitignore` 忽略、随时可整体删除。
 - **删除任何文件前**遵循 `docs/cleanup-authoring.md`（判定与安全域）；执行流程见 `.agents/skills/obsolete-file-cleanup/SKILL.md`。要点：以引用图为唯一判据（不得凭 grep 无命中）、四态分流、三档分档、**签字后才删**、sidecar 与源同生共死、删除后必须残留搜索 + 构建验证。本体同步目录与用户未跟踪的 WIP 一律不碰。
 
 ## Git 约定

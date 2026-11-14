@@ -181,7 +181,7 @@ sprite.Frame = Mathf.Min((int)(local * 16f), 15);
 
 - `.import` 与 uid 由 `--headless --import` 生成，**不要手写 uid**。
 - 场景引用资源用引擎生成的 uid（读 `.import` 的 `uid=` 行），`path=` 保留作可读性兜底。
-- `.import` 必须随 PNG 一起提交。
+- `.import` 必须与 PNG 留在同一目录，否则场景引用失效。
 - `load_steps` = `ext_resource` + `sub_resource` + 1。
 
 ### 6.1 尺寸归一化（写场景前必须先做）

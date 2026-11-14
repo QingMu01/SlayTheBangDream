@@ -20,7 +20,7 @@
 | `BangDreamInSpire/{addons,animations,fonts,images,materials,models,scenes,shaders,themes,src}/**` | 本体同步（`tools/sync-sts2-assets.sh` 生成，gitignore） | **禁止**。要重建就整目录跑 sync 脚本 | `.gitignore:17-25`、`tools/sync-sts2-assets.sh:62`、`BangDreamInSpire/export_presets.cfg:11`、`AGENTS.md` 项目结构节 |
 | `BangDreamInSpire/.godot/**`、`ItsCrychic/.godot/**` | 引擎缓存（可再生） | 默认可删，**但其中有 4 个手写文件必须先迁出**（见 `references/keep-list.md`） | `.gitignore:11` |
 | `bin/**` | 构建产物 | 可删，**但 `bin/spine-godot-extension-*` 是官方扩展，删了要重新下载** | `.gitignore:8`、`Directory.Build.targets:10-19` |
-| `.vfx_staging/**` | 录帧/导出/计划/审计快照（**临时目录，随时可能被整体清理**） | 可删；扫描快照与签字用的 `decisions.tsv` 都是易失产物，**长期留档只认 `docs/cleanup-log.md`** | `.gitignore:14` |
+| `.scratch/**` | agent 临时空间：录帧/导出/计划/审计快照（**随时可能被整体清理**） | 可删；扫描快照与签字用的 `decisions.tsv` 都是易失产物，**长期留档只认 `docs/cleanup-log.md`** | `.gitignore:17`、`AGENTS.md` 开发约定节 |
 | `BangDreamInSpire/BangDreamInSpire/**`、`ItsCrychic/ItsCrychic/**` | **mod 自有真资源**（入库、进 pck） | 按引用图判定 | 两个 `export_presets.cfg` 未排除 |
 | `BangDreamInSpire/Scripts/**`、`ItsCrychic/Scripts/**` | mod 自有代码（`.cs` + `.cs.uid` 成对） | 按引用图判定 | 各 csproj |
 | `*.import` / `*.uid` | 引擎生成，但**必须随源一起提交** | 不可单独删；源删则同批删 | `docs/vfx-authoring.md:171-172` |
@@ -62,7 +62,7 @@
 
 ## 5. 判定模型：四态 + 死簇
 
-**禁止输出单一 orphan 列表**（历史失败样本：`.vfx_staging/audit/orphan_scan.py` v1，因未剥离 `.import` 自引用而结构性失效）。必须分桶落盘：
+**禁止输出单一 orphan 列表**（历史失败样本：`.scratch/cleanup/audit/orphan_scan.py` v1，因未剥离 `.import` 自引用而结构性失效）。必须分桶落盘：
 
 | 状态 | 定义 | 处置 |
 |---|---|---|
@@ -93,21 +93,21 @@
 
 ## 6. 硬性条款
 
-1. **搜索域固定**：只扫 `git ls-files` + `git ls-files -co --exclude-standard`，并排除 `.git`、`.godot`、`bin`、`obj`、`.vfx_staging` 与本体同步目录（第 2 节表 1）。`.godot/uid_cache.bin`、`.git/index`、`**/.godot/editor/filesystem_cache*` **不是**证据源——不排除它们会让每个文件都「被引用」。
-   **输出目录也必须排除**：扫描/清单的 `--out` 若落在搜索域内，其产物（清单、快照）本身会成篇枚举文件名，重跑时会把真孤儿洗成「文档弱命中」（实测 `--out .` 时 `confirmed_orphan 1→0`、exit code 翻成 0）。默认 `.vfx_staging/audit` 在域外，是安全的；自定义 `--out` 时脚本动态排除该目录并在快照头记 `excluded_out_dir`。
+1. **搜索域固定**：只扫 `git ls-files` + `git ls-files -co --exclude-standard`，并排除 `.git`、`.godot`、`bin`、`obj`、`.scratch` 与本体同步目录（第 2 节表 1）。`.godot/uid_cache.bin`、`.git/index`、`**/.godot/editor/filesystem_cache*` **不是**证据源——不排除它们会让每个文件都「被引用」。
+   **输出目录也必须排除**：扫描/清单的 `--out` 若落在搜索域内，其产物（清单、快照）本身会成篇枚举文件名，重跑时会把真孤儿洗成「文档弱命中」（实测 `--out .` 时 `confirmed_orphan 1→0`、exit code 翻成 0）。默认 `.scratch/cleanup/audit` 在域外，是安全的；自定义 `--out` 时脚本动态排除该目录并在快照头记 `excluded_out_dir`。
 2. **自引用必须剥离（两种形态）**：
    - ①`.import` 自引用：提取 token 前把 `.import` 的 `source_file=` / `dest_files=` / `path=` 行整行去掉；任何来源文件等于候选自身或其 sidecar 的命中一律不计。
    - ②**清理自述文档**：`.agents/skills/obsolete-file-cleanup/**` 与 `docs/cleanup-authoring.md` 按性质会成篇列举候选文件名，属于「描述候选」而不是「使用候选」，必须从引用语料中排除（快照头部记 `excluded_self_docs`）。这个坑真实发生过：`references/keep-list.md` 一写进 `anon01.tscn`，anon 死簇整条链就因「文档引用」而消失。
    - 其余 `docs/**` 与另外两个 skill **不排除**——它们提及某个文件是合法的「意图保留」证据（例如 `docs/vfx-authoring.md` 把 `MusicFlashVfx` 当 `Node2D` 参考实现引用）。
 3. **uid 优先、path 兜底**：先建 uid→磁盘路径 表（三来源：`*.uid` 内容、`*.import` 的 `uid=`、`*.tscn/*.tres/*.gdshader` 头部），uid 解析不到时回落 path。
 4. **动态拼接路径是盲区**：含 `{` 或插值的字符串不入 token，但必须要求删除候选人工核对动态加载点，并在交付里声明该盲区（历史实例：`AbstractSakikoMusicCard.cs` 的 `res://{modFolder}` 模板串曾被 v1 当成断链路径）。
-5. **卡图必须双向盘点**：类→图（`audit_cards.py` 的 `missing portrait`）与图→类（孤儿扫描）都要跑。只跑一向会得出 `.vfx_staging/audit/portraits_report.txt` 那种结论——它把 31 张共享立绘误报成孤儿、把 24 张卡的立绘误报为缺失，真实缺图只有 14 张。
+5. **卡图必须双向盘点**：类→图（`audit_cards.py` 的 `missing portrait`）与图→类（孤儿扫描）都要跑。只跑一向会得出 `.scratch/cleanup/audit/portraits_report.txt` 那种结论——它把 31 张共享立绘误报成孤儿、把 24 张卡的立绘误报为缺失，真实缺图只有 14 张。
 6. **本体归属先行**：候选文件先用 `.agents/skills/vfx-authoring/scripts/check_asset_origin.py` 判定；命中 `BODY` 的正确动作是**改为引用本体 uid**——既不删也不复制。
 7. **删除前逐条 `os.path.exists` 复核**：快照必然过期（`v3_confirmed_orphan.txt` 39 条里 6 条已不存在）。过期项单列 `stale`，不得静默混入。
 8. **删除前先 `git add`**：保证可回滚。本仓库既有误删前科，也有未跟踪文件在 rebase/reset 中静默消失的前科。
 9. **删除后残留验证必须全绿**：旧类名、entry 字符串、本地化键、资源名的 `rg` 命中 = 0；JSON 可解析且无重复键；`git diff --check`；完整构建通过；**硬编码清单已同步**（如 `BangDreamPreloadManager.cs:55-63` 的 `VfxAssets`）。
 10. **不直接删除仍可能复用的卡图**：写进 `ItsCrychic/ItsCrychic/images/card_portraits/DEPRECATED.md`，格式见 `references/deprecation-ledger.md`；资源不存在就如实记「无对应资源」，不得虚构文件。
-11. **工具与快照可复现，但快照是易失品**：脚本入库在 `.agents/skills/obsolete-file-cleanup/scripts/`；扫描快照与签字用的 `decisions.tsv` 落 `.vfx_staging/audit/`，**该目录是特效设计的临时目录，随时可能被整体清理**。因此：
+11. **工具与快照可复现，但快照是易失品**：脚本入库在 `.agents/skills/obsolete-file-cleanup/scripts/`；扫描快照与签字用的 `decisions.tsv` 落 `.scratch/cleanup/audit/`，**该目录是特效设计的临时目录，随时可能被整体清理**。因此：
     - 每份快照头部必须写「脚本名 + 版本 + 时间 + 输入域」，**禁止无出处的裸 `.txt`**（现有快照就出现过「文件名与脚本版本不对应」的情况，照脚本名反推产物会得出错误结论）；
     - 「扫描 → 签字 → dry-run → apply」应在**同一次会话内**完成，不要跨天；快照一旦可能过期，就当场重跑；
     - **长期留档只认 `docs/cleanup-log.md`**（由 `sign_off.py --apply` 自动追加，随提交入库）。

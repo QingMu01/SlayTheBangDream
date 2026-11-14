@@ -1,19 +1,35 @@
 #!/usr/bin/env python3
-"""计划闸门：只有用户批准过、且批准后未被改动的计划才放行。
+"""计划闸门：把「用户批准过什么」变成可判定的指纹。
+
+设计原则（v2）：**只锁契约，不锁措辞。**
+指纹只覆盖计划正文里的「契约块」——素材集合、层结构、验收标准、授权包络。
+契约块以外的正文（设计意图、素材预演、决策与默认值、假设与风险、交付物）
+随便改，不会使批准失效；契约块内任何改动（换素材、改层表、改验收、改授权范围）
+都会使批准失效，必须重新确认。
 
 用法：
     python check_gate.py --plan <plan.md>            # 校验，exit 0 才允许写代码
     python check_gate.py --plan <plan.md> --approve --approved-by "用户原话"
-    python check_gate.py --plan <plan.md> --reopen   # 退回 draft（计划有改动时）
+    python check_gate.py --plan <plan.md> --reopen   # 退回 draft（契约有变动时）
 
-指纹覆盖 **正文 + frontmatter（除批准字段外）**：
-只改 `branch` / `slug` 这类 frontmatter 字段同样会使批准失效。
+契约块写法（在计划正文里，标记之间的内容参与指纹）：
+
+    <!-- gate:begin -->
+    ## 2. 素材清单
+    ...
+    ## 3. 层结构
+    ...
+    ## 4. 验收标准
+    ...
+    ## 5. 授权包络
+    ...
+    <!-- gate:end -->
 
 退出码：
     0  已批准且指纹一致 → 放行
     1  尚未批准，或 --approve 缺 --approved-by
-    2  计划已改动，原批准失效
-    3  文件格式错误
+    2  契约在批准后被改动，原批准失效
+    3  文件格式错误（含新计划缺契约块）
 """
 
 from __future__ import annotations
@@ -24,9 +40,16 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+GATE_BEGIN = "<!-- gate:begin -->"
+GATE_END = "<!-- gate:end -->"
+
+# 不参与指纹的 frontmatter 字段：它们描述"批准这件事本身"或纯路由信息，
+# 覆盖进去会导致写完批准就被自己判失效，也会让改个 slug 就要重新批准。
+FINGERPRINT_EXEMPT = {"status", "fingerprint", "approved_by", "approved_at", "mode"}
+
 
 def split_plan(text: str) -> tuple[list[str], list[str]]:
-    """拆出 frontmatter 行与正文行。正文用于计算指纹。"""
+    """拆出 frontmatter 行与正文行。"""
     lines = text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
     if not lines or lines[0].strip() != "---":
         raise ValueError("plan.md 必须以 '---' 开头的 frontmatter 起始")
@@ -38,22 +61,48 @@ def split_plan(text: str) -> tuple[list[str], list[str]]:
     raise ValueError("frontmatter 未闭合（缺少第二个 '---'）")
 
 
+def normalize(lines: list[str]) -> str:
+    """规范化：去掉行尾空白、压缩连续空行、去掉首尾空行。"""
+    out: list[str] = []
+    for line in lines:
+        stripped = line.rstrip()
+        if not stripped:
+            if out and out[-1] == "":
+                continue
+            out.append("")
+        else:
+            out.append(stripped)
+    while out and out[0] == "":
+        out.pop(0)
+    while out and out[-1] == "":
+        out.pop()
+    return "\n".join(out) + "\n"
+
+
+def contract_lines(body_lines: list[str]) -> tuple[list[str] | None, bool]:
+    """返回 (契约块行, 是否找到契约块)。找不到时返回 (None, False)。"""
+    begin = end = -1
+    for index, line in enumerate(body_lines):
+        if begin < 0 and line.strip() == GATE_BEGIN:
+            begin = index
+        elif begin >= 0 and line.strip() == GATE_END:
+            end = index
+            break
+    if begin < 0 or end < 0 or end == begin + 1:
+        return None, False
+    return body_lines[begin + 1 : end], True
+
+
+def fingerprint_of(lines: list[str]) -> str:
+    return hashlib.sha256(normalize(lines).encode("utf-8")).hexdigest()[:16]
+
+
 def body_text(body_lines: list[str]) -> str:
-    """规范化正文：去掉首尾空行，统一以单个换行结尾。"""
     return "\n".join(body_lines).strip() + "\n"
 
 
-# 指纹不覆盖的 frontmatter 字段：它们描述的是"批准这件事本身"，
-# 覆盖进去会导致写完批准就被自己判失效。
-FINGERPRINT_EXEMPT = {"status", "fingerprint", "approved_by", "approved_at"}
-
-
 def fm_text(fm_lines: list[str]) -> str:
-    """参与指纹的 frontmatter 文本：剔除status/fingerprint/approved_* 后按行排序。
-
-    排序是为了让字段顺序变化不触发失效，但**字段值变化一定触发**——
-    只改 branch 或 slug 也会让批准作废。
-    """
+    """旧算法的一部分：剔除批准字段后的 frontmatter 文本，仅用于识别历史计划。"""
     kept: list[str] = []
     for line in fm_lines:
         stripped = line.strip()
@@ -66,8 +115,8 @@ def fm_text(fm_lines: list[str]) -> str:
     return "\n".join(sorted(kept))
 
 
-def fingerprint(fm_lines: list[str], body_lines: list[str]) -> str:
-    """指纹 = 正文 + 参与指纹的 frontmatter。任一变化都使批准失效。"""
+def legacy_fingerprint(fm_lines: list[str], body_lines: list[str]) -> str:
+    """v1 指纹（frontmatter + 全文）。只为让仍在实现的旧计划继续可校验。"""
     payload = fm_text(fm_lines) + "\n--body--\n" + body_text(body_lines)
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
 
@@ -75,8 +124,13 @@ def fingerprint(fm_lines: list[str], body_lines: list[str]) -> str:
 def read_field(fm_lines: list[str], key: str) -> str:
     prefix = key + ":"
     for line in fm_lines:
-        if line.strip().startswith(prefix):
-            return line.strip()[len(prefix) :].strip().strip('"').strip("'")
+        stripped = line.strip()
+        if stripped.startswith(prefix):
+            value = stripped[len(prefix) :].strip()
+            if value.startswith(('"', "'")):
+                return value.strip("\"'")
+            # 模板里允许写 `status: draft  # draft | approved` 这类行内注释
+            return value.split(" #", 1)[0].strip()
     return ""
 
 
@@ -98,14 +152,14 @@ def save(path: Path, fm_lines: list[str], body_lines: list[str]) -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="特效计划闸门")
+    parser = argparse.ArgumentParser(description="特效计划闸门（契约级指纹）")
     parser.add_argument("--plan", required=True, help="plan.md 路径")
     group = parser.add_mutually_exclusive_group()
-    group.add_argument("--approve", action="store_true", help="标记为已批准并记录指纹")
+    group.add_argument("--approve", action="store_true", help="标记为已批准并记录契约指纹")
     group.add_argument("--reopen", action="store_true", help="退回 draft 并清除指纹")
     parser.add_argument(
         "--approved-by",
-        help="批准人标识：填用户的原话或账号。--approve 时建议提供，用于事后审计",
+        help="批准人标识：填用户的原话或账号。--approve 时必填，用于事后审计",
     )
     parser.add_argument(
         "--allow-self-approve",
@@ -125,17 +179,26 @@ def main() -> int:
         print(f"[gate] 计划格式错误：{error}", file=sys.stderr)
         return 3
 
+    contract, has_contract = contract_lines(body_lines)
+
     if args.reopen:
         write_field(fm_lines, "status", "draft")
         write_field(fm_lines, "fingerprint", '""')
         save(path, fm_lines, body_lines)
-        print("[gate] 已退回 draft。修改后须重新获得用户批准。")
+        print("[gate] 已退回 draft。契约若有变动，须重新获得用户批准。")
         return 0
 
     if args.approve:
-        # 先算指纹再写字段：approve 写入的字段在 FINGERPRINT_EXEMPT 内，
-        # 但顺序上仍先算，避免以后调整豁免表时踩坑。
-        current = fingerprint(fm_lines, body_lines)
+        if not has_contract:
+            print(
+                "[gate] 拒绝批准：正文里没有契约块（" + GATE_BEGIN + " … " + GATE_END + "）。\n"
+                "[gate]   契约块必须包住：素材清单 / 层结构 / 验收标准 / 授权包络。\n"
+                "[gate]   模板见 references/plan-template.md。",
+                file=sys.stderr,
+            )
+            return 3
+
+        current = fingerprint_of(contract or [])
 
         approver = (args.approved_by or "").strip()
         if not approver:
@@ -143,8 +206,7 @@ def main() -> int:
                 print(
                     "[gate] 拒绝批准：缺少 --approved-by。\n"
                     "[gate]   请填入用户的原话或标识，例如：\n"
-                    '[gate]     --approved-by "批准，开始实现"\n'
-                    "[gate]   确实要自批准（会留下审计痕迹）时加 --allow-self-approve。",
+                    '[gate]     --approved-by "批准，开始实现"',
                     file=sys.stderr,
                 )
                 return 1
@@ -156,36 +218,44 @@ def main() -> int:
         write_field(fm_lines, "approved_at", datetime.now().astimezone().isoformat(timespec="seconds"))
         save(path, fm_lines, body_lines)
 
-        print(f"[gate] 已标记为 approved，指纹 {current}")
+        print(f"[gate] 已标记为 approved，契约指纹 {current}")
         print(f"[gate] 批准人：{approver}")
         if approver.startswith("SELF-APPROVED"):
             print("[gate] 注意：这条记录表明**没有**用户批准凭据，事后审计会看到。")
-        print("[gate] 此后计划正文或 frontmatter（除批准字段外）任何改动都会使批准失效。")
+        print("[gate] 契约块以外的正文可自由修改；契约块内任何改动都会使批准失效。")
         return 0
 
-    current = fingerprint(fm_lines, body_lines)
     status = read_field(fm_lines, "status").lower()
     recorded = read_field(fm_lines, "fingerprint")
     approver = read_field(fm_lines, "approved_by")
 
     if status != "approved":
         print(f"[gate] 拒绝：status = {status or '(空)'}，尚未获得用户批准。", file=sys.stderr)
-        print("[gate] 可读文件、检索/预览素材，并在 .vfx_staging/ 内导出、写计划与预演规格、生成预演图；不得修改正式特效资源。", file=sys.stderr)
+        print("[gate] 批准前允许：读文件、检索/预览素材、在 .scratch/vfx/ 内导出与预演、写计划；不得改动正式特效资源。", file=sys.stderr)
         return 1
 
-    if recorded != current:
-        print("[gate] 拒绝：计划在批准后被改动，原批准失效。", file=sys.stderr)
-        print(f"[gate]   批准时指纹 {recorded or '(空)'}", file=sys.stderr)
-        print(f"[gate]   当前指纹   {current}", file=sys.stderr)
-        print("[gate] 请把改动告知用户并重新确认。", file=sys.stderr)
+    if not has_contract:
+        # 旧计划（v1）：用旧算法校验，尽量不让在途实现卡死，但提示迁移。
+        current = legacy_fingerprint(fm_lines, body_lines)
+        if recorded and recorded == current:
+            print("[gate] 放行（旧格式计划，全文指纹）。建议迁移到契约块格式。")
+            print(f"[gate] 批准人：{approver}")
+            return 0
+        print("[gate] 拒绝：旧格式计划无法匹配指纹，且没有契约块。", file=sys.stderr)
+        print(f"[gate]   记录指纹 {recorded or '(空)'} / 当前 {current}", file=sys.stderr)
         return 2
 
-    print(f"[gate] 放行：已批准，指纹 {current}")
-    if approver:
-        print(f"[gate] 批准人：{approver}")
-    else:
-        print("[gate] 警告：没有 approved_by 记录（旧格式计划）。")
-    print("[gate] 本脚本校验批准计划指纹，不校验实现参数；范围内调参须另记 tuning-log.md 并逐项对照批准范围。")
+    current = fingerprint_of(contract or [])
+    if recorded != current:
+        print("[gate] 拒绝：契约块在批准后被改动，原批准失效。", file=sys.stderr)
+        print(f"[gate]   批准时指纹 {recorded or '(空)'}", file=sys.stderr)
+        print(f"[gate]   当前指纹   {current}", file=sys.stderr)
+        print("[gate] 若改动在授权包络内，说明包络未覆盖这类变更——把包络写宽一点再批准。", file=sys.stderr)
+        return 2
+
+    print(f"[gate] 放行：契约未变，指纹 {current}")
+    print(f"[gate] 批准人：{approver}")
+    print("[gate] 本脚本只校验契约指纹，不校验实现参数；范围内调参记入 tuning-log.md 即可。")
     return 0
 
 

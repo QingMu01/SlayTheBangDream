@@ -55,7 +55,7 @@ render_asset_preview          # 只对少数候选看高清（默认 1024）
   ↓
 get_asset_group_preview       # 图集/序列帧：拿帧结构（hframes/vframes 的唯一依据）
   ↓
-export_assets                 # 导出到 .vfx_staging/（绝对路径，自动创建目录）
+export_assets                 # 导出到 .scratch/vfx/（绝对路径，自动创建目录）
 ```
 
 ## `search_assets` 的结构化过滤（比关键词强得多）
@@ -161,7 +161,7 @@ alpha 状态：alpha_has_non_opaque ?
 
 ## 导出、本体归属校验与命名
 
-导出到仓库外的暂存目录（`.vfx_staging` 已在 `.gitignore` 内）；`export_assets` 的 `directory` 给绝对路径。
+导出到仓库外的暂存目录（`.scratch/vfx`）；`export_assets` 的 `directory` 给绝对路径。
 
 **复制进工程之前必须跑本体归属校验**（结论与判定表见 `SKILL.md` S1 第 9 步）：
 
@@ -178,7 +178,7 @@ python .agents/skills/vfx-authoring/scripts/check_asset_origin.py <导出目录>
   4. 场景里引用资源用**引擎生成的 uid**（从 `.import` 的 `uid=` 行读），`path=` 保留作可读性兜底。
 - **`REVIEW`（疑似在本体图上改绘）**：同尺寸且感知哈希接近本体某张图，人工判定后按上面两条之一处理。
 
-**不产出 `README.md` / `SOURCES.md`**：库内 uuid/名称、语义名、用途与校验判定结果写进 `.vfx_staging/plans/<slug>.md`。
+**不产出 `README.md` / `SOURCES.md`**：库内 uuid/名称、语义名、用途与校验判定结果写进 `.scratch/vfx/plans/<slug>.md`。
 
 ## 回写描述（本 skill 默认不做）
 

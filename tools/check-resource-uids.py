@@ -44,7 +44,7 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # 扫描时整棵跳过的目录名（本地缓存、构建产物、备份、同步进来的本体资源无关目录）
 PRUNE_DIRS = {
-    ".git", ".godot", ".backup", ".vfx_staging", "bin", "obj", "node_modules",
+    ".git", ".godot", ".backup", ".scratch", "bin", "obj", "node_modules",
 }
 # 解析 ext_resource 时不区分属性顺序，只要求同一行/同一标签内同时有 uid 与 path
 EXT_RESOURCE_RE = re.compile(r"\[ext_resource\b([^\]]*)\]")
