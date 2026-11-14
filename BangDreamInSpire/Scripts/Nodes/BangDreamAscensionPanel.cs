@@ -51,6 +51,9 @@ public partial class BangDreamAscensionPanel : Control
 
     public int Ascension { get; private set; }
 
+    /// <summary>该面板当前对应的游戏模式：标准 / 快速 / Dread 的升格上限与文案都不同。</summary>
+    public GameMode GameMode => _gameMode;
+
     public override void _EnterTree()
     {
         // 见 BangDreamTools.ConfigureMegaText：Mega 导出属性写在 tscn 里会被编辑器保存时置空。
@@ -100,16 +103,14 @@ public partial class BangDreamAscensionPanel : Control
             case MultiplayerUiMode.Host:
                 SetFireBlue();
                 _arrowsVisible = true;
-                SetMaxAscension(SaveManager.Instance.Progress.MaxMultiplayerAscension);
-                SetAscensionLevel(Math.Min(_maxAscension, SaveManager.Instance.Progress.PreferredMultiplayerAscension));
+                ApplySavedAscension(multiplayer: true);
                 NHotkeyManager.Instance?.PushHotkeyPressedBinding(TabLeftHotkey, DecrementAscension);
                 NHotkeyManager.Instance?.PushHotkeyPressedBinding(TabRightHotkey, IncrementAscension);
                 break;
             case MultiplayerUiMode.Singleplayer:
                 SetFireRed();
                 _arrowsVisible = true;
-                SetMaxAscension(0);
-                SetAscensionLevel(0);
+                ApplySavedAscension(multiplayer: false);
                 NHotkeyManager.Instance?.PushHotkeyPressedBinding(TabLeftHotkey, DecrementAscension);
                 NHotkeyManager.Instance?.PushHotkeyPressedBinding(TabRightHotkey, IncrementAscension);
                 break;
@@ -128,6 +129,37 @@ public partial class BangDreamAscensionPanel : Control
                 break;
             }
         }
+    }
+
+    /// <summary>
+    /// 按当前游戏模式套用存档里的升格进度。
+    /// <para>
+    /// 快速模式（Blitz）只有全局的 0-5 级升格，且单人局也照样生效；标准模式才是按角色记的 0-10 级。
+    /// 两者混用会让本体 <c>AscensionHelper.GetLevelForBlitz</c> 收到越界等级抛
+    /// <c>InvalidOperationException</c>，把整个快速选择屏打断。
+    /// </para>
+    /// </summary>
+    private void ApplySavedAscension(bool multiplayer)
+    {
+        var progress = SaveManager.Instance.Progress;
+
+        if (_gameMode == GameMode.Blitz)
+        {
+            SetMaxAscension(progress.MaxBlitzAscension);
+            SetAscensionLevel(Math.Min(_maxAscension, progress.PreferredBlitzAscension));
+            return;
+        }
+
+        if (!multiplayer)
+        {
+            // 标准单人局不显示升格：是否可用由本体在选角色时按角色进度决定。
+            SetMaxAscension(0);
+            SetAscensionLevel(0);
+            return;
+        }
+
+        SetMaxAscension(progress.MaxMultiplayerAscension);
+        SetAscensionLevel(Math.Min(_maxAscension, progress.PreferredMultiplayerAscension));
     }
 
     private void SetFireBlue()
@@ -157,6 +189,10 @@ public partial class BangDreamAscensionPanel : Control
 
     public void SetAscensionLevel(int ascension)
     {
+        // 等级始终夹在 [0, _maxAscension]：快速模式上限是 5，越界会让本体的
+        // AscensionHelper.GetTitle 抛 InvalidOperationException 并打断整个选择屏。
+        ascension = Math.Clamp(ascension, 0, _maxAscension);
+
         if (Ascension != ascension)
         {
             Ascension = ascension;
@@ -220,6 +256,12 @@ public partial class BangDreamAscensionPanel : Control
 
     public void SetMaxAscension(int maxAscension)
     {
+        if (_gameMode == GameMode.Blitz)
+        {
+            // 快速模式的升格是全局的 0-5 级，与标准模式的按角色 0-10 级互不相通；这里兜住任何越界的调用方。
+            maxAscension = Math.Min(maxAscension, SaveManager.Instance.Progress.MaxBlitzAscension);
+        }
+
         BangDreamInSpireCore.Logger.Info($"Max ascension changed to {maxAscension}");
         _maxAscension = maxAscension;
         if (Ascension >= _maxAscension)

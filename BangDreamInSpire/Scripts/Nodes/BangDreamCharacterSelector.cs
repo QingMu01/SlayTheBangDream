@@ -12,6 +12,7 @@ using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Multiplayer.Game;
 using MegaCrit.Sts2.Core.Multiplayer.Game.Lobby;
 using MegaCrit.Sts2.Core.Nodes.Screens.CharacterSelect;
+using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Saves;
 using STS2RitsuLib;
 
@@ -246,11 +247,25 @@ public partial class BangDreamCharacterSelector : Control
 
         if (_ascensionPanel != null)
         {
-            var characterStats = SaveManager.Instance.Progress.GetOrCreateCharacterStats(character.Id);
-            if (characterStats.MaxAscension > 0)
+            var progress = SaveManager.Instance.Progress;
+
+            // 快速模式的升格是全局 0-5 级（本体 SetSingleplayerAscensionAfterCharacterChanged 对 Blitz 直接返回），
+            // 不能套角色自己的 0-10 级进度：否则会把 10 同步进 lobby，撞上本体 AscensionHelper.GetLevelForBlitz
+            // 的越界检查并抛异常。
+            if (_ascensionPanel.GameMode == GameMode.Blitz)
             {
-                _ascensionPanel.SetMaxAscension(characterStats.MaxAscension);
-                _ascensionPanel.SetAscensionLevel(characterStats.PreferredAscension);
+                _ascensionPanel.SetMaxAscension(progress.MaxBlitzAscension);
+                _ascensionPanel.SetAscensionLevel(
+                    Math.Min(progress.MaxBlitzAscension, progress.PreferredBlitzAscension));
+            }
+            else
+            {
+                var characterStats = progress.GetOrCreateCharacterStats(character.Id);
+                if (characterStats.MaxAscension > 0)
+                {
+                    _ascensionPanel.SetMaxAscension(characterStats.MaxAscension);
+                    _ascensionPanel.SetAscensionLevel(characterStats.PreferredAscension);
+                }
             }
         }
 
@@ -547,7 +562,8 @@ public partial class BangDreamCharacterSelector : Control
         if (Lobby.NetService.Type == NetGameType.Client || Lobby.Ascension == _ascensionPanel.Ascension)
             return;
 
-        Lobby.SyncAscensionChange(_ascensionPanel.Ascension);
+        // 再夹一次 lobby 上限：本体收到越界等级会直接抛异常（快速模式只有 0-5 级）。
+        Lobby.SyncAscensionChange(Math.Min(_ascensionPanel.Ascension, Lobby.MaxAscension));
     }
 
     private void OnSelectedSkin(string skinPath)
