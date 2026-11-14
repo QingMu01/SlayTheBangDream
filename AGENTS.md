@@ -35,12 +35,12 @@ C# 代码位于各项目的 `Scripts/` 目录下，Godot 资源（图片、场�
 ## 分支与游戏版本
 
 本体进入双版本并行期（稳定版 / beta 版，存在 API 变动），分支与目标版本对应如下。**改动前先确认当前分支该对哪个版本**。
-分支结构保留以应对未来分叉，当前两分支目标版本相同。
+分支结构保留以应对未来分叉；当前 **`beta` 已升到本体 0.113.0**，`main` 仍在 0.111.0 发布线上。
 
 | 分支 | 用途 | 游戏本体 | 解包源 | 备注 |
 |---|---|---|---|---|
 | `main` | 游戏本体稳定分支发布线 | 0.111.0 | `../sts2unpack/0.111.0/src` | 与本体稳定版 API 对齐 |
-| `beta` | 游戏本体测试分支发布线 | `0.111.0` | `../sts2unpack/0.111.0/src` | 与本体测试版 API 对齐 |
+| `beta` | 游戏本体测试分支发布线 | `0.113.0` | `../sts2unpack/0.113.0/src` | 与本体测试版 API 对齐 |
 
 - 版本切换走 `Directory.Build.local.props` 或环境变量（见下节），**不要**改被跟踪的 `Directory.Build.props` 默认值。
 - 跨分支同步共享改动时，只合并源码、文档与场景文本；合并后必须在目标版本上重新构建 + 无头运行，不能只看能编译。
@@ -53,12 +53,12 @@ C# 代码位于各项目的 `Scripts/` 目录下，Godot 资源（图片、场�
   命令行 `-p:` > `Directory.Build.local.props`（本机、不入库）> 环境变量 `STS2_DIR` / `GODOT_EXE` > `Directory.Build.props` 默认值。
   切换游戏版本时只改本机文件（模板见 `Directory.Build.local.props.example`），避免污染被跟踪配置、避免跨分支合并冲突。
 - **STS2-RitsuLib**：本地源码 `~/Codes/SlayTheSpire/STS2-RitsuLib`（当前 `main` = v0.6.7；
-  工程 NuGet 引用 **0.5.20**，读源码时注意版本差）。文档见其 `README.zh.md` 与 `docs/pages/guide/*.md`；
-  XML 文档在 NuGet 包内：`~/.nuget/packages/sts2.ritsulib/0.5.20/lib/net9.0/STS2-RitsuLib.xml`。
+  工程 NuGet 引用 **0.6.11**，读源码时注意版本差）。文档见其 `README.zh.md` 与 `docs/pages/guide/*.md`；
+  XML 文档在 NuGet 包内：`~/.nuget/packages/sts2.ritsulib/0.6.11/lib/net9.0/STS2-RitsuLib.xml`（`*.Runtime.xml` 里是 UI/扩展 API）。
   上游同时支持本体双版本，因此**工程统一引用同一版本、不按分支切换**；双版本差异只在游戏本体侧（见「分支与游戏版本」）。
 - **游戏本体**：`sts2.dll` 的同名 XML 文档在本体安装目录
   （`cd BangDreamInSpire && dotnet msbuild BangDreamInSpire.csproj -getProperty:Sts2DataDir`）。
-  查本体实现读解包源 `../sts2unpack/<版本>/src`（当前 0.111.0；可用 `$STS2_UNPACKED` 覆盖，或用
+  查本体实现读解包源 `../sts2unpack/<版本>/src`（`beta` 当前 0.113.0、`main` 当前 0.111.0；可用 `$STS2_UNPACKED` 覆盖，或用
   `tools/sync-sts2-assets.sh -s` 指定）。
 - **日志**：当前环境下，游戏日志默认放置于`~/.local/share/SlayTheSpire2/logs`
 
