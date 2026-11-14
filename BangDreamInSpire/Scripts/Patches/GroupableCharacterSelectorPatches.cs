@@ -128,7 +128,31 @@ internal static class CharacterSelectScreenSupport
     internal static void SetupGroupButtons(Control container, ICharacterSelectButtonDelegate screenDelegate,
         PackedScene? buttonScene)
     {
-        var insertIndex = GetInsertIndex(container.GetChildren().OfType<NCharacterSelectButton>().ToList());
+        // 先隐藏本体生成的按钮：
+        // - IGroupableCharacter：模组角色，已由分组按钮代表；
+        // - GroupCharacterPlaceholder：分组占位角色。标准屏由 RitsuLib 的可见性策略在
+        //   InitCharacterButtons 阶段过滤掉（它只识别 NCharacterSelectScreen），Blitz / Dread
+        //   不在其识别范围内，占位按钮会真的出现在界面上，这里统一兜底隐藏。
+        //
+        // **必须在插入分组按钮之前做**：分组按钮自身也是用 GroupCharacterPlaceholder 作为 Character，
+        // 若放到插入之后按 Character 类型扫描，会把刚插入的分组按钮一起隐藏掉（角色选择按钮整体消失）。
+        var existing = container.GetChildren().OfType<NCharacterSelectButton>().ToList();
+        foreach (var button in existing)
+        {
+            // 分组按钮自身也用 GroupCharacterPlaceholder 作为 Character，必须靠 GroupState 区分；
+            // 这样即便将来有人把这段挪到插入之后，也不会再把分组按钮一起隐藏。
+            if (GroupableCharacterSelectorPatches.GroupState.ContainsKey(button))
+            {
+                continue;
+            }
+
+            if (button.Character is IGroupableCharacter or GroupCharacterPlaceholder)
+            {
+                button.Visible = false;
+            }
+        }
+
+        var insertIndex = GetInsertIndex(existing);
         var alreadyGroupName = new HashSet<string>();
 
         foreach (var groupableCharacter in ModelDb.AllCharacters.OfType<IGroupableCharacter>())
@@ -161,20 +185,13 @@ internal static class CharacterSelectScreenSupport
             }
         }
 
-        // 隐藏本体生成的按钮：
-        // - IGroupableCharacter：模组角色，已由上面的分组按钮代表；
-        // - GroupCharacterPlaceholder：分组占位角色。标准屏由 RitsuLib 的可见性策略在 InitCharacterButtons
-        //   阶段过滤掉（它只识别 NCharacterSelectScreen），而 Blitz / Dread 屏不在其识别范围内，
-        //   占位按钮会真的出现在界面上，故这里统一兜底隐藏。
-        foreach (var button in container.GetChildren().OfType<NCharacterSelectButton>())
-        {
-            if (button.Character is IGroupableCharacter or GroupCharacterPlaceholder)
-            {
-                button.Visible = false;
-            }
-        }
-
         RewireFocus(container);
+
+        // 诊断：分组按钮被误隐藏过一次（隐藏扫描放在插入之后，把同样是 Placeholder 的分组按钮一起藏了），
+        // 这里把「插入数 / 最终可见数」打进日志，便于下次直接看出按钮数量异常。
+        var visibleButtons = container.GetChildren().OfType<NCharacterSelectButton>().Count(b => b.Visible);
+        BangDreamInSpireCore.Logger.Info(
+            $"Character select buttons on {screenDelegate.GetType().Name}: added {alreadyGroupName.Count} group button(s), {visibleButtons} visible in total.");
     }
 
     private static int GetInsertIndex(List<NCharacterSelectButton> buttons)
