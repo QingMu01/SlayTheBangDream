@@ -6,5 +6,11 @@
   "BANG_DREAM_IN_SPIRE_CARDPILE_EXTRA_DECK.empty": "我的[gold]额外牌组[/gold]是空的。",
   "BANG_DREAM_IN_SPIRE_CARDPILE_EXTRA_DRAW.title": "曲库",
   "BANG_DREAM_IN_SPIRE_CARDPILE_EXTRA_DRAW.description": "查看你[gold]曲库[/gold]中的所有牌。",
-  "BANG_DREAM_IN_SPIRE_CARDPILE_EXTRA_DRAW.empty": "我的[gold]曲库[/gold]是空的。"
+  "BANG_DREAM_IN_SPIRE_CARDPILE_EXTRA_DRAW.empty": "我的[gold]曲库[/gold]是空的。",
+  "BANG_DREAM_IN_SPIRE_WEAKNESS_BREAK.title": "破绽",
+  "BANG_DREAM_IN_SPIRE_WEAKNESS_BREAK.description": "累计[blue]4[/blue]层[gold]破绽[/gold]时，目标进入[gold]弱点击破[/gold]。",
+  "BANG_DREAM_IN_SPIRE_WEAK_POINT_BREAK.title": "弱点击破",
+  "BANG_DREAM_IN_SPIRE_WEAK_POINT_BREAK.description": "期间不能再被发现[gold]破绽[/gold]；被带[gold]击破[/gold]效果的牌命中时触发击破效果。该状态结束时[gold]破绽[/gold]清空。",
+  "BANG_DREAM_IN_SPIRE_BREAK_EFFECT.title": "击破",
+  "BANG_DREAM_IN_SPIRE_BREAK_EFFECT.description": "命中处于[gold]弱点击破[/gold]的目标时，结算卡牌上「击破：」之后的效果。"
 }

@@ -14,5 +14,11 @@
   "BANG_DREAM_IN_SPIRE_KEYWORD_LINGERED.title": "余音",
   "BANG_DREAM_IN_SPIRE_KEYWORD_LINGERED.description": "卡牌使用{energyPrefix:energyIcons(1)}后等量生成。\n获得[blue]7[/blue]点后，将[gold]曲库[/gold]顶部的[blue]1[/blue]张牌放入[gold]歌单[/gold]，然后清空余音。",
   "BANG_DREAM_IN_SPIRE_KEYWORD_MUSIC_NOTE.title": "音符",
-  "BANG_DREAM_IN_SPIRE_KEYWORD_MUSIC_NOTE.description": "对随机目标造成基础为[blue]1[/blue]的伤害。"
+  "BANG_DREAM_IN_SPIRE_KEYWORD_MUSIC_NOTE.description": "对随机目标造成基础为[blue]1[/blue]的伤害。",
+  "BANG_DREAM_IN_SPIRE_KEYWORD_WEAKNESS_BREAK.title": "破绽",
+  "BANG_DREAM_IN_SPIRE_KEYWORD_WEAKNESS_BREAK.description": "受到[gold]破绽[/gold]影响。累计[blue]4[/blue]层时进入[gold]弱点击破[/gold]。",
+  "BANG_DREAM_IN_SPIRE_KEYWORD_WEAK_POINT_BREAK.title": "弱点击破",
+  "BANG_DREAM_IN_SPIRE_KEYWORD_WEAK_POINT_BREAK.description": "持续[blue]1[/blue]个回合，期间不能再被发现[gold]破绽[/gold]。被带[gold]击破[/gold]效果的牌命中时触发该牌的击破效果；状态结束时[gold]破绽[/gold]清空。",
+  "BANG_DREAM_IN_SPIRE_KEYWORD_BREAK_EFFECT.title": "击破",
+  "BANG_DREAM_IN_SPIRE_KEYWORD_BREAK_EFFECT.description": "目标处于[gold]弱点击破[/gold]时，这张牌命中该目标会额外结算「击破：」之后的效果。"
 }

@@ -196,6 +196,64 @@ public static class BangDreamHook
         }
     }
 
+    /// <summary>
+    /// 任意单位实际获得破绽层数后广播。
+    /// </summary>
+    /// <remarks>
+    /// 与 <see cref="DispatchCombatHooks{TListener}" /> 不同，本方法不把监听者压入
+    /// <paramref name="choiceContext" /> 的模型栈（破绽广播只是通知，不需要远端展示模型），
+    /// 写法与 <see cref="OnCardTriggeredPerform" /> 一致。
+    /// </remarks>
+    public static async Task AfterWeaknessBreakDiscovered(
+        PlayerChoiceContext? choiceContext,
+        ICombatState combatState,
+        Creature target,
+        int amount,
+        AbstractModel? source)
+    {
+        await DispatchWeaknessBreakHooks(
+            combatState,
+            listener => listener.AfterWeaknessBreakDiscovered(choiceContext, target, amount, source));
+    }
+
+    /// <summary>目标破绽满层、进入弱点击破时广播。</summary>
+    public static async Task AfterWeakPointBroken(
+        PlayerChoiceContext? choiceContext,
+        ICombatState combatState,
+        Creature target,
+        AbstractModel? source)
+    {
+        await DispatchWeaknessBreakHooks(
+            combatState,
+            listener => listener.AfterWeakPointBroken(choiceContext, target, source));
+    }
+
+    /// <summary>带击破效果的牌命中弱点击破目标、击破效果结算完毕后广播。</summary>
+    public static async Task AfterWeakPointBreakTriggered(
+        PlayerChoiceContext? choiceContext,
+        ICombatState combatState,
+        Creature target,
+        CardPlay play)
+    {
+        await DispatchWeaknessBreakHooks(
+            combatState,
+            listener => listener.AfterWeakPointBreakTriggered(choiceContext, target, play));
+    }
+
+    private static async Task DispatchWeaknessBreakHooks(
+        ICombatState combatState,
+        Func<IWeaknessBreakHookListener, Task> dispatch)
+    {
+        foreach (var model in IterateCombatHookListeners(combatState)
+                     .Where(model => model is IWeaknessBreakHookListener)
+                     .ToList())
+        {
+            await ExecuteTaskThenInvokeExecutionFinished(
+                model,
+                dispatch((IWeaknessBreakHookListener)model));
+        }
+    }
+
     public static async Task RunPerformHookAction(
         ICombatState combatState,
         AbstractModel source,

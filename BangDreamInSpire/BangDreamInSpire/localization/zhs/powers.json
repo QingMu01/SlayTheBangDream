@@ -1,0 +1,8 @@
+{
+  "BANG_DREAM_IN_SPIRE_POWER_WEAKNESS_BREAK_POWER.title": "破绽",
+  "BANG_DREAM_IN_SPIRE_POWER_WEAKNESS_BREAK_POWER.description": "累计[blue]4[/blue]层时进入[gold]弱点击破[/gold]。",
+  "BANG_DREAM_IN_SPIRE_POWER_WEAKNESS_BREAK_POWER.smartDescription": "已有[blue]{Amount}[/blue]层[gold]破绽[/gold]。累计[blue]4[/blue]层时进入[gold]弱点击破[/gold]。",
+  "BANG_DREAM_IN_SPIRE_POWER_WEAK_POINT_BREAK_POWER.title": "弱点击破",
+  "BANG_DREAM_IN_SPIRE_POWER_WEAK_POINT_BREAK_POWER.description": "持续[blue]1[/blue]个回合：期间不能再被发现[gold]破绽[/gold]；被带[gold]击破[/gold]效果的牌命中时触发击破效果。状态结束时[gold]破绽[/gold]清空。",
+  "BANG_DREAM_IN_SPIRE_POWER_WEAK_POINT_BREAK_POWER.smartDescription": "持续[blue]1[/blue]个回合：期间不能再被发现[gold]破绽[/gold]；被带[gold]击破[/gold]效果的牌命中时触发击破效果。状态结束时清空全部[gold]破绽[/gold]。"
+}

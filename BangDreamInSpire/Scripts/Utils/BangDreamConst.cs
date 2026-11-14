@@ -162,4 +162,34 @@ public static class BangDreamConst
         get => _lingeredResource ?? throw new InvalidOperationException("LingeredResource is not BangDreamTools.Initialized.");
         internal set => BangDreamTools.Init(ref _lingeredResource, value, nameof(LingeredResource));
     }
+
+    private static CardKeyword? _weaknessBreak;
+
+    /// <summary>关键字「破绽」：累计满层进入弱点击破。</summary>
+    public static CardKeyword WeaknessBreak
+    {
+        get => _weaknessBreak ?? throw new InvalidOperationException(
+            "CardKeyword.WeaknessBreak is not BangDreamTools.Initialized.");
+        internal set => BangDreamTools.Init(ref _weaknessBreak, value, nameof(WeaknessBreak));
+    }
+
+    private static CardKeyword? _weakPointBreak;
+
+    /// <summary>关键字「弱点击破」：期间不能再被发现破绽，被带击破效果的牌命中时触发击破。</summary>
+    public static CardKeyword WeakPointBreak
+    {
+        get => _weakPointBreak ?? throw new InvalidOperationException(
+            "CardKeyword.WeakPointBreak is not BangDreamTools.Initialized.");
+        internal set => BangDreamTools.Init(ref _weakPointBreak, value, nameof(WeakPointBreak));
+    }
+
+    private static CardKeyword? _breakEffect;
+
+    /// <summary>关键字「击破」：卡牌文案里的「击破：……」句式。</summary>
+    public static CardKeyword BreakEffect
+    {
+        get => _breakEffect ?? throw new InvalidOperationException(
+            "CardKeyword.BreakEffect is not BangDreamTools.Initialized.");
+        internal set => BangDreamTools.Init(ref _breakEffect, value, nameof(BreakEffect));
+    }
 }
