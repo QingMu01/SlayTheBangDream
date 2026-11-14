@@ -212,6 +212,7 @@ public class PerformManager : HookedSingletonModel, IInCombatManager
     private Player? _player;
     private CardPile? _pile;
     private bool _isPlaylistFrozen;
+    private PerformChord _activeGroups = PerformChord.None;
 
     private IPerformScheme _scheme = EmptyPerformScheme.Instance;
     private PerformCapacityState _capacity = new(EmptyPerformScheme.Instance);
@@ -269,10 +270,16 @@ public class PerformManager : HookedSingletonModel, IInCombatManager
         if (_isPlaylistFrozen == frozen) return;
 
         _isPlaylistFrozen = frozen;
+        if (!frozen)
+        {
+            // 解冻同时清空分组激活位：激活只在冻结期间有意义，留着会在下次槽位同步时被重新点亮。
+            _activeGroups = PerformChord.None;
+        }
+
         if (TryGetPerformArea(out var performArea))
         {
-            // 解冻同时清空分组激活位：激活只在冻结期间有意义（见 NPerformArea.SetFrozen）。
             performArea.SetFrozen(frozen);
+            if (!frozen) performArea.SetActivatedGroups(PerformChord.None);
         }
 
         BangDreamInSpireCore.Logger.Info(
@@ -285,6 +292,7 @@ public class PerformManager : HookedSingletonModel, IInCombatManager
     /// </summary>
     public void SetActivatedGroups(PerformChord groups)
     {
+        _activeGroups = groups;
         if (!TryGetPerformArea(out var performArea)) return;
 
         // 演奏区可能在战斗中被重建（插槽变更 / 节点重挂）：顺手补一次冻结状态，同值时是空操作。
@@ -345,6 +353,9 @@ public class PerformManager : HookedSingletonModel, IInCombatManager
     private void SyncPerformArea()
     {
         PerformArea.SyncSlots(_capacity.TotalSlotCount, _capacity.ActiveSlots);
+        // 演奏区按槽位数量重建 / 重排后，冻结表现与分组激活角标可能丢失，这里补一次（同值是空操作）。
+        PerformArea.SetFrozen(_isPlaylistFrozen);
+        PerformArea.SetActivatedGroups(_activeGroups);
     }
 
     public async Task Clean()
