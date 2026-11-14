@@ -136,8 +136,12 @@ approved_at: 2026-11-14T19:32:53+08:00
 - 若同屏破绽目标超过 5 个，呼吸同步会形成节奏感过强；实现时给每个实例 ±15% 相位抖动（属包络内）。
 - `T_Cracks336` 的亮心在原图正中；压黑后与目标胸口对齐，需在实现时按命中框中心偏移，避免亮心落在头顶。
 
-## 9. 交付物（不锁）
+## 9. 交付物与实现结果（不锁）
 
 - `BangDreamInSpire/scenes/vfx/mutsumi_weakness_break.tscn` + `Scripts/Mechanics/Break/NWeaknessBreakVfx.cs` 重写（保留 `Refresh(int, bool)` / `FadeOut()` 外部接口）
 - `images/vfx/weakness_break/weakness_break_cracks.png` + `.import`
-- `.scratch/vfx/out/mutsumi_weakness_break.mp4` + `.gif`、`tuning-log.md`（有调参时）
+- ✅ 已落地：`Scripts/Mechanics/Break/NWeaknessBreakVfx.cs` 重写（`Sync` / `Refresh` / `FadeOut` / Hover tips 契约不变）+ `scenes/vfx/mutsumi_weakness_break.tscn`（F6 预览时间线）
+- ✅ 贴图：`images/vfx/weakness_break/weakness_break_cracks.png`（LOCAL，`images/**` 按合规不入库，凭据见 §7.1）
+- ✅ 录帧：`.scratch/vfx/out/mutsumi_break.mp4` / `.gif`（60fps，340 帧：1→2→3 层 → 弱点击破 → 清空）
+- ⚠️ 实现调整：碎裂/闪光改 Sprite2D + 加法混合（黑底图直接 `_Draw` 会盖层）；层数点半径 5→6.5；细裂纹加强
+- ⏳ 待实机确认：碎片闪光在深色背景是否过亮、呼吸段是否够显眼

@@ -101,6 +101,21 @@ public partial class MutsumiGroupActivationVfx : Node2D
             }
         }
 
+        if (_previewRows && _previewCycleTimer >= 0f)
+        {
+            _previewCycleTimer += (float)delta;
+            if (_previewCycleTimer >= 2.0f)
+            {
+                _previewCycleTimer = 0f;
+                var states = BuildPreviewStates();
+                if (states.Count == 4)
+                {
+                    _previewShowFirst = !_previewShowFirst;
+                    PlayOneShot(_previewShowFirst ? states[0] : states[3]);
+                }
+            }
+        }
+
         if (_active.Count > 0 || _shot.HasValue || _previewRows)
         {
             QueueRedraw();
@@ -136,15 +151,21 @@ public partial class MutsumiGroupActivationVfx : Node2D
         QueueRedraw();
     }
 
-    /// <summary>预览用：F6 单独运行场景时造一个假分组并循环播。</summary>
+    /// <summary>预览用：F6 单独运行场景时造四组假行，C/G 常驻点亮，一次性在两者间轮播。</summary>
     public void Replay()
     {
-        var state = BuildPreviewState();
-        _previewRows = _active.Count == 0;
         VfxPreviewSupport.CenterForPreview(this);
-        SetActive([state]);
-        PlayOneShot(state);
+        var states = BuildPreviewStates();
+        if (states.Count == 0) return;
+
+        _previewRows = _active.Count == 0;
+        SetActive([states[0], states[3]]);
+        PlayOneShot(states[3]);
+        _previewCycleTimer = 0f;
     }
+
+    private float _previewCycleTimer = -1f;
+    private bool _previewShowFirst = true;
 
     public override void _Draw()
     {
@@ -194,10 +215,10 @@ public partial class MutsumiGroupActivationVfx : Node2D
             var row = rows[i];
             if (highlight)
             {
-                DrawRect(row, new Color(color, 0.16f * alpha), true);
+                DrawRect(row, new Color(color, 0.22f * alpha), true);
             }
 
-            DrawRect(row, new Color(color, 0.85f * alpha), false, 1.8f);
+            DrawRect(row, new Color(color, 0.9f * alpha), false, 2.2f);
         }
     }
 
@@ -238,7 +259,7 @@ public partial class MutsumiGroupActivationVfx : Node2D
         }
 
         var y = Mathf.Lerp(top - 6f, bottom + 6f, t);
-        var alpha = Mathf.Sin(t * Mathf.Pi) * 0.75f;
+        var alpha = Mathf.Sin(t * Mathf.Pi) * 0.9f;
         var color = _shot?.Group is { } group ? PerformChordColors.ColorOf(group) : new Color("#ded8f6");
         var left = float.MaxValue;
         var right = float.MinValue;
@@ -303,7 +324,7 @@ public partial class MutsumiGroupActivationVfx : Node2D
             false, new Color(1f, 1f, 1f, alpha));
     }
 
-    private GroupState BuildPreviewState()
+    private List<GroupState> BuildPreviewStates()
     {
         const float itemWidth = 112f;
         const float itemHeight = 35f;
@@ -311,16 +332,33 @@ public partial class MutsumiGroupActivationVfx : Node2D
         const float columnGap = 10f;
         const float halfHitWidth = 160f;
         const float halfHitHeight = 150f;
-        var x = halfHitWidth + columnGap;
+        var left = -halfHitWidth - columnGap - itemWidth;
+        var right = halfHitWidth + columnGap;
         var topY = -halfHitHeight + 32f;
-        var rows = new Rect2[3];
-        for (var i = 0; i < 3; i++)
+        var bottomY = halfHitHeight - 32f - itemHeight;
+
+        var states = new List<GroupState>();
+        foreach (var (group, x, startY, step, mirrored) in new (PerformChord, float, float, float, bool)[]
+                 {
+                     (PerformChord.C, left, topY, rowStep, false),
+                     (PerformChord.D, left, bottomY, -rowStep, false),
+                     (PerformChord.F, right, topY, rowStep, true),
+                     (PerformChord.G, right, bottomY, -rowStep, true)
+                 })
         {
-            rows[i] = new Rect2(x, topY + rowStep * i, itemWidth, itemHeight);
+            var rows = new Rect2[3];
+            for (var i = 0; i < 3; i++)
+            {
+                rows[i] = new Rect2(x, startY + step * i, itemWidth, itemHeight);
+            }
+
+            var badge = mirrored
+                ? new Vector2(x + itemWidth + 14f, rows[0].Position.Y + 8f)
+                : new Vector2(x - 14f, rows[0].Position.Y + 8f);
+            states.Add(new GroupState(group, rows, badge, Vector2.Zero, mirrored));
         }
 
-        var badge = new Vector2(x + itemWidth + 14f, topY + 8f);
-        return new GroupState(PerformChord.F, rows, badge, new Vector2(0f, 0f), true);
+        return states;
     }
 
     private void DrawPreviewRows()

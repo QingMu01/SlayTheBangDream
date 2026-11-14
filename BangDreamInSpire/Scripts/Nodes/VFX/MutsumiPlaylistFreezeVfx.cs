@@ -44,7 +44,11 @@ public partial class MutsumiPlaylistFreezeVfx : Node2D
     private const float KnotSize = 6f;
     private const float SwayAmplitude = 1.5f;
     private const float BreathPeriod = 1.8f;
-    private const float ThreadTopOffset = 60f;
+    /// <summary>
+    /// 主线上端距组包围盒顶边的距离。计划里写的是 60px，但 60px 的短桩读不出「从上方落下来」；
+    /// 按批准的预演图（线自画面上方垂下）加长到 200px，顶端做 alpha 渐隐。见 tuning-log。
+    /// </summary>
+    private const float ThreadTopOffset = 200f;
 
     /// <summary>各分组主提线在行宽上的锚点比例（同列两组必须错开，否则两条线会完全重合）。</summary>
     private static readonly Dictionary<PerformChord, float> AnchorRatios = new()
@@ -202,11 +206,17 @@ public partial class MutsumiPlaylistFreezeVfx : Node2D
             var crossbarY = top - 16f;
             var threadTopY = top - ThreadTopOffset;
 
-            // 主线（略带摆动，暗示被提着）
-            DrawLineGlow(
-                [new Vector2(anchorX, threadTopY), new Vector2(anchorX + sway * 0.4f, (threadTopY + crossbarY) / 2f),
-                 new Vector2(anchorX + sway, crossbarY)],
-                ThreadColor, ThreadWidth, ThreadAlpha * _fade * breath);
+            // 主线（略带摆动，暗示被提着）；分成三段、越靠上越淡，读作从画面上方落下来
+            var alpha = ThreadAlpha * _fade * breath;
+            var segments = 3;
+            for (var seg = 0; seg < segments; seg++)
+            {
+                var t0 = seg / (float)segments;
+                var t1 = (seg + 1) / (float)segments;
+                var p0 = new Vector2(anchorX + sway * t0 * 0.4f, Mathf.Lerp(threadTopY, crossbarY, t0));
+                var p1 = new Vector2(anchorX + sway * t1, Mathf.Lerp(threadTopY, crossbarY, t1));
+                DrawLineGlow([p0, p1], ThreadColor, ThreadWidth, alpha * Mathf.Lerp(0.15f, 1f, t1));
+            }
 
             // 横杆
             DrawLineGlow(

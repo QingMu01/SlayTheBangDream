@@ -125,9 +125,13 @@ approved_at: 2026-11-14T19:32:53+08:00
 - 角色 `HitboxCenter` 锚点会随体型/缩放变化，实现时用命中框中心实时换算，不写死像素。
 - 若后续希望「线随演奏摆动」，属包络外的形态变化，需重新确认。
 
-## 9. 交付物（不锁）
+## 9. 交付物与实现结果（不锁）
 
 - `BangDreamInSpire/scenes/vfx/mutsumi_group_activation.tscn` + 脚本
 - 接入：`NPerformArea.SetActivatedGroups` 内部替换占位角标表现；`PuppeteerFormManager.ActivateGroups` 调 `PlayOneShot(group)`
 - 真实形态对齐：行坐标来自 `NPerformItem.Position`，右侧列按 `IsMirroredCorner` 镜像起止点
-- 工程内素材无需新增文件；`.scratch/vfx/out/mutsumi_group_activation.mp4` + `.gif`
+- ✅ 已落地：`Scripts/Nodes/VFX/MutsumiGroupActivationVfx.cs` + `scenes/vfx/mutsumi_group_activation.tscn`（F6 预览，四组假行、C/G 常驻点亮、一次性轮播）
+- ✅ 接入：`NPerformArea.SetActivatedGroups` / `ApplyActivatedGroupVisuals`（新点亮的分组播一次性；清空时主动 Clear）
+- ✅ 录帧：`.scratch/vfx/out/mutsumi_activation.mp4` / `.gif`（60fps，130 帧）
+- ⚠️ 调参：行点亮填充 0.16→0.22、描边 1.8→2.2px、扫光 0.75→0.90（首版太弱）
+- ⏳ 待实机确认：0.40s 的节奏是否偏快、四根常驻线是否显乱

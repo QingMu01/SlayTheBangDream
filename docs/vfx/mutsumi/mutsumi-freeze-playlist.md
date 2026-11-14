@@ -132,7 +132,7 @@ approved_at: 2026-11-14T19:32:53+08:00
 - 右侧列整体镜像，吊点取「行内端」需按 `IsMirroredCorner` 判断左右。
 - 演奏区布局有 0.25s 缓动，提线跟随需在布局完成后再贴合一次，否则中途会甩。
 
-## 10. 交付物（不锁）
+## 10. 交付物与实现结果（不锁）
 
 - `BangDreamInSpire/scenes/vfx/mutsumi_playlist_freeze.tscn` + `Scripts/Nodes/VFX/MutsumiPlaylistFreezeVfx.cs`
 - 接入：`NPerformArea.ApplyFrozenVisuals` 替换占位实现（逐行坐标来自 `_items[i].Position`，布局变化时重新投喂）
