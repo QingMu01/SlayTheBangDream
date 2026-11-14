@@ -1098,9 +1098,18 @@ public class PerformManager : HookedSingletonModel, IInCombatManager
         }
     }
 
+    // 本体 0.113 起 SingletonModel 是 RunModel，注册的单例会同时以「局内模型单例」和
+    // 「RitsuLib 战斗钩子订阅」两种身份进入 CombatState.IterateHookListeners；这两份都没绑定玩家，
+    // 读 Player 会抛 Owner is not Initialized 并让整次出牌失败。真正的每玩家结算由
+    // PerformMechanic.GetCombatHookModels 注册的那份克隆负责（见 SubmitCombatState 的 _player）。
     public override CardLocation ModifyCardPlayResultLocation(CardModel card, bool isAutoPlay, ResourceInfo resources,
         CardLocation cardLocation)
     {
+        if (_player == null)
+        {
+            return cardLocation;
+        }
+
         if (cardLocation.player == Player && card is IPerformCard performanceCard &&
             cardLocation.pileType == PileType.Discard)
         {
@@ -1112,6 +1121,11 @@ public class PerformManager : HookedSingletonModel, IInCombatManager
 
     public override async Task AfterCardPlayed(PlayerChoiceContext choiceContext, CardPlay play)
     {
+        if (_player == null)
+        {
+            return;
+        }
+
         if (play.Card is IPerformCard)
         {
             await Cmd.CustomScaledWait(0.35f, 0.5f);
