@@ -13,6 +13,7 @@ using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Characters;
 using MegaCrit.Sts2.Core.Multiplayer.Game.Lobby;
+using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 using MegaCrit.Sts2.Core.Nodes.Screens.Blitz;
 using MegaCrit.Sts2.Core.Nodes.Screens.CharacterSelect;
 using MegaCrit.Sts2.Core.Nodes.Screens.Dread;
@@ -41,6 +42,95 @@ public class GroupableCharacterSelectorPatches : IModPatches
 
     internal static void SetSelector(object screen, BangDreamCharacterSelector selector) =>
         Selectors.AddOrUpdate(screen, selector);
+
+    /// <summary>
+    /// 把 <paramref name="character" /> 真正提交为当前选择。
+    /// <para>
+    /// 用本体为**真实角色**生成的按钮（分组逻辑已把它隐藏）走一遍完整的原生
+    /// <c>SelectCharacter</c>：播放选择音效、启用出航按钮、清空并重建背景、写入
+    /// <c>_lobby.SetLocalCharacter</c>，最后把其它按钮全部 <c>Deselect</c>。
+    /// </para>
+    /// <para>
+    /// 为什么必须用那个隐藏按钮而不是分组按钮：三个屏幕后续都会读
+    /// <c>_selectedButton.Character</c>（保存「上次选择的角色」以及 Dread 的
+    /// <c>SetLocalCharacter(_selectedButton.Character, …)</c>），若让它指向承载占位角色的分组按钮，
+    /// 这些地方会拿到 <see cref="GroupCharacterPlaceholder" />。
+    /// </para>
+    /// </summary>
+    internal static bool CommitCharacterSelection(object screen, CharacterModel character,
+        NCharacterSelectButton? sourceButton)
+    {
+        var container = CharacterSelectScreenSupport.GetCharButtonContainer(screen);
+        if (container == null)
+        {
+            BangDreamInSpireCore.Logger.Warn(
+                $"[GroupSelect] {screen.GetType().Name} 上找不到 _charButtonContainer，无法提交角色选择。");
+            return false;
+        }
+
+        var target = container.GetChildren().OfType<NCharacterSelectButton>()
+            .FirstOrDefault(button => ReferenceEquals(button.Character, character));
+        if (target == null)
+        {
+            BangDreamInSpireCore.Logger.Warn(
+                $"[GroupSelect] 找不到角色 {character.Id.Entry} 的原生按钮，无法提交选择。");
+            return false;
+        }
+
+        target.Select();
+
+        if (sourceButton != null && GodotObject.IsInstanceValid(sourceButton))
+        {
+            // 原生流程把选中态放在上面那个不可见按钮上，并顺手把分组按钮 Deselect 掉；
+            // 但玩家看到的是分组按钮，这里补回选中态。抑制 Init，避免再次打开/重置选择器。
+            InitSelectorPatch.BeginSuppressInit();
+            try
+            {
+                sourceButton.Select();
+            }
+            finally
+            {
+                InitSelectorPatch.EndSuppressInit();
+            }
+
+            if (sourceButton.IsInsideTree())
+            {
+                sourceButton.TryGrabFocus();
+            }
+        }
+
+        // 原生流程会把本体信息面板/背景显示出来并隐藏自定义选择器，这里切回分组视图。
+        ApplyGroupView(screen);
+        return true;
+    }
+
+    /// <summary>切回「分组选择器」视图：隐藏本体信息面板/背景，显示自定义选择器。</summary>
+    internal static void ApplyGroupView(object screen)
+    {
+        var infoPanel = CharacterSelectScreenSupport.GetInfoPanel(screen);
+        if (infoPanel != null)
+        {
+            infoPanel.Visible = false;
+        }
+
+        var ascensionPanel = CharacterSelectScreenSupport.GetAscensionPanel(screen);
+        if (ascensionPanel != null)
+        {
+            ascensionPanel.Visible = false;
+        }
+
+        var bgContainer = CharacterSelectScreenSupport.GetBgContainer(screen);
+        if (bgContainer != null)
+        {
+            bgContainer.Visible = false;
+        }
+
+        var selector = GetSelector(screen);
+        if (selector != null)
+        {
+            selector.Visible = true;
+        }
+    }
 
     public static void AddTo(ModPatcher patcher)
     {
@@ -110,6 +200,9 @@ internal static class CharacterSelectScreenSupport
 
     internal static Control? GetBgContainer(object screen) =>
         FindField(screen, "_bgContainer")?.GetValue(screen) as Control;
+
+    internal static Control? GetCharButtonContainer(object screen) =>
+        FindField(screen, "_charButtonContainer")?.GetValue(screen) as Control;
 
     internal static Control? GetInfoPanel(object screen) =>
         FindField(screen, "_infoPanel")?.GetValue(screen) as Control;
@@ -384,9 +477,21 @@ internal class InitSelectorPatch : IPatchMethod
     private static bool IsSupportedScreen(ICharacterSelectButtonDelegate? candidate) =>
         candidate is NCharacterSelectScreen or NBlitzScreen or NDreadScreen;
 
+    private static int _suppressInitDepth;
+
+    /// <summary>在 <c>Select()</c> 期间抑制选择器初始化（用于以编程方式恢复按钮选中态）。</summary>
+    internal static void BeginSuppressInit() => _suppressInitDepth++;
+
+    internal static void EndSuppressInit() => _suppressInitDepth = Math.Max(0, _suppressInitDepth - 1);
+
     public static void Prefix(NCharacterSelectButton __instance, bool ____isSelected,
         ICharacterSelectButtonDelegate ____delegate, CharacterModel ____character)
     {
+        if (_suppressInitDepth > 0)
+        {
+            return;
+        }
+
         if (!____isSelected && IsSupportedScreen(____delegate) && ____character is GroupCharacterPlaceholder)
         {
             var characterGroup = GroupableCharacterSelectorPatches.GroupState.GetOrCreate(__instance);

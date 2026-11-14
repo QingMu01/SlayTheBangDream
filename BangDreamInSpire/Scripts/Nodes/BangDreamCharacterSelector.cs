@@ -3,6 +3,7 @@ using BangDreamInSpire.Scripts.Extensions;
 using BangDreamInSpire.Scripts.Interfaces.CharacterAugment;
 using BangDreamInSpire.Scripts.Nodes.MegeScript;
 using BangDreamInSpire.Scripts.Nodes.SubNode;
+using BangDreamInSpire.Scripts.Patches;
 using BangDreamInSpire.Scripts.Utils;
 using Godot;
 using MegaCrit.Sts2.Core.Helpers;
@@ -233,9 +234,11 @@ public partial class BangDreamCharacterSelector : Control
             SetRelicShow(visibleRelic);
         }
 
-        if (_delegate != null && _sourceButton != null)
+        if (_delegate != null)
         {
-            _delegate.SelectCharacter(_sourceButton);
+            // 走屏幕的完整原生选择流程（选择音效 / 启用出航 / 写入 lobby / 取消其它按钮选中态）。
+            // 传真实成员而不是分组占位按钮——占位按钮会被 InterceptGroupButtonPatch 跳过，导致什么都没提交。
+            GroupableCharacterSelectorPatches.CommitCharacterSelection(_delegate, character, _sourceButton);
         }
 
         // 弹窗同步角色数据（皮肤 / 初始卡组 / 初始遗物），关闭时也保持最新。
