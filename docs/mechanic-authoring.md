@@ -241,3 +241,22 @@ rewardCard.GetOrCreateCapability<ChordCapability>().SetChord(randomChord);
 | 击破触发 | 卡牌实现 `IWeaknessBreakCard`（`HasBreakEffect` + `OnWeakPointBreak(ctx, play, target)`）。`BreakRules` 在 `BeforeCardPlayed` 压帧（先记 `CardPlay.Target`），出牌中按 `cardSource` 从 `AfterDamageReceived` / `AfterPowerAmountChanged` 补记命中目标（覆盖随机 / AOE / 非伤害；给自己上的增益不算），`AfterCardPlayedLate` 出栈逐个触发——此时「发现破绽 → 满层 → 弱点击破」已结算完，因此同张牌可以「先发现凑满、再触发击破」。同一张牌对同一目标只触发一次，不同目标各一次。 |
 | 视觉 | 不占 Power 图标（`IsVisibleInternal = false`）：常驻 `NWeaknessBreakVfx` 挂在 `NCreature` 上，1–3 层是 n 枚指示点、弱点击破换破裂形态；Hover 时 `NHoverTipSet.CreateAndShow` 弹能力同款 tips，移除后淡出。施加能力用 `silent: true`，避免无图标却有受击抖动。 |
 | 调试 | `break 2` / `break 4` / `break self 3` / `break clear`（`BreakConsoleCmd`）。 |
+
+
+## 12. 演奏区槽位的视觉形态（做特效/UI 前必读）
+
+槽位不是「方形卡槽」，而是一条条**斜切平行四边形播放列表行**；设计演奏区特效（冻结、激活、落位高亮）时按下面的形态，不要按方块画。
+
+| 项 | 事实 | 出处 |
+|---|---|---|
+| 单行尺寸 | `NPerformItem` 局部 **160×50**（宽度按卡名自适应，`MinimumItemWidth = 160`）；`NPerformArea.ItemScale` 默认 **0.7** → 实渲染约 **112×35** | `perform_item.tscn`、`NPerformItem.UpdateAdaptiveWidth`、`NPerformArea.ItemScale` |
+| 斜切 | `parallelogram_clip.gdshader` 的 `slant_slope = 0.3` → 上下各偏移约 `0.3 × 高 / 2`（35px 高时约 5.25px） | `shaders/parallelogram_clip.gdshader` |
+| 行内组成 | 卡面 portrait（同款斜切）+ 点阵叠加 + 渐变遮罩 + 白色标题（28px，右侧列整体水平镜像）；行右侧另有一条 165×25 的标题底色带 | `perform_item.tscn` |
+| 分组与列 | 四组 × 3 行，贴命中框左右两侧成**两列**：左列 **C（上）/ D（下）**，右列 **F（上）/ G（下，镜像）**；同一列上下两组在竖直中段留约 5px 缝 | `MutsumiPerformScheme` 的 `PerformSlotCorner`、`NPerformArea.GetItemPosition` |
+| 间距 | 行距 `ItemSpacing(70) × ItemScale` ≈ **49px**；列与命中框边缘 `SlotHitboxGap = 10px`；`PerformAreaAnchor.HitboxCenter` 表示演奏区坐标原点在命中框中心 | `NPerformArea` |
+| 分组角标 | 在该组**第一行的外端**，尺寸 22px（占位实现） | `NPerformArea.TryGetGroupBadgeAnchor` |
+| 行坐标获取 | 特效逐行定位请读 `_items[i].Position`（实时值），不要写死像素；右侧列用 `IsMirroredCorner` 判断镜像 | `NPerformArea.ApplyItemScale` / `GetItemPosition` |
+
+> 冻结与分组激活的正式特效方案见 `.scratch/vfx/plans/mutsumi-*.md`（草案）。
+> 冻结/激活的占位实现替换点写在 `NPerformArea` 的字段注释里：`FrozenOverlay`、`ActivatedGroupBadge_<和弦>`，
+> 外部只依赖 `SetFrozen(bool)` / `SetActivatedGroups(PerformChord)` 与 `ApplyItemVisibility` 刷新入口。
