@@ -1,6 +1,6 @@
 # 睦的三项机制：和弦书签 / 傀儡师 / 破绽
 
-- 状态：**机制已落地（占位特效）**，2026-11-14 方案落盘 + 同日实现；三套正式特效待下一轮 vfx 流程
+- 状态：**机制 + 三套正式特效均已落地**，2026-11-14 方案落盘 + 同日实现；特效方案与批准记录见 `docs/vfx/mutsumi/`（动态观感验收待实机）
 - 目标分支：`feature/mutsumi-mechanics`（基于 `beta`，本体 **0.113.0**，RitsuLib 0.6.11）
 - 本体源码以 `../sts2unpack/0.113.0/src` 为准（`beta` 已适配 0.113，勿再读 0.111）
 - 本轮范围：**机制代码 + 占位特效**。三套正式特效（歌单冻结 / 分组激活 / 破绽与弱点击破）另开一轮走 `vfx-authoring` 流程出方案图，再替换占位。
@@ -142,7 +142,9 @@ Task<int> Discover(PlayerChoiceContext ctx, Creature target, int amount, Abstrac
 | 和弦书签 | `Nodes/Cards/NChordBookmark.cs`（旧 `NChordCornerBadge` 已删）；`ChordCapability` 覆盖层 ID `chord_bookmark`；`NChordDesignScreen` 预览/清理同步改名 |
 | 傀儡师 | `Mechanics/Puppeteer/{PuppeteerMechanic,PuppeteerFormManager,PuppeteerRunData}.cs`；状态模型走 `AttachePlayerData.PuppeteerFormManager` 类型化入口（与 `PerformManager` 同款，未用弱表） |
 | 歌单冻结 | `PerformManager.IsPlaylistFrozen` / `SetPlaylistFrozen` / `SetActivatedGroups`；拦截点见 `docs/mechanic-authoring.md` §10 |
-| 冻结/激活占位表现 | `NPerformArea.SetFrozen` / `SetActivatedGroups`：`FrozenOverlay`、`ActivatedGroupBadge_<和弦>`；正式特效只换内部实现 |
+| 歌单冻结特效 | `Nodes/VFX/MutsumiPlaylistFreezeVfx.cs`（「提线悬停」：四组主提线 + 横杆 + 每行吊线 + 紫灰覆膜，行坐标实时投喂）；`NPerformArea.ApplyFrozenVisuals` 驱动，`scenes/vfx/mutsumi_playlist_freeze.tscn` 供 F6 预览 |
+| 分组激活特效 | `Nodes/VFX/MutsumiGroupActivationVfx.cs`（「提线收紧」：行描边 + 角标提线 + 0.40s 一次性扫光/环/光点）；`NPerformArea.SetActivatedGroups` 驱动，`scenes/vfx/mutsumi_group_activation.tscn` 供 F6 预览 |
+| 破绽视觉 | `Mechanics/Break/NWeaknessBreakVfx.cs` 重写为「裂纹积累」：菱形层数点 + 逐层细裂纹；满 4 层压 `T_Cracks336` 碎裂贴图（一次性 0.75 → 0.22–0.34 呼吸）+ 碎片闪光 |
 | 破绽 | `Mechanics/Break/{BreakMechanic,BreakCmd,BreakRules,BreakConst,WeaknessBreakPower,WeakPointBreakPower,NWeaknessBreakVfx}.cs` |
 | Hook | `BangDreamHook.AfterWeaknessBreakDiscovered / AfterWeakPointBroken / AfterWeakPointBreakTriggered`；`IWeaknessBreakHookListener` |
 | 卡牌契约 | `IWeaknessBreakCard`（`HasBreakEffect` + `OnWeakPointBreak`） |
@@ -170,6 +172,8 @@ Task<int> Discover(PlayerChoiceContext ctx, Creature target, int amount, Abstrac
 - [x] 构建通过：`ItsCrychic.csproj` 0 error（警告仅 NU1900 与既有 CS8600）
 - [x] `grep NChordCornerBadge` 无残留；旧节点类与 `.uid` 已删
 - [x] 书签 1–4 个和弦的排版预览图（`.scratch/chord-bookmark/preview.png`）
+- [x] 三套特效方案经用户批准（「提线」两套 + 破绽 A），批准原文与指纹见 `docs/vfx/mutsumi/*.md`
+- [ ] 三套特效实机观感确认（冻结提线是否甩、激活扫光节奏、破绽碎裂是否过曝）——本轮沙箱无渲染，动态验收未完成
 - [ ] 实机观感确认（书签尺寸 / 尖端是否被裁剪 / 手牌密排时的观感）
 - [ ] 傀儡师实机：小睦死亡→墨缇丝→（四组激活）→小睦复活血量=容量×2；胜利切回小睦且 1 血兜底；双池跨战斗保存
 - [ ] 冻结期间音乐牌不入歌单、歌单不可移除、演奏改为激活分组
@@ -177,4 +181,5 @@ Task<int> Discover(PlayerChoiceContext ctx, Creature target, int amount, Abstrac
 - [ ] 击破实机：指向/随机/AOE 三种来源都能触发（需要实现 `IWeaknessBreakCard` 的卡牌；当前仓库内暂无此类卡）
 - [x] 本地化 JSON 合法（`python3 -m json.tool`）
 - [ ] 改动按单元提交（已分批提交，见 git log）；`docs/` 与本文件同步更新
-- 实机验收入口：控制台 `chord` / `break` / `puppet`（见 `docs/mechanic-authoring.md` §10 / §11）
+- 实机验收入口：控制台 `chord` / `break` / `puppet`（见 `docs/mechanic-authoring.md` §10 / §11）；
+  特效可先 F6 单独运行 `scenes/vfx/mutsumi_playlist_freeze.tscn` / `mutsumi_group_activation.tscn` 看形态
