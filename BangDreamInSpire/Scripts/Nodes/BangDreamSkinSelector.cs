@@ -15,7 +15,10 @@ namespace BangDreamInSpire.Scripts.Nodes;
 
 public partial class BangDreamSkinSelector : Control
 {
-    private static readonly Dictionary<string, NCreatureVisuals> VisualsCache = [];
+    // 预览实例必须每个选择器各存一份：标准 / 快速 / Dread 三个屏各有一份自己的选择器与详情弹窗，
+    // 共用静态缓存会让后一份把「已挂在另一份 SkinContainer 下」的节点再 AddChild 一次，
+    // 报 Can't add child ... already has a parent。
+    private readonly Dictionary<string, NCreatureVisuals> _visualsCache = [];
 
     private static readonly Color DisabledColor = new(0.5f, 0.5f, 0.5f);
     private static readonly Color EnabledColor = new(1f, 1f, 1f);
@@ -73,12 +76,15 @@ public partial class BangDreamSkinSelector : Control
 
     public override void _ExitTree()
     {
-        foreach (var visualsCacheValue in VisualsCache.Values)
+        foreach (var visualsCacheValue in _visualsCache.Values)
         {
-            visualsCacheValue.QueueFreeSafely();
+            if (IsInstanceValid(visualsCacheValue))
+            {
+                visualsCacheValue.QueueFreeSafely();
+            }
         }
 
-        VisualsCache.Clear();
+        _visualsCache.Clear();
     }
 
     public void Init(ISkinSupportCharacter skinSupportCharacter, StartRunLobby? lobby)
@@ -191,14 +197,14 @@ public partial class BangDreamSkinSelector : Control
                     }
 
                     NCreatureVisuals visuals;
-                    if (VisualsCache.TryGetValue(visualScene, out var cache))
+                    if (_visualsCache.TryGetValue(visualScene, out var cache))
                     {
                         visuals = cache;
                     }
                     else
                     {
                         visuals = RitsuGodotNodeFactories.CreateFromScenePath<NCreatureVisuals>(visualScene);
-                        VisualsCache.Add(visualScene, visuals);
+                        _visualsCache.Add(visualScene, visuals);
                     }
 
                     visuals.Scale = new Vector2(0.7f, 0.7f);
