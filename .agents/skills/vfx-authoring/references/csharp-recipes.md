@@ -122,30 +122,28 @@ public partial class MusicBurstSparkVfx : Node2D
 
 **为什么必须用单一 `TweenMethod`**：`SetParallel(true)` 下两个 tweener 写同一属性，后建的会**静默**覆盖先建的，不报任何错。症状是"动画看起来没生效"，只能靠录帧发现。
 
-## 3. 压黑 shader（黑底素材必需）
+## 3. 黑底素材的运行时着色
 
-`BangDreamInSpire/shaders/crush_add.gdshader`：
+预览脚本里的 `crush_add` 是**静态近似**；运行时不要依赖一个并不存在的 `crush_add.gdshader`。实际工程做法是**用亮度重建颜色**再加法输出，避免 `CanvasItemMaterial(ADD)` + 彩色 `modulate` 在线性空间乘法压出偏红边。参考 `res://BangDreamInSpire/shaders/strike_sakiko_glow.gdshader`：
 
 ```glsl
 shader_type canvas_item;
-render_mode blend_add, unshaded;
+render_mode blend_add;
 
-uniform float black_point : hint_range(0.0, 0.5) = 0.09;
-uniform float softness : hint_range(0.0, 0.3) = 0.10;
-uniform float intensity : hint_range(0.0, 3.0) = 1.0;
+uniform vec3 glow_color : source_color = vec3(0.541176, 0.498039, 0.815686);
+uniform float intensity : hint_range(0.5, 2.5) = 1.2;
 
 void fragment() {
     vec4 tex = texture(TEXTURE, UV);
-    float lum = max(tex.r, max(tex.g, tex.b));
-    float k = smoothstep(black_point, black_point + softness, lum);
-    float fade = COLOR.a;
-    COLOR = vec4(tex.rgb * k * intensity * COLOR.rgb * fade, 1.0);
+    float mx = max(max(tex.r, tex.g), tex.b);
+    vec4 modulate = COLOR;
+    COLOR = vec4(glow_color * mx * intensity * modulate.rgb, tex.a * modulate.a);
 }
 ```
 
-**每层按素材测定 `black_point`**（见 [translation-tables.md](translation-tables.md) 表 5）。给小了会露出**旋转的亮方块**。
-
-**有 alpha 的素材通常不走这条路**：这个 shader 没有保留 `tex.a`，会忽略透明区域；RGB 为白的透明像素可能叠出白方块。保留纹理 alpha 时通常用 MIX 或 ADD。无 alpha 的白底素材也不能用压黑去掉白底。
+- **纯白/灰阶贴图**可以直接 `modulate`；**带颜色的贴图不要**用 modulate 染色。
+- 黑底不透明素材的压黑阈值要按素材实测（JPG 的"黑"不是纯黑），在预览规格里写 `black_point` / `softness`；运行时用上述亮度重建或等效 shader，并保留 `tex.a`。
+- 有 alpha 的素材不要走忽略纹理 alpha 的压黑路径，否则透明区域会叠出方块。
 
 ## 4. 每实例材质（铁律二）
 
@@ -186,12 +184,8 @@ sprite.Frame = Mathf.Min((int)(local * 16f), 15);
 
 ### 6.1 尺寸归一化（写场景前必须先做）
 
-**库内贴图的像素尺寸差异极大**——实测同一套特效里同时出现 72×80、128×128、256×256、283×268、512×512。
-若各层共用一组 `s0`/`s1` 而不归一，尺寸会严重失衡：72px 的看不见，512px 的占满屏。
-
-**约定**：把每张贴图归一到统一的 **384px 参考框**，由**场景节点 `scale`** 承担归一化；
-脚本里的 `s0`/`s1` 保持为**相对倍数**。这既符合铁律一（美术基准值放场景），
-也让层表可以跨特效复用。
+库内贴图的像素尺寸差异极大，若各层共用一组 `s0`/`s1` 而不归一，尺寸会严重失衡。
+约定：把每张贴图归一到统一的 **384px 参考框**，由**场景节点 `scale`** 承担归一化；脚本里的 `s0`/`s1` 保持为**相对倍数**。
 
 ```
 节点 scale       = 384 / max(贴图宽, 贴图高)
@@ -206,8 +200,7 @@ sprite.Frame = Mathf.Min((int)(local * 16f), 15);
 | 256×256 | 1.50 | 365px | 1.43× |
 | 512×512 | 0.75 | 365px | 0.71× |
 
-> **放大倍数超过 3× 就要预期插值模糊。** 这正是 S2.5 预演脚本会告警的那一项——
-> 选材时优先挑原生尺寸够大的（见 [asset-selection.md](asset-selection.md) 陷阱 8）。
+> **放大倍数超过 3× 就要预期插值模糊**。选材时优先挑原生尺寸够大的（见 [asset-selection.md](asset-selection.md) 陷阱 8）。
 
 ## 7. 接入确认（做完不等于会出现）
 
@@ -223,6 +216,7 @@ grep -rn "MusicBurstSparkVfx\|vfx_music_burst_spark" --include=*.cs --include=*.
 
 ```bash
 # 从 Directory.Build.props 读 Godot 与本体数据目录（单属性查询直接打印值）
+GODOT=$(dotnet msbuild BangDreamInSpire/BangDreamInSpire.csproj -getProperty:GodotExe)
 STS2_DATA=$(dotnet msbuild BangDreamInSpire/BangDreamInSpire.csproj -getProperty:Sts2DataDir)
 
 dotnet build BangDreamInSpire/BangDreamInSpire.csproj -c Debug \
@@ -232,71 +226,12 @@ dotnet build BangDreamInSpire/BangDreamInSpire.csproj -c Debug \
   --path BangDreamInSpire --quit-after 120 "res://BangDreamInSpire/scenes/vfx/<场景>.tscn"
 ```
 
-**这两条只证明"没有报错"，不证明"看起来对"。** 调观感必须录帧——见 [SKILL.md](../SKILL.md) 的 S5。
+**这两条只证明"没有报错"，不证明"看起来对"。** 调观感必须录帧——见 [SKILL.md](../SKILL.md) 的 S5，以及 `docs/vfx-authoring.md` §3.1 / §5.1 的陷阱清单。
 
-## 9. 已知非问题与实测数据
+## 9. 已知非问题
 
-以下均为实测确认，**不要误判为新缺陷**：
+- `ObjectDB instances leaked at exit`：仅 `NBangDreamFlyingVfx` 场景出现，基类固有现象。
+- `Sentry GDExtension not loaded`：无头/录制运行的常规提示。
+- `ERROR: Error opening file 'res://icon.svg'`：`project.godot` 引用了不存在的图标，既有问题，与特效无关。
 
-| 现象 | 结论 |
-|---|---|
-| `ObjectDB instances leaked at exit` | 仅 `NBangDreamFlyingVfx` 场景出现，基类固有现象 |
-| `Sentry GDExtension not loaded` | 无头/录制运行的常规提示 |
-| `ERROR: Error opening file 'res://icon.svg'` | `project.godot` 引用了不存在的图标，**既有问题**，与特效无关 |
-
-**BangDreamInSpire 的清屏色是灰 75（RGB 75/255），不是黑。** 这一点会影响两件事：
-
-1. 判断"某元素是否消失"时，背景不是黑而是灰，亮度采样与肉眼观感都不同；
-2. `verify_frames.py` 用**众数自适应**背景，黑底与灰底都能正确处理，无需手工传阈值。
-
-**录制速度实测**（本机，1280×720 级别的场景按 1920×1080 全屏录制）：
-
-| 帧数 | 耗时 | 占实时 |
-|---|---|---|
-| 12 帧 | ~2s | 50% |
-| 90 帧 | ~12–13s | 8% |
-
-固定启动开销约 1 秒，之后每帧约 130ms。**录 130 帧请预留 20 秒以上。**
-
-**预览态会循环重播。** F6 / 场景根运行时 `ShouldSelfFree` 为 false，`LoopPreview` 为 true，所以录制区间若超过一个 `LIFE`，会录到第二个循环。用 `--expect-peak` 时要么把 `--quit-after` 控制在一个循环内，要么把期望窗口对准想核对的那一次。
-
-## 10. 两个必踩的实现坑（都只能靠录帧发现）
-
-这两个坑的共同特征：**编译通过、无头运行零报错、单帧截图看起来正常**，
-只有录帧逐帧核对才暴露。实测一次命中特效里两个都踩了。
-
-### 坑一：alpha 曲线方向写反
-
-```csharp
-// ✗ 错误：A1 = 0 时等价于 A0 * x^pow，曲线整个颠倒
-var eAlpha = 1f - Mathf.Pow(local, def.AlphaPow);
-node.Modulate = new Color(..., Mathf.Lerp(def.A0, def.A1, eAlpha));
-
-// ✓ 正确：fade 是从 0 走到 1 的插值参数
-var fade = Mathf.Pow(local, def.AlphaPow);
-node.Modulate = new Color(..., Mathf.Lerp(def.A0, def.A1, fade));
-```
-
-症状：**alpha 从 0 涨到 `A0`**，并在 `local` 被 clamp 到 1 后**永久停在 `A0`**——
-"前段看着正常，后段整片挂着不消失"。
-
-识别方法：`verify_frames.py` 的「疑似未淡出」告警（内容占比长时间冻结）。
-实测坏例的占比在 f8~f24 恒为 `0.05296 → 0.05299`。
-
-### 坑二：火花贴图朝向差 90°
-
-粒子贴图的**长轴沿局部 Y 轴**。要让它对齐径向 `offset.Angle() = φ`，需要旋转 `φ - π/2`：
-
-```csharp
-// ✗ 错误：火花切向横躺，看起来像风车的碎片
-node.Rotation = offset.Angle();
-
-// ✓ 正确：长轴对齐飞散方向
-node.Rotation = offset.Angle() - Mathf.Pi * 0.5f;
-```
-
-推导：贴图长轴初值为 `(0,1)`，旋转 θ 后为 `(-sinθ, cosθ)`；令其等于 `(cosφ, sinφ)`
-解得 `θ = φ - π/2`。
-
-数值判定抓不到这两个坑——`verify_frames.py` 只能看出"占比曲线不对劲"，
-朝向问题必须**看 1:1 原始像素**（缩放图会把切向和径向的差别抹平）。
+**背景是灰（约 76/255），不是黑。** 判断元素消失时不要按黑底预期；`verify_frames.py` 用众数自适应背景，黑底与灰底都能处理。

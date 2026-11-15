@@ -78,10 +78,6 @@ public bool Play
 
 跟随目标挂在**根节点的父级**下（不是 `GetTree().Root`），以保证与根处于同一视口；且必须是根节点的「非后代」，否则根跟随傀儡、傀儡又随根移动会形成递归漂移。注入私有的 `_nodeToFollow` 走 `AccessTools.Field`（本仓库未公开游戏私有成员）。
 
-## 5. 编辑器里为什么是静止的
-
-编辑器打开场景不写任何节点状态，因此不会把场景标记为「已修改」，也不会丢作者的摆放。想调参又不想保存，就在 F6 里调；F6 会写节点属性（动画本身），那属于运行期瞬时状态，关掉即丢弃，不会影响 `.tscn`。写共享材质/粒子材质的路径已在《特效开发指南》第 1 节「三条铁律」中规避，不会污染 `SubResource`。
-
-## 6. `_Process` 驱动的特效
+## 5. `_Process` 驱动的特效
 
 `MusicWaveVfx`、`MusicEqualizerVfx`、`MusicNoteFlyingVfx`、`NLingeredOrbitVfx` 把逐帧推进与「是否允许继续播放」判断分开：编辑器里因未启动播放而静止，F6/游戏内正常推进。用 `ShouldContinuePlayback(this)` 做守卫，而不是自行判断环境。

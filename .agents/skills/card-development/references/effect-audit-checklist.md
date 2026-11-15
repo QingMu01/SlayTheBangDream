@@ -57,7 +57,7 @@
 
 - 音乐牌效果写在 `OnPerform`，`IsInstant` 与本地化 `.instant` 文本一致。
 - 休止牌 `LingeredResourceCost` 与本地化 `.subside` 文本一致。
-- 演奏/休止/余音的触发时点遵循 `docs/mechanic-authoring.md` 第 7 节的时序约定。
+- 演奏/休止/余音的触发时点遵循 `docs/mechanic-authoring.md` 的机制时序约定（异步伤害与音符见 §7，演奏与和弦见 §8–§9）。
 - VFX 不得驱动玩法状态。
 
 ## 清理验收

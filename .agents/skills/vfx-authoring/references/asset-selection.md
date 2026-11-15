@@ -4,12 +4,11 @@
 
 | 来源 | 何时用 | 取法 |
 |---|---|---|
-| **Polaris 资产库**（主） | 默认。库里有 12000+ 素材，覆盖面最广 | 本文件全部流程 |
+| **Polaris 资产库**（主） | 默认。库内素材覆盖面最广 | 本文件全部流程 |
 | **工程内已有贴图** | 想让新特效与现有特效**风格统一**时 | 见 `BangDreamInSpire/BangDreamInSpire/images/vfx/` |
 | **美术新画的图** | 库和工程里都没有合适形态 | 走常规资源流程，同样要 `--headless --import` |
 
-工程内已有素材很少（截至当前只有 `music_slash/` 与 `images/vfx/` 根下若干张），
-所以**新特效基本都要从资产库取**——这也是本 skill 绑定 MCP 的原因。
+工程内素材按特效分组放在 `images/vfx/<特效名>/`，可直接复用；库内没有合适形态时再走美术新绘。
 
 ## 需要 S1 时：MCP 连不上就停止侦察
 
@@ -21,19 +20,9 @@
 **排查步骤**（逐条给用户看，不要自己猜）：
 
 1. 调用已暴露的 Polaris 只读工具（如 library_info）。仅缺少资源列表能力不等于断连；记录实际工具错误。
-2. 检查服务是否在跑：
-   ```powershell
-   Get-Process -Name "polaris-mcp" -ErrorAction SilentlyContinue
-   ```
-3. 确认当前客户端确实通过 DSH 启动后再检查 DSH profile；其他客户端按其实际配置排查。**仅将禁用条目作为候选原因，不预设根因**：
-   ```powershell
-   Get-Content "$env:USERPROFILE\.dsh\profiles\<profile>\cordis.patch.yml" |
-     Select-String -Pattern 'mcp' -Context 3,14
-   ```
-   逐项核对：`disabled: true/false`、`transport`（`stdio` 或 `streamable-http`）、
-   stdio 下的 `command` 路径是否存在、http 下的 `url` 与 `Authorization` 是否正确。
-4. 注意该配置块被 `# dsh-launcher mcp begin/end` 包裹，**由启动器生成**——
-   手改可能被覆盖，优先从启动器界面开关。
+2. 检查 Polaris 服务进程是否存在（按本机启动方式查 `polaris-mcp` 进程）。
+3. 确认当前客户端通过 DSH 启动后，检查 DSH profile 里的 MCP 配置（`~/.dsh/profiles/<profile>/cordis.patch.yml`，Windows 为 `%USERPROFILE%\.dsh\...`）。逐项核对：`disabled`、`transport`（`stdio` / `streamable-http`）、stdio 下的 `command` 路径、http 下的 `url` 与 `Authorization`。
+4. 该配置块被 `# dsh-launcher mcp begin/end` 包裹，**由启动器生成**——手改可能被覆盖，优先从启动器界面开关。
 5. MCP 客户端在**会话启动时**建立连接，改完配置需要重开会话 / 重启 DSH。
 
 排查完把结论与可执行步骤交给用户，**然后等**。不要在同一轮里继续做 S2。
@@ -149,21 +138,13 @@ alpha 状态：alpha_has_non_opaque ?
 
 ## 工具能力核对
 
-这些历史问题已在 `docs/vfx-authoring.md` 更新。使用前以当前工具描述与实测为准：
-
-| 文档说法 | 当前实际 |
-|---|---|
-| `render_asset_preview` 会丢 alpha | 已自动叠棋盘格底，文本块带 `background=checkerboard`，并附 features |
-| `export_assets` 目标目录须预先存在 | "不存在时自动创建" |
-| `search_assets` `detail="minimal"` 不可用 | 已可用（只回 `uuid/name/kind/subType`） |
-
-> 不再把已修正文档称为过期；工具不可用不意味着所有列举来源都没有实际凭据。改造且已定素材的分支按 SKILL.md 跳过 S1。
+以**当前工具描述与实测**为准，不要依据旧笔记判断工具缺失。例如：`render_asset_preview` 已自动叠棋盘格底并附 `features`；`export_assets` 会自动创建目标目录；`search_assets` 的 `detail="minimal"` 可用。改造且已定素材的分支按 SKILL.md 跳过 S1。
 
 ## 导出、本体归属校验与命名
 
 导出到仓库外的暂存目录（`.scratch/vfx`）；`export_assets` 的 `directory` 给绝对路径。
 
-**复制进工程之前必须跑本体归属校验**（结论与判定表见 `SKILL.md` S1 第 9 步）：
+**复制进工程之前必须跑本体归属校验**（结论与判定表见 `SKILL.md` S1）：
 
 ```
 python .agents/skills/vfx-authoring/scripts/check_asset_origin.py <导出目录>
@@ -180,6 +161,6 @@ python .agents/skills/vfx-authoring/scripts/check_asset_origin.py <导出目录>
 
 **不产出 `README.md` / `SOURCES.md`**：库内 uuid/名称、语义名、用途与校验判定结果写进 `.scratch/vfx/plans/<slug>.md`。
 
-## 回写描述（本 skill 默认不做）
+## 回写描述（本 skill 不做）
 
-本 skill 对素材库**只读**。补描述是独立任务。若确需回写：用 `update_asset_description`（字段级合并用 `fields` 只改指定字段），写完 `validate_description` 自检，`ok: true` 才算过；误写用 `revert_asset_meta` 按 `batchId` 整批回滚。
+本 skill 对素材库**只读**。补描述、修误标是独立的元数据维护任务，按 Polaris 工具的 `update_asset_metadata` / `validate_metadata` 流程处理；特效流程只记录来源凭据。

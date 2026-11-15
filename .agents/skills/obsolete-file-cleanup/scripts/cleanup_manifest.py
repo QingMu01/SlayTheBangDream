@@ -6,12 +6,12 @@
 （`.agents/skills/obsolete-file-cleanup/SKILL.md` S3 闸门）。
 
 判定依据出处：
-  * 三档定义 ......... docs/cleanup-authoring.md:76-82
-  * 默认保留规则 ..... docs/cleanup-authoring.md:81、.agents/skills/obsolete-file-cleanup/references/keep-list.md:5 节
-  * 快照过期单列 ..... docs/cleanup-authoring.md:92（硬性条款 7，`v3_confirmed_orphan.txt` 39 条里 6 条已不存在）
-  * sidecar 连带 ..... docs/cleanup-authoring.md:14（铁律三）、SKILL.md S4 第 3 点
-  * 未跟踪 WIP 不处理 . SKILL.md 通用前置第 2 点、docs/cleanup-authoring.md:107
-  * 输出契约 ......... .agents/skills/card-development/scripts/audit_cards.py:526-546
+  * 三档定义 ......... docs/cleanup-authoring.md §5.1
+  * 默认保留规则 ..... docs/cleanup-authoring.md §5.1、.agents/skills/obsolete-file-cleanup/references/keep-list.md §5
+  * 快照过期单列 ..... docs/cleanup-authoring.md §6 第 7 条
+  * sidecar 连带 ..... docs/cleanup-authoring.md §1 铁律三、SKILL.md S4 第 3 点
+  * 未跟踪 WIP 不处理：SKILL.md 通用前置第 2 点、docs/cleanup-authoring.md §7 安全域
+  * 输出契约 ......... .agents/skills/card-development/scripts/audit_cards.py 的输出契约
 
 CLI:
   python3 cleanup_manifest.py [--audit-dir .scratch/cleanup/audit] [--keep-file <path>]
@@ -58,17 +58,16 @@ FOUR_STATES = ("referenced.txt", "convention_referenced.txt", "weak.txt", "confi
 DEAD_CLUSTER_STATE = "dead_cluster.txt"
 SIDECAR_STATES = ("sidecar_orphan.txt", "sidecar_missing.txt")  # broken.txt 列序不同，单独解析
 
-# 本体同步目录：绝不允许出现在任何桶（docs/cleanup-authoring.md:20、:86）
+# 本体同步目录：绝不允许出现在任何桶（docs/cleanup-authoring.md §2 表 1、§6 第 1 条）
 BODY_SYNC_DIRS = {
     "addons", "animations", "fonts", "images", "materials",
     "models", "scenes", "shaders", "themes", "src",
 }
 WALK_SKIP_DIRS = {".git", ".godot", "bin", "obj", ".scratch", "node_modules"}
 
-# C 档结构性冗余（docs/cleanup-authoring.md:82、keep-list.md 第 3 节）
-STRUCTURAL_CANDIDATES = (
-    "BangDreamInSpire.sln", "ItsCrychic.sln", "BangDreamInSpire.sln",
-)
+# C 档结构性冗余（docs/cleanup-authoring.md §5.1、keep-list.md 第 3 节）。
+# 当前仓库只有根解决方案 SlayTheBangDream.sln，它是构建入口，不列为冗余。
+STRUCTURAL_CANDIDATES = ()
 
 SIDECAR_EXTS = (".import", ".uid")
 
@@ -109,7 +108,7 @@ def shorten_path(path: str, universe: set[str]) -> str:
     return path
 
 # 安全域：即便扫描把它们判成「确认无引用」，也不允许落 A 档
-# 出处：docs/cleanup-authoring.md:100-107（第 7 节安全域）、references/keep-list.md 第 1 节
+# 出处：docs/cleanup-authoring.md §7 安全域、references/keep-list.md 第 1 节
 SAFETY_BASENAMES = {
     "project.godot", "export_presets.cfg", ".gitignore", ".gitattributes",
     "AGENTS.md", "Directory.Build.props", "Directory.Build.targets",
@@ -121,13 +120,13 @@ def safety_reason(path: str) -> str | None:
     parts = path.split("/")
     base = os.path.basename(path)
     if len(parts) >= 2 and parts[0] == "BangDreamInSpire" and parts[1] in BODY_SYNC_DIRS:
-        return "本体同步目录：禁止按孤儿规则处理（docs/cleanup-authoring.md:20）"
+        return "本体同步目录：禁止按孤儿规则处理（docs/cleanup-authoring.md §2 表 1）"
     if any(p in (".godot",) for p in parts):
-        return "引擎缓存目录：可删但必须先迁出手写文件（docs/cleanup-authoring.md:21）"
+        return "引擎缓存目录：可删但必须先迁出手写文件（docs/cleanup-authoring.md §2 表 2）"
     if path.endswith(SIDECAR_EXTS):
-        return "sidecar 不可单独删：必须与源文件同批（docs/cleanup-authoring.md:14）"
+        return "sidecar 不可单独删：必须与源文件同批（docs/cleanup-authoring.md §1 铁律三）"
     if base in SAFETY_BASENAMES or base.endswith(SAFETY_SUFFIXES):
-        return "工程配置/构建入口：清理任务安全域外（docs/cleanup-authoring.md:100-107）"
+        return "工程配置/构建入口：清理任务安全域外（docs/cleanup-authoring.md §7 安全域）"
     if base.startswith("spine-godot-extension"):
         return "官方 Spine 扩展（bin/）：删了要重新下载（Directory.Build.targets:10-19）"
     return None
@@ -305,7 +304,7 @@ def main(argv: list[str] | None = None) -> int:
         if not exists(path):
             continue
         source = "confirmed_orphan"
-        # 未跟踪 = 可能是用户 WIP，无处置权（SKILL.md 前置 2、cleanup-authoring.md:107）
+        # 未跟踪 = 可能是用户 WIP，无处置权（SKILL.md 前置 2、cleanup-authoring.md §7 安全域）
         if path in tracked_untracked:
             add(tier_c, path, "未跟踪文件，可能是用户 WIP：清理任务无处置权，必须先与用户确认",
                 "用户确认归属后", source, code="C4")
@@ -314,7 +313,7 @@ def main(argv: list[str] | None = None) -> int:
         if safe:
             add(tier_c, path, safe, "人工确认后", source, code="C5")
             continue
-        # 脚本类不落 A：模型类由反射实例化，无引用 ≠ 可删（cleanup-authoring.md:47-61）
+        # 脚本类不落 A：模型类由反射实例化，无引用 ≠ 可删（cleanup-authoring.md §4）
         if path.endswith(".cs"):
             add(tier_c, path, "脚本类：模型类走反射+特性双轨注册，静态无引用不等于可删",
                 "构建验证 + 逐条签字后", source, code="C3")
@@ -323,13 +322,13 @@ def main(argv: list[str] | None = None) -> int:
         if rule:
             add(tier_b, path, rule.reason, rule.recheck, source, code=keep_code(rule))
             continue
-        # 卡图不直接删：docs/cleanup-authoring.md:95（第 10 条）要求仍可能复用的卡图
+        # 卡图不直接删：docs/cleanup-authoring.md §6 第 10 条要求仍可能复用的卡图
         # 先记账到 images/card_portraits/DEPRECATED.md，等美术确认；账本格式见
         # references/deprecation-ledger.md。这是**通用规则**，不是逐文件白名单：
         # 任何进入分档流程的卡图（= 无同名类/无共享图匹配）都落 C。
         if "/images/card_portraits/" in path:
             add(tier_c, path,
-                "无对应卡类的卡图：不直接删除，按 docs/cleanup-authoring.md:95 记入 "
+                "无对应卡类的卡图：不直接删除，按 docs/cleanup-authoring.md §6 第 10 条 记入 "
                 "images/card_portraits/DEPRECATED.md（格式见 references/deprecation-ledger.md），等美术确认",
                 "美术确认「可删」并记账后再删", source, code="C2")
             continue
@@ -337,7 +336,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # 4.1b dead_cluster（v1.2.0 新增桶）：引用者全部是孤儿（且引用者非「活跃保留」）。
     # 判定强度弱于 confirmed_orphan，**默认落 B，不得落 A**
-    # （docs/cleanup-authoring.md:81「等实装的死簇」）。
+    # （docs/cleanup-authoring.md §5.1「等实装的死簇」）。
     # 但安全域/未跟踪/卡图等更强的规则仍然优先。
     for path, meta in sorted(dead_cluster.items()):
         if not exists(path):
@@ -357,7 +356,7 @@ def main(argv: list[str] | None = None) -> int:
             continue
         if "/images/card_portraits/" in path:
             add(tier_c, path,
-                "死簇成员且无对应卡类的卡图：不直接删除，按 docs/cleanup-authoring.md:95 记入 "
+                "死簇成员且无对应卡类的卡图：不直接删除，按 docs/cleanup-authoring.md §6 第 10 条 记入 "
                 "images/card_portraits/DEPRECATED.md，等美术确认",
                 "美术确认「可删」并记账后再删", source, code="C2")
             continue
@@ -380,7 +379,7 @@ def main(argv: list[str] | None = None) -> int:
         if not exists(path):
             continue
         source_rel = path[: -len(".import")] if path.endswith(".import") else path[: -len(".uid")]
-        add(tier_a, path, f"sidecar 孤儿：源文件 {source_rel} 已不存在（docs/cleanup-authoring.md:92）",
+        add(tier_a, path, f"sidecar 孤儿：源文件 {source_rel} 已不存在（docs/cleanup-authoring.md §6 第 7 条）",
             "", "sidecar_orphan", code="A2")
 
     # 4.4 sidecar 缺失：源在但副产物缺 → 缺陷单，不是清理项
@@ -391,7 +390,7 @@ def main(argv: list[str] | None = None) -> int:
     # 4.5 结构性冗余 + 空目录（keep-list.md 第 3 节）
     for path in STRUCTURAL_CANDIDATES:
         if exists(path) and not any(e["path"] == path for e in tier_a + tier_b + tier_c):
-            add(tier_c, path, "结构性冗余：多解决方案文件并存，删除前需确认构建入口",
+            add(tier_c, path, "结构性冗余：删除前需确认构建入口",
                 "确认 CI/IDE 入口后", "structural", code="C1")
     for d in empty_dirs(root):
         if not any(e["path"] == d for e in tier_a + tier_b + tier_c):

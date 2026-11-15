@@ -39,7 +39,7 @@ SCRIPT_NAME = "sign_off.py"
 
 VALID_ACTIONS = ("delete", "keep", "defer")
 
-# 安全域（与 scan_orphans.py / docs/cleanup-authoring.md:100-107 同源）
+# 安全域（与 scan_orphans.py / docs/cleanup-authoring.md §7 安全域 同源）
 BODY_SYNC_DIRS = {
     "addons", "animations", "fonts", "images", "materials",
     "models", "scenes", "shaders", "themes", "src",
