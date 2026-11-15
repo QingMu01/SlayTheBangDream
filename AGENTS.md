@@ -10,7 +10,7 @@ SlayTheBangDream.sln          — 企划总解决方案（两个模组一起构�
 │   └── BangDreamInSpire.sln  — 只构建核心模组
 ├── ItsCrychic/               — 角色内容模组（祥子、睦、灯、立希、素世），依赖 BangDreamInSpire
 │   └── ItsCrychic.sln        — 只构建角色模组
-├── tools/                    — 构建前使用的工具
+├── tools/                    — 构建前使用的工具（本地化校验、卡牌审计、架构边界检查）
 ├── docs/                     — 项目级规范（卡牌 / 机制 / 特效 / 清理 / 架构 / 性能）
 └── .agents/skills/           — 工作流 skill（card-development、vfx-authoring、obsolete-file-cleanup），已入库
 ```
@@ -85,6 +85,7 @@ C# 代码位于各项目的 `Scripts/` 目录下，Godot 资源（图片、场�
   `scratch` / `.tmp` 目录，也不要散落到系统临时目录；需要长期留档的结论写进 `docs/` 或计划文件。该目录已被
   `.gitignore` 忽略、随时可整体删除。
 - **删除任何文件前**遵循 `docs/cleanup-authoring.md`（判定与安全域）；执行流程见 `.agents/skills/obsolete-file-cleanup/SKILL.md`。要点：以引用图为唯一判据（不得凭 grep 无命中）、四态分流、三档分档、**签字后才删**、sidecar 与源同生共死、删除后必须残留搜索 + 构建验证。本体同步目录与用户未跟踪的 WIP 一律不碰。
+- **模块耦合边界由脚本守**：`python3 tools/check-architecture.py` 检查依赖方向（内容模组只用稳定契约、机制层不直接依赖 UI、核心不出现角色专属标识符），HARD 违规时 exit 1。规则与例外登记见 `docs/architecture/coupling-boundaries.md`；新增例外必须写进脚本 `ALLOWLIST` 并注明原因，收口时用 `--strict`。
 
 ## Git 约定
 
