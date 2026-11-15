@@ -1,6 +1,6 @@
 using System.Text.Json.Nodes;
 using BangDreamInSpire.Scripts.Enums;
-using BangDreamInSpire.Scripts.Nodes.Cards;
+using BangDreamInSpire.Scripts.Utils.Infos;
 using STS2RitsuLib.Interop.AutoRegistration;
 using STS2RitsuLib.Models.Capabilities;
 
@@ -56,9 +56,15 @@ public sealed class ChordCapability : CardCapability, ICardOverlayContributor
             yield break;
         }
 
+        var factory = CardOverlayRegistry.Resolve(OverlayId);
+        if (factory == null)
+        {
+            yield break;
+        }
+
         yield return CardOverlayContribution.FromFactory(
             OverlayId,
-            static overlayContext => NChordCornerBadge.Create(overlayContext.Card),
+            factory,
             order: 0,
             fullRect: false);
     }
