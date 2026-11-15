@@ -16,7 +16,7 @@
 
 - 命名空间与 `Scripts/` 下目录结构完全对应（`ItsCrychic.Scripts.Cards.Saki.Skill`）。
 - **命名空间第一段必须等于 Mod 目录名**（`ItsCrychic` / `BangDreamInSpire`）：卡图路径由 `PathExtensions.GetCardImg` 用 `type.Namespace.Split(".")[0]` 拼出，写错会静默回退默认立绘。
-- 角色目录：`Saki`、`Mutsumi`。类型目录：`Attack`、`Skill`、`Power`、`Music`（音乐牌）。跨角色共用的 Token 放在 `Scripts/Cards/Token/`。
+- 现有角色目录：`Saki`、`Mutsumi`；类型目录按内容建：`Attack`、`Skill`、`Power`、`Music`（音乐牌）。跨角色共用的 Token 放在 `Scripts/Cards/Token/`。
 - 抽象基类以 `Abstract` 前缀命名。
 - 每个 `.cs` 必须有同名 `.cs.uid`。UID 由 Godot 导入生成，**不要手写或复制伪造**。
 
@@ -32,7 +32,7 @@
 - Token 卡不走角色基类，必须自己标 `[RegisterCard(typeof(TokenCardPool))]`。
 - 基础契约：`BandCardModel(int baseCost, CardType type, CardRarity rarity, TargetType target, bool showInCardLibrary = true)`。
 - 音乐牌：`MusicCardModel(int baseCost, CardRarity rarity, TargetType target, ...)`，类型固定为运行时动态注册值 `BangDreamConst.MusicCardType`（本体枚举无法扩展；`PerformMechanic` 内容注册阶段用 `RitsuLibFramework.RegisterDynamicEnumValue<CardType>` 分配，**不要写死数值**），实现 `IPerformCard`，效果写在 `OnPerform`；`GetResultLocationForCardPlay` 已被 sealed 为进入 `PerformPile`。
-- 音乐牌默认卡框由 `IPerformCard.PerformCardAssets`（`CardAssetProfile`）保证；`MusicCardModel` 默认给本体 quest 卡框，具体卡可覆写。
+- 音乐牌默认卡框与皮肤替换见 §2.3。
 
 ### 1.3 抽象基类职责
 
@@ -56,10 +56,6 @@ public class BandPractice() : AbstractSakikoCard(CustomCost, CustomType, CustomR
 ```
 
 音乐牌没有 `CustomType`（基类已固定为 `Music` 运行时值）。
-音乐牌默认卡框由 `IPerformCard.PerformCardAssets`（`CardAssetProfile`，`MusicCardModel` 默认本体 quest 卡框）保证；
-皮肤系统只做替换：`SkinVisualSupportPatches` 校验**来源角色**的皮肤配置 `Ui.MusicCardFrame`，命中才动态替换纹理，
-未配置/资源缺失时保留 asset profile 的默认卡框。来源角色默认由卡池反查；注册在 `TokenCardPool`、无法靠卡池识别的音乐 Token 需
-`public override ISkinSupportCharacter? OriginCharacter => ModelDb.Character<Xxx角色>();` 显式声明。
 
 ### 2.2 取值与语义
 
@@ -69,12 +65,10 @@ public class BandPractice() : AbstractSakikoCard(CustomCost, CustomType, CustomR
 - 产生格挡的卡覆写 `protected override bool GainsBlock => true;`。
 - `TargetType`、`CardType` 的完整取值查依赖库 XML 文档（见 `AGENTS.md`）。
 - 音乐牌的手动落位目标类型（`BangDreamInSpire.Scripts.Utils.Infos.PerformTargetTypes`）：
-  - `AnySlot`：出牌时把牌拖到**任意已激活槽位**上松开，强制进入该槽位并顶掉其中原有的牌。
-  - `RequestGroup`：出牌时把牌拖到**任意分组**上松开，按卡牌自身的入队策略进入该分组（和弦与其余规则不变）。只有单个分组的角色（如祥子）不进入分组选择，效果与 `TargetType.None` 相同。
-  - 交互与原版单体目标一致：按住卡牌拖到候选槽位松手即选定（松开未指向则转入点击模式继续等待）；点击卡牌后点击候选槽位即选定，点空/右键/拖到底部取消区都取消本次出牌（不耗能、牌回手牌）。容量为 0、手柄方向导航、自动出牌与单分组角色不进入选择流程，按常规规则入队。
-- 卡牌和弦（`BangDreamInSpire.Scripts.Mechanics.Perform.Chord.ChordCapability`）：
-  - 和弦由 `ChordCapability` 承载，随卡牌实例存档；**只**用于卡牌打出后激活对应分组中音乐牌的奏响，不参与音乐牌的入组判定。
-  - 和弦在**卡牌奖励随机生成**时赋予（`card.GetOrCreateCapability<ChordCapability>().SetChord(chord)`），没有设计期或静态赋值入口。详见 `mechanic-authoring.md` §9。
+  - `AnySlot`：出牌时拖到**任意已激活槽位**并松开，强制进入该槽位并顶掉其中原有的牌。
+  - `RequestGroup`：出牌时拖到**任意分组**上松开，按卡牌自身的入队策略进入该分组（和弦与其余规则不变）。只有单个分组的角色（如祥子）不进入分组选择，效果与 `TargetType.None` 相同。
+  - 交互复刻原版单体目标（拖拽/点击、取消区、右键取消）；容量为 0、手柄方向导航、自动出牌与单分组角色不进入选择流程。完整规则见 `docs/mechanic-authoring.md` §8。
+- 卡牌和弦（`ChordCapability`）：随卡牌实例存档，**只**用于卡牌打出后激活对应分组中音乐牌的奏响，不参与音乐牌的入组判定；在卡牌奖励随机生成时赋予（另有休息处「和弦设计」手动赋予），没有设计期或静态赋值入口。详见 `docs/mechanic-authoring.md` §9。
 
 ### 2.3 卡图与卡框
 
@@ -82,13 +76,13 @@ public class BandPractice() : AbstractSakikoCard(CustomCost, CustomType, CustomR
 
 | 资源 | 路径 | 必需 |
 |---|---|---|
-| 立绘 | `res://<ModId>/images/card_portraits/<ClassName>.png` | 是（缺失回退 `BangDreamInSpire/images/sceneui/default_portrait.png`，即缺陷） |
+| 立绘 | `res://<ModId>/images/card_portraits/<ClassName>.png` | 是（缺失回退 `res://BangDreamInSpire/images/sceneui/default_portrait.png`，即缺陷） |
 | 升级立绘 | `res://<ModId>/images/card_portraits/<ClassName>_Bate.png` | 否 |
-| 卡框 | 由角色抽象基类按 `Type` 给出；音乐牌默认由 `IPerformCard.PerformCardAssets` 给出（本体 quest 卡框），来源角色玩家配置了 `Ui.MusicCardFrame` 时由皮肤 patch 动态替换 | 由基类/asset profile 负责 |
+| 卡框 | 由角色抽象基类按 `Type` 给出；音乐牌默认由 `IPerformCard.PerformCardAssets` 给出（本体 quest 卡框），来源角色配置了 `Ui.MusicCardFrame` 时由皮肤 patch 动态替换 | 由基类 / asset profile 负责 |
 
 - 磁盘路径为 `<ModId>/<ModId>/images/card_portraits/<ClassName>.png`（`res://` 第二段是 Mod 目录）。
-- 新增 PNG 后必须经 Godot 导入生成 `.import`，不要只把文件拷进仓库。
-- 卡图文件名与类名严格一致，改名时同步重命名资源。
+- 新增 PNG 后必须经 Godot 导入生成 `.import`，不要只把文件拷进仓库；卡图文件名与类名严格一致，改名时同步重命名资源。
+- 音乐牌皮肤只做替换：`SkinVisualSupportPatches` 校验**来源角色**的皮肤配置 `Ui.MusicCardFrame`，命中才动态替换纹理，未配置 / 资源缺失时保留 asset profile 的默认卡框。来源角色默认由卡池反查；注册在 `TokenCardPool`、无法靠卡池识别的音乐 Token 需 `public override ISkinSupportCharacter? OriginCharacter => ModelDb.Character<Xxx角色>();` 显式声明。
 
 ## 3. 本地化
 
@@ -125,9 +119,15 @@ Power 子键：`.title`、`.description`、`.smartDescription`（带数值的高
 `固有`、`消耗`、`虚无`、`保留` 由游戏自动追加说明，**不要**写进本地化。
 模组关键字（`音乐`、`音符`、`歌单` 等）定义在 `BangDreamInSpire/BangDreamInSpire/localization/zhs/card_keywords.json`，引用即可。
 
-### 3.5 同步要求
+### 3.5 同步与校验
 
-修改 Card、Power 或 Relic 时必须同步其本地化文件（`AGENTS.md`）。JSON 为运行时资源，重复键会导致加载异常，改完必须校验可解析且无重复键。
+修改 Card、Power 或 Relic 时必须同步其本地化文件（`AGENTS.md`）。改完运行：
+
+```bash
+python3 tools/localization.py check
+```
+
+它校验表名、键集合、`{...}` 占位符、BBCode 标签与重复键；新增语言用 `stub` 铺骨架，补翻译时用 `glossary` 对齐术语。
 
 ## 4. 效果实现
 
@@ -198,7 +198,7 @@ protected override IEnumerable<IHoverTip> CardHoverTips =>
 ### 5.2 重构与清理
 
 - 名称变化时同步标题、描述与所有代码引用，不依赖旧标题残留。
-- 删除表外卡牌时删除 C#、UID、本地化条目及专属无用 Power；删除前用 `rg` 搜索类名、模型 ID、本地化键与资源名。
+- 删除表外卡牌时删除 C#、UID、本地化条目及专属无用 Power。**删除判定走 `docs/cleanup-authoring.md` 的引用图**，`rg` 只用于删除后的残留搜索，不能单独作为「无引用」的证据。
 - **不直接删除仍可能复用的卡图**：在 `images/card_portraits/DEPRECATED.md` 记录废弃文件与原因（该文件目前不存在，首次需要时创建）。资源不存在时如实记录「无对应资源」，不要虚构文件。
 - 移动资源时优先保留原 UID。
 - 只改任务范围内文件；与用户已有修改重叠时采用最小补丁。
@@ -208,10 +208,10 @@ protected override IEnumerable<IHoverTip> CardHoverTips =>
 ### 6.1 机器可查
 
 1. 静态审计脚本问题数为 0（见 skill 的 `scripts/audit_cards.py`）。
-2. 所有修改过的 JSON 可解析且无重复键。
+2. 所有修改过的 JSON 可解析且无重复键；`python3 tools/localization.py check` 通过。
 3. 已删除的类名、模型 ID、本地化键在代码与运行时本地化中搜索结果为 0。
 4. `git diff --check` 通过。
-5. 完整构建受影响项目。**若构建目标会写入游戏目录，用工作区内临时 `Sts2Dir` 重定向输出，验证后移除临时目录。**
+5. 完整构建受影响项目。**若构建目标会写入游戏目录，用工作区内临时 `Sts2Dir` 重定向输出，并同时固定 `Sts2DataDir`（它默认由 `Sts2Dir` 派生），验证后移除临时目录。**
 
 ### 6.2 语义可查
 
