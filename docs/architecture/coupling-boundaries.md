@@ -8,16 +8,20 @@
 
 ```
 ItsCrychic（内容）  ──→  BangDreamInSpire（核心）       单向，禁止反向
-核心内的合法方向：
-  Scripts/Interfaces/**   ← 任何层都可以依赖（契约）
-  Scripts/Utils/Infos/**  ← 任何层都可以依赖（共享值类型/配色/注册表）
+核心内的方向约束（对应下表 H1–H3 三条硬规则）：
+  Scripts/Interfaces/**   ← 任何层都可以依赖（契约），本身不依赖实现
+  Scripts/Utils/Infos/**  ← 任何层都可以依赖（共享值类型 / 配色 / 注册表）
   Scripts/Extensions/**   ← 内容模组调用机制的稳定门面
-  Scripts/Mechanics/**    → 不得依赖 Scripts/Nodes/**（UI）
-  Scripts/Utils/**        → 不得依赖 Scripts/Mechanics/**、Scripts/Nodes/**
+  Scripts/Utils/**        → 不得依赖 Scripts/Mechanics/**、Scripts/Nodes/**   （H2）
+  Scripts/Mechanics/**    → 不得依赖 Scripts/Nodes/**；`Perform` 已强制       （H3）
+  ItsCrychic/**           → 不得依赖 Scripts/Mechanics/**                     （H1）
 ```
 
-`Ideally` 之外仍允许的关系（不检查，属正常建模）：卡牌 ↔ Power 的领域互引、`Nodes` ↔ `Nodes.SubNode`
-父子节点、`Utils` ↔ `Utils.Infos` 同层拆分。
+不在检查范围的依赖属正常建模，不要为了"零循环"去拆：卡牌 ↔ Power 的领域互引、
+`Nodes` ↔ `Nodes.SubNode` 父子节点、`Utils` ↔ `Utils.Infos` 同层拆分。
+
+`Scripts/Mechanics` 里除 `Perform` 之外的模块对 `Nodes` 的依赖暂列 WARN（W2），逐项登记在脚本
+`ALLOWLIST`，收敛目标阶段为 P3。
 
 ## 2. 规则表
 

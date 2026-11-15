@@ -11,7 +11,8 @@ BangDreamInSpire 的玩法机制被拆分为若干**机制模块**（mechanic）
 | 演奏 | `perform` | 200 | `extra_deck` | `IPerformableCharacter` | 歌单容量与入队/重排/溢出、演奏触发、音乐卡牌类型铭牌、手动落位目标类型（AnySlot / RequestGroup）、卡牌和弦（`ChordCapability`） |
 | 演奏区 | `perform_area` | 210 | `perform` | `IPerformableCharacter` | 演奏区节点创建与摆放（实现 `IPerformArea`），就绪后回填给 `PerformManager` |
 | 余音 | `lingered` | 300 | — | `ILingeredResourceCharacter` | 余音二级资源与卡面费用 UI、休止结算与驱动、环绕资源预览 |
-| 音符 | `music_note` | 400 | — | （全局） | 音符发射/弹跳与伤害、命中同拍结算、音符伤害追踪、VFX 容器 |
+| 异步伤害 | `async_damage` | 350 | — | （全局） | 「发射动画 → 命中 → 结算」拆成脱手表征与独立同步结算 Action，是音符/余音的公共底座 |
+| 音符 | `music_note` | 400 | `async_damage` | （全局） | 音符发射/弹跳与伤害、命中同拍结算、音符伤害追踪、VFX 容器 |
 
 `Order` 越小越先装配；`Dependencies` 中的机制必须存在，否则装配阶段抛异常。
 

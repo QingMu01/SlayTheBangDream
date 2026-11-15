@@ -160,7 +160,8 @@ def rel(root: Path, path: Path) -> str:
 
 
 def check_using_rule(root: Path, rule: Rule, findings: list[tuple[str, str, str, str, bool, str]]):
-    pattern = re.compile(r"^\s*using\s+(?:static\s+)?(?:[A-Za-z_]\w*\s*=\s*)?"
+    # 兼容 `using` / `global using` / `using static` / `using X = Ns;` 四种写法
+    pattern = re.compile(r"^\s*(?:global\s+)?using\s+(?:static\s+)?(?:[A-Za-z_]\w*\s*=\s*)?"
                          r"(" + "|".join(re.escape(x) for x in rule.needles) + r")(?=[.;\s])")
     for path in iter_cs_files(root, rule.scope):
         text = path.read_text(encoding="utf-8", errors="replace").lstrip("\ufeff")
