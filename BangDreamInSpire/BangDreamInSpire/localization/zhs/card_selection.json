@@ -1,4 +1,4 @@
-﻿{
+{
   "BANG_DREAM_IN_SPIRE_PROMPT": "选择 {Amount} 张牌{To}",
   "BANG_DREAM_IN_SPIRE_PROMPT_RANGE": "选择 {MinAmount}-{MaxAmount} 张牌{To}",
   "BANG_DREAM_IN_SPIRE_PROMPT_LIMITED": "选择至多 {Amount} 张牌{To}",
