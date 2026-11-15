@@ -1,13 +1,14 @@
 using BangDreamInSpire.Scripts.Enums;
 using BangDreamInSpire.Scripts.Interfaces.CardAugment;
 using BangDreamInSpire.Scripts.Interfaces.CharacterAugment;
+using BangDreamInSpire.Scripts.Mechanics.Perform;
 using BangDreamInSpire.Scripts.Utils;
 using Godot;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;
 using STS2RitsuLib.Combat.SecondaryResources;
 
-namespace BangDreamInSpire.Scripts.Mechanics.Perform.Schemes;
+namespace ItsCrychic.Scripts.Character.PerformSchemes;
 
 /// <summary>
 /// 祥子的演奏方案：单一分组、容量上限 7、初始 3。
