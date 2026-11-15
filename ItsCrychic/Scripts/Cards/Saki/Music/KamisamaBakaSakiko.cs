@@ -20,7 +20,7 @@ public class KamisamaBakaSakiko() : AbstractSakikoMusicCard(CustomRarity, Custom
 
     public override async Task OnPerform(PlayerChoiceContext choiceContext, CardPerform perform)
     {
-        var performCandidates = Owner.AttachedData().PerformManager.PerformPile.Cards
+        var performCandidates = Owner.AttachedData().Perform.PerformPile.Cards
             .Where(card => card != this && !card.IsUpgraded && card is IPerformCard)
             .ToList();
         var performCard = Owner.RunState.Rng.CombatCardSelection.NextItem(performCandidates);
@@ -28,7 +28,7 @@ public class KamisamaBakaSakiko() : AbstractSakikoMusicCard(CustomRarity, Custom
         CardCmd.Upgrade(performCard);
         for (var repeat = 0; repeat < DynamicVars.Repeat.IntValue; repeat++)
         {
-            await Owner.AttachedData().PerformManager.PerformCard(performCard);
+            await Owner.AttachedData().Perform.PerformCard(performCard);
         }
     }
 

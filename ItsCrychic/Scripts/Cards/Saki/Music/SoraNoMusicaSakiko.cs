@@ -1,6 +1,5 @@
 using BangDreamInSpire.Scripts.Extensions;
 using BangDreamInSpire.Scripts.Interfaces.GameHook;
-using BangDreamInSpire.Scripts.Mechanics.MusicNote;
 using BangDreamInSpire.Scripts.Utils;
 using BangDreamInSpire.Scripts.Utils.Infos;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -40,7 +39,7 @@ public class SoraNoMusicaSakiko() : AbstractSakikoMusicCard(CustomRarity, Custom
 
     public override async Task OnPerform(PlayerChoiceContext choiceContext, CardPerform perform)
     {
-        await MusicNoteCmd.FromCard(this, DynamicVars.Repeat.IntValue, 0, DynamicVars.ComputedValue("CalcDamage"));
+        await this.ShootMusicNotes(DynamicVars.Repeat.IntValue, 0, DynamicVars.ComputedValue("CalcDamage"));
         if (DynamicVars.TryGetValue("AdditiveDamage", out var additiveDamage))
         {
             additiveDamage.BaseValue = 0;

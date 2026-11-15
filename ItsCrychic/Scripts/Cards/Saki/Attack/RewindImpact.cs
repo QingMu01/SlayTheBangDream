@@ -40,7 +40,7 @@ public class RewindImpact()
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
 
-        var cards = Owner.AttachedData().PerformManager.PerformPile.Cards.ToList();
+        var cards = Owner.AttachedData().Perform.PerformPile.Cards.ToList();
         await CardPileCmd.Add(cards, BangDreamConst.ExtraDraw, CardPilePosition.Random);
     }
 

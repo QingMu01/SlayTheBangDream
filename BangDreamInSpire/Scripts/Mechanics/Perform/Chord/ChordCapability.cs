@@ -1,6 +1,6 @@
 using System.Text.Json.Nodes;
 using BangDreamInSpire.Scripts.Enums;
-using BangDreamInSpire.Scripts.Nodes.Cards;
+using BangDreamInSpire.Scripts.Utils.Infos;
 using STS2RitsuLib.Interop.AutoRegistration;
 using STS2RitsuLib.Models.Capabilities;
 
@@ -21,7 +21,7 @@ public sealed class ChordCapability : CardCapability, ICardOverlayContributor
 {
     private const string ChordStateKey = "chord";
 
-    /// <summary>书签覆盖层的稳定 ID（同一能力内排序与诊断用）。</summary>
+    /// <summary>书签覆盖层的稳定 ID（同一能力内排序与诊断用，须与 <c>OverlayFactoriesMechanic</c> 的注册键一致）。</summary>
     private const string OverlayId = "chord_bookmark";
 
     /// <summary>当前和弦；未赋予时为 <see cref="PerformChord.None" />。</summary>
@@ -56,9 +56,15 @@ public sealed class ChordCapability : CardCapability, ICardOverlayContributor
             yield break;
         }
 
+        var factory = CardOverlayRegistry.Resolve(OverlayId);
+        if (factory == null)
+        {
+            yield break;
+        }
+
         yield return CardOverlayContribution.FromFactory(
             OverlayId,
-            static overlayContext => NChordBookmark.Create(overlayContext.Card),
+            factory,
             order: 0,
             fullRect: false);
     }

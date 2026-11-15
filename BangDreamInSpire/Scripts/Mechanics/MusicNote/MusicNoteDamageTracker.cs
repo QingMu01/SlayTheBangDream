@@ -1,3 +1,4 @@
+using BangDreamInSpire.Scripts.Interfaces.Mechanics;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Rooms;
@@ -7,7 +8,7 @@ using STS2RitsuLib.Models;
 namespace BangDreamInSpire.Scripts.Mechanics.MusicNote;
 
 [RegisterSingleton]
-public class MusicNoteDamageTracker : HookedSingletonModel
+public class MusicNoteDamageTracker : HookedSingletonModel, IMusicNoteTracker
 {
     public MusicNoteDamageTracker() : base(HookType.Combat)
     {
@@ -31,13 +32,13 @@ public class MusicNoteDamageTracker : HookedSingletonModel
         }
     }
 
-    public List<DamageResult> GetAllDamageResults()
+    public IReadOnlyList<DamageResult> GetAllDamageResults()
     {
         return CombatHistory.Values.SelectMany(result => result).ToList();
     }
 
 
-    public List<DamageResult> GetTurnDamageResults(int turn)
+    public IReadOnlyList<DamageResult> GetTurnDamageResults(int turn)
     {
         return CombatHistory.TryGetValue(turn, out var damageResults)
             ? damageResults

@@ -1,5 +1,6 @@
 using BangDreamInSpire.Scripts.Enums;
 using BangDreamInSpire.Scripts.Interfaces.CharacterAugment;
+using BangDreamInSpire.Scripts.Utils.Infos;
 using Godot;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;

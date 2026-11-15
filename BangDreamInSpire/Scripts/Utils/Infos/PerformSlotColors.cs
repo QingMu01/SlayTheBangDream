@@ -1,6 +1,6 @@
 using Godot;
 
-namespace BangDreamInSpire.Scripts.Mechanics.Perform;
+namespace BangDreamInSpire.Scripts.Utils.Infos;
 
 /// <summary>
 /// 演奏槽位的通用配色。具体某个槽位取哪一种颜色由角色的演奏方案

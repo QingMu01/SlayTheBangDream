@@ -2,8 +2,7 @@
 using BangDreamInSpire.Scripts.Enums;
 using BangDreamInSpire.Scripts.Extensions;
 using BangDreamInSpire.Scripts.Interfaces.CharacterAugment;
-using BangDreamInSpire.Scripts.Mechanics.Perform.Schemes;
-using BangDreamInSpire.Scripts.Mechanics.Puppeteer;
+using ItsCrychic.Scripts.Character.PerformSchemes;
 using ItsCrychic.Scripts.Character.CardPools;
 using ItsCrychic.Scripts.Character.PotionPools;
 using ItsCrychic.Scripts.Character.RelicPools;
@@ -38,11 +37,8 @@ public sealed class WakabaMutsumi()
     public int PuppetMaxHp => 50;
 
     public string PuppetSwitchInTrigger => DollSwitchInTrigger;
-
     public string PuppetSwitchOutTrigger => DollSwitchOutTrigger;
-
     public string PuppetIdleTrigger => DollIdleTrigger;
-
     public string PuppetDieTrigger => DollDieTrigger;
 
     public override CharacterGroup Group => CharacterGroup.Crychic;
@@ -117,7 +113,8 @@ public sealed class WakabaMutsumi()
     /// <summary>该 creature 对应的玩家当前是否处于傀儡形态（用于选择死亡动作）。</summary>
     private static bool IsPuppetForm(Creature creature)
     {
+        // 走 <c>IPuppeteerState</c> 契约：内容模组不直接依赖 PuppeteerFormManager（见耦合边界 H1）。
         return creature.Player is { } player &&
-               player.AttachedData().PuppeteerFormManager.ActiveForm == PuppeteerForm.Puppet;
+               player.AttachedData().Puppeteer.IsPuppetForm;
     }
 }

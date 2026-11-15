@@ -1,4 +1,4 @@
-﻿using BangDreamInSpire.Scripts.Mechanics.ExtraDeck;
+using BangDreamInSpire.Scripts.Extensions;
 using BangDreamInSpire.Scripts.Powers;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Players;
@@ -17,7 +17,7 @@ public class NextTurnDrawnExtraPower : BandPowerModel
     {
         if (player == Owner.Player)
         {
-            await ExtraPileCmd.Draw(choiceContext, Amount, Owner.Player, true);
+            await Owner.Player.DrawExtraCards(choiceContext, Amount, true);
             await PowerCmd.Remove(this);
         }
     }

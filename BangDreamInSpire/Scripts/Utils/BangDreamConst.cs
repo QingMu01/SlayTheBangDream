@@ -1,5 +1,4 @@
-using BangDreamInSpire.Scripts.Mechanics.ExtraDeck;
-using BangDreamInSpire.Scripts.Multiplayer.RunData;
+using BangDreamInSpire.Scripts.Utils.Infos;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Rewards;
 using STS2RitsuLib.RunData;

@@ -23,11 +23,11 @@ public class OctagramDanceSakiko() : AbstractSakikoMusicCard(CustomRarity, Custo
     {
         if (_isReplayingAdjacent) return;
 
-        var manager = Owner.AttachedData().PerformManager;
-        var slotIndex = manager.CardContexts.GetOrCreate(this).SlotIndex;
+        var manager = Owner.AttachedData().Perform;
+        var slotIndex = manager.GetSlotIndex(this);
         var cardsBySlot = manager.PerformPile.Cards
             .Where(card => card != this)
-            .Select(card => (card, manager.CardContexts.GetOrCreate(card).SlotIndex))
+            .Select(card => (card, manager.GetSlotIndex(card)))
             .Where(entry => entry.Item2 >= 1)
             .ToDictionary(entry => entry.Item2, entry => entry.card);
 

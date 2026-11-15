@@ -1,6 +1,5 @@
 using BangDreamInSpire.Scripts.Cards;
 using BangDreamInSpire.Scripts.Extensions;
-using BangDreamInSpire.Scripts.Mechanics.MusicNote;
 using BangDreamInSpire.Scripts.Utils;
 using BangDreamInSpire.Scripts.Utils.Infos;
 using ItsCrychic.Scripts.Character.CardPools;
@@ -39,7 +38,7 @@ public class MelodyFragments() : MusicCardModel(CustomCost, CustomRarity, Custom
 
     public override async Task OnPerform(PlayerChoiceContext choiceContext, CardPerform perform)
     {
-        await MusicNoteCmd.FromCard(this, DynamicVars.Repeat.IntValue);
+        await this.ShootMusicNotes(DynamicVars.Repeat.IntValue);
         await SecondaryResourceCmd.Gain(Owner, BangDreamConst.LingeredResource,
             QuickVar.LingeredResource.GetVar(this).IntValue, this);
     }

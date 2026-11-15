@@ -21,7 +21,7 @@ public class BeginnerMindPower : BandPowerModel
         if (Owner.Player is not { } owner || player != owner) return Task.CompletedTask;
 
         Flash();
-        owner.AttachedData().PerformManager.ReduceCapacity(1);
+        owner.AttachedData().Perform.ReduceCapacity(1);
 
         return Task.CompletedTask;
     }

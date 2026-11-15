@@ -1,6 +1,5 @@
 ﻿using BangDreamInSpire.Scripts.Extensions;
 using BangDreamInSpire.Scripts.Interfaces.CardAugment;
-using BangDreamInSpire.Scripts.Mechanics.MusicNote;
 using BangDreamInSpire.Scripts.Utils;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
@@ -43,7 +42,7 @@ public class RisingTone() : AbstractSakikoCard(CustomCost, CustomType, CustomRar
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        await MusicNoteCmd.FromCard(this, (int)DynamicVars.ComputedValue("CalcNote"));
+        await this.ShootMusicNotes((int)DynamicVars.ComputedValue("CalcNote"));
         EnergyCost.AddThisCombat(1);
         DynamicVars["Count"].BaseValue++;
     }

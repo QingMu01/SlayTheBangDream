@@ -111,10 +111,12 @@ rg -n "<旧类名>|<旧entry>|<旧资源名>" --glob '!.godot/**' --glob '!bin/*
 
 2. 本地化 JSON 可解析且无重复键（`audit_cards.py` 已内置该检查）。
 3. `git diff --check` 通过。
-4. 完整构建受影响项目；部署目标若指向游戏目录，用工作区内临时 `Sts2Dir` 重定向：
+4. 完整构建受影响项目；部署目标若指向游戏目录，用工作区内临时 `Sts2Dir` 重定向，并同时固定 `Sts2DataDir`：
 
 ```bash
-dotnet build BangDreamInSpire/BangDreamInSpire.csproj -c Debug -p:Sts2Dir="$PWD/bin/BuildDeploy"
+DATA=$(dotnet msbuild BangDreamInSpire/BangDreamInSpire.csproj -getProperty:Sts2DataDir)
+dotnet build BangDreamInSpire/BangDreamInSpire.csproj -c Debug \
+  -p:Sts2Dir="$PWD/bin/BuildDeploy" -p:Sts2DataDir="$DATA"
 ```
 
 5. 删了脚本或场景的，额外跑一次无头加载，确认无 `ext_resource, invalid UID` / `Failed loading resource`：

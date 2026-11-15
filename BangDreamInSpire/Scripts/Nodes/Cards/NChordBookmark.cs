@@ -1,5 +1,6 @@
 using BangDreamInSpire.Scripts.Enums;
 using BangDreamInSpire.Scripts.Mechanics.Perform;
+using BangDreamInSpire.Scripts.Utils.Infos;
 using BangDreamInSpire.Scripts.Mechanics.Perform.Chord;
 using Godot;
 using MegaCrit.Sts2.Core.Models;

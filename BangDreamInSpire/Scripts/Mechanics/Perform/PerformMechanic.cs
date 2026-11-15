@@ -1,6 +1,5 @@
 using BangDreamInSpire.Scripts.Extensions;
 using BangDreamInSpire.Scripts.Interfaces.CharacterAugment;
-using BangDreamInSpire.Scripts.Nodes;
 using BangDreamInSpire.Scripts.Utils;
 using BangDreamInSpire.Scripts.Utils.Infos;
 using Godot;
@@ -58,22 +57,6 @@ public sealed class PerformMechanic : IBangDreamMechanic
             FlightTargetPositionResolver = ctx => ResolvePerformPileFlightPosition(ctx.CardModel)
         }).PileType;
 
-        context.NodeAttachments.RegisterReadyChild<NCreature, NPerformArea>(
-            "perform_area",
-            static creature => NPerformArea.Create(creature.Entity.Player),
-            static (creature, area) =>
-            {
-                area.Visible = BangDreamCapabilities.HasPerform(creature.Entity.Player);
-                area.GlobalPosition = ResolvePerformAreaPosition(creature);
-            },
-            new NodeAttachmentOptions
-            {
-                Name = "PerformArea",
-                Order = 10,
-                DuplicatePolicy = NodeAttachmentDuplicatePolicy.ReplaceExistingByName,
-                SetupTiming = NodeAttachmentSetupTiming.AfterAdd,
-            });
-
         PerformManager.InitializeNetwork();
 
         context.SubscribeLifecycle<ModelRegistryInitializedEvent>(_ =>
@@ -111,30 +94,12 @@ public sealed class PerformMechanic : IBangDreamMechanic
     {
         if (cardModel == null) return null;
 
-        var performArea = cardModel.Owner.AttachedData().PerformManager.PerformArea;
-        if (GodotObject.IsInstanceValid(performArea) && performArea.TryGetCardSlotCenter(cardModel, out var slotCenter))
+        if (cardModel.Owner.AttachedData().PerformManager.TryGetPerformArea(out var performArea) &&
+            performArea.IsInsideTree() && performArea.TryGetCardSlotCenter(cardModel, out var slotCenter))
         {
             return slotCenter;
         }
 
         return cardModel.Owner.Creature.GetCreatureNode()?.VfxSpawnPosition;
-    }
-
-    /// <summary>
-    /// 按角色演奏方案给出的摆放规则定位演奏区域。
-    /// </summary>
-    private static Vector2 ResolvePerformAreaPosition(NCreature creature)
-    {
-        var scheme = creature.Entity.Player?.Character is IPerformableCharacter performable
-            ? performable.CreatePerformScheme()
-            : null;
-        var placement = scheme?.AreaPlacement ?? new PerformAreaPlacement(PerformAreaAnchor.LeftOfHitbox, 50f);
-
-        return placement.Anchor switch
-        {
-            PerformAreaAnchor.HitboxCenter => creature.Hitbox.GlobalPosition + creature.Hitbox.Size / 2f,
-            _ => creature.VfxSpawnPosition +
-                 Vector2.Left * (creature.Hitbox.Size.X / 2 + placement.HorizontalMargin)
-        };
     }
 }

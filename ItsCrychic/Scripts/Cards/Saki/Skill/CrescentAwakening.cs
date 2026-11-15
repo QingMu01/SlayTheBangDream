@@ -1,6 +1,5 @@
 using BangDreamInSpire.Scripts.Extensions;
 using BangDreamInSpire.Scripts.Interfaces.CardAugment;
-using BangDreamInSpire.Scripts.Mechanics.MusicNote;
 using BangDreamInSpire.Scripts.Utils;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -31,12 +30,12 @@ public class CrescentAwakening() : AbstractSakikoCard(CustomCost, CustomType, Cu
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        await MusicNoteCmd.FromCard(this, DynamicVars.Repeat.IntValue);
+        await this.ShootMusicNotes(DynamicVars.Repeat.IntValue);
     }
 
     public async Task OnSubside(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        await MusicNoteCmd.FromCard(this, DynamicVars["SubsideNotes"].IntValue);
+        await this.ShootMusicNotes(DynamicVars["SubsideNotes"].IntValue);
     }
 
     public override async Task AfterEnergySpent(CardModel card, int energySpent)

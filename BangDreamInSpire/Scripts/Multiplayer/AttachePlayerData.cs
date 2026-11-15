@@ -1,6 +1,7 @@
 using BangDreamInSpire.Scripts.Mechanics;
 using BangDreamInSpire.Scripts.Mechanics.Lingered;
 using BangDreamInSpire.Scripts.Mechanics.MusicNote;
+using BangDreamInSpire.Scripts.Interfaces.Mechanics;
 using BangDreamInSpire.Scripts.Mechanics.Perform;
 using BangDreamInSpire.Scripts.Mechanics.Puppeteer;
 using MegaCrit.Sts2.Core.Entities.Players;
@@ -28,17 +29,26 @@ public class AttachePlayerData
         }
     }
 
-    /// <summary>演奏机制状态；未启用演奏机制的角色访问会抛出异常。</summary>
-    public PerformManager PerformManager => Get<PerformManager>();
+    /// <summary>演奏机制服务；未启用演奏机制的角色访问会抛出异常。</summary>
+    public IPerformService Perform => Get<PerformManager>();
 
-    /// <summary>余音环绕预览状态；未启用余音机制的角色访问会抛出异常。</summary>
-    public LingeredOrbitManager LingeredOrbitManager => Get<LingeredOrbitManager>();
+    /// <summary>演奏机制状态（核心内部使用）；未启用演奏机制的角色访问会抛出异常。</summary>
+    internal PerformManager PerformManager => Get<PerformManager>();
 
-    /// <summary>音符伤害追踪状态；未启用音符机制的角色访问会抛出异常。</summary>
-    public MusicNoteDamageTracker MusicNoteDamageTracker => Get<MusicNoteDamageTracker>();
+    /// <summary>余音环绕预览状态（核心内部使用）；未启用余音机制的角色访问会抛出异常。</summary>
+    internal LingeredOrbitManager LingeredOrbitManager => Get<LingeredOrbitManager>();
 
-    /// <summary>傀儡师形态状态（双生命池 / 形态切换 / 歌单冻结）；未启用傀儡师机制的角色访问会抛出异常。</summary>
-    public PuppeteerFormManager PuppeteerFormManager => Get<PuppeteerFormManager>();
+    /// <summary>音符伤害统计服务；未启用音符机制的角色访问会抛出异常。</summary>
+    public IMusicNoteTracker MusicNoteTracker => Get<MusicNoteDamageTracker>();
+
+    /// <summary>音符伤害追踪状态（核心内部使用）；未启用音符机制的角色访问会抛出异常。</summary>
+    internal MusicNoteDamageTracker MusicNoteDamageTracker => Get<MusicNoteDamageTracker>();
+
+    /// <summary>傀儡师形态状态；未启用傀儡师机制的角色访问会抛出异常。</summary>
+    public IPuppeteerState Puppeteer => Get<PuppeteerFormManager>();
+
+    /// <summary>傀儡师形态状态（核心内部使用）；未启用傀儡师机制的角色访问会抛出异常。</summary>
+    internal PuppeteerFormManager PuppeteerFormManager => Get<PuppeteerFormManager>();
 
     private T Get<T>() where T : AbstractModel
     {

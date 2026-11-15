@@ -1,6 +1,5 @@
 using BangDreamInSpire.Scripts.Enums;
 using BangDreamInSpire.Scripts.Mechanics.Perform.Chord;
-using BangDreamInSpire.Scripts.Nodes.Screens;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Context;
@@ -18,7 +17,7 @@ using MegaCrit.Sts2.Core.Runs;
 using STS2RitsuLib.Models.Capabilities;
 using STS2RitsuLib.Scaffolding.Content;
 
-namespace BangDreamInSpire.Scripts.Mechanics.Perform.Site;
+namespace BangDreamInSpire.Scripts.Nodes.Screens;
 
 /// <summary>
 /// 火堆（休息处）选项「和弦设计」：打开 <see cref="NChordDesignScreen" />，给卡组里的一张牌设置和弦。

@@ -2,6 +2,7 @@ using BangDreamInSpire.Scripts.Enums;
 using BangDreamInSpire.Scripts.Extensions;
 using BangDreamInSpire.Scripts.Interfaces;
 using BangDreamInSpire.Scripts.Interfaces.CharacterAugment;
+using BangDreamInSpire.Scripts.Interfaces.Mechanics;
 using BangDreamInSpire.Scripts.Mechanics.Perform;
 using BangDreamInSpire.Scripts.Utils;
 using MegaCrit.Sts2.Core.Combat;
@@ -28,7 +29,7 @@ namespace BangDreamInSpire.Scripts.Mechanics.Puppeteer;
 /// </para>
 /// </summary>
 [RegisterSingleton]
-public class PuppeteerFormManager : HookedSingletonModel, IInCombatManager
+public class PuppeteerFormManager : HookedSingletonModel, IInCombatManager, IPuppeteerState
 {
     /// <summary>本体形态的待机动作触发名。原版 <c>CreatureAnimator</c> 的通用 Idle 触发器。</summary>
     private const string HostIdleTrigger = "Idle";
@@ -53,6 +54,9 @@ public class PuppeteerFormManager : HookedSingletonModel, IInCombatManager
 
     /// <summary>当前登场形态。战斗外恒为 <see cref="PuppeteerForm.Host" />。</summary>
     public PuppeteerForm ActiveForm { get; private set; } = PuppeteerForm.Host;
+
+    /// <inheritdoc />
+    public bool IsPuppetForm => ActiveForm == PuppeteerForm.Puppet;
 
     /// <summary>本场战斗已激活的分组（位掩码）。只在傀儡形态下累积，切换形态即清空。</summary>
     public PerformChord ActivatedGroups { get; private set; } = PerformChord.None;

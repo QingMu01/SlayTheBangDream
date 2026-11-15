@@ -1,6 +1,6 @@
 using BangDreamInSpire.Scripts.Interfaces.CardAugment;
-using BangDreamInSpire.Scripts.Nodes;
 using BangDreamInSpire.Scripts.Utils;
+using BangDreamInSpire.Scripts.Utils.Infos;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization;
@@ -68,10 +68,11 @@ public class SubsideCapability : CardCapability, ICardDescriptionContributor, IC
     {
         if (context.Card is ISubsideCard)
         {
-            return
-            [
-                CardOverlayContribution.FromFactory("head_tip", ctx => BangDreamHeadTip.Create(ctx.Card))
-            ];
+            var factory = CardOverlayRegistry.Resolve("head_tip");
+            if (factory != null)
+            {
+                return [CardOverlayContribution.FromFactory("head_tip", factory)];
+            }
         }
 
         return [];
