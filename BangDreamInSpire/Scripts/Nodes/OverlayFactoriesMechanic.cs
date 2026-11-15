@@ -19,7 +19,9 @@ public sealed class OverlayFactoriesMechanic : IBangDreamMechanic
 
     public void RegisterContent(BangDreamMechanicContext context)
     {
-        CardOverlayRegistry.Register("chord_badge", new ChordBadgeFactory());
+        // 注册键必须与 ChordCapability.OverlayId 逐字一致：不一致时 Resolve 返回 null，
+        // 机制侧会静默跳过覆盖层（不报错、不显示），属于最难排查的一类失配。
+        CardOverlayRegistry.Register("chord_corner_badge", new ChordBadgeFactory());
         CardOverlayRegistry.Register("head_tip", new HeadTipFactory());
     }
 
