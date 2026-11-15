@@ -36,7 +36,7 @@ public class Noise() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, 
             .Execute(choiceContext);
 
         // 歌单为空时只造成伤害。
-        var manager = Owner.AttachedData().PerformManager;
+        var manager = Owner.AttachedData().Perform;
         var performCards = manager.PerformPile.Cards
             .Where(card => card is IPerformCard)
             .ToList();

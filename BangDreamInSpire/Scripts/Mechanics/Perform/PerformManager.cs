@@ -5,6 +5,7 @@ using BangDreamInSpire.Scripts.Interfaces;
 using BangDreamInSpire.Scripts.Interfaces.CardAugment;
 using BangDreamInSpire.Scripts.Interfaces.CharacterAugment;
 using BangDreamInSpire.Scripts.Interfaces.GameHook;
+using BangDreamInSpire.Scripts.Interfaces.Mechanics;
 using BangDreamInSpire.Scripts.Mechanics.Perform.Schemes;
 using BangDreamInSpire.Scripts.Nodes;
 using BangDreamInSpire.Scripts.Nodes.VFX;
@@ -42,7 +43,7 @@ namespace BangDreamInSpire.Scripts.Mechanics.Perform;
 /// 也不决定"有多少容量、如何摆放"（由角色的 <see cref="IPerformScheme" /> 提供）。
 /// </summary>
 [RegisterSingleton]
-public class PerformManager : HookedSingletonModel, IInCombatManager
+public class PerformManager : HookedSingletonModel, IInCombatManager, IPerformService
 {
     public PerformManager() : base(HookType.Combat)
     {
@@ -759,6 +760,27 @@ public class PerformManager : HookedSingletonModel, IInCombatManager
     public int GetExpectedSlotIndex(CardModel cardModel)
     {
         return CreateEnqueuePlan(cardModel, CardContexts.GetOrCreate(cardModel).Request)?.SlotIndex ?? -1;
+    }
+
+    /// <inheritdoc />
+    public int GetSlotIndex(CardModel cardModel)
+    {
+        return CardContexts.GetOrCreate(cardModel).SlotIndex;
+    }
+
+    /// <inheritdoc />
+    public void InheritSlot(CardModel source, CardModel target)
+    {
+        var sourceContext = CardContexts.GetOrCreate(source);
+        var targetContext = CardContexts.GetOrCreate(target);
+        targetContext.Manager = this;
+        targetContext.SlotIndex = sourceContext.SlotIndex;
+    }
+
+    /// <inheritdoc />
+    public void RemoveCardContext(CardModel cardModel)
+    {
+        CardContexts.Remove(cardModel);
     }
 
     /// <summary>

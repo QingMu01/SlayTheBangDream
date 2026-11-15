@@ -1,8 +1,6 @@
 using BangDreamInSpire.Scripts.Enums;
 using BangDreamInSpire.Scripts.Extensions;
 using BangDreamInSpire.Scripts.Interfaces.GameHook;
-using BangDreamInSpire.Scripts.Mechanics.Perform.Chord;
-using BangDreamInSpire.Scripts.Mechanics.Perform.Site;
 using BangDreamInSpire.Scripts.Relics;
 using ItsCrychic.Scripts.Character;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -11,13 +9,12 @@ using MegaCrit.Sts2.Core.Entities.RestSite;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models.RelicPools;
 using STS2RitsuLib.Interop.AutoRegistration;
-using STS2RitsuLib.Models.Capabilities;
 
 namespace ItsCrychic.Scripts.Relics.GameRules;
 
 /// <summary>
 /// 睦的演奏触发规则：打出带和弦的卡牌后，激活该和弦对应分组中音乐牌的奏响。
-/// 和弦由卡牌奖励随机赋予（<see cref="ChordCapability" />，随卡牌实例存档），
+/// 和弦由卡牌奖励随机赋予（<c>ChordCapability</c>，随卡牌实例存档），
 /// 只负责激活奏响，不影响卡牌入组（入组由 <c>PerformTargetTypes.RequestGroup</c>
 /// 或方案默认分组决定）。
 /// </summary>
@@ -27,12 +24,10 @@ public class MutsumiSpecialRules : HiddenRelic, IPerformTriggerListener
     public override Task AfterCardPlayed(PlayerChoiceContext context, CardPlay cardPlay)
     {
         var card = cardPlay.Card;
-        var chord = card.TryGetCapability<ChordCapability>(out var chordCapability)
-            ? chordCapability.Chord
-            : PerformChord.None;
+        var chord = card.GetChord();
         if (chord == PerformChord.None) return Task.CompletedTask;
 
-        card.Owner.AttachedData().PerformManager.RequestChordPerform(chord);
+        card.Owner.AttachedData().Perform.RequestChordPerform(chord);
         return Task.CompletedTask;
     }
 
@@ -44,7 +39,7 @@ public class MutsumiSpecialRules : HiddenRelic, IPerformTriggerListener
     {
         if (player.Character is WakabaMutsumi)
         {
-            options.Add(new ChordDesignOption(player));
+            options.Add(player.CreateChordDesignOption());
             return true;
         }
 

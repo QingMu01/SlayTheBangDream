@@ -1,6 +1,5 @@
 using BangDreamInSpire.Scripts.Extensions;
 using BangDreamInSpire.Scripts.Interfaces.CardAugment;
-using BangDreamInSpire.Scripts.Mechanics.MusicNote;
 using BangDreamInSpire.Scripts.Utils;
 using ItsCrychic.Scripts.Power.Temporary;
 using MegaCrit.Sts2.Core.Commands;
@@ -43,7 +42,7 @@ public class WaningMoonEcho()
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
 
-        await MusicNoteCmd.FromCard(this, DynamicVars.Repeat.IntValue);
+        await this.ShootMusicNotes(DynamicVars.Repeat.IntValue);
     }
 
     public async Task OnSubside(PlayerChoiceContext choiceContext, CardPlay play)

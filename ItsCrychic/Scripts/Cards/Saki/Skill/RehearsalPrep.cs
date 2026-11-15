@@ -32,7 +32,7 @@ public class RehearsalPrep() : AbstractSakikoCard(CustomCost, CustomType, Custom
             CardSelectorPrompt.ToExtraDraw.GetFixedPrefs(1))).FirstOrDefault();
         if (selectedCard == null) return;
 
-        var manager = Owner.AttachedData().PerformManager;
+        var manager = Owner.AttachedData().Perform;
         for (var i = 0; i < DynamicVars.Repeat.IntValue; i++)
         {
             await manager.PerformCard(selectedCard);

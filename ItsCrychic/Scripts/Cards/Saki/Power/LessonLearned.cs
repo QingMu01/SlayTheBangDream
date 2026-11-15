@@ -1,5 +1,4 @@
 using BangDreamInSpire.Scripts.Extensions;
-using BangDreamInSpire.Scripts.Mechanics.ExtraDeck;
 using BangDreamInSpire.Scripts.Utils;
 using ItsCrychic.Scripts.Power.Buff;
 using MegaCrit.Sts2.Core.Commands;
@@ -29,7 +28,7 @@ public class LessonLearned() : AbstractSakikoCard(CustomCost, CustomType, Custom
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        await ExtraPileCmd.Draw(choiceContext, DynamicVars.Cards.IntValue, Owner);
+        await Owner.DrawExtraCards(choiceContext, DynamicVars.Cards.IntValue);
 
         await PowerCmd.Apply<LessonLearnedPower>(choiceContext, Owner.Creature,
             QuickVar.LingeredResource.GetVar(this).IntValue,

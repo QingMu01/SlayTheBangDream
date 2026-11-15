@@ -1,4 +1,4 @@
-using BangDreamInSpire.Scripts.Mechanics.MusicNote;
+using BangDreamInSpire.Scripts.Extensions;
 using BangDreamInSpire.Scripts.Powers;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -29,7 +29,7 @@ public class SoundWavePower : BandPowerModel
     {
         if (Amount > 0 && player == Owner.Player)
         {
-            await MusicNoteCmd.FromPower(this, Amount, shouldImmediate: true);
+            await this.ShootMusicNotes(Amount, shouldImmediate: true);
         }
 
         await PowerCmd.Remove(this);

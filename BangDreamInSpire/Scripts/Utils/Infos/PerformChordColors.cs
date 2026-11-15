@@ -1,7 +1,7 @@
 using BangDreamInSpire.Scripts.Enums;
 using Godot;
 
-namespace BangDreamInSpire.Scripts.Mechanics.Perform;
+namespace BangDreamInSpire.Scripts.Utils.Infos;
 
 /// <summary>
 /// 演奏和弦的配色表：卡牌角标与演奏区槽位共用同一份，避免两处颜色各写一遍而漂移。

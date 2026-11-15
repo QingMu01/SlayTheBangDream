@@ -12,7 +12,7 @@ using STS2RitsuLib.Networking.ManagedActions;
 
 namespace BangDreamInSpire.Scripts.Mechanics.MusicNote;
 
-public static class MusicNoteCmd
+internal static class MusicNoteCmd
 {
     private const string DefaultPath = "res://BangDreamInSpire/scenes/vfx/flying_music_note_default.tscn";
 

@@ -36,7 +36,7 @@ public class Audition() : AbstractSakikoCard(CustomCost, CustomType, CustomRarit
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
 
-        var manager = Owner.AttachedData().PerformManager;
+        var manager = Owner.AttachedData().Perform;
         var musicCards = manager.PerformPile.Cards
             .Where(card => card is IPerformCard)
             .ToList();

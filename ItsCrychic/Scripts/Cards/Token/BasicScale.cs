@@ -1,7 +1,6 @@
 using BangDreamInSpire.Scripts.Cards;
 using BangDreamInSpire.Scripts.Extensions;
 using BangDreamInSpire.Scripts.Interfaces.CharacterAugment;
-using BangDreamInSpire.Scripts.Mechanics.MusicNote;
 using BangDreamInSpire.Scripts.Utils;
 using BangDreamInSpire.Scripts.Utils.Infos;
 using ItsCrychic.Scripts.Character;
@@ -29,11 +28,11 @@ public sealed class BasicScale() : MusicCardModel(CustomCost, CustomRarity, Cust
 
     public override async Task OnPerform(PlayerChoiceContext choiceContext, CardPerform perform)
     {
-        await MusicNoteCmd.FromCard(this, DynamicVars.Repeat.IntValue);
+        await this.ShootMusicNotes(DynamicVars.Repeat.IntValue);
 
-        var manager = Owner.AttachedData().PerformManager;
+        var manager = Owner.AttachedData().Perform;
         var topCard = BangDreamConst.PerformPile.GetPile(Owner).Cards
-            .OrderByDescending(card => manager.CardContexts.GetOrCreate(card).SlotIndex)
+            .OrderByDescending(card => manager.GetSlotIndex(card))
             .FirstOrDefault();
         if (topCard == this)
         {

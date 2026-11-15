@@ -31,6 +31,8 @@ public sealed class TogawaSakiko()
 ```
 
 - `IPerformableCharacter` 继承 `IExtraDeckSupportCharacter`，因此实现演奏能力的角色自动获得额外卡组能力。
+- 演奏方案实现由角色模组提供（本仓库示例见 `ItsCrychic/Scripts/Character/PerformSchemes/`）；核心只保留
+  `EmptyPerformScheme` 与 `IPerformScheme` 契约，不包含角色名。
 - `BandMemberModel` 已自带 `ISkinSupportCharacter`（皮肤）、`IGroupableCharacter`（角色选择分组）、`IBangDreamMateData`（主菜单资源）。
 - 卡牌侧：`IPerformCard`（音乐牌）、`ISubsideCard`（休止牌）决定卡牌参与哪些机制。
 
@@ -111,7 +113,11 @@ public sealed class MyMechanic : IBangDreamMechanic
   `Scripts/Cards/BandCardModel`、`MusicCardModel`、`Scripts/Powers/BandPowerModel`、`Scripts/Relics/BandRelicModel`、
   `Scripts/Character/BandMemberModel`、`Scripts/Utils/BangDreamConst`、`Scripts/Utils/BangDreamHook`、`Scripts/Extensions/**`。
 - 机制实现类（`PerformManager`、`MusicNoteCmd`、`ExtraPileCmd`、`MusicCardReward`、`TechnicalPracticeOption` 等）
-  已移入 `Scripts/Mechanics/<Name>/`。若曾直接引用它们，需更新 `using`。
+  仍位于 `Scripts/Mechanics/<Name>/`，但**不再作为内容模组的公开入口**：
+  - 演奏状态通过 `AttachedData().Perform`（`IPerformService`）访问；槽位表现通过 `IPerformSlot`。
+  - 音符发射用 `MusicNoteExtensions.ShootMusicNotes`；额外抽牌用 `ExtraDeckExtensions.DrawExtraCards`。
+  - 和弦读写用 `ChordExtensions.GetChord/SetChord`；音乐牌奖励与休息处选项用 `ExtraDeckRewardExtensions`。
+  - 音符伤害统计用 `AttachedData().MusicNoteTracker`（`IMusicNoteTracker`）。
 - 关键字与卡牌标签的数值由 `XxHash32(id)` 确定性生成，与注册顺序无关，因此模块装配顺序调整不影响存档与网络兼容性。
 
 ## 6. 已知边界

@@ -25,7 +25,7 @@ public class SwordOfLord : AbstractSakikoRelic
             if (selectedCard != null)
             {
                 Flash();
-                await Owner.AttachedData().PerformManager.AddInitialCard(selectedCard);
+                await Owner.AttachedData().Perform.AddInitialCard(selectedCard);
             }
         }
     }

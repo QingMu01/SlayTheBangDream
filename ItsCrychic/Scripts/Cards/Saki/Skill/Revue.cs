@@ -22,7 +22,7 @@ public class Revue() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, 
     {
         ArgumentNullException.ThrowIfNull(Owner.PlayerCombatState);
 
-        var manager = Owner.AttachedData().PerformManager;
+        var manager = Owner.AttachedData().Perform;
         foreach (var card in manager.PerformPile.Cards.ToList())
         {
             await manager.PerformCard(card);

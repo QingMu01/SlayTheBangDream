@@ -1,4 +1,4 @@
-using BangDreamInSpire.Scripts.Mechanics.MusicNote;
+using BangDreamInSpire.Scripts.Extensions;
 using BangDreamInSpire.Scripts.Powers;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Powers;
@@ -19,7 +19,7 @@ public class CrimsonNotePower : BandPowerModel
     {
         if (target == Owner && dealer != Owner && props.IsPoweredAttack())
         {
-            await MusicNoteCmd.FromPower(this, Amount);
+            await this.ShootMusicNotes(Amount);
         }
     }
 }

@@ -2,7 +2,6 @@ using BangDreamInSpire.Scripts.Extensions;
 using BangDreamInSpire.Scripts.Mechanics.AsyncDamage;
 using BangDreamInSpire.Scripts.Nodes.VFX;
 using BangDreamInSpire.Scripts.Utils;
-using BangDreamInSpire.Scripts.Utils.Builder;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Helpers;

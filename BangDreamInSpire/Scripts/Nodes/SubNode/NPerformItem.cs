@@ -1,4 +1,5 @@
 using BangDreamInSpire.Scripts.Interfaces.CardAugment;
+using BangDreamInSpire.Scripts.Interfaces.Mechanics;
 using BangDreamInSpire.Scripts.Mechanics.Perform;
 using BangDreamInSpire.Scripts.Utils;
 using BangDreamInSpire.Scripts.Utils.Infos;
@@ -26,7 +27,7 @@ public enum PerformSlotSelectionState
     Hovered
 }
 
-public partial class NPerformItem : NClickableControl
+public partial class NPerformItem : NClickableControl, IPerformSlot
 {
     private static readonly StringName RectSizeShaderParameter = "rect_size";
     private static readonly StringName RevealProgressShaderParameter = "reveal_progress";

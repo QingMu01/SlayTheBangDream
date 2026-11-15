@@ -1,12 +1,11 @@
 using BangDreamInSpire.Scripts.Enums;
-using BangDreamInSpire.Scripts.Mechanics.Perform;
-using BangDreamInSpire.Scripts.Nodes.SubNode;
+using BangDreamInSpire.Scripts.Interfaces.Mechanics;
 
 namespace BangDreamInSpire.Scripts.Utils.Infos;
 
 public class PerformContext(
-    NPerformItem? slot,
-    PerformManager? manager,
+    IPerformSlot? slot,
+    IPerformService? manager,
     int slotIndex = -1,
     PerformEnqueueStrategy strategy = PerformEnqueueStrategy.Nearby,
     int aspirationSlot = -1
@@ -15,12 +14,12 @@ public class PerformContext(
     /// <summary>
     /// 管理者
     /// </summary>
-    public PerformManager? Manager { get; set; } = manager;
+    public IPerformService? Manager { get; set; } = manager;
 
     /// <summary>
     /// 插槽节点
     /// </summary>
-    public NPerformItem? Slot { get; set; } = slot;
+    public IPerformSlot? Slot { get; set; } = slot;
 
     /// <summary>
     /// 插槽索引（全局，1 基）

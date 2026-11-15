@@ -28,12 +28,12 @@ public class ParallelPerformance() : AbstractSakikoCard(CustomCost, CustomType, 
     {
         if (IsUpgraded)
         {
-            var manager = Owner.AttachedData().PerformManager;
+            var manager = Owner.AttachedData().Perform;
             foreach (var card in manager.PerformPile.Cards.Where(card => card is IPerformCard).ToList())
             {
                 await manager.PerformCard(card);
             }
         }
-        Owner.AttachedData().PerformManager.AddCapacity(QuickVar.Buff.GetVar(this).IntValue);
+        Owner.AttachedData().Perform.AddCapacity(QuickVar.Buff.GetVar(this).IntValue);
     }
 }

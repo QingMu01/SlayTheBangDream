@@ -27,7 +27,7 @@ public class Finale() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity,
         {
             if (ctx.IsInCombat() && ctx.ActiveCard.DynamicVars.TryGetValue("IncreaseStep", out var dynamicVar))
             {
-                var musicNoteCount = ctx.ActiveCard.Owner.AttachedData().MusicNoteDamageTracker.GetAllDamageResults()
+                var musicNoteCount = ctx.ActiveCard.Owner.AttachedData().MusicNoteTracker.GetAllDamageResults()
                     .Count;
                 return ctx.BaseValue + dynamicVar.IntValue * musicNoteCount;
             }

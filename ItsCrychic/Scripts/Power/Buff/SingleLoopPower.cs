@@ -21,10 +21,10 @@ public class SingleLoopPower : BandPowerModel
             return;
         }
 
-        var manager = Owner.Player.AttachedData().PerformManager;
+        var manager = Owner.Player.AttachedData().Perform;
         var topMusicCard = manager.PerformPile.Cards
             .Where(card => card is IPerformCard)
-            .OrderByDescending(card => manager.CardContexts.GetOrCreate(card).SlotIndex)
+            .OrderByDescending(card => manager.GetSlotIndex(card))
             .FirstOrDefault();
         if (topMusicCard == null)
         {
