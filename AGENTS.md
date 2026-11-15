@@ -11,7 +11,7 @@ SlayTheBangDream.sln          — 企划总解决方案（两个模组一起构�
 ├── ItsCrychic/               — 角色内容模组（祥子、睦、灯、立希、素世），依赖 BangDreamInSpire
 │   └── ItsCrychic.sln        — 只构建角色模组
 ├── tools/                    — 构建前使用的工具
-├── docs/                     — 项目级规范（卡牌 / 机制 / 特效 / 清理）
+├── docs/                     — 项目级规范（卡牌 / 机制 / 特效 / 清理 / 架构 / 性能）
 └── .agents/skills/           — 工作流 skill（card-development、vfx-authoring、obsolete-file-cleanup），已入库
 ```
 
@@ -35,30 +35,38 @@ C# 代码位于各项目的 `Scripts/` 目录下，Godot 资源（图片、场�
 ## 分支与游戏版本
 
 本体进入双版本并行期（稳定版 / beta 版，存在 API 变动），分支与目标版本对应如下。**改动前先确认当前分支该对哪个版本**。
-分支结构保留以应对未来分叉，当前两分支目标版本相同。
+两分支目标版本**已不同**（`main` 落后于 `beta`），版本结论不要跨分支套用。
 
 | 分支 | 用途 | 游戏本体 | 解包源 | 备注 |
 |---|---|---|---|---|
 | `main` | 游戏本体稳定分支发布线 | 0.111.0 | `../sts2unpack/0.111.0/src` | 与本体稳定版 API 对齐 |
-| `beta` | 游戏本体测试分支发布线 | `0.111.0` | `../sts2unpack/0.111.0/src` | 与本体测试版 API 对齐 |
+| `beta` | 游戏本体测试分支发布线 | 0.113.1 | `../sts2unpack/0.113.0/src` | 与本体测试版 API 对齐；代码里的「0.113 复核结论」均出自此线 |
+
+版本号口径：游戏本体取游戏日志的 `Release Version`（`~/.local/share/SlayTheSpire2/logs/godot.log`，
+也可看 `[RitsuLib.Loader] Host=`），解包源取 `../sts2unpack/<目录名>`。两者差一个补丁位是正常的
+（0.113.1 本体 / 0.113.0 解包）。**注意**：两个 mod 清单里的 `min_game_version` 目前仍是 `0.111.0`，
+与 `beta` 实际依赖的 0.113 API 不一致，属待收敛项。
 
 - 版本切换走 `Directory.Build.local.props` 或环境变量（见下节），**不要**改被跟踪的 `Directory.Build.props` 默认值。
 - 跨分支同步共享改动时，只合并源码、文档与场景文本；合并后必须在目标版本上重新构建 + 无头运行，不能只看能编译。
 - `main` 与 `beta` 长期共存，**不要**用 `feature/*` 承载长期分支。
-- **RitsuLib 不按分支锁版本**：上游同时支持本体双版本，工程各分支统一引用同一版本；分支差异只来自**本体 API**，不要为了「适配 beta」去改 `Directory.Build.props` 里的 `PackageReference`。
+- **RitsuLib 不按分支锁版本**：上游同时支持本体双版本，工程各分支引用同一版本；分支差异只来自**本体 API**，不要为了「适配 beta」去改 `Directory.Build.props` 里的 `PackageReference`。当前实际值 `beta`=0.6.11、`main`=0.6.10（已差一个补丁位，属待收敛的漂移，不是分支策略）。
 
 ## 依赖文档与源码
 
 - **本体定位可覆盖**：`Sts2Dir` / `Sts2DataDir` / `GodotExe` 的解析优先级为
   命令行 `-p:` > `Directory.Build.local.props`（本机、不入库）> 环境变量 `STS2_DIR` / `GODOT_EXE` > `Directory.Build.props` 默认值。
   切换游戏版本时只改本机文件（模板见 `Directory.Build.local.props.example`），避免污染被跟踪配置、避免跨分支合并冲突。
-- **STS2-RitsuLib**：本地源码 `~/Codes/SlayTheSpire/STS2-RitsuLib`（当前 `main` = v0.6.7；
-  工程 NuGet 引用 **0.5.20**，读源码时注意版本差）。文档见其 `README.zh.md` 与 `docs/pages/guide/*.md`；
-  XML 文档在 NuGet 包内：`~/.nuget/packages/sts2.ritsulib/0.5.20/lib/net9.0/STS2-RitsuLib.xml`。
-  上游同时支持本体双版本，因此**工程统一引用同一版本、不按分支切换**；双版本差异只在游戏本体侧（见「分支与游戏版本」）。
+- **STS2-RitsuLib**：本地源码 `~/code/SlayTheSpire/STS2-RitsuLib`（当前 `main` = v0.6.8，比工程引用旧，
+  读源码时注意版本差）。文档见其 `README.zh.md` 与 `docs/pages/guide/*.md`。
+  XML 文档在 NuGet 包内且**按程序集分片**：`~/.nuget/packages/sts2.ritsulib/<版本>/lib/net9.0/` 下
+  `STS2-RitsuLib.Runtime.xml`（主 API，约 9.5k member）、`.Ui.xml`、`.Settings.xml`、`.Shared.xml`；
+  同目录的 `STS2-RitsuLib.xml` 是**空壳**（0 member），查文档别读它。
+  上游同时支持本体双版本，因此**工程引用同一版本、不按分支切换**；双版本差异只在游戏本体侧（见「分支与游戏版本」）。
+  本机运行时实际加载的版本看游戏日志 `[RitsuLib.Loader] Host=`（当前 0.6.13，比编译引用的 0.6.11 新）。
 - **游戏本体**：`sts2.dll` 的同名 XML 文档在本体安装目录
   （`cd BangDreamInSpire && dotnet msbuild BangDreamInSpire.csproj -getProperty:Sts2DataDir`）。
-  查本体实现读解包源 `../sts2unpack/<版本>/src`（当前 0.111.0；可用 `$STS2_UNPACKED` 覆盖，或用
+  查本体实现读解包源 `../sts2unpack/<版本>/src`（`main` 用 0.111.0、`beta` 用 0.113.0；可用 `$STS2_UNPACKED` 覆盖，或用
   `tools/sync-sts2-assets.sh -s` 指定）。
 - **日志**：当前环境下，游戏日志默认放置于`~/.local/share/SlayTheSpire2/logs`
 

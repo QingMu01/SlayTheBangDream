@@ -30,7 +30,7 @@
 ## 3. 本地化键的构造与双向盘点
 
 - 运行时键：`new LocString("cards", Id.Entry + ".title")`（游戏 `src/Core/Models/CardModel.cs:108`，描述 `:127`）。
-- `Id.Entry`：RitsuLib 对**已注册**类型强制 `NORM(modId)_NORM(category)_NORM(TypeName)`（参考 `STS2-RitsuLib` tag `v0.5.20` 的 `src/Content/ModContentRegistry.cs`）。`NORM` 的两条边界正则 `([A-Z]+)([A-Z][a-z])`、`([a-z0-9])([A-Z])`，结果与 `docs/card-authoring.md:92-97` 的 `ITS_CRYCHIC_CARD_<UPPER_SNAKE>` 一致。
+- `Id.Entry`：RitsuLib 对**已注册**类型强制 `NORM(modId)_NORM(category)_NORM(TypeName)`（规则实现见 `STS2-RitsuLib` 的 `src/Content/ModContentRegistry.cs` 中 `NormalizePublicStem`；工程引用 0.6.11，本地源码 v0.6.8 已复核一致）。`NORM` 的两条边界正则 `([A-Z]+)([A-Z][a-z])`、`([a-z0-9])([A-Z])`，结果与 `docs/card-authoring.md:92-97` 的 `ITS_CRYCHIC_CARD_<UPPER_SNAKE>` 一致。
 - 合法子键：`.title`（必有）、非音乐 `.description`、音乐 `.perform`（非 instant）/`.instant`（instant）（`PerformCapability.cs:16-28`）、`ISubsideCard` 用 `.subside`；**非标准子键也存在**：`Cards/Saki/Attack/Desuwa.cs:38` 手工消费 `.verbal_tic`。
 - 双向盘点要同时报 `类存在但本地化缺` 与 `本地化键无对应类`。当前基线：卡 127↔127（0 僵尸）、Power 33↔36（僵尸键 3 个）、Relic 3↔3。
 
