@@ -6,12 +6,19 @@ BangDreamInSpire 的玩法机制被拆分为若干**机制模块**（mechanic）
 
 | 模块 | Id | 顺序 | 依赖 | 启用条件（角色接口） | 承载内容 |
 |---|---|---|---|---|---|
+| 卡面覆盖层 | `overlay_factories` | 10 | — | （全局） | 向 `CardOverlayRegistry` 注册和弦角标 / 休止提示的 UI 工厂 |
 | 额外卡组 | `extra_deck` | 100 | — | `IExtraDeckSupportCharacter` | 额外卡池/额外卡组/额外抽牌堆、小祥商人、额外卡组删牌、音乐牌奖励、额外卡组升级休息选项、战斗开始克隆额外抽牌堆 |
-| 演奏 | `perform` | 200 | `extra_deck` | `IPerformableCharacter` | 歌单容量与入队/重排/溢出、演奏触发、演奏区节点、音乐卡牌类型铭牌、手动落位目标类型（AnySlot / RequestGroup）、卡牌和弦（`ChordCapability`） |
+| 演奏 | `perform` | 200 | `extra_deck` | `IPerformableCharacter` | 歌单容量与入队/重排/溢出、演奏触发、音乐卡牌类型铭牌、手动落位目标类型（AnySlot / RequestGroup）、卡牌和弦（`ChordCapability`） |
+| 演奏区 | `perform_area` | 210 | `perform` | `IPerformableCharacter` | 演奏区节点创建与摆放（实现 `IPerformArea`），就绪后回填给 `PerformManager` |
 | 余音 | `lingered` | 300 | — | `ILingeredResourceCharacter` | 余音二级资源与卡面费用 UI、休止结算与驱动、环绕资源预览 |
 | 音符 | `music_note` | 400 | — | （全局） | 音符发射/弹跳与伤害、命中同拍结算、音符伤害追踪、VFX 容器 |
 
 `Order` 越小越先装配；`Dependencies` 中的机制必须存在，否则装配阶段抛异常。
+
+机制按 `Assembly.GetTypes()` 自动发现（`IBangDreamMechanic` 的实现），因此新增模块只需新建类，无需登记。
+**机制层不得直接依赖 `Scripts/Nodes/**`**：需要 UI 时按 `perform_area` / `overlay_factories` 的范式，
+把节点创建留在 `Nodes` 侧，机制只依赖 `Scripts/Interfaces/Mechanics/**` 里的契约。边界由
+`python3 tools/check-architecture.py` 检查（见 `docs/architecture/coupling-boundaries.md`）。
 
 ## 2. 角色如何接入机制
 
