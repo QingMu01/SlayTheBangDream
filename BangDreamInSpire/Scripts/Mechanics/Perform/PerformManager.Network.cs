@@ -38,132 +38,132 @@ namespace BangDreamInSpire.Scripts.Mechanics.Perform;
 
 public partial class PerformManager
 {
-        private sealed record PerformNetworkActionPayload(
-            PerformNetworkActionKind Kind,
-            uint? CardIndex,
-            int SlotIndex,
-            bool IsSubsideTriggered,
-            int ChordMask,
-            int RequestSlotIndex = 0,
-            int RequestGroupMask = 0);
+    private sealed record PerformNetworkActionPayload(
+        PerformNetworkActionKind Kind,
+        uint? CardIndex,
+        int SlotIndex,
+        bool IsSubsideTriggered,
+        int ChordMask,
+        int RequestSlotIndex = 0,
+        int RequestGroupMask = 0);
 
-        private static readonly RitsuLibManagedNetActionDescriptor<PerformNetworkActionPayload> PerformNetworkAction = new(
-            "BangDreamInSpire", "perform_lifecycle",
-            static payload => JsonSerializer.SerializeToUtf8Bytes(payload),
-            static bytes => JsonSerializer.Deserialize<PerformNetworkActionPayload>(bytes) ??
-                            throw new InvalidOperationException("Invalid perform lifecycle payload."),
-            static context => ExecuteNetworkPerformAction(context), GameActionType.Combat);
+    private static readonly RitsuLibManagedNetActionDescriptor<PerformNetworkActionPayload> PerformNetworkAction = new(
+        "BangDreamInSpire", "perform_lifecycle",
+        static payload => JsonSerializer.SerializeToUtf8Bytes(payload),
+        static bytes => JsonSerializer.Deserialize<PerformNetworkActionPayload>(bytes) ??
+                        throw new InvalidOperationException("Invalid perform lifecycle payload."),
+        static context => ExecuteNetworkPerformAction(context), GameActionType.Combat);
 
-        /// <summary>本生命周期动作的稳定操作码，供补丁识别；未注册时为 0。</summary>
-        internal static ulong PerformOpcode { get; private set; }
+    /// <summary>本生命周期动作的稳定操作码，供补丁识别；未注册时为 0。</summary>
+    internal static ulong PerformOpcode { get; private set; }
 
-        /// <summary>
-        /// 还原 payload 中携带的落位覆盖。槽位优先级高于分组，两者都为空时表示按卡牌自身规则入队。
-        /// </summary>
-        private static PerformEnqueueRequest ToEnqueueRequest(PerformNetworkActionPayload payload)
+    /// <summary>
+    /// 还原 payload 中携带的落位覆盖。槽位优先级高于分组，两者都为空时表示按卡牌自身规则入队。
+    /// </summary>
+    private static PerformEnqueueRequest ToEnqueueRequest(PerformNetworkActionPayload payload)
+    {
+        if (payload.RequestSlotIndex >= 1)
         {
-            if (payload.RequestSlotIndex >= 1)
-            {
-                return PerformEnqueueRequest.Slot(payload.RequestSlotIndex);
-            }
-    
-            return payload.RequestGroupMask != 0
-                ? PerformEnqueueRequest.ForGroup((PerformChord)payload.RequestGroupMask)
-                : default;
+            return PerformEnqueueRequest.Slot(payload.RequestSlotIndex);
         }
 
-        internal static void InitializeNetwork()
+        return payload.RequestGroupMask != 0
+            ? PerformEnqueueRequest.ForGroup((PerformChord)payload.RequestGroupMask)
+            : default;
+    }
+
+    internal static void InitializeNetwork()
+    {
+        PerformOpcode = RitsuLibManagedNetActions.Register(PerformNetworkAction);
+    }
+
+    /// <summary>该 Action 是否为歌单生命周期动作（供 <c>IsGameActionPlayerDriven</c> 补丁使用）。</summary>
+    internal static bool IsPerformLifecycleAction(GameAction action)
+    {
+        return PerformOpcode != 0 &&
+               action is RitsuLibManagedGameAction managed &&
+               managed.DescriptorOpcode == PerformOpcode;
+    }
+
+    private static Task ExecuteNetworkPerformAction(
+        RitsuLibManagedNetActionContext<PerformNetworkActionPayload> context)
+    {
+        var manager = context.Player.AttachedData().PerformManager;
+        return manager.ExecuteNetworkPerformAction(context.Message, context.PlayerChoiceContext);
+    }
+
+    private async Task ExecuteNetworkPerformAction(
+        PerformNetworkActionPayload payload,
+        PlayerChoiceContext choiceContext)
+    {
+        var combatState = Player.Creature.CombatState;
+        if (combatState == null) return;
+        if (payload.Kind == PerformNetworkActionKind.Trigger)
         {
-            PerformOpcode = RitsuLibManagedNetActions.Register(PerformNetworkAction);
+            await PerformSlot(payload.SlotIndex, payload.IsSubsideTriggered, choiceContext);
+            return;
         }
 
-        /// <summary>该 Action 是否为歌单生命周期动作（供 <c>IsGameActionPlayerDriven</c> 补丁使用）。</summary>
-        internal static bool IsPerformLifecycleAction(GameAction action)
+        if (payload.Kind == PerformNetworkActionKind.Chord)
         {
-            return PerformOpcode != 0 &&
-                   action is RitsuLibManagedGameAction managed &&
-                   managed.DescriptorOpcode == PerformOpcode;
+            await PerformChordSlots((PerformChord)payload.ChordMask, choiceContext);
+            return;
         }
 
-        private static Task ExecuteNetworkPerformAction(
-            RitsuLibManagedNetActionContext<PerformNetworkActionPayload> context)
+        if (!payload.CardIndex.HasValue) return;
+        var card = NetCombatCard.ForTesting(payload.CardIndex.Value).ToCardModelOrNull();
+        if (card == null) return;
+        var change = new PerformAreaChange(card,
+            payload.Kind == PerformNetworkActionKind.Enter
+                ? PerformAreaChangeType.Added
+                : PerformAreaChangeType.Removed);
+        await HandlePerformAreaChange(choiceContext, change, ToEnqueueRequest(payload));
+    }
+
+    private async Task ExecuteLocalPerformAction(PerformNetworkActionPayload payload)
+    {
+        var combatState = Player.Creature.CombatState;
+        if (combatState == null) return;
+        if (payload.Kind == PerformNetworkActionKind.Trigger)
         {
-            var manager = context.Player.AttachedData().PerformManager;
-            return manager.ExecuteNetworkPerformAction(context.Message, context.PlayerChoiceContext);
+            await PerformSlot(payload.SlotIndex, payload.IsSubsideTriggered);
+            return;
         }
 
-        private async Task ExecuteNetworkPerformAction(
-            PerformNetworkActionPayload payload,
-            PlayerChoiceContext choiceContext)
+        if (payload.Kind == PerformNetworkActionKind.Chord)
         {
-            var combatState = Player.Creature.CombatState;
-            if (combatState == null) return;
-            if (payload.Kind == PerformNetworkActionKind.Trigger)
-            {
-                await PerformSlot(payload.SlotIndex, payload.IsSubsideTriggered, choiceContext);
-                return;
-            }
-    
-            if (payload.Kind == PerformNetworkActionKind.Chord)
-            {
-                await PerformChordSlots((PerformChord)payload.ChordMask, choiceContext);
-                return;
-            }
-    
-            if (!payload.CardIndex.HasValue) return;
-            var card = NetCombatCard.ForTesting(payload.CardIndex.Value).ToCardModelOrNull();
-            if (card == null) return;
-            var change = new PerformAreaChange(card,
-                payload.Kind == PerformNetworkActionKind.Enter
-                    ? PerformAreaChangeType.Added
-                    : PerformAreaChangeType.Removed);
-            await HandlePerformAreaChange(choiceContext, change, ToEnqueueRequest(payload));
+            await PerformChordSlots((PerformChord)payload.ChordMask);
+            return;
         }
 
-        private async Task ExecuteLocalPerformAction(PerformNetworkActionPayload payload)
-        {
-            var combatState = Player.Creature.CombatState;
-            if (combatState == null) return;
-            if (payload.Kind == PerformNetworkActionKind.Trigger)
-            {
-                await PerformSlot(payload.SlotIndex, payload.IsSubsideTriggered);
-                return;
-            }
-    
-            if (payload.Kind == PerformNetworkActionKind.Chord)
-            {
-                await PerformChordSlots((PerformChord)payload.ChordMask);
-                return;
-            }
-    
-            if (!payload.CardIndex.HasValue) return;
-            var card = NetCombatCard.ForTesting(payload.CardIndex.Value).ToCardModelOrNull();
-            if (card == null) return;
-            var change = new PerformAreaChange(card,
-                payload.Kind == PerformNetworkActionKind.Enter
-                    ? PerformAreaChangeType.Added
-                    : PerformAreaChangeType.Removed);
-            await BangDreamHook.RunPerformHookAction(
-                combatState, card,
-                choiceContext => HandlePerformAreaChange(choiceContext, change, ToEnqueueRequest(payload)));
-        }
+        if (!payload.CardIndex.HasValue) return;
+        var card = NetCombatCard.ForTesting(payload.CardIndex.Value).ToCardModelOrNull();
+        if (card == null) return;
+        var change = new PerformAreaChange(card,
+            payload.Kind == PerformNetworkActionKind.Enter
+                ? PerformAreaChangeType.Added
+                : PerformAreaChangeType.Removed);
+        await BangDreamHook.RunPerformHookAction(
+            combatState, card,
+            choiceContext => HandlePerformAreaChange(choiceContext, change, ToEnqueueRequest(payload)));
+    }
 
-        private void RequestPerformAction(PerformNetworkActionPayload payload)
-        {
-            if (!CombatManager.Instance.IsInProgress) return;
-            if (!LocalContext.IsMe(Player)) return;
-    
-            if (!RitsuLibManagedNetActions.Request(null, PerformNetworkAction, payload, Player.NetId))
-                TaskHelper.RunSafely(HandleRejectedNetworkAction(payload));
-        }
+    private void RequestPerformAction(PerformNetworkActionPayload payload)
+    {
+        if (!CombatManager.Instance.IsInProgress) return;
+        if (!LocalContext.IsMe(Player)) return;
 
-        private Task HandleRejectedNetworkAction(PerformNetworkActionPayload payload)
-        {
-            if (RunManager.Instance.NetService.Type == NetGameType.Singleplayer)
-                return ExecuteLocalPerformAction(payload);
-    
-            BangDreamInSpireCore.Logger.Error(
-                $"Perform action was rejected by the Sidecar action queue: player={Player.NetId} kind={payload.Kind}.");
-            return Task.CompletedTask;
-        }
+        if (!RitsuLibManagedNetActions.Request(null, PerformNetworkAction, payload, Player.NetId))
+            TaskHelper.RunSafely(HandleRejectedNetworkAction(payload));
+    }
+
+    private Task HandleRejectedNetworkAction(PerformNetworkActionPayload payload)
+    {
+        if (RunManager.Instance.NetService.Type == NetGameType.Singleplayer)
+            return ExecuteLocalPerformAction(payload);
+
+        BangDreamInSpireCore.Logger.Error(
+            $"Perform action was rejected by the Sidecar action queue: player={Player.NetId} kind={payload.Kind}.");
+        return Task.CompletedTask;
+    }
 }

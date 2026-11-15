@@ -129,7 +129,8 @@ public partial class PerformManager : HookedSingletonModel, IInCombatManager, IP
         }
     }
 
-    public IPerformArea PerformArea { get; private set; } = null!;
+    /// <summary>演奏区节点；UI 侧就绪前为 <see langword="null" />。</summary>
+    public IPerformArea? PerformArea { get; private set; }
 
     /// <summary>由 UI 侧在节点就绪后回填演奏区域，并补提交当前方案。</summary>
     internal void AttachPerformArea(IPerformArea performArea)
@@ -206,7 +207,7 @@ public partial class PerformManager : HookedSingletonModel, IInCombatManager, IP
         _cardsWithArrivalVisual.Remove(cardModel);
         if (cardModel.Pile == PerformPile)
         {
-            PerformArea.PlayCardArrivalBounce(cardModel);
+            PerformArea?.PlayCardArrivalBounce(cardModel);
         }
 
         QueuePerformAreaChange(cardModel, PerformAreaChangeType.Arrived);
@@ -219,7 +220,7 @@ public partial class PerformManager : HookedSingletonModel, IInCombatManager, IP
 
         // 离开歌单即视为本次入场结束：再次进入时应重新触发即兴演奏与入场效果。
         _instantPerformedCards.Remove(cardModel);
-        PerformArea.RemoveItem(cardModel);
+        PerformArea?.RemoveItem(cardModel);
         RemoveAwaitingArrival(cardModel);
         _cardsWithArrivalVisual.Remove(cardModel);
         if (_cardsPendingArrival.Remove(cardModel))
@@ -303,7 +304,7 @@ public partial class PerformManager : HookedSingletonModel, IInCombatManager, IP
 
             if (!_cardsPendingArrival.Contains(cardModel) && PerformPile.Cards.Contains(cardModel))
             {
-                PerformArea.AddItem(cardModel, performContext, _cardsWithArrivalVisual.Contains(cardModel));
+                PerformArea?.AddItem(cardModel, performContext, _cardsWithArrivalVisual.Contains(cardModel));
             }
 
             await BangDreamHook.OnCardTriggeredPerform(choiceContext, cardModel.CombatState, cardModel);
@@ -330,7 +331,7 @@ public partial class PerformManager : HookedSingletonModel, IInCombatManager, IP
         var performContext = CardContexts.GetOrCreate(cardModel);
         if (performContext.Manager != this || !IsValidSlot(performContext.SlotIndex)) return Task.CompletedTask;
 
-        PerformArea.AddItem(cardModel, performContext, waitForCardArrival: false);
+        PerformArea?.AddItem(cardModel, performContext, waitForCardArrival: false);
         return Task.CompletedTask;
     }
 
@@ -517,28 +518,28 @@ public partial class PerformManager : HookedSingletonModel, IInCombatManager, IP
     /// <summary>飞牌到达由原版逐帧动画回调驱动，不依赖当前演奏 Action 完成。</summary>
     private async Task<bool> WaitForCardPresentation(CardModel cardModel)
     {
-        if (!PerformArea.IsInsideTree()) return true;
+        if (PerformArea is not { } area || !area.IsInsideTree()) return true;
 
         while (_cardsPendingArrival.Contains(cardModel))
         {
             if (!CombatManager.Instance.IsInProgress || cardModel.Pile != PerformPile ||
-                !PerformArea.IsInsideTree()) return false;
-            await PerformArea.AwaitProcessFrame();
+                !area.IsInsideTree()) return false;
+            await area.AwaitProcessFrame();
         }
 
         if (!CombatManager.Instance.IsInProgress || cardModel.Pile != PerformPile ||
-            !PerformArea.IsInsideTree()) return false;
+            !area.IsInsideTree()) return false;
 
         var context = CardContexts.GetOrCreate(cardModel);
-        PerformArea.AddItem(cardModel, context, waitForCardArrival: false);
+        area.AddItem(cardModel, context, waitForCardArrival: false);
         // Container 的布局排序发生在帧末，等一帧后再核对入场与槽位移动动画。
-        await PerformArea.AwaitProcessFrame();
-        while (CombatManager.Instance.IsInProgress && cardModel.Pile == PerformPile && PerformArea.IsInsideTree())
+        await area.AwaitProcessFrame();
+        while (CombatManager.Instance.IsInProgress && cardModel.Pile == PerformPile && area.IsInsideTree())
         {
             var slot = context.Slot;
             if (slot == null || slot.Model != cardModel) return false;
-            if (!slot.IsArrivalVisualPlaying && !PerformArea.IsSlotLayoutPlaying) return true;
-            await PerformArea.AwaitProcessFrame();
+            if (!slot.IsArrivalVisualPlaying && !area.IsSlotLayoutPlaying) return true;
+            await area.AwaitProcessFrame();
         }
 
         return false;
@@ -547,7 +548,7 @@ public partial class PerformManager : HookedSingletonModel, IInCombatManager, IP
     private void PlayPerformFlashVfx(CardModel cardModel)
     {
         CardContexts.GetOrCreate(cardModel).Slot?.SuppressPortraitSweep();
-        PerformArea.PlayFlashVfx(cardModel);
+        PerformArea?.PlayFlashVfx(cardModel);
     }
 
     /// <summary>
@@ -577,7 +578,7 @@ public partial class PerformManager : HookedSingletonModel, IInCombatManager, IP
             context.SlotIndex = index + 1;
         }
 
-        PerformArea.RefreshItemLayout();
+        PerformArea?.RefreshItemLayout();
 
         foreach (var card in orderedCards)
         {
@@ -629,7 +630,7 @@ public partial class PerformManager : HookedSingletonModel, IInCombatManager, IP
         incomingContext.SlotIndex = plan.SlotIndex;
         if (plan.SlotChanges.Count > 0)
         {
-            PerformArea.RefreshItemLayout();
+            PerformArea?.RefreshItemLayout();
             foreach (var change in plan.SlotChanges)
             {
                 change.Context.Slot?.PlayPortraitReveal();

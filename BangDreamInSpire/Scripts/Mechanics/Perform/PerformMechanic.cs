@@ -94,8 +94,8 @@ public sealed class PerformMechanic : IBangDreamMechanic
     {
         if (cardModel == null) return null;
 
-        var performArea = cardModel.Owner.AttachedData().PerformManager.PerformArea;
-        if (performArea.IsInsideTree() && performArea.TryGetCardSlotCenter(cardModel, out var slotCenter))
+        if (cardModel.Owner.AttachedData().PerformManager.TryGetPerformArea(out var performArea) &&
+            performArea.IsInsideTree() && performArea.TryGetCardSlotCenter(cardModel, out var slotCenter))
         {
             return slotCenter;
         }
