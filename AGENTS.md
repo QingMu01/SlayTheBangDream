@@ -57,13 +57,15 @@ C# 代码位于各项目的 `Scripts/` 目录下，Godot 资源（图片、场�
 - **本体定位可覆盖**：`Sts2Dir` / `Sts2DataDir` / `GodotExe` 的解析优先级为
   命令行 `-p:` > `Directory.Build.local.props`（本机、不入库）> 环境变量 `STS2_DIR` / `GODOT_EXE` > `Directory.Build.props` 默认值。
   切换游戏版本时只改本机文件（模板见 `Directory.Build.local.props.example`），避免污染被跟踪配置、避免跨分支合并冲突。
-- **STS2-RitsuLib**：本地源码 `~/code/SlayTheSpire/STS2-RitsuLib`（当前 `main` = v0.6.8，比工程引用旧，
-  读源码时注意版本差）。文档见其 `README.zh.md` 与 `docs/pages/guide/*.md`。
+- **STS2-RitsuLib 的版本以 NuGet 编译引用为准**：唯一权威是 `Directory.Build.props` 里的
+  `PackageReference Include="STS2.RitsuLib" Version="..."`（当前 `beta` = 0.6.11、`main` = 0.6.10）。
+  本地源码 `~/code/SlayTheSpire/STS2-RitsuLib`（`main` = v0.6.8）与本机运行时实际加载的版本
+  （游戏日志 `[RitsuLib.Loader] Host=`，当前 0.6.13）**都只作参考**，不得据此下版本结论。
+  文档见其 `README.zh.md` 与 `docs/pages/guide/*.md`。
   XML 文档在 NuGet 包内且**按程序集分片**：`~/.nuget/packages/sts2.ritsulib/<版本>/lib/net9.0/` 下
   `STS2-RitsuLib.Runtime.xml`（主 API，约 9.5k member）、`.Ui.xml`、`.Settings.xml`、`.Shared.xml`；
   同目录的 `STS2-RitsuLib.xml` 是**空壳**（0 member），查文档别读它。
   上游同时支持本体双版本，因此**工程引用同一版本、不按分支切换**；双版本差异只在游戏本体侧（见「分支与游戏版本」）。
-  本机运行时实际加载的版本看游戏日志 `[RitsuLib.Loader] Host=`（当前 0.6.13，比编译引用的 0.6.11 新）。
 - **游戏本体**：`sts2.dll` 的同名 XML 文档在本体安装目录
   （`cd BangDreamInSpire && dotnet msbuild BangDreamInSpire.csproj -getProperty:Sts2DataDir`）。
   查本体实现读解包源 `../sts2unpack/<版本>/src`（`main` 用 0.111.0、`beta` 用 0.113.0；可用 `$STS2_UNPACKED` 覆盖，或用
