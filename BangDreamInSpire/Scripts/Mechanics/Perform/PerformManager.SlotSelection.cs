@@ -1,39 +1,12 @@
-// Manual slot-selection handling for PerformManager, split out from PerformManager.cs.
+// PerformManager 的手动落位部分：选择态的进入、刷新、消费与诊断。
 using System.Diagnostics.CodeAnalysis;
-using System.Text.Json;
 using BangDreamInSpire.Scripts.Enums;
-using BangDreamInSpire.Scripts.Extensions;
-using BangDreamInSpire.Scripts.Interfaces;
-using BangDreamInSpire.Scripts.Interfaces.CardAugment;
-using BangDreamInSpire.Scripts.Interfaces.CharacterAugment;
-using BangDreamInSpire.Scripts.Interfaces.GameHook;
 using BangDreamInSpire.Scripts.Interfaces.Mechanics;
-using BangDreamInSpire.Scripts.Mechanics.Perform.Schemes;
-using BangDreamInSpire.Scripts.Utils;
 using BangDreamInSpire.Scripts.Utils.Infos;
 using Godot;
-using MegaCrit.Sts2.Core.Combat;
-using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Context;
-using MegaCrit.Sts2.Core.Entities.Cards;
-using MegaCrit.Sts2.Core.Entities.Multiplayer;
-using MegaCrit.Sts2.Core.Entities.Players;
-using MegaCrit.Sts2.Core.GameActions;
-using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using MegaCrit.Sts2.Core.Helpers;
-using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Models;
-using MegaCrit.Sts2.Core.Multiplayer.Game;
-using MegaCrit.Sts2.Core.Nodes.Cards;
-using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.CommonUi;
-using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
-using MegaCrit.Sts2.Core.Runs;
-using STS2RitsuLib.Interop.AutoRegistration;
-using STS2RitsuLib.Models;
-using STS2RitsuLib.Networking.ManagedActions;
-using STS2RitsuLib.Scaffolding.Godot.NodeAttachments;
-using STS2RitsuLib.Utils;
 
 namespace BangDreamInSpire.Scripts.Mechanics.Perform;
 
