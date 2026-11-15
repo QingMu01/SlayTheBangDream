@@ -45,7 +45,7 @@ public interface IPerformService
     /// <summary>减少演奏容量。</summary>
     void ReduceCapacity(int amount, PerformChord? chord = null);
 
-    /// <summary>读取卡牌当前的歌单槽位索引；没有上下文时按默认规划返回。</summary>
+    /// <summary>读取卡牌上下文记录的槽位索引；尚未进入歌单时返回 -1。</summary>
     int GetSlotIndex(CardModel cardModel);
 
     /// <summary>把来源卡牌的槽位继承给目标卡牌（用于原地变形/替换）。</summary>

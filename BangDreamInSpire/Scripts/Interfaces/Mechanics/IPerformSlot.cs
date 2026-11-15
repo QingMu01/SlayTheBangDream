@@ -7,6 +7,9 @@ namespace BangDreamInSpire.Scripts.Interfaces.Mechanics;
 /// </summary>
 public interface IPerformSlot
 {
+    /// <summary>卡图揭示的默认时长（秒）。接口与实现共用，避免双份常量漂移。</summary>
+    const float DefaultPortraitRevealDuration = 0.5f;
+
     /// <summary>槽位当前承载的卡牌；空槽为 <see langword="null" />。</summary>
     CardModel? Model { get; }
 
@@ -17,5 +20,5 @@ public interface IPerformSlot
     void SuppressPortraitSweep();
 
     /// <summary>播放卡图揭示动画。</summary>
-    void PlayPortraitReveal(float duration = 0.5f);
+    void PlayPortraitReveal(float duration = DefaultPortraitRevealDuration);
 }

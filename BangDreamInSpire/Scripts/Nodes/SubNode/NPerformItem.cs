@@ -40,7 +40,7 @@ public partial class NPerformItem : NClickableControl, IPerformSlot
     private const float CardEnterBounceDistance = 14f;
     private const float CardEnterPushDuration = 0.06f;
     private const float CardEnterReturnDuration = 0.14f;
-    private const float PortraitRevealDuration = 0.5f;
+    private const float PortraitRevealDuration = IPerformSlot.DefaultPortraitRevealDuration;
     private const float MinimumItemWidth = 160f;
     private const float ItemHeight = 50f;
     private const float BackgroundWidthExtension = 5f;
