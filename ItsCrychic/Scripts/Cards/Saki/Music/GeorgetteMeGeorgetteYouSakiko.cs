@@ -58,7 +58,7 @@ public class GeorgetteMeGeorgetteYouSakiko() : AbstractSakikoMusicCard(CustomRar
         _isRepeatingPerformance = true;
         try
         {
-            await Owner.AttachedData().PerformManager.PerformCard(this, true);
+            await Owner.AttachedData().Perform.PerformCard(this, true);
         }
         finally
         {

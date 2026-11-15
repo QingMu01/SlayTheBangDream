@@ -35,7 +35,7 @@ public class Rehearsal() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
 
         if (cardModel != null)
         {
-            await Owner.AttachedData().PerformManager.PerformCard(cardModel);
+            await Owner.AttachedData().Perform.PerformCard(cardModel);
         }
 
         await PowerCmd.Apply<DrawCardsNextTurnPower>(choiceContext, Owner.Creature,

@@ -1,4 +1,4 @@
-namespace BangDreamInSpire.Scripts.Mechanics.ExtraDeck;
+namespace BangDreamInSpire.Scripts.Utils.Infos;
 
 public class ExtraCardMerchantData
 {

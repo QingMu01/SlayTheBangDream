@@ -1,7 +1,6 @@
 using BangDreamInSpire.Scripts.Utils;
-using BangDreamInSpire.Scripts.Utils.Infos;
 
-namespace BangDreamInSpire.Scripts.Multiplayer.RunData;
+namespace BangDreamInSpire.Scripts.Utils.Infos;
 
 public class PlayerSkinData
 {

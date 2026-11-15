@@ -36,7 +36,7 @@ public class MiracleToDaily() : AbstractSakikoCard(CustomCost, CustomType, Custo
 
         await CreatureCmd.GainBlock(Owner.Creature, DynamicVars.Block, play);
 
-        var performManager = Owner.AttachedData().PerformManager;
+        var performManager = Owner.AttachedData().Perform;
         var performCards = BangDreamConst.PerformPile.GetPile(Owner).Cards.ToList();
 
         var candidates = CardFactory.FilterForCombat(BangDreamTools.GetCharacterExtraCards(Owner))
@@ -74,16 +74,12 @@ public class MiracleToDaily() : AbstractSakikoCard(CustomCost, CustomType, Custo
             var transformCard = CombatState.CreateCard(candidate, Owner);
 
             // 在替换牌进入歌单前继承原牌槽位。
-            var originalContext = performManager.CardContexts.GetOrCreate(originalCard);
-            var replacementContext = performManager.CardContexts.GetOrCreate(transformCard);
-
-            replacementContext.Manager = performManager;
-            replacementContext.SlotIndex = originalContext.SlotIndex;
+            performManager.InheritSlot(originalCard, transformCard);
 
             var result = await CardCmd.Transform(originalCard, transformCard);
             if (result is not { success: true })
             {
-                performManager.CardContexts.Remove(transformCard);
+                performManager.RemoveCardContext(transformCard);
             }
         }
     }

@@ -2,7 +2,7 @@
 using BangDreamInSpire.Scripts.Enums;
 using BangDreamInSpire.Scripts.Extensions;
 using BangDreamInSpire.Scripts.Interfaces.CharacterAugment;
-using BangDreamInSpire.Scripts.Mechanics.Perform.Schemes;
+using ItsCrychic.Scripts.Character.PerformSchemes;
 using ItsCrychic.Scripts.Character.CardPools;
 using ItsCrychic.Scripts.Character.PotionPools;
 using ItsCrychic.Scripts.Character.RelicPools;

@@ -89,7 +89,7 @@ public class KillKissSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTarg
     {
         if (cardModel == this && DynamicVars["IsInHand"] is BoolVar { BoolVal: true })
         {
-            await Owner.AttachedData().PerformManager.PerformCard(this);
+            await Owner.AttachedData().Perform.PerformCard(this);
         }
     }
 

@@ -1,7 +1,6 @@
 ﻿using BangDreamInSpire.Scripts.Extensions;
 using BangDreamInSpire.Scripts.Interfaces.CharacterAugment;
 using BangDreamInSpire.Scripts.Interfaces.GameHook;
-using BangDreamInSpire.Scripts.Mechanics.ExtraDeck;
 using BangDreamInSpire.Scripts.Relics;
 using BangDreamInSpire.Scripts.Utils;
 using ItsCrychic.Scripts.Character;
@@ -28,19 +27,19 @@ public class SakikoSpecialRules : HiddenRelic, IPerformTriggerListener, ISeconda
     {
         if (player == Owner && rewards.Count > 0 && player.Character is IPerformableCharacter extraDeck && room != null)
         {
-            MusicCardReward? cardReward = null;
+            Reward? cardReward = null;
             switch (room.RoomType)
             {
                 case RoomType.Boss:
-                    cardReward = new MusicCardReward(
+                    cardReward = player.CreateMusicCardReward(
                         BangDreamModelHelper.CardCreationOptionsForRoom(extraDeck.ExtraCardPool, RoomType.Boss),
-                        2, player);
+                        2);
                     ItsCrychic.Logger.Info($"Player {player} ({player.Character}) got a [boss] music card reward.");
                     break;
                 case RoomType.Elite:
-                    cardReward = new MusicCardReward(
+                    cardReward = player.CreateMusicCardReward(
                         BangDreamModelHelper.CardCreationOptionsForRoom(extraDeck.ExtraCardPool, RoomType.Elite),
-                        2, player);
+                        2);
                     ItsCrychic.Logger.Info($"Player {player} ({player.Character}) got an [elite] music card reward.");
                     break;
                 case RoomType.Monster:
@@ -48,9 +47,9 @@ public class SakikoSpecialRules : HiddenRelic, IPerformTriggerListener, ISeconda
                     var roll = player.RunState.Rng.CombatCardGeneration.NextInt(0, 99);
                     if (roll <= MusicRewardChance)
                     {
-                        cardReward = new MusicCardReward(
+                        cardReward = player.CreateMusicCardReward(
                             BangDreamModelHelper.CardCreationOptionsForRoom(extraDeck.ExtraCardPool, RoomType.Monster),
-                            2, player);
+                            2);
                         MusicRewardChance = 0;
                         ItsCrychic.Logger.Info(
                             $"Player {player} ({player.Character}) got a [normal] music card reward.");
@@ -86,7 +85,7 @@ public class SakikoSpecialRules : HiddenRelic, IPerformTriggerListener, ISeconda
     {
         if (player.Character is TogawaSakiko)
         {
-            options.Add(new TechnicalPracticeOption(player));
+            options.Add(player.CreateTechnicalPracticeOption());
             return true;
         }
 
@@ -97,7 +96,7 @@ public class SakikoSpecialRules : HiddenRelic, IPerformTriggerListener, ISeconda
     {
         return cardModel.Owner != Owner
             ? Task.CompletedTask
-            : Owner.AttachedData().PerformManager.TryInstant(cardModel, choiceContext);
+            : Owner.AttachedData().Perform.TryInstant(cardModel, choiceContext);
     }
 
     /// <summary>
@@ -110,7 +109,7 @@ public class SakikoSpecialRules : HiddenRelic, IPerformTriggerListener, ISeconda
             !context.Definition.Id.Equals(BangDreamConst.LingeredResource)
            ) return Task.CompletedTask;
 
-        var manager = Owner.AttachedData().PerformManager;
+        var manager = Owner.AttachedData().Perform;
         if (context.NewAmount > 0 && context.NewAmount <= manager.Capacity)
         {
             manager.RequestSlotPerform(context.NewAmount, context.Reason == SecondaryResourceChangeReason.Spend);

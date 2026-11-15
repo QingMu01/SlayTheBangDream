@@ -1,5 +1,4 @@
 using BangDreamInSpire.Scripts.Extensions;
-using BangDreamInSpire.Scripts.Mechanics.ExtraDeck;
 using BangDreamInSpire.Scripts.Powers;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -22,7 +21,7 @@ public class ReorganizationPower : BandPowerModel
         if (play.Card.Owner != Owner.Player || play.Card.Type != CardType.Attack) return;
 
         Flash();
-        await ExtraPileCmd.Draw(choiceContext, Amount, Owner.Player);
+        await Owner.Player.DrawExtraCards(choiceContext, Amount);
     }
 
     public override async Task AfterDamageReceived(PlayerChoiceContext choiceContext, Creature target,
@@ -35,7 +34,7 @@ public class ReorganizationPower : BandPowerModel
 
         for (var i = 0; i < Amount; i++)
         {
-            var cards = player.AttachedData().PerformManager.PerformPile.Cards;
+            var cards = player.AttachedData().Perform.PerformPile.Cards;
             if (cards.Count == 0) break;
 
             Flash();

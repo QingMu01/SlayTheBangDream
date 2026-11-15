@@ -19,7 +19,7 @@ using MegaCrit.Sts2.Core.Runs;
 
 namespace BangDreamInSpire.Scripts.Mechanics.ExtraDeck;
 
-public static class ExtraPileCmd
+internal static class ExtraPileCmd
 {
     public static async Task<IEnumerable<CardModel>> FromExtraDeckForRemoval(Player player,
         CardSelectorPrefs prefs)

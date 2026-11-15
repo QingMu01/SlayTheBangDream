@@ -26,7 +26,7 @@ public class Kanon() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, 
     {
         ArgumentNullException.ThrowIfNull(CombatState);
 
-        var manager = Owner.AttachedData().PerformManager;
+        var manager = Owner.AttachedData().Perform;
 
         var emptySlots = Math.Max(0, manager.Capacity - manager.PerformPile.Cards.Count);
         if (emptySlots == 0) return;

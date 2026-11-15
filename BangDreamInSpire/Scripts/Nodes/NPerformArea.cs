@@ -1,5 +1,6 @@
 using BangDreamInSpire.Scripts.Extensions;
 using BangDreamInSpire.Scripts.Interfaces.CharacterAugment;
+using BangDreamInSpire.Scripts.Interfaces.Mechanics;
 using BangDreamInSpire.Scripts.Mechanics.Perform;
 using BangDreamInSpire.Scripts.Nodes.SubNode;
 using BangDreamInSpire.Scripts.Utils;
@@ -10,6 +11,8 @@ using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
+using BangDreamInSpire.Scripts.Nodes.VFX;
 using STS2RitsuLib.Combat.SecondaryResources;
 
 namespace BangDreamInSpire.Scripts.Nodes;
@@ -18,7 +21,7 @@ namespace BangDreamInSpire.Scripts.Nodes;
 /// 歌单演奏区域节点。槽位数量与布局拓扑由角色的演奏方案提供，本节点只负责
 /// 像素换算、可见性与缓动。
 /// </summary>
-public partial class NPerformArea : Control
+public partial class NPerformArea : Control, IPerformArea
 {
     private const float ItemHeight = 64f;
     private const float ItemSpacing = 70f;
@@ -586,6 +589,35 @@ public partial class NPerformArea : Control
     /// <summary>槽位整体的移动与新增槽位动画尚未完成。</summary>
     public bool IsSlotLayoutPlaying => (_layoutTween?.Tween.IsRunning() ?? false) ||
                                        (_slotEntranceTween?.Tween.IsRunning() ?? false);
+
+    /// <inheritdoc />
+    public Transform2D GlobalTransform => GetGlobalTransform();
+
+    /// <inheritdoc />
+    public Task AwaitProcessFrame() => NodeUtil.AwaitProcessFrame(this);
+
+    /// <inheritdoc />
+    public void AddVfx(Node vfx) => this.AddChildSafely(vfx);
+
+    private const string PerformFlashVfxPath = "res://BangDreamInSpire/scenes/vfx/perform_flash_vfx.tscn";
+
+    /// <inheritdoc />
+    public void PlayFlashVfx(CardModel card)
+    {
+        if (!IsInsideTree()) return;
+        if (!TryGetCardSlotTransform(card, out var slotTransform, out var slotSize)) return;
+
+        var slot = _items.FirstOrDefault(item => item.Model == card);
+        if (slot != null)
+        {
+            slot.SuppressPortraitSweep();
+        }
+
+        var vfx = BangDreamPreloadManager.GetScene(PerformFlashVfxPath).Instantiate<PerformFlashVfx>();
+        vfx.FlashColor = slot != null ? GetSlotColor(slot, card) : PerformSlotColors.Default;
+        vfx.ConfigureSlot(slotSize, GlobalTransform.AffineInverse() * slotTransform);
+        AddVfx(vfx);
+    }
 
     /// <summary>获取以槽位中心为原点的全局变换，保留父级缩放及左右镜像。</summary>
     public bool TryGetCardSlotTransform(CardModel cardModel, out Transform2D transform, out Vector2 size)

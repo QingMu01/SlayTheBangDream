@@ -1,5 +1,4 @@
 using BangDreamInSpire.Scripts.Extensions;
-using BangDreamInSpire.Scripts.Mechanics.MusicNote;
 using BangDreamInSpire.Scripts.Utils;
 using BangDreamInSpire.Scripts.Utils.Infos;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -23,8 +22,8 @@ public class DivineSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTarget
 
     public override async Task OnPerform(PlayerChoiceContext choiceContext, CardPerform perform)
     {
-        var slot = Owner.AttachedData().PerformManager.CardContexts.GetOrCreate(this).SlotIndex;
-        await MusicNoteCmd.FromCard(this, DynamicVars.Repeat.IntValue + Math.Max(0, slot) *
+        var slot = Owner.AttachedData().Perform.GetSlotIndex(this);
+        await this.ShootMusicNotes(DynamicVars.Repeat.IntValue + Math.Max(0, slot) *
             DynamicVars["SlotMultiplier"].IntValue);
     }
 

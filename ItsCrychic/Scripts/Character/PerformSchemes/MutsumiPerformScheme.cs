@@ -1,10 +1,11 @@
 using BangDreamInSpire.Scripts.Enums;
 using BangDreamInSpire.Scripts.Interfaces.CharacterAugment;
+using BangDreamInSpire.Scripts.Utils.Infos;
 using Godot;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;
 
-namespace BangDreamInSpire.Scripts.Mechanics.Perform.Schemes;
+namespace ItsCrychic.Scripts.Character.PerformSchemes;
 
 /// <summary>
 /// 睦的演奏方案：C/D/F/G 四个和弦分组，每组容量上限 3、初始 1。

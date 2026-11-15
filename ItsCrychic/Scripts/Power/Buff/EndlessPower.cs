@@ -1,4 +1,4 @@
-using BangDreamInSpire.Scripts.Mechanics.MusicNote;
+using BangDreamInSpire.Scripts.Extensions;
 using BangDreamInSpire.Scripts.Powers;
 using MegaCrit.Sts2.Core.Commands.Builders;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -24,7 +24,7 @@ public class EndlessPower : BandPowerModel
                 .Any(r => r.TotalDamage > 0);
             if (isAttackOwner)
             {
-                await MusicNoteCmd.CustomShot(Applier, Amount);
+                await Applier.ShootMusicNotes(Amount);
             }
         }
     }

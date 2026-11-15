@@ -1,7 +1,7 @@
-using BangDreamInSpire.Scripts.Nodes.VFX;
+using BangDreamInSpire.Scripts.Utils;
 using Godot;
 
-namespace BangDreamInSpire.Scripts.Utils.Builder;
+namespace BangDreamInSpire.Scripts.Nodes.VFX;
 
 public class VfxCreator<T>(string scene) where T : NBangDreamFlyingVfx
 {

@@ -1,6 +1,7 @@
 using BangDreamInSpire.Scripts.Mechanics;
 using BangDreamInSpire.Scripts.Mechanics.Lingered;
 using BangDreamInSpire.Scripts.Mechanics.MusicNote;
+using BangDreamInSpire.Scripts.Interfaces.Mechanics;
 using BangDreamInSpire.Scripts.Mechanics.Perform;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;
@@ -27,14 +28,20 @@ public class AttachePlayerData
         }
     }
 
-    /// <summary>演奏机制状态；未启用演奏机制的角色访问会抛出异常。</summary>
-    public PerformManager PerformManager => Get<PerformManager>();
+    /// <summary>演奏机制服务；未启用演奏机制的角色访问会抛出异常。</summary>
+    public IPerformService Perform => Get<PerformManager>();
 
-    /// <summary>余音环绕预览状态；未启用余音机制的角色访问会抛出异常。</summary>
-    public LingeredOrbitManager LingeredOrbitManager => Get<LingeredOrbitManager>();
+    /// <summary>演奏机制状态（核心内部使用）；未启用演奏机制的角色访问会抛出异常。</summary>
+    internal PerformManager PerformManager => Get<PerformManager>();
 
-    /// <summary>音符伤害追踪状态；未启用音符机制的角色访问会抛出异常。</summary>
-    public MusicNoteDamageTracker MusicNoteDamageTracker => Get<MusicNoteDamageTracker>();
+    /// <summary>余音环绕预览状态（核心内部使用）；未启用余音机制的角色访问会抛出异常。</summary>
+    internal LingeredOrbitManager LingeredOrbitManager => Get<LingeredOrbitManager>();
+
+    /// <summary>音符伤害统计服务；未启用音符机制的角色访问会抛出异常。</summary>
+    public IMusicNoteTracker MusicNoteTracker => Get<MusicNoteDamageTracker>();
+
+    /// <summary>音符伤害追踪状态（核心内部使用）；未启用音符机制的角色访问会抛出异常。</summary>
+    internal MusicNoteDamageTracker MusicNoteDamageTracker => Get<MusicNoteDamageTracker>();
 
     private T Get<T>() where T : AbstractModel
     {

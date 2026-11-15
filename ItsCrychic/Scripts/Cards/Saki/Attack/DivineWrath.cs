@@ -35,7 +35,7 @@ public class DivineWrath() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
 
-        var manager = Owner.AttachedData().PerformManager;
+        var manager = Owner.AttachedData().Perform;
         var shuffledCards = manager.PerformPile.Cards
             .ToList()
             .StableShuffle(Owner.RunState.Rng.CombatCardSelection)

@@ -17,7 +17,7 @@ public class BeginnerMind() : AbstractSakikoCard(CustomCost, CustomType, CustomR
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        var manager = Owner.AttachedData().PerformManager;
+        var manager = Owner.AttachedData().Perform;
         manager.AddCapacity(Math.Max(0, manager.MaxCapacity - manager.Capacity));
 
         await PowerCmd.Apply<BeginnerMindPower>(choiceContext, Owner.Creature, 1, Owner.Creature, this);
