@@ -33,7 +33,6 @@ public sealed class PerformAreaMechanic : IBangDreamMechanic
             {
                 area.Visible = BangDreamCapabilities.HasPerform(creature.Entity.Player);
                 area.GlobalPosition = ResolvePerformAreaPosition(creature);
-                creature.Entity.Player?.AttachedData().PerformManager.AttachPerformArea(area);
             },
             new NodeAttachmentOptions
             {
@@ -48,14 +47,20 @@ public sealed class PerformAreaMechanic : IBangDreamMechanic
     {
     }
 
+    /// <summary>
+    /// 战斗开始时把已就绪的演奏区节点回填给 <see cref="PerformManager" />。
+    /// 时序与原实现一致：节点在战斗开始前已挂到生物节点上（由 <c>RegisterReadyChild</c> 创建）。
+    /// </summary>
     public void SubmitCombatState(Player player)
     {
         var manager = player.AttachedData().PerformManager;
         if (manager.PerformArea != null) return;
 
+        var creatureNode = player.Creature.GetCreatureNode();
+        if (creatureNode == null) return;
+
         if (ModNodeAttachmentRegistry.For(BangDreamConst.ModId)
-            .TryGetAttached<NCreature, NPerformArea>(player.Creature.GetCreatureNode()!, "perform_area",
-                out var areaNode))
+            .TryGetAttached<NCreature, NPerformArea>(creatureNode, "perform_area", out var areaNode))
         {
             manager.AttachPerformArea(areaNode);
         }
