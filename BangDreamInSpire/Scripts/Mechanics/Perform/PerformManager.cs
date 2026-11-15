@@ -868,6 +868,8 @@ public partial class PerformManager : HookedSingletonModel, IInCombatManager, IP
 
     public void UnsubscribeCombatState()
     {
+        // 每次战斗都会重建演奏区节点，这里清掉引用，下一场由 PerformAreaMechanic 重新回填。
+        PerformArea = null;
         PerformPile.CardAdded -= OnCardAdded;
         PerformPile.CardAddFinished -= OnCardAddFinished;
         PerformPile.CardRemoved -= OnCardRemoved;

@@ -54,7 +54,7 @@ public sealed class PerformAreaMechanic : IBangDreamMechanic
     public void SubmitCombatState(Player player)
     {
         var manager = player.AttachedData().PerformManager;
-        if (manager.PerformArea != null) return;
+        if (manager.TryGetPerformArea(out _)) return;
 
         var creatureNode = player.Creature.GetCreatureNode();
         if (creatureNode == null) return;
