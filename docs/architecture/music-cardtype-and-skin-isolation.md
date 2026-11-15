@@ -52,7 +52,7 @@
 | `ModCardTemplate.CustomFramePath => AssetProfile.FramePath`，空路径会回退原版 getter | `STS2-RitsuLib/src/Scaffolding/Content/ModCardTemplate.cs` |
 | 动态枚举 API：`RitsuLibFramework.RegisterDynamicEnumValue<TEnum>(string modId, string localStem)` | `STS2-RitsuLib/src/RitsuLibFramework.cs:818`、`src/Utils/DynamicEnumValueMinter.cs` |
 | `GiveToAnotherPlayer` 只改 `_owner`，不触发节点重绘 | `src/Core/Models/CardModel.cs:2206` |
-| 皮肤数据为每玩家 run 数据，联机全员可读 | `Multiplayer/RunData/PlayerSkinData.cs`、`BangDreamInSpireCore.cs:96-108` |
+| 皮肤数据为每玩家 run 数据，联机全员可读 | `Utils/Infos/PlayerSkinData.cs`、`BangDreamInSpireCore.cs:96-108` |
 
 ## 3. 新增 CardType「Music」要处理的内容
 
