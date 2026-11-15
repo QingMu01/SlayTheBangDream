@@ -11,7 +11,7 @@ description: 新增、修改或重构 Slay the Spire 2 C# 卡牌实现的标准�
 
 1. 完整读取仓库 `AGENTS.md` 与 `docs/card-authoring.md`；涉及机制或特效时读 `docs/mechanic-authoring.md`、`docs/vfx-authoring.md`。
 2. 检查 `git status --short`，识别并保留用户已有的无关修改。
-3. **在编辑前给出修改方案**（`AGENTS.md` 要求）。
+3. **在编辑前给出修改方案**。
 4. 遇到不确定的游戏 API、Hook、命令或动态变量时，先查依赖 XML 文档与相邻实现。
 5. 修改 Card、Power 或 Relic 时同步对应的简体中文本地化。
 
@@ -27,14 +27,8 @@ description: 新增、修改或重构 Slay the Spire 2 C# 卡牌实现的标准�
 
 ## 分支 A：新增卡牌
 
-按 `docs/card-authoring.md` 第 5.1 节的清单执行。执行要点：
-
-1. 复制同角色、同类别、同稀有度的现有卡作为骨架，保持代码风格一致。
-2. 类名 → 目录、命名空间、卡图文件名、本地化键四处必须同名对应。
-3. `.cs.uid` 与 `.png.import` 由 Godot 导入生成，不要手写或复制伪造。
-4. 入口选择：普通卡写 `OnPlay`；音乐牌写 `OnPerform`；休止牌实现 `ISubsideCard` 并写 `OnSubside`。
-5. 新增 Power 时同时创建 Power 类、`.uid` 与 `powers.json` 条目。
-6. 描述中引用的动态变量必须在 `CardVars` 中真实存在。
+按 `docs/card-authoring.md` §5.1 的清单逐项执行。最易错的是「类名 → 目录、命名空间、卡图文件名、本地化键」四处同名对应；
+`.cs.uid` 与 `.png.import` 由 Godot 导入生成，不要手写或复制伪造。
 
 证据：单卡静态检查通过、描述与实现逐项对照 `references/effect-audit-checklist.md`、构建通过。
 
@@ -44,7 +38,7 @@ description: 新增、修改或重构 Slay the Spire 2 C# 卡牌实现的标准�
 2. 用 `rg` 搜索类名、本地化键与模型 ID，找出全部引用点。
 3. 最小补丁；不顺手重构无关代码。
 4. 描述改动必须与实现同时改；升级差异用 `diff()` 或 `{IfUpgraded:show:...|...}` 表达。
-5. 本地化只写基础/升级描述，`固有`、`消耗`、`虚无`、`保留` 由游戏自动追加。
+5. 本地化只写基础/升级描述；`固有`、`消耗`、`虚无`、`保留` 由游戏自动追加。
 
 证据：单卡静态检查通过、描述与实现一致性逐项确认、构建通过。
 
@@ -66,7 +60,7 @@ description: 新增、修改或重构 Slay the Spire 2 C# 卡牌实现的标准�
 
 ### 双向盘点
 
-同时证明以下两个方向：
+同时证明两个方向：
 
 1. 规格表中的每一张标准卡都有唯一实现。
 2. 代码中所有普通、罕见、稀有角色卡都在规格表中。
@@ -86,28 +80,22 @@ description: 新增、修改或重构 Slay the Spire 2 C# 卡牌实现的标准�
 
 ### 修改与清理
 
-- 保持目录与命名空间一致，沿用项目现有代码风格。
-- 新增实现时同时创建 `.cs.uid`；移动资源时优先保留原 UID。
-- 名称变化时同步标题、描述和所有代码引用，不依赖旧标题残留。
-- 删除表外卡牌的 C#、UID、本地化条目及专属无用 Power。
-- 不直接删除仍可能复用的卡图；在 `images/card_portraits/DEPRECATED.md` 中记录废弃文件和原因。若资源不存在，明确记录「无对应资源」，不要虚构文件。
-- 删除前用 `rg` 搜索类名、模型 ID、本地化键和资源名，避免留下引用或误删共享依赖。
-- 只修改任务范围内文件；对与用户已有修改重叠的文件采用最小补丁。
+按 `docs/card-authoring.md` §5.2 执行；删除表外卡牌前，判定走 `docs/cleanup-authoring.md` 的引用图，`rg` 只用于删除后的残留搜索。
 
 ## 验证（所有分支）
 
 1. 运行静态审计脚本，要求问题数为 0：
 
-```powershell
+```bash
 python .agents/skills/card-development/scripts/audit_cards.py --project-root .
 ```
 
 分支 C 追加 `--spec <规格表.md>`；分支 A/B 用 `--class <ClassName>` 收敛到本次改动。脚本只证明集合与静态元数据，**不证明效果语义**。
 
-2. 解析所有修改过的 JSON，并检查重复键。
+2. 运行 `python3 tools/localization.py check`，并确认所有修改过的 JSON 可解析、无重复键。
 3. 用 `rg` 搜索已删除类名、模型 ID 和本地化键，要求代码及运行时本地化无残留。
 4. 运行 `git diff --check`。
-5. 完整构建受影响项目。若项目的部署目标写入游戏目录，使用工作区内临时 `Sts2Dir` 重定向输出；验证后移除临时目录。
+5. 完整构建受影响项目。若项目的部署目标写入游戏目录，使用工作区内临时 `Sts2Dir` 重定向输出，并同时固定 `Sts2DataDir`；验证后移除临时目录。
 6. 将每个规格要求映射到实现证据。编译成功不能替代语义核对。
 
 若还存在未解释的集合差异、语义疑点、构建错误或残留引用，不得宣布完成。

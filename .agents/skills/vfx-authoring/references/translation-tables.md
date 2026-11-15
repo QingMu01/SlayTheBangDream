@@ -86,11 +86,11 @@
 |---|---|---|
 | 透明占比 > 0（有 alpha） | `alpha`（`CanvasItemMaterial.BLEND_MODE_MIX`） | 无 |
 | 有 alpha 且要发光叠加 | `alpha_add`（`BLEND_MODE_ADD`） | 无 |
-| 透明占比 = 0，黑底 JPG | `crush_add` + 压黑 shader | `black_point` 见下 |
-| 含 alpha 的白色/灰阶贴图 | 通常 alpha 或 alpha_add | 保留纹理 alpha；不要用忽略纹理 alpha 的 crush shader |
+| 透明占比 = 0，黑底 JPG | 预览用 `crush_add` 模拟压黑；运行时用亮度重建 shader（见 [csharp-recipes.md](csharp-recipes.md) §3） | `black_point` 见下 |
+| 含 alpha 的白色/灰阶贴图 | 通常 alpha 或 alpha_add | 保留纹理 alpha；不要用忽略纹理 alpha 的压黑路径 |
 | 无 alpha 的白底素材 | 先核对背景与用途 | ADD 会叠出亮方块，crush 也不能去白底；换素材或明确处理 |
 
-**以下 black_point 是对应素材的实测起点，不能照搬到所有黑底素材**（JPG 的"黑"不是纯黑，实测 9–20/255）：
+**以下 black_point 是对应素材的实测起点，只用于预览规格，不能照搬到所有黑底素材**（JPG 的"黑"不是纯黑，实测 9–20/255）：
 
 | 素材类型 | `black_point` | `softness` |
 |---|---|---|

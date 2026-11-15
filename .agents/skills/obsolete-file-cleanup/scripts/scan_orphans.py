@@ -6,13 +6,12 @@
 `docs/cleanup-authoring.md`（唯一事实来源）与 `.agents/skills/obsolete-file-cleanup/SKILL.md`。
 
 判定模型出处：
-  * 四态模型 ......... docs/cleanup-authoring.md:63-74（被引用 / 约定引用 / 弱命中 / 确认无引用）
-  * 硬性条款 ......... docs/cleanup-authoring.md:84-98（搜索域、自引用剥离、uid 优先、盲区声明 …）
-  * 引用形态与实现出处 .agents/skills/obsolete-file-cleanup/references/reference-graph.md:5-28
-  * 输出契约 ......... .agents/skills/card-development/scripts/audit_cards.py:526-546
+  * 四态模型 ......... docs/cleanup-authoring.md §5（被引用 / 约定引用 / 弱命中 / 确认无引用）
+  * 硬性条款 ......... docs/cleanup-authoring.md §6（搜索域、自引用剥离、uid 优先、盲区声明 …）
+  * 引用形态与实现出处 .agents/skills/obsolete-file-cleanup/references/reference-graph.md §1
+  * 输出契约 ......... .agents/skills/card-development/scripts/audit_cards.py 的输出契约
                        （`key value` 统计行 + `PROBLEM `/`WARN ` 前缀 + 有问题 exit 1）
-  * 参考实现 ......... .scratch/cleanup/audit/orphan_scan3.py（历史存档，只读）
-                       本脚本修掉它三个已证实缺陷：
+  * 历史缺陷 ......... 本脚本修掉旧扫描器三个已证实缺陷：
                          (1) 死簇不迭代到不动点 —— 本脚本用 while 循环迭代到不动点（见 dead_cluster_pass）
                          (2) 卡图 startswith 前缀近似过宽 —— 本脚本改为「类名精确相等」+「Sakiko 精确后缀」
                              两条强规则，并把任何近似匹配单独标成「弱约定」（见 convention_hit）
@@ -60,13 +59,13 @@ VERSION = "1.3.0"
 SCRIPT_NAME = "scan_orphans.py"
 
 # ---------------------------------------------------------------------------
-# 搜索域（docs/cleanup-authoring.md:86 硬性条款 1）
+# 搜索域（docs/cleanup-authoring.md §6 第 1 条 硬性条款 1）
 # ---------------------------------------------------------------------------
 EXCLUDED_DIRS = {".git", ".godot", "bin", "obj", ".scratch"}
 # 「清理自述文档」自引用剥离（v1.1.0 新增）。
 #
 # **描述候选的文档不能构成「候选被使用」的证据** —— 与 `.import` 里 `source_file=`
-# 自引用是同一类错误（docs/cleanup-authoring.md:87）：不剥离时，清理工具自己的
+# 自引用是同一类错误（docs/cleanup-authoring.md §6 第 2 条）：不剥离时，清理工具自己的
 # keep-list / 规范正文只要列举了候选文件名，就会把候选从「确认无引用」洗成
 # `weak(doc-only)`，并连带让整条死簇消失。
 # 已知事故：`references/keep-list.md` 正文列举 `anon01.tscn`/`anon02.tscn`，导致
@@ -75,7 +74,7 @@ EXCLUDED_DIRS = {".git", ".godot", "bin", "obj", ".scratch"}
 # 只排除**本 skill 自身**（它描述的是候选与判定，不是使用关系）。
 # 其余 `docs/**` 与 `.agents/skills/{card-development,vfx-authoring}/**` **不得**排除：
 # 它们对 `MusicFlashVfx` 一类文件的提及是合法的「意图保留」证据
-# （references/reference-graph.md:49、references/keep-list.md 第 2 节）。
+# （references/reference-graph.md §4、references/keep-list.md 第 2 节）。
 SELF_DOC_PREFIXES = (
     ".agents/skills/obsolete-file-cleanup/",
     "docs/cleanup-authoring.md",
@@ -91,7 +90,7 @@ GENERATED_ARTIFACT_NAMES = frozenset({
 })
 # 本体同步目录：BangDreamInSpire/{addons,animations,fonts,images,materials,models,
 # scenes,shaders,themes} 由 tools/sync-sts2-assets.sh 生成；外加解包游戏源码 src。
-# 出处：docs/cleanup-authoring.md:20、tools/sync-sts2-assets.sh:62、AGENTS.md 项目结构节。
+# 出处：docs/cleanup-authoring.md §2 表 1、tools/sync-sts2-assets.sh:62、AGENTS.md 项目结构节。
 BODY_SYNC_DIRS = {
     "addons", "animations", "fonts", "images", "materials",
     "models", "scenes", "shaders", "themes", "src",
@@ -106,20 +105,20 @@ TEXT_EXTS = {
     ".yml", ".yaml", ".sh", ".godot", ".csproj", ".sln", ".editorconfig",
     ".gitignore", ".gitattributes",
 }
-# 仅文档/IDE 命中必须单列（references/reference-graph.md:49，误报来源 #7）
+# 仅文档/IDE 命中必须单列（references/reference-graph.md §4，误报来源 #7）
 DOC_SOURCE_EXTS = {".md", ".txt", ".html", ".xml", ".yml", ".yaml"}
 DOC_SOURCE_DIR_PARTS = {".idea"}
 
 # 资源型候选：除脚本/副产物/工程元数据以外的 mod 自有文件
 NON_CANDIDATE_EXTS = {".import", ".uid", ".cs", ".csproj", ".sln", ".godot"}
 
-# 图片资源（需要 .import 副产物），docs/cleanup-authoring.md:14
+# 图片资源（需要 .import 副产物），docs/cleanup-authoring.md §1 铁律三
 IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".webp", ".svg", ".bmp", ".tga", ".exr", ".hdr"}
 # uid 副产物的拥有者
 UID_OWNER_EXTS = {".cs", ".gd", ".gdshader", ".shader"}
 
-# 反射/特性注册保护名单：docs/cleanup-authoring.md:47-61（§4）、
-# references/reference-graph.md:39-53（§4 误报来源 1/2/3/5/10）
+# 反射/特性注册保护名单：docs/cleanup-authoring.md §4（§4）、
+# references/reference-graph.md §4（§4 误报来源 1/2/3/5/10）
 REFLECTION_TOKENS = {
     # 游戏无条件反射注入（ModelDb.ReflectionHelper.GetSubtypesInMods<AbstractModel>）
     "AbstractModel",
@@ -190,7 +189,7 @@ def now_stamps() -> tuple[str, str]:
 
 # ---------------------------------------------------------------------------
 # uid 索引（三来源：*.uid 内容 / *.import 的 uid= / *.tscn|*.tres|*.gdshader 头部）
-# 出处：docs/cleanup-authoring.md:88（硬性条款 3）、references/reference-graph.md:11
+# 出处：docs/cleanup-authoring.md §6 第 3 条（硬性条款 3）、references/reference-graph.md §1
 # ---------------------------------------------------------------------------
 UID_RE = re.compile(r"uid://[A-Za-z0-9_]+")
 
@@ -201,7 +200,7 @@ def header_uid(text: str) -> str | None:
     只认首行：`[gd_scene ... uid="uid://xxx"]` / `[gd_resource ... uid="uid://xxx"]`。
     放宽到整个文件会把后面的 `ext_resource uid="..."` 当成自己的 uid，
     使「A 引用了 B 的 uid」被误读成「B 自引用」，进而让死簇判定全线失效
-    （参考 orphan_scan3.py:47-49 的 400 字符窗口就有这个缺陷）。
+    （参考旧扫描器的 400 字符窗口就有这个缺陷）。
     """
     first = text.split("\n", 1)[0]
     m = re.search(r'uid="(uid://[A-Za-z0-9_]+)"', first)
@@ -234,7 +233,7 @@ def index_uids(project_root: str, corpus: list[str], body_files: list[str]) -> d
             scan(p, read_text(project_root, p))
 
     # 本体同步目录只作为「uid→磁盘路径」字典的来源，**不作为引用证据**：
-    # 场景里大量 ext_resource 用本体 uid（references/reference-graph.md:13）。
+    # 场景里大量 ext_resource 用本体 uid（references/reference-graph.md §1）。
     for p in body_files:
         if os.path.splitext(p)[1] in (".uid", ".import", ".tscn", ".tres", ".gdshader"):
             scan(p, read_text(project_root, p))
@@ -267,8 +266,8 @@ BARE_RES = re.compile(r"""res://[^\s"'()\[\]{},;<>…、。，（）【】「」
 def strip_self_reference_lines(path: str, text: str) -> str:
     """剥离 .import 的自引用行：source_file= / dest_files= / path=。
 
-    出处：docs/cleanup-authoring.md:87（硬性条款 2）、
-          references/reference-graph.md:9（补边 1，v1 结构性失效的根因）。
+    出处：docs/cleanup-authoring.md §6 第 2 条（硬性条款 2）、
+          references/reference-graph.md §1（补边 1，v1 结构性失效的根因）。
     """
     if not path.endswith(".import"):
         return text
@@ -278,12 +277,12 @@ def strip_self_reference_lines(path: str, text: str) -> str:
 def extract_tokens(text: str) -> tuple[set[str], set[str]]:
     """提取 res:// 路径与 uid:// 引用。
 
-    - 先取引号内的完整串（带空格路径不被截断 —— 修 orphan_scan3.py:60 的缺陷）
+    - 先取引号内的完整串（带空格路径不被截断 —— 修旧扫描器的缺陷）
     - 再把引号内的 res:// 串从文本里抹掉，剩余部分才用非引号兜底正则，
       否则 `path="res://….png"` 会被兜底正则再截出 `res://…` 前缀，
       凭空造出 3 条不存在的短路径（anon01.tscn 的实例）。
     - 丢弃含插值（`{`）的串：动态拼接不可静态解析，属声明的盲区
-      出处：docs/cleanup-authoring.md:89（硬性条款 4）、reference-graph.md:55-60
+      出处：docs/cleanup-authoring.md §6 第 4 条（硬性条款 4）、reference-graph.md §5
     """
     res: set[str] = set()
 
@@ -396,7 +395,7 @@ def main(argv: list[str] | None = None) -> int:
         # *.import / *.uid 只承载「自己的 uid」，不可能是别人的引用来源：
         # 若把它们计入，会让 `uids_of(X)` 里任何一个 uid 都回落命中自己的 .import，
         # 从而出现「X 被 X.import 引用」的假引用（自引用剥离的姊妹条款，
-        # 出处：docs/cleanup-authoring.md:87）。
+        # 出处：docs/cleanup-authoring.md §6 第 2 条）。
         if p.endswith((".import", ".uid")):
             continue
         text = strip_self_reference_lines(p, text)
@@ -428,7 +427,7 @@ def main(argv: list[str] | None = None) -> int:
             type_owner.setdefault(name, p)
             type_bases.setdefault(name, bases_map.get(name, []))
 
-    # RitsuLib 特性继承注册：docs/cleanup-authoring.md:51
+    # RitsuLib 特性继承注册：docs/cleanup-authoring.md §4 第 1 条
     inherit_roots: set[str] = set()
     for p in corpus:
         if not p.endswith(".cs"):
@@ -458,7 +457,7 @@ def main(argv: list[str] | None = None) -> int:
                 all_classes_by_mod[r].add(t)
 
     # ---- 6. Spine 裸贴图名（.atlas 内没有 res://） -----------------------
-    # 出处：references/reference-graph.md:24（不做会让 8-33 张 Spine png 落进孤儿）
+    # 出处：references/reference-graph.md §2（不做会让 Spine png 落进孤儿）
     spine_names: dict[str, set[str]] = collections.defaultdict(set)  # basename -> atlas 文件
     for p in corpus:
         if not p.endswith(".atlas"):
@@ -520,7 +519,7 @@ def main(argv: list[str] | None = None) -> int:
         parts = disk.split("/")
         mod_id = parts[0] if parts else ""
 
-        # mod loader 入口清单必须保留：docs/cleanup-authoring.md:27
+        # mod loader 入口清单必须保留：docs/cleanup-authoring.md §2 入口清单行
         if base in ("BangDreamInSpire.json", "ItsCrychic.json") and len(parts) == 2:
             return (f"mod入口清单 {base}", "strong")
 
@@ -528,7 +527,7 @@ def main(argv: list[str] | None = None) -> int:
         if len(parts) >= 2 and (parts[0], parts[1]) in set(BODY_SYNC_ROOTS):
             return ("本体同步目录（禁止按孤儿规则处理）", "strong")
 
-        # 本地化文件：游戏按本体表文件名遍历（reference-graph.md:25）——
+        # 本地化文件：游戏按本体表文件名遍历（reference-graph.md §2）——
         # 仓内拿不到本体 46 张表名，退化为弱约定。
         if "/localization/" in disk and ext == ".json":
             return ("弱约定:本地化表名（需本体 46 张表名核对）", "weak-convention")
@@ -560,35 +559,35 @@ def main(argv: list[str] | None = None) -> int:
             return ("mod图标约定 res://<modId>/mod_image.png", "strong")
 
         # Spine 贴图：.atlas 里是裸文件名，只能按 basename 补边 —— 近似匹配，标弱约定
-        # 出处：references/reference-graph.md:24
+        # 出处：references/reference-graph.md §2
         if base in spine_names and ext in IMAGE_EXTS:
             atlas = sorted(spine_names[base])[0]
             return (f"弱约定:Spine图集裸贴图名（{atlas}）", "weak-convention")
 
         return None
 
-    # ---- 9. .cs 保护规则（反射/特性注册，docs/cleanup-authoring.md:47-61） ----
+    # ---- 9. .cs 保护规则（反射/特性注册，docs/cleanup-authoring.md §4） ----
     def code_convention_hit(disk: str) -> str | None:
         text = texts.get(disk, "")
         types = file_types.get(disk, [])
         if re.search(r"\[Register\w*\(", text):
-            return "代码约定:[Register*] 特性注册（docs/cleanup-authoring.md:51）"
+            return "代码约定:[Register*] 特性注册（docs/cleanup-authoring.md §4 第 1 条）"
         if types and any(t in inherited_protected for t in types):
-            return "代码约定:继承 [Register(..., Inherit=true)] 基类（docs/cleanup-authoring.md:51）"
+            return "代码约定:继承 [Register(..., Inherit=true)] 基类（docs/cleanup-authoring.md §4 第 1 条）"
         if "static class" in text:
-            return "代码约定:static class 扩展（按方法名调用，docs/cleanup-authoring.md:59）"
+            return "代码约定:static class 扩展（按方法名调用，docs/cleanup-authoring.md §4 其他反射入口）"
         if "HarmonyPatch" in text:
             return "代码约定:[HarmonyPatch]（Harmony 补丁）"
         if {k for k, _n in file_decls.get(disk, [])} & {"interface", "enum"}:
             return "代码约定:接口/枚举声明（被注册/反射基础设施消费）"
         if types and any(type_bases.get(t) for t in types):
-            return "代码约定:有基类/接口（模型族或本体基类，docs/cleanup-authoring.md:47-61）"
+            return "代码约定:有基类/接口（模型族或本体基类，docs/cleanup-authoring.md §4）"
         return None
 
     def weak_hit(disk: str) -> tuple[list[str], str]:
         """候选 basename / 类名出现在任意语料文本中（排除自身与 sidecar）。
 
-        出处：docs/cleanup-authoring.md:71（弱命中 = 待人工确认，不得当孤儿）
+        出处：docs/cleanup-authoring.md §5 弱命中（弱命中 = 待人工确认，不得当孤儿）
         """
         holes = {disk, disk + ".import", disk + ".uid"}
         needles: list[str] = []
@@ -652,7 +651,7 @@ def main(argv: list[str] | None = None) -> int:
         orphan[disk] = "无字面路径/uid/约定/弱命中"
 
     # 死簇：某候选的所有引用者本身也在孤儿集合中；迭代到不动点。
-    # 出处：docs/cleanup-authoring.md:63-74、本脚本修复 orphan_scan3.py:158-164 的「只算一次」。
+    # 出处：docs/cleanup-authoring.md §5、本脚本修复旧扫描器「只算一次」的问题。
     #
     # v1.2.0 追加两条边界（缺陷：MusicCrystalHitVfx.cs 级联假阳性）：
     #   ① 级联前先咨询 keep 规则：命中「活跃保留」（cascade_blocks=True）的引用者不是
@@ -700,7 +699,7 @@ def main(argv: list[str] | None = None) -> int:
     #   <root>/<rel>                 —— 仓库根相对（res://src/** 等本体路径）
     #   <root>/BangDreamInSpire/<rel>    —— BangDreamInSpire 工程根（= 本体同步目录挂载点）
     #   <root>/ItsCrychic/<rel>      —— ItsCrychic 工程根
-    # 出处：references/reference-graph.md:11-13（跨工程建图、本体内嵌资源合法）
+    # 出处：references/reference-graph.md §1-13（跨工程建图、本体内嵌资源合法）
     def resolve_res(rel: str) -> str | None:
         for base in ("", *MOD_ROOTS):
             candidate = os.path.join(project_root, base, rel)
@@ -736,7 +735,7 @@ def main(argv: list[str] | None = None) -> int:
             broken.append({"category": f"uid 指向不存在的文件（{target}）", "token": tok, "sources": srcs})
 
     # ---- 12. sidecar 双向 -------------------------------------------------
-    # 出处：docs/cleanup-authoring.md:14（铁律三）、:92（硬性条款 7）
+    # 出处：docs/cleanup-authoring.md §1 铁律三、:92（硬性条款 7）
     sidecar_orphan: list[str] = []
     sidecar_missing: list[str] = []
     for p in own:
@@ -904,7 +903,7 @@ def main(argv: list[str] | None = None) -> int:
     warnings = 0
     for b in broken:
         if b["category"].startswith(("本体程序集路径", "本体资源")):
-            # 本体路径在仓库内不存在属已知形态（reference-graph.md:11-13）
+            # 本体路径在仓库内不存在属已知形态（reference-graph.md §1）
             warnings += 1
             print(f"WARN broken(body) {b['category']} {b['token']} <- {short_sources(b['sources'])}")
         else:
@@ -920,7 +919,7 @@ def main(argv: list[str] | None = None) -> int:
         problems += 1
         print(f"PROBLEM confirmed_orphan {p}")
     # 死簇弱于「确认无引用」：只打 WARN（cleanup_manifest 默认落 B，不落 A）。
-    # exit 码仍按契约只由 confirmed_orphan 决定（docs/cleanup-authoring.md:97）。
+    # exit 码仍按契约只由 confirmed_orphan 决定（docs/cleanup-authoring.md §6 第 12 条）。
     for d in dead_cluster:
         warnings += 1
         print(f"WARN dead_cluster {d['path']} <- {short_sources(d['sources'])} (round {d['round']})")
