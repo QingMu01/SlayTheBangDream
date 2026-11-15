@@ -3,7 +3,6 @@ using BangDreamInSpire.Scripts.Character;
 using BangDreamInSpire.Scripts.Diagnostics;
 using BangDreamInSpire.Scripts.Interfaces.CharacterAugment;
 using BangDreamInSpire.Scripts.Mechanics;
-using BangDreamInSpire.Scripts.Multiplayer.RunData;
 using BangDreamInSpire.Scripts.Patches;
 using BangDreamInSpire.Scripts.Utils;
 using BangDreamInSpire.Scripts.Utils.Infos;
