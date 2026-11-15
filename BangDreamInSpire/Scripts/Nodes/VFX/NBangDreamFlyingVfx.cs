@@ -28,7 +28,7 @@ public abstract partial class NBangDreamFlyingVfx : Node2D
 
     public VfxContext Context
     {
-        get { return _context ??= new VfxContext(this); }
+        get { return _context ??= new VfxContext(); }
     }
 
     protected void EmitSpawnSignal()

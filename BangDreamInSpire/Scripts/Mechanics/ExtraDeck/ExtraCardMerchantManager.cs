@@ -16,12 +16,12 @@ using MegaCrit.Sts2.Core.Rooms;
 namespace BangDreamInSpire.Scripts.Mechanics.ExtraDeck;
 
 /// <summary>
-/// 小祥商人管理器：为商人房间附加小祥商人按钮与自定义库存。
+/// 额外卡组商人管理器（小祥商人）：为商人房间附加商人按钮与自定义库存。
 /// 第一区域售卖额外卡池音乐牌（入额外卡组），第二区域售卖无色牌（入主卡组），
 /// 第三区域为附魔/贴纸施工占位，第四区域提供额外卡组删牌服务。
 /// 未实现额外卡池的角色打开时，第一、四区域显示未开放。
 /// </summary>
-internal static class SakikoMerchantManager
+internal static class ExtraCardMerchantManager
 {
     public const string InventoryScenePath =
         "res://BangDreamInSpire/scenes/merchant/extra_card_merchant_inventory.tscn";

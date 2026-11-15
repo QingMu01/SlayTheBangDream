@@ -31,7 +31,7 @@ internal class AttachExtraCardMerchantToRoomPatch : IPatchMethod
 
     public static void Postfix(NMerchantRoom __instance)
     {
-        SakikoMerchantManager.AttachToRoom(__instance);
+        ExtraCardMerchantManager.AttachToRoom(__instance);
     }
 }
 
@@ -108,7 +108,7 @@ internal class ExtraCardMerchantScreenContextPatch : IPatchMethod
             return;
         }
 
-        var inventory = SakikoMerchantManager.GetOpenInventory(room);
+        var inventory = ExtraCardMerchantManager.GetOpenInventory(room);
         if (inventory != null)
         {
             __result = inventory;
