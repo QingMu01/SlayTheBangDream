@@ -171,6 +171,11 @@ public class PuppeteerFormManager : HookedSingletonModel, IInCombatManager, IPup
 
         PuppeteerRunState.Modify(_player, d =>
         {
+            // 本体在场期间吃到的「最大生命 +N」必须在此刻留档：一旦切到傀儡形态，
+            // Creature 上装的是傀儡池，本体上限就只剩运行数据可查。
+            // 漏写会让 RestoreHostForm / ReviveHost 取到战斗开始时的旧快照，
+            // 把 +MaxHp 永久回退（跨战斗丢失）。
+            d.HostMaxHp = Math.Max(d.HostMaxHp, creature.MaxHp);
             d.HostHp = Math.Max(0, creature.CurrentHp); // 本体阵亡，写回 0
             d.ActiveForm = PuppeteerForm.Puppet;
             d.PuppetMaxHp = puppetMax;

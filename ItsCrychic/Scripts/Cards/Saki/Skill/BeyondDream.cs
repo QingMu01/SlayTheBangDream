@@ -82,7 +82,12 @@ public class BeyondDream() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
                 .Reverse()
                 .SelectMany(act => act.Reverse())
                 .Where(mapPoint => mapPoint.HasRoomOfType(RoomType.Monster) || mapPoint.HasRoomOfType(RoomType.Elite) || mapPoint.HasRoomOfType(RoomType.Boss))
-                .Select(entries => entries.GetEntry(Owner.NetId).CardChoices)
+                // 不能直接用 GetEntry：玩家不在该 map point 的 PlayerStats 里时它会主动抛
+                // InvalidOperationException（多人中途加入的典型情形），而这里要遍历整段 run 历史。
+                // 缺条目直接跳过即可。
+                .Select(entries => entries.PlayerStats.FirstOrDefault(stats => stats.PlayerId == Owner.NetId))
+                .Where(stats => stats is not null)
+                .Select(stats => stats!.CardChoices)
                 .FirstOrDefault(choices => choices.Count > 0)?
                 .Where(entry => !entry.wasPicked && entry.Card.Id != null)
                 .Select(entry => FromSerializable(entry.Card));
