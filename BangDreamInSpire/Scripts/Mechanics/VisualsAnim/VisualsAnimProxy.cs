@@ -85,7 +85,9 @@ public sealed class VisualsAnimProxy
     public Vector2 GlobalPosition => Holder.GlobalPosition;
 
     /// <summary>命中特效的落点。演出期间 <see cref="NCreature.VfxSpawnPosition" /> 会被重定向到这里。</summary>
-    public Vector2 VfxSpawnPosition => Visuals.VfxSpawnPosition.GlobalPosition;
+    public Vector2 VfxSpawnPosition => GodotObject.IsInstanceValid(Visuals)
+        ? Visuals.VfxSpawnPosition.GlobalPosition
+        : Source.VfxSpawnPosition;
 
     /// <summary>把世界坐标换算成载体的局部位置，供「移动到某个生物身边」这类步骤使用。</summary>
     public Vector2 ToLocal(Vector2 global)
@@ -159,7 +161,11 @@ public sealed class VisualsAnimProxy
         if (IsAlive)
         {
             if (Mirror != null)
+            {
                 Mirror.Active = false;
+                // 清掉抖动进度，避免下一段演出从上次残留的相位开始。
+                Mirror.ResetState();
+            }
 
             Visuals.Visible = false;
             Source.Visuals.Visible = true;

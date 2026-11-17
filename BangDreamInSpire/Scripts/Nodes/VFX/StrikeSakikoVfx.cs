@@ -47,6 +47,9 @@ public partial class StrikeSakikoVfx : Node2D
     private const float SmallStarFadeStart = 0.200f;
     private const float SmallStarPopScale = 0.6f;
 
+    /// <summary>创建时的世界坐标；入树（_Ready）后再写入 GlobalPosition，避免在 AddChild 前设全局变换。</summary>
+    private Vector2 _spawnWorld;
+
     /// <summary>星尘的固定角度（度）与飞行距离（像素），顺序与场景节点 SmallStar0..5 对应。</summary>
     private static readonly (float AngleDegrees, float Distance)[] SmallStarConfigs =
     [
@@ -119,12 +122,13 @@ public partial class StrikeSakikoVfx : Node2D
             return null;
 
         var vfx = BangDreamPreloadManager.GetScene(ScenePath).Instantiate<StrikeSakikoVfx>();
-        vfx.GlobalPosition = creatureNode.VfxSpawnPosition;
+        vfx._spawnWorld = creatureNode.VfxSpawnPosition;
         return vfx;
     }
 
     public override void _Ready()
     {
+        GlobalPosition = _spawnWorld;
         _glow = GetNode<Sprite2D>("Glow");
         _slash = GetNode<Sprite2D>("Slash");
         _bigStar = GetNode<Sprite2D>("BigStar");

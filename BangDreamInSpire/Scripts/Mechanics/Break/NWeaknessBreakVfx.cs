@@ -248,6 +248,16 @@ public sealed partial class NWeaknessBreakVfx : Control
             return;
         }
 
+        // 静止态（无脉冲 / 一次性动画已结束 / 非预览）不需要每帧重画：
+        // 多目标 AOE 挂多个节点时这是纯帧开销。
+        var animating = _broken || _previewMode || _enterElapsed < BrokenEnterDuration + ShatterDuration;
+        if (!animating)
+        {
+            SetProcess(false);
+            QueueRedraw();
+            return;
+        }
+
         // 一次性计时与脉冲在预览态同样要推进，否则预览会停在「刚进入」的那一帧。
         if (_enterElapsed < BrokenEnterDuration + ShatterDuration)
         {

@@ -136,6 +136,9 @@ public partial class MusicEqualizerVfx : Node2D
     /// <summary>重置并重新播放一次特效。游戏内由 _Ready 触发，预览时也可手动/循环触发。</summary>
     public void Replay()
     {
+        // Inspector 的 Play 可能在 _Ready 之前被勾选：节点未就绪时直接忽略。
+        if (!IsNodeReady() || _columns == null) return;
+
         _elapsed = 0f;
         _active = true;
 

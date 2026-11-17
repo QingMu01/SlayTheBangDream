@@ -432,7 +432,7 @@ public sealed class CombatAsyncDamageManager
             return;
         }
 
-        // 可能已被 FlushPendingAsync 就地结算（例如 Finale/Moonlight 打牌时强制落地），此时不再生成表现。
+        // 可能已由同步补算路径就地结算（FlushPendingAsync 是预留入口，当前无调用点），此时不再生成表现。
         lock (session.Gate)
         {
             if (note.Resolved)

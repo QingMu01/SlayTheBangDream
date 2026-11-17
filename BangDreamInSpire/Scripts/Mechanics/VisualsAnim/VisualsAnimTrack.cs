@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using Godot;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Helpers;
@@ -22,7 +23,8 @@ namespace BangDreamInSpire.Scripts.Mechanics.VisualsAnim;
 /// </summary>
 public static class VisualsAnimTrack
 {
-    private static readonly Dictionary<Creature, SemaphoreSlim> Gates = new(ReferenceEqualityComparer.Instance);
+    // 弱表：门只随生物存活，不在战斗结束时清空 —— 清空会让旧时间线未退出时新时间线直接并发。
+    private static readonly ConditionalWeakTable<Creature, SemaphoreSlim> Gates = new();
 
     private static readonly Lock GateLock = new();
 
@@ -61,7 +63,6 @@ public static class VisualsAnimTrack
         {
             previous = _combatCancellation;
             _combatCancellation = new CancellationTokenSource();
-            Gates.Clear();
         }
 
         previous.Cancel();
@@ -70,19 +71,7 @@ public static class VisualsAnimTrack
         VisualsAnimProxyRegistry.Clear();
     }
 
-    private static SemaphoreSlim GetGate(Creature creature)
-    {
-        lock (GateLock)
-        {
-            if (!Gates.TryGetValue(creature, out var gate))
-            {
-                gate = new SemaphoreSlim(1, 1);
-                Gates[creature] = gate;
-            }
-
-            return gate;
-        }
-    }
+    private static SemaphoreSlim GetGate(Creature creature) => Gates.GetOrCreateValue(creature);
 
     /// <summary>
     /// 时间线外壳：只负责保证 <paramref name="completionLease" />（回合结束屏障租赁）一定被释放，

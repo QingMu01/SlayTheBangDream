@@ -26,6 +26,11 @@ internal class InjectVfxManagerPatch : IPatchMethod
     public static void Postfix(NCombatRoom __instance)
     {
         var vfxContainer = __instance.CombatVfxContainer;
+        if (vfxContainer.GetNodeOrNull<BangDreamVfxManager>("BangDreamVfxManager") != null)
+        {
+            return;
+        }
+
         var manager = new BangDreamVfxManager();
         manager.Name = "BangDreamVfxManager";
         vfxContainer.AddChildSafely(manager);
