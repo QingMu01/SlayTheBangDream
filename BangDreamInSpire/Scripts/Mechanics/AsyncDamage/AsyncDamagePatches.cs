@@ -37,10 +37,29 @@ internal class WaitForAsyncDamageResolutionPatch : IPatchMethod
             __result = WaitForResolutionAsync(__result, combatState);
     }
 
+    /// <summary>
+    /// 屏障等待的看门狗上限。异步伤害正常应在 1-2 秒内落地；超过该值说明表现层卡住或命中信号丢失。
+    /// 继续等会让**所有玩家**的回合结束永久阻塞，因此超时后强制放行并记录。
+    /// </summary>
+    private const int ResolutionTimeoutMs = 5000;
+
     private static async Task WaitForResolutionAsync(Task originalQueueWait, ICombatState combatState)
     {
         await originalQueueWait;
-        await CombatResolutionBarrier.WaitAsync(combatState);
+
+        try
+        {
+            await CombatResolutionBarrier
+                .WaitAsync(combatState)
+                .WaitAsync(TimeSpan.FromMilliseconds(ResolutionTimeoutMs));
+        }
+        catch (TimeoutException)
+        {
+            BangDreamInSpireCore.Logger.Error(
+                $"Async damage resolution did not finish within {ResolutionTimeoutMs}ms; " +
+                "forcing the barrier open so the turn can end.");
+            CombatResolutionBarrier.ForceComplete(combatState);
+        }
     }
 }
 

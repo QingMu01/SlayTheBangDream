@@ -33,15 +33,19 @@ public static class AsyncDamageResolveCmd
         ResolveOpcode = RitsuLibManagedNetActions.Register(ResolveNetworkAction);
     }
 
-    /// <summary>命中时刻由发射者（本地拥有该角色的端）请求入队一条结算 Action。</summary>
-    internal static void RequestResolve(long batchId, long noteId, Player? dealer)
+    /// <summary>
+    /// 命中时刻由发射者（本地拥有该角色的端）请求入队一条结算 Action。
+    /// 返回网络层是否接受；<c>false</c> 时调用方必须提供兜底，否则该音符的票据会悬挂。
+    /// </summary>
+    internal static bool RequestResolve(long batchId, long noteId, Player? dealer)
     {
         var payload = new AsyncDamageResolvePayload(batchId, noteId);
         if (RitsuLibManagedNetActions.Request(null, ResolveNetworkAction, payload, dealer?.NetId))
-            return;
+            return true;
 
         BangDreamInSpireCore.Logger.Warn(
             $"Async damage resolve was not accepted by the network layer (batch={batchId}, note={noteId}).");
+        return false;
     }
 
     /// <summary>该 Action 是否为异步伤害的结算动作（供 <c>IsGameActionPlayerDriven</c> 补丁使用）。</summary>

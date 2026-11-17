@@ -262,11 +262,22 @@ public sealed class CombatAsyncDamageManager
         var batch = note.Batch;
         var request = batch.Request;
 
+        // 伤害实现是外部代码（任意 IAsyncDamageEffect），抛异常不能连带中断下面的记账：
+        // 一旦跳过归还，目标预留与批次在飞数都不会回收，CombatResolutionBarrier 的租约永不释放，
+        // 回合结束会永久阻塞。先把异常收下来，记账照做，最后再记录。
+        Exception? resolveError = null;
         if (CanResolveCombat(batch.CombatState, request) && note.Target.IsHittable)
         {
-            await request.Effect.ResolveDamageAsync(new AsyncDamageHitContext(
-                batch.CombatState, request, note.Context, note.Target,
-                note.NoteId, note.LockedDamage, note.IsChain, note.ChainDepth));
+            try
+            {
+                await request.Effect.ResolveDamageAsync(new AsyncDamageHitContext(
+                    batch.CombatState, request, note.Context, note.Target,
+                    note.NoteId, note.LockedDamage, note.IsChain, note.ChainDepth));
+            }
+            catch (Exception exception)
+            {
+                resolveError = exception;
+            }
         }
 
         NoteState? chain;
@@ -286,6 +297,12 @@ public sealed class CombatAsyncDamageManager
 
         if (finished)
             await FinishBatchAsync(session, batch);
+
+        if (resolveError != null)
+        {
+            BangDreamInSpireCore.Logger.Error(
+                $"Async damage resolve error #{note.NoteId}: {resolveError}");
+        }
     }
 
     private static async Task FinishBatchAsync(Session session, BatchState batch)
@@ -428,8 +445,10 @@ public sealed class CombatAsyncDamageManager
         catch (Exception exception)
         {
             BangDreamInSpireCore.Logger.Error($"Async damage animation launch error: {exception}");
-            // 表现生成失败时不能留下悬挂的在飞记录（否则回合结束屏障永不完成），按无表现命中退化落地。
-            await FailNoteAsync(session, note);
+            // 表现生成失败不能只在本地静默丢弃伤害：若其它端照常命中，两端 HP 与目标预留会分叉。
+            // 改走与正常命中相同的同步结算路径，让所有端在队列同一位置施加同一份已锁定伤害；
+            // 网络层拒绝入队时由 RequestResolveOnArrival 兜底，不会让票据悬挂。
+            RunOnMainThread(() => RequestResolveOnArrival(session, note));
             return;
         }
 
@@ -476,6 +495,9 @@ public sealed class CombatAsyncDamageManager
         {
             BangDreamInSpireCore.Logger.Warn(
                 $"Async damage landing observation error #{note.NoteId}: {exception}");
+            // Landing 抛异常（第三方 IAsyncDamageEffect 可能返回 faulted task）时不能让票据悬挂：
+            // 按「已命中」处理，走结算/兜底路径，保证批次与屏障最终收敛。
+            RunOnMainThread(() => RequestResolveOnArrival(session, note));
             return;
         }
 
@@ -485,22 +507,39 @@ public sealed class CombatAsyncDamageManager
 
     private static void RequestResolveOnArrival(Session session, NoteState note)
     {
-        var request = note.Batch.Request;
-        if (!CanResolveCombat(note.Batch.CombatState, request))
+        if (TryRequestResolve(session, note))
             return;
 
+        // 网络层拒绝入队（断线 / 队列已关闭）：票据不能悬挂，本端就地结算兜底。
+        // 代价是这一枚伤害丢失，但回合结束屏障可以完成 —— 优先保证不卡死。
+        BangDreamInSpireCore.Logger.Error(
+            $"Async damage resolve rejected by network layer, settling locally " +
+            $"(batch={note.Batch.BatchId}, note={note.NoteId}).");
+        TaskHelper.RunSafely(FailNoteAsync(session, note));
+    }
+
+    /// <summary>
+    /// 请求一条同步结算 Action。返回 <c>false</c> 表示网络层拒绝入队（调用方需兜底）；
+    /// 战斗已不允许结算、或本端不是发射者（由发射者负责请求）时返回 <c>true</c>。
+    /// </summary>
+    private static bool TryRequestResolve(Session session, NoteState note)
+    {
+        var request = note.Batch.Request;
+        if (!CanResolveCombat(note.Batch.CombatState, request))
+            return true;
+
         if (!IsLocalDealer(request.Dealer.Player))
-            return;
+            return true;
 
         lock (session.Gate)
         {
             if (note.Resolved || note.ResolveRequested)
-                return;
+                return true;
 
             note.ResolveRequested = true;
         }
 
-        AsyncDamageResolveCmd.RequestResolve(note.Batch.BatchId, note.NoteId, request.Dealer.Player);
+        return AsyncDamageResolveCmd.RequestResolve(note.Batch.BatchId, note.NoteId, request.Dealer.Player);
     }
 
     private static void RunOnMainThread(Action action)
