@@ -299,5 +299,7 @@
   "ITS_CRYCHIC_CARD_STRIKE_MUTSUMI.title": "打击",
   "ITS_CRYCHIC_CARD_STRIKE_MUTSUMI.description": "造成{Damage:diff()}点伤害。",
   "ITS_CRYCHIC_CARD_DEFEND_MUTSUMI.title": "防御",
-  "ITS_CRYCHIC_CARD_DEFEND_MUTSUMI.description": "获得{Block:diff()}点[gold]格挡[/gold]。"
+  "ITS_CRYCHIC_CARD_DEFEND_MUTSUMI.description": "获得{Block:diff()}点[gold]格挡[/gold]。",
+  "ITS_CRYCHIC_CARD_WALTZ.title": "华尔兹",
+  "ITS_CRYCHIC_CARD_WALTZ.description": "发射{Repeat:diff()}个[gold]音符[/gold]，每个造成{Damage:diff()}点伤害。"
 }
