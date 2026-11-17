@@ -1,0 +1,86 @@
+using BangDreamInSpire.Scripts.Extensions;
+using BangDreamInSpire.Scripts.Mechanics.MusicNote;
+using BangDreamInSpire.Scripts.Mechanics.VisualsAnim;
+using Godot;
+using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using MegaCrit.Sts2.Core.Localization.DynamicVars;
+using STS2RitsuLib.Cards.DynamicVars;
+
+namespace ItsCrychic.Scripts.Cards.Mutsumi.Attack;
+
+/// <summary>
+/// 华尔兹：一段脱手的角色位移演出，位移过程中反复向敌人发射音符。
+/// <para>
+/// 这是「演出 + 异步伤害」的探针卡：演出走 <see cref="VisualsAnimCmd" />（脱手、按生物串行），
+/// 伤害走 <see cref="MusicNoteCmd" />（异步伤害的一个实现，不阻塞出牌）。
+/// </para>
+/// <para>
+/// 与 STS1 原版《华尔兹》的差异：原版是对全体敌人直接结算的 Cleave，这里改为音符齐射（随机目标），
+/// 以便同时验证异步伤害路径。演出编排（上移 → 传送到敌方一侧上方 → 下移 → 每次命中前自转一圈 → 归位）
+/// 与 `FlipProcess`（rotateY 360°）保持一致。
+/// </para>
+/// </summary>
+public class Waltz() : AbstractMutsumiCard(CustomCost, CustomType, CustomRarity, CustomTarget)
+{
+    private const int CustomCost = 1;
+    private const CardType CustomType = CardType.Attack;
+    private const CardRarity CustomRarity = CardRarity.Uncommon;
+    private const TargetType CustomTarget = TargetType.AllEnemies;
+
+    protected override IEnumerable<DynamicVar> CardVars =>
+    [
+        QuickVar.Damage.Create(4),
+        QuickVar.Repeat.Create(2)
+    ];
+
+    protected override Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
+    {
+        var screen = ScreenSize();
+        var rise = -screen.Y * 0.35f;
+        var side = screen.X * 0.25f;
+        var repeat = DynamicVars.Repeat.IntValue;
+        var damage = DynamicVars.Damage.BaseValue;
+
+        var steps = new List<IVisualsAnimStep>
+        {
+            VisualsAnimCmd.Move(new Vector2(0f, rise), 0.5f),
+            VisualsAnimCmd.Teleport(new Vector2(side, rise)),
+            VisualsAnimCmd.Move(new Vector2(side, 0f), 0.5f),
+            VisualsAnimCmd.Wait(0.5f)
+        };
+
+        for (var i = 0; i < repeat; i++)
+        {
+            // STS1 原版每次命中前是 FlipProcess（rotateY 转一圈），不是左右翻面。
+            steps.Add(VisualsAnimCmd.Spin(1, 0.5f));
+            steps.Add(VisualsAnimCmd.Callback(async _ => await MusicNoteCmd.FromCard(this, 1, 0, damage)));
+        }
+
+        // 先缓动归位，再强制对齐到基准位置与基准朝向（避免残留偏移）。
+        steps.Add(VisualsAnimCmd.Move(Vector2.Zero, 0.5f));
+        steps.Add(VisualsAnimCmd.Reset());
+
+        // 脱手：演出在动作队列之外推进，出牌动作立即结束，玩家可以继续出牌。
+        VisualsAnimCmd.Submit(Owner.Creature, [.. steps]);
+
+        return Task.CompletedTask;
+    }
+
+    protected override void OnUpgrade()
+    {
+        DynamicVars.Repeat.UpgradeValueBy(1);
+    }
+
+    private static Vector2 ScreenSize()
+    {
+        if (Engine.GetMainLoop() is SceneTree tree)
+        {
+            var size = tree.Root.GetVisibleRect().Size;
+            if (size.X > 0f && size.Y > 0f)
+                return size;
+        }
+
+        return new Vector2(1920f, 1080f);
+    }
+}
