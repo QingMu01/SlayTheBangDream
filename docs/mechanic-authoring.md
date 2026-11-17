@@ -10,6 +10,8 @@ BangDreamInSpire 的玩法机制被拆分为若干**机制模块**（mechanic）
 | 演奏 | `perform` | 200 | `extra_deck` | `IPerformableCharacter` | 歌单容量与入队/重排/溢出、演奏触发、演奏区节点、音乐卡牌类型铭牌、手动落位目标类型（AnySlot / RequestGroup）、卡牌和弦（`ChordCapability`） |
 | 傀儡师 | `puppeteer` | 250 | `perform` | `IPuppeteerCharacter` | 双生命池的跨战斗保存、本体/傀儡形态切换（死亡拦截）、傀儡形态下的歌单冻结与分组激活 |
 | 余音 | `lingered` | 300 | — | `ILingeredResourceCharacter` | 余音二级资源与卡面费用 UI、休止结算与驱动、环绕资源预览 |
+| 异步伤害 | `async_damage` | 350 | — | （全局） | 「有动画的伤害不卡手」的公共底座：批次发射、命中信号驱动结算、独立同步结算动作、回合结束屏障；音符只是它的一个实现 |
+| 视觉动画 | `visuals_anim` | 360 | — | （全局） | 「有位移的表现不卡手」：按生物串行、脱手推进的角色演出时间线；视觉代理（隐藏原体 + 克隆视觉）与 `VfxSpawnPosition` 重定向 |
 | 音符 | `music_note` | 400 | — | （全局） | 音符发射/弹跳与伤害、命中同拍结算、音符伤害追踪、VFX 容器 |
 | 破绽 | `break` | 600 | — | （全局） | 破绽层数上限与「弱点击破」状态、发现/进入/击破三个 Hook 广播、常驻 VFX、击破效果触发规则 |
 
@@ -121,16 +123,80 @@ public sealed class MyMechanic : IBangDreamMechanic
 - 游戏本体不支持运行时卸载 mod（`Mod.Unloadable` 写死为 `false`），因此「热插拔」在运行期体现为**按角色能力自动启用**，而非卸载 DLL。
 - 补丁仍在初始化阶段全量注入；机制是否生效由运行时的角色能力判定控制。
 
-## 7. 音符结算时序约定
+## 7. 异步伤害结算时序约定
 
-音符伤害遵循「发射即锁定、命中才结算」：
+### 7.1 定位
 
-- 发起卡片/能力把音符请求交给原版动作队列（`RitsuLibManagedNetActions.Request`），随后立即返回，**不阻塞出牌动作**。单机同样经由该队列（`CanSendManagedAction` 对 `Singleplayer` 返回 `true`）。
-- 结算动作内先按节奏发射全部根音符，并在**发射时刻一次性锁定**目标与伤害数值；飞行期间不再读取任何可变增益，故多端一致。
-- 结算动作等待音符抵达目标（`AsyncDamageAnimationHandle.Landing`，时长等于 `距离 / 速度`，与 VFX 推进公式严格等价），抵达后才施加已锁定伤害；弹跳音符在上一目标命中后才发射。
-- 若目标在飞抵前已不可命中，该次伤害**丢弃且不重定向**（`TargetPolicy` 语义已移除），以保证确定性最强。
-- 由于结算动作本身在队列中等待飞行，该动作完成前的后续动作会顺延；这是「伤害必须晚于飞行」与「顺序确定」的必然代价。
-- 不使用 VFX 信号驱动玩法状态；`CombatResolutionBarrier` 与 `WaitForCombatResolutionPatch` 已删除（结算进入原版队列后不再需要）。
+`async_damage` 解决的是**「有动画的伤害会卡手」**：动画本身必须播，但播的这段时间玩家还要能继续出牌。
+它的契约与具体表现类型无关——**音符只是它的一个实现**，任何「先播动画、命中时刻才结算」的伤害
+（冲刺斩击、下落打击、光束、飞刀……）都通过同一个 `IAsyncDamageEffect` 接入。
+
+判定标准：这个伤害的**表现时长**会让出牌手感变差吗？会，就用异步伤害；不会（< 0.3s 的普通攻击），
+走本体的 `AttackCommand` 即可。
+
+### 7.2 契约
+
+`Scripts/Mechanics/AsyncDamage/IAsyncDamageEffect.cs`，实现者不继承任何 VFX 类型：
+
+| 成员 | 时机 | 语义 |
+|---|---|---|
+| `BeforeSpawnAsync` | 每个根动画启动前 | 起手动作 / 批次内节奏。跑在脱手泵里，不占同步 Action |
+| `GetLockedDamage` | 发射时刻 | 计算并**锁定**本次伤害；同时用于目标预留 |
+| `StartAnimationAsync` | 发射时刻 | 启动动画并尽快返回句柄，**不得等待动画结束** |
+| `ResolveDamageAsync` | 命中后 | 在独立同步结算 Action 内施加 `LockedDamage` |
+| `AfterBatchAsync` | 批次全部落地后 | 收尾（如角色归位） |
+| `GetTargetEffectiveHealth` | 发射时刻 | 目标预留用的有效血量口径 |
+
+`AsyncDamageAnimationHandle.Landing` **必须**在动画抵达目标时完成；`Completion` 只用于观察生命周期，不驱动玩法。
+
+### 7.3 时序
+
+1. 发起方（卡片 / 能力 / 遗物）把请求交给原版动作队列（`RitsuLibManagedNetActions.Request`），
+   **立即返回，不阻塞出牌**。单机同样经由该队列。
+2. 请求 Action 在各端执行 `LaunchAsync`：按注册顺序为整批根动画**一次性锁定**目标与伤害
+   （`ReserveTarget` / `GetLockedDamage`）。飞行期间不再读取任何可变状态，故多端一致。
+3. 表现层脱手：`CombatAsyncDamageManager` 用一条**表现泵**（`PumpAsync`）按注册顺序启动动画，
+   不占用动作队列；`BeforeSpawnAsync` 负责批次内节奏。
+4. **命中时刻由表现信号驱动**：`NBangDreamFlyingVfx.HitTriggered` → `VfxHandle.Arrived`
+   → `AsyncDamageAnimationHandle.Landing`。**不用「距离 / 速度」推算**，避免与表现层的 Speed / 缓动耦合。
+5. 命中时由**发射者**（`IsLocalDealer`）请求一条独立的同步结算 Action（`AsyncDamageResolveCmd`），
+   各端在**同一队列位置**执行 `ResolveAsync` 并施加已锁定伤害。
+6. 该结算 Action 被 `AsyncResolveNotPlayerDrivenPatch` 标记为「非玩家驱动」，
+   使其在回合结束阶段仍能执行，不与回合结束屏障互相死锁。
+7. 弹跳：上一目标命中后才登记并发射下一枚；`ExcludePreviousTargetFromChain` 决定是否排除上一目标。
+8. 目标在命中前已不可命中 → 该次伤害**丢弃且不重定向**（确定性最强）。
+9. 批次全部落地后执行 `AfterBatchAsync`，随后 `CheckWinCondition`。
+
+**关键点：发射与结算被拆成两条独立的同步 Action，飞行发生在它们之间且不占队列。**
+这是它和「结算动作在队列里等待飞行」那版设计的根本区别——后者会把出牌动作一起堵住，正是本机制要消灭的问题。
+
+### 7.4 屏障与回合结束
+
+`CombatResolutionBarrier` 按战斗登记尚未完成的批次（每批一个租赁，批次结束时释放）。
+`WaitForAsyncDamageResolutionPatch` 让 `WaitUntilQueueIsEmptyOrWaitingOnNonPlayerDrivenAction`
+在队列空后继续等待屏障，避免回合切换时在飞伤害被丢弃。
+战斗结束由 `AsyncDamageMechanic` 订阅 `CombatEndedEvent` 调 `OnCombatEnded` 强制完成，
+防止租赁悬挂让回合永远推进不了。
+
+### 7.5 退化路径
+
+| 场景 | 行为 |
+|---|---|
+| `NonInteractiveMode`（测试 / 无渲染） | `LaunchAsync` 走 `ResolveInlineAsync`：仍调一次 `StartAnimationAsync` 拿上下文，但不等待命中，按注册顺序就地结算 |
+| 动画启动失败 / 战斗状态失效 | `FailNoteAsync` 兜底落地：释放预留、推进批次，保证屏障最终完成 |
+| 表现泵异常 | `PumpAsync` 的 `finally` 调 `DrainQueueAsync`，把队列中剩余音符全部兜底落地 |
+| 节点被移除 / 战斗结束 | `BangDreamVfxManager` 在 `TreeExited` / `VfxFinished` 时完成句柄，避免 `await` 永久挂起 |
+
+### 7.6 已知边界（尚未实现）
+
+- **拿不到批次句柄**：`LaunchAsync` 返回 `Task.CompletedTask`，调用方无法「等这批落地再发下一批」。
+  需要跨批次串联的编排（演出 → 伤害 → 演出 → 伤害）目前只能靠 `Cmd.Wait` 估算，不精确。
+- **批次内多次命中无法串行**：`PumpAsync` 只等到 `StartAnimationAsync` 返回就启动下一枚，**不等 `Landing`**。
+  这对音符是对的（各飞各的），但对「同一角色连续两次冲刺」是错的——两段位移会叠在一起。
+- `FlushPendingAsync` 当前**没有调用点**，是预留的「就地落地」入口（注释里提到的 Finale / Moonlight 未接入）。
+
+> 说明：本节的早期版本描述的是「结算动作在队列中等待飞行」「不使用 VFX 信号驱动玩法状态」
+> 「`CombatResolutionBarrier` 已删除」，那一版已被当前实现取代，不要再按旧描述改代码。
 
 ## 8. 音乐牌的手动落位目标类型
 
@@ -260,3 +326,91 @@ rewardCard.GetOrCreateCapability<ChordCapability>().SetChord(randomChord);
 > 冻结与分组激活的正式特效方案见 `.scratch/vfx/plans/mutsumi-*.md`（草案）。
 > 冻结/激活的占位实现替换点写在 `NPerformArea` 的字段注释里：`FrozenOverlay`、`ActivatedGroupBadge_<和弦>`，
 > 外部只依赖 `SetFrozen(bool)` / `SetActivatedGroups(PerformChord)` 与 `ApplyItemVisibility` 刷新入口。
+
+## 13. 角色视觉动画时间线（`visuals_anim`）
+
+### 13.1 分工
+
+| 机制 | 解决什么 | 单位 | 串行粒度 |
+|---|---|---|---|
+| `async_damage` | 有动画的**伤害**不卡手 | 一次命中（动画 + 伤害） | 同一批内并行（音符各飞各的） |
+| `visuals_anim` | 有**位移**的表现不卡手 | 一段编排（多步） | 按生物串行 |
+
+两者通过 `VisualsAnimCmd.Callback` 组合：演出推进到某个位置时发射一次异步伤害。
+
+**为什么演出必须脱手**：动作队列被占住时，`NPlayerHand` 会对**所有玩家**执行 `AnimDisable`
+（手牌下移、变暗、禁用手柄导航），因为 `ActionQueueSet.AreAnyPlayerDrivenActionsBeingExecuted`
+查的是全部队列。所以「把演出做成一串阻塞的 action」等于「演出期间全场不能出牌」——正是要消灭的问题。
+
+**为什么按生物串行**：同一时刻只有一个身体，两段演出叠加会抢同一个视觉代理。
+代价是连打两张演出牌时第二张整条时间线排在后面，与 STS1 `AbstractRenderer.effectList` 一致。
+
+### 13.2 视觉代理：隐藏原体 + 克隆
+
+演出期间把 `NCreature.Visuals` 设为不可见，用 `Creature.CreateVisuals()` 克隆一份挂在同一个
+`NCreature` 下，由时间线自由驱动。要点：
+
+- `Hitbox` / `HealthBar` / `Intents` / `SelectionReticle` 都是 `NCreature` 的**直接子节点**，
+  不是 `NCreatureVisuals` 的后代 → 隐藏 `Visuals` 不影响选中、血条、意图；**不要隐藏整个 `NCreature`**，否则命中框收不到鼠标拾取。
+- 血条留在布局坐标上（STS1 的 `AbstractRenderer` 偏移也只作用于精灵，血条本来就不跟着走）。
+- 不用直接改 `Visuals.Position`：那个槽位被本体 `AnimShake` 占用。
+- `CreateVisuals()` 是本体既有原语（`NGameOverScreen` / `NFakeMerchant` / `NUnlockCharacterScreen` 都在用），每次都是独立骨架实例。
+- 克隆按生物缓存复用，演出时显示、结束时隐藏，战斗结束统一释放。
+
+**节点结构**：`NCreature → Holder(Node2D) → Clone(NCreatureVisuals) → Mirror(Node)`。
+位移写 `Holder.Position`，抖动与其它姿态写 `Clone` 的局部变换，二者互不覆盖。
+载体加入后 `MoveChildSafely(holder, 0)` 前置——与原体 `Visuals` 一样排在最前面，
+否则克隆会盖在后加的血条 / 意图图标之上。
+
+**骨架动画必须跟随本体**。本体的 `CreatureAnimator` 绑定在 `NCreature.Visuals` 的骨架上
+（`NCreature._spineAnimator`），`SetAnimationTrigger` 只转发给它；克隆是独立骨架实例，不会自动同步。
+`VisualsAnimMirror` 在演出期间逐帧读本体的当前动画名、循环标记与轨道时间，镜像到克隆：
+
+```csharp
+using var sourceTrack = sourceAnim.GetCurrentTrack();
+if (name != _lastAnimation) cloneAnim.SetAnimation(name, sourceTrack.IsLoop());
+using var cloneTrack = cloneAnim.GetCurrentTrack();
+cloneTrack?.SetTrackTime(sourceTrack.GetTrackTime());
+```
+
+这样攻击 / 施法 / 受击 / 死亡 / 待机全部自然同步，**不需要在克隆上再建一套状态机**
+（那样既要复刻 `GenerateAnimator` 的状态图，又会因 `AnimState.MarkHasLooped` 之类的可变状态与本体互相干扰）。
+
+受击抖动同理：`AnimShake` 写的是隐藏中原体的 `Visuals.Position`，`VisualsAnimShakeForwardPatch`
+把它转发到克隆的局部位置，并复刻本体的守卫（正在抖动或正在播 `hurt` 时不重开）。
+
+**命中特效的落点**由 `VisualsAnimVfxSpawnPositionPatch` 接管 `NCreature.VfxSpawnPosition` getter，
+演出期间重定向到代理。本体几十个 VFX 类与模组侧都读这一个属性，所以只补这一处即可全部跟随。
+这是 STS1 `EnhanceCreatureRenderPatch.Info.renderer` 那层间接的同构移植。
+
+### 13.3 步骤与语义
+
+`VisualsAnimCmd` 提供：`Move`（相对基准位置缓动）、`Teleport`、`Wait`、`Face`、`Spin`、`Reset`、`Callback`。
+所有位移都相对 `VisualsAnimProxy.Home`（原体视觉的基准位置）表达，因此同一套编排在不同站位与分辨率下都成立。
+
+- **`Teleport` 支持落位停留**：`Teleport(offset, holdSeconds = 0)`，对应 STS1 `TpProcess(x, y, duration)`
+  的语义——到位是瞬时的，duration 是**到位之后的停留**，不是一段过渡。停留属于纯表现节奏，
+  无渲染环境下不等待。
+- **`Face` 与 `Spin` 不是一回事**。`Face` 是左右镜像（`Scale.X` 取符号）；`Spin` 是绕纵轴自转
+  （`Scale.X = |base| × cos(弧度)`，90° 时侧面收窄为 0、越过 180° 后成背面镜像）。
+  STS1 的 `FlipProcess(1, 0.1f)` 走的是 `renderer.rotateY(0→360°)`，对应的是 **`Spin` 而不是 `Face`**
+  ——移植时最容易把这两个搞混。
+
+- **主线程**：时间线全程在主线程推进（tween 信号、节点操作都在主线程）。`TweenAwaiter` 刻意不使用
+  `RunContinuationsAsynchronously`，并在取消与节点退出时强制完成——`Tween.Kill()` **不会**发 `Finished`，
+  直接 await 原始信号会永久挂起并卡死整条演出。
+- **瞬间模式**：`FastModeType.Instant` 下视觉步骤直接落到终态，与 `Cmd.Wait` 的跳过行为一致。
+- **无渲染环境**：`CreateVisuals()` 返回 null → 视觉步骤自行跳过，**`Callback` 照常执行**，
+  保证 headless / 测试下玩法不缺。
+- **`Move` 不是同步点**：里程碑要等真实表现时用 `Callback` 承载逻辑，不要用 `Cmd.Wait` 估算。
+
+### 13.4 已知边界
+
+- **回合结束时在跑的演出**：`Callback` 里的伤害请求走的是玩家驱动动作，玩家在演出中途结束回合时
+  该请求可能被 `StartCancellingAllPlayerDrivenCombatActions` 取消。演出目前不持有
+  `CombatResolutionBarrier` 租赁，所以回合结束**不会**等演出跑完。若要保证伤害不丢，
+  应让时间线也租一个屏障（同一战斗 key，额外一个 lease）。
+- **`Home` 在创建时捕获**：战斗中途若布局重排（换位、召唤），基准位置会过期。
+- **非骨架生物不镜像动画**：`VisualsAnimMirror` 只在 `NCreature.HasSpineAnimation` 与克隆同为真时创建。
+  非 Spine（Live2D 等）的克隆只是一个静止画面，需要另行按 `Body` 实际类型驱动。
+- **拿不到异步伤害批次句柄**：演出无法「等这批命中再推进下一段」，见 §7.6。
