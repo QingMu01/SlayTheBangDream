@@ -15,3 +15,16 @@
 | 1 | `tools/perf-linux-ab.sh` | 0.03 MB | — |
 | 2 | `docs/perf-linux-ab.md` | 0.02 MB | — |
 
+## 2026-11-17 23:27:03+0800 —— 删除 3 项 / 0.01 MB
+
+- HEAD: `d7b98bb`
+- 脚本: `sign_off.py` v1.3.0
+- decisions: `.scratch/cleanup/audit/resonance-removal.tsv`
+- --force: False
+
+| # | 路径 | 体积 | sidecar |
+|---:|---|---:|---|
+| 1 | `BangDreamInSpire/Scripts/Nodes/VFX/ResonanceVfx.cs` | 0.01 MB | `BangDreamInSpire/Scripts/Nodes/VFX/ResonanceVfx.cs.uid` |
+| 2 | `BangDreamInSpire/BangDreamInSpire/scenes/vfx/resonance_vfx.tscn` | 0.00 MB | — |
+| 3 | `BangDreamInSpire/BangDreamInSpire/shaders/resonance_luma.gdshader` | 0.00 MB | `BangDreamInSpire/BangDreamInSpire/shaders/resonance_luma.gdshader.uid` |
+
