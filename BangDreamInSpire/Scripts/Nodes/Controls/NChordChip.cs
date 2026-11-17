@@ -168,19 +168,23 @@ public partial class NChordChip : Control
         }
     }
 
+    private Tween? _scaleTween;
+
     private void OnMouseEntered()
     {
         SetHovered(true);
-        var tween = CreateTween();
-        tween.TweenProperty(this, "scale", new Vector2(1.06f, 1.06f), 0.1f)
+        _scaleTween?.Kill();
+        _scaleTween = CreateTween();
+        _scaleTween.TweenProperty(this, "scale", new Vector2(1.06f, 1.06f), 0.1f)
             .SetTrans(Tween.TransitionType.Cubic).SetEase(Tween.EaseType.Out);
     }
 
     private void OnMouseExited()
     {
         SetHovered(false);
-        var tween = CreateTween();
-        tween.TweenProperty(this, "scale", Vector2.One, 0.1f)
+        _scaleTween?.Kill();
+        _scaleTween = CreateTween();
+        _scaleTween.TweenProperty(this, "scale", Vector2.One, 0.1f)
             .SetTrans(Tween.TransitionType.Cubic).SetEase(Tween.EaseType.Out);
     }
 }

@@ -299,7 +299,9 @@ public partial class BangDreamCharacterSelector : Control
 
         if (_characters.Count == 0)
         {
-            throw new InvalidOperationException($"Group {group} doesn't have any members!");
+            // 一个分组配置错误不应让整个选人屏初始化失败（其它乐队会一起不可用）。
+            BangDreamInSpireCore.Logger.Warn($"Group {group} doesn't have any members; skip selector init.");
+            return;
         }
 
         if (_characterButtons != null)
@@ -351,7 +353,8 @@ public partial class BangDreamCharacterSelector : Control
             }
             else
             {
-                throw new InvalidOperationException("No character can be selected!");
+                BangDreamInSpireCore.Logger.Warn(
+                    $"Group {group} has no selectable character; skip default selection.");
             }
         }
     }

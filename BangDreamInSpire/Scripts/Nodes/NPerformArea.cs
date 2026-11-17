@@ -1142,6 +1142,8 @@ public partial class NPerformArea : Control, IPerformArea
             _pendingEntranceSlots.Remove(slot);
             _slotBaseModulate.Remove(slot);
             slot.Visible = false;
+            // 与 RemoveItem 一致：先解掉模型引用，避免 QueueFree 前仍短暂持有「有模型无槽位」的卡。
+            slot.Model = null;
             slot.QueueFree();
         }
     }

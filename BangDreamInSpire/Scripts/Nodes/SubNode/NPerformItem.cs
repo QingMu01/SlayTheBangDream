@@ -628,12 +628,14 @@ public partial class NPerformItem : NClickableControl, IPerformSlot
 
     protected override void OnUnfocus()
     {
-        if (!_card.IsValid()) return;
+        // 捕获当前实例：_card 可能在 tween 完成前被换掉，字段读法会摘掉另一张预览卡。
+        var card = _card;
+        if (!card.IsValid()) return;
 
         _fadeInTween?.Kill();
         _fadeOutTween?.Kill();
         _fadeOutTween = CreateTween();
-        _fadeOutTween.TweenProperty(_card, "scale", Vector2.Zero, 0.2f);
-        _fadeOutTween.Finished += () => { _parent?.RemoveChildSafely(_card); };
+        _fadeOutTween.TweenProperty(card, "scale", Vector2.Zero, 0.2f);
+        _fadeOutTween.Finished += () => { _parent?.RemoveChildSafely(card); };
     }
 }

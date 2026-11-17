@@ -197,11 +197,19 @@ public sealed partial class NChordDesignScreen : Control, IOverlayScreen
                 Callable.From<NClickableControl>(_ => Cancel()));
             _backButton.Enable();
         }
+        else
+        {
+            BangDreamInSpireCore.Logger.Warn("NChordDesignScreen: %BackButton missing; cancel hotkey only.");
+        }
 
         if (_confirmButton != null)
         {
             _confirmButton.Connect(NClickableControl.SignalName.Released,
                 Callable.From<NClickableControl>(_ => Confirm()));
+        }
+        else
+        {
+            BangDreamInSpireCore.Logger.Warn("NChordDesignScreen: %ConfirmButton missing; confirm hotkey only.");
         }
 
         // 默认状态：C 和弦 + 第一张牌，都停在中轴上
@@ -668,8 +676,9 @@ public sealed partial class NChordDesignScreen : Control, IOverlayScreen
 
         _finished = true;
         Result = result;
-        _completion.TrySetResult(result);
+        // 先摘覆盖层再放行等待方：续体是同步内联执行的，Remove 必须在它之前完成。
         NOverlayStack.Instance?.Remove(this);
+        _completion.TrySetResult(result);
     }
 
     // ── 小工具 ──────────────────────────────────────────────────────────────────────
