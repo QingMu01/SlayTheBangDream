@@ -133,6 +133,19 @@ public class PuppeteerFormManager : HookedSingletonModel, IInCombatManager, IPup
     /// <summary>
     /// 死亡拦截：只有「战斗内 + 本体形态 + 目标是本玩家角色」才拦下。
     /// 傀儡形态正常阵亡（此时才真正失败结算）；未绑定玩家的克隆、战斗外的致死一律放行。
+    /// <para>
+    /// **设计语义（不要改成 <c>ShouldDieLate</c>）**：本体形态（睦）不触发原版防死 ——
+    /// 她受伤致死的唯一回应是切成傀儡；傀儡形态（墨缇丝）阵亡是真正的失败，
+    /// 此时本方法返回 <c>true</c>，原版防死（精灵药水走 <c>ShouldDie</c>、蜥蜴尾巴走 <c>ShouldDieLate</c>）
+    /// 照常生效并正常消耗。
+    /// </para>
+    /// <para>
+    /// **顺序前提**：原版 <c>Hook.ShouldDie</c> 先遍历全部 <c>ShouldDie</c>（首个 <c>false</c> 胜出），
+    /// 全部通过后才遍历 <c>ShouldDieLate</c>。因此本模型必须通过
+    /// <see cref="PuppeteerMechanic.GetRunStateHookModels" /> 挂在**运行态订阅组**（排在遗物 / 药水之前）；
+    /// 若挂到 <c>GetCombatHookModels</c>（战斗组最末、排在遗物之后），
+    /// 「精灵药水」这类 <c>ShouldDie</c> 型防死就会抢先消费，本体形态不再切傀儡。
+    /// </para>
     /// </summary>
     public override bool ShouldDie(Creature creature)
     {

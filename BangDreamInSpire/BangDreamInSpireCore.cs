@@ -178,6 +178,11 @@ public static class BangDreamInSpireCore
 
         ModHelper.SubscribeForCombatStateHooks("ExtraSubscribe",
             state => BangDreamMechanicRegistry.GetCombatHookModels(state.Players).ToList());
+
+        // 运行态订阅组：排在遗物 / 药水之前。给「必须优先于原版同类判定」的钩子用
+        // （当前只有傀儡师的死亡拦截）。
+        ModHelper.SubscribeForRunStateHooks("BangDreamRunStateHooks",
+            state => BangDreamMechanicRegistry.GetRunStateHookModels(state.Players).ToList());
     }
 
     /// <summary>

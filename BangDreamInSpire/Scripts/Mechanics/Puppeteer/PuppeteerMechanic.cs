@@ -53,8 +53,19 @@ public sealed class PuppeteerMechanic : IBangDreamMechanic
         yield return manager;
     }
 
-    /// <summary>战斗钩子订阅用同一份克隆：死亡拦截与形态切换必须落在绑定了玩家的那份上。</summary>
-    public IEnumerable<AbstractModel> GetCombatHookModels(Player player)
+    /// <summary>
+    /// 死亡拦截必须排在原版防死之前，因此挂到**运行态**订阅组而不是战斗组。
+    /// <para>
+    /// 原版 <c>Hook.ShouldDie</c> 先遍历全部监听者的 <c>ShouldDie</c>（首个返回 <c>false</c> 者胜出），
+    /// 全部通过后才遍历 <c>ShouldDieLate</c>。战斗组订阅者在 <c>CombatState.IterateHookListeners()</c>
+    /// 最末产出 —— 排在遗物 / 药水**之后**，于是「精灵药水」（<c>ShouldDie</c> 型防死）会抢先消费，
+    /// 本体形态就不会切成傀儡。运行态订阅组排在遗物之前，可保证本体形态的拦截优先。
+    /// </para>
+    /// <para>
+    /// 傀儡形态下本模型返回 <c>true</c>（不拦），原版两轮防死照常生效 —— 墨缇丝可以触发这些机制。
+    /// </para>
+    /// </summary>
+    public IEnumerable<AbstractModel> GetRunStateHookModels(Player player)
     {
         yield return player.AttachedData().PuppeteerFormManager;
     }

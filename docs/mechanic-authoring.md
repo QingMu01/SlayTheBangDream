@@ -297,7 +297,7 @@ rewardCard.GetOrCreateCapability<ChordCapability>().SetChord(randomChord);
 | 项 | 约定 |
 |---|---|
 | 形态与生命 | 本体（`PuppeteerForm.Host`）用角色 `StartingHp`；傀儡（`Puppet`）上限由 `IPuppeteerCharacter.PuppetMaxHp` 给出。切形态时先把旧形态当前血量写回运行数据，再 `SetMaxHpInternal` → `SetCurrentHpInternal` 写入新形态（顺序不能反：写上限会把当前值压进上限）。 |
-| 死亡拦截 | 只拦「战斗内 + 本体形态 + 目标是本玩家角色」：`ShouldDie` 返回 `false`，在 `AfterPreventingDeath` 里切傀儡。**必须在 `AfterPreventingDeath` 里把血量抬到 >0**，否则原版会递归重杀（10 次后抛异常）。傀儡形态阵亡才是真正的失败结算。 |
+| 死亡拦截 | **本体形态吞掉一切原版防死，傀儡形态正常吃。** 只拦「战斗内 + 本体形态 + 目标是本玩家角色」：`ShouldDie` 返回 `false`，在 `AfterPreventingDeath` 里切傀儡。原版 `Hook.ShouldDie` 先遍历全部 `ShouldDie`（首个 `false` 者胜出），全部通过后才遍历 `ShouldDieLate` —— 本体返回 `false` 时两轮都跑不到，故精灵药水（`ShouldDie` 型）与蜥蜴尾巴（`ShouldDieLate` 型）**都不触发也不消耗**；傀儡形态返回 `true`，两类防死照常生效。**顺序是硬约束**：本模型必须走 `GetRunStateHookModels`（运行态订阅组，`RunState.IterateHookListeners` 中排在遗物 / 药水**之前**）；挂到 `GetCombatHookModels`（战斗组最末、排在遗物之后）会让 `ShouldDie` 型防死抢先，本体就不切形态了。**必须在 `AfterPreventingDeath` 里把血量抬到 >0**，否则原版会递归重杀（10 次后抛异常）。傀儡形态阵亡才是真正的失败结算。 |
 | 战斗边界 | 战斗开始强制本体形态（本体 0 血 → 1 血）；胜利 / 战斗结束（`AfterCombatVictory` + `AfterCombatEnd` + 解除订阅，三入口幂等）切回本体，本体已死则按 1 血强制复活。战斗外恒为 `Host`，读档不会卡在傀儡形态。 |
 | 歌单冻结 | `PerformManager.IsPlaylistFrozen`：冻结时音乐牌不再进歌单（`ModifyCardPlayResultLocation` 保持原版去向）、`OnCardAdded` / `HandleCardAddedInternal` 拒绝入组、`Clean` / `RemoveOverflowItems` 整段跳过（歌单内容不可移除）。 |
 | 演奏→激活 | 冻结时所有「演奏」入口（`PerformSlot` / `PerformChordSlots` / `RequestSlotPerform` / `RequestChordPerform` / `PerformCard`，以及打出音乐牌本身）不再发动效果、不再排网络动作，改为 `PuppeteerFormManager.ActivateGroups(...)`。分组来源：卡牌 `RequestGroup` / 指定槽位所属分组 → 该组；和弦掩码 → 掩码覆盖的所有组；都没有 → 方案默认分组。激活幂等，四组全亮触发复活。 |

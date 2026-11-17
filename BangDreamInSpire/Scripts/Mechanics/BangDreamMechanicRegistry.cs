@@ -67,6 +67,16 @@ public static class BangDreamMechanicRegistry
         return Mechanics.SelectMany(mechanic => playerList.SelectMany(mechanic.GetCombatHookModels));
     }
 
+    /// <summary>
+    /// 全部机制需要在**运行态**被订阅的模型。这些模型在 <c>RunState.IterateHookListeners</c> 中
+    /// 排在遗物 / 药水之前，供「必须优先于原版判定」的钩子使用。
+    /// </summary>
+    public static IEnumerable<AbstractModel> GetRunStateHookModels(IEnumerable<Player> players)
+    {
+        var playerList = players.ToList();
+        return Mechanics.SelectMany(mechanic => playerList.SelectMany(mechanic.GetRunStateHookModels));
+    }
+
     /// <summary>调用全部机制的战斗开始订阅。</summary>
     public static void SubmitCombatState(Player player)
     {

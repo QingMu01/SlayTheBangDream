@@ -32,7 +32,23 @@ public interface IBangDreamMechanic
     IEnumerable<AbstractModel> InstantiatePlayerState(Player player) => [];
 
     /// <summary>需要在战斗期间被订阅进原版战斗 hook 迭代的模型（<c>ExtraSubscribe</c>）。</summary>
+    /// <remarks>
+    /// 这组模型在 <c>CombatState.IterateHookListeners()</c> 的**最末**产出，
+    /// 因此**排在遗物 / 药水之后**。纯玩法钩子放这里即可。
+    /// </remarks>
     IEnumerable<AbstractModel> GetCombatHookModels(Player player) => [];
+
+    /// <summary>
+    /// 需要被订阅进**运行态** hook 迭代的模型。
+    /// </summary>
+    /// <remarks>
+    /// 与 <see cref="GetCombatHookModels" /> 的区别只在迭代位置：run-state 订阅者在
+    /// <c>RunState.IterateHookListeners</c> 中产出，**排在牌组之前的空档、遗物 / 药水之前**。
+    /// 因此「必须优先于原版同类判定生效」的钩子要放这里 ——
+    /// 例如傀儡师的 <c>ShouldDie</c>：原版对 <c>ShouldDie</c> 的迭代是首个返回 <c>false</c> 者胜出，
+    /// 若排在遗物之后，「精灵药水」这类 <c>ShouldDie</c> 型防死会抢先消费掉，本体就不会切成傀儡。
+    /// </remarks>
+    IEnumerable<AbstractModel> GetRunStateHookModels(Player player) => [];
 
     /// <summary>战斗开始时的每玩家订阅。</summary>
     void SubmitCombatState(Player player)
