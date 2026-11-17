@@ -528,14 +528,27 @@ public partial class PerformManager : HookedSingletonModel, IInCombatManager, IP
     }
 
     /// <summary>飞牌到达由原版逐帧动画回调驱动，不依赖当前演奏 Action 完成。</summary>
+    /// <summary>
+    /// 等待入场 / 槽位布局动画的上限帧数。这些动画正常在 0.3-0.6 秒内结束（60fps 下 &lt; 40 帧）。
+    /// <para>
+    /// 为什么要封顶：本方法跑在**同步网络动作**里，逐帧轮询「表现是否播完」。
+    /// 一旦 <c>IsArrivalVisualPlaying</c> / <c>IsSlotLayoutPlaying</c> 因为 tween 被外部杀死等原因
+    /// 一直为真，等待就永不结束，整条动作队列会被挂住（软锁）。
+    /// </para>
+    /// </summary>
+    private const int PresentationWaitFrameBudget = 120;
+
     private async Task<bool> WaitForCardPresentation(CardModel cardModel)
     {
         if (PerformArea is not { } area || !area.IsInsideTree()) return true;
+
+        var framesLeft = PresentationWaitFrameBudget;
 
         while (_cardsPendingArrival.Contains(cardModel))
         {
             if (!CombatManager.Instance.IsInProgress || cardModel.Pile != PerformPile ||
                 !area.IsInsideTree()) return false;
+            if (--framesLeft < 0) return AbandonStuckPresentation(cardModel);
             await area.AwaitProcessFrame();
         }
 
@@ -551,10 +564,25 @@ public partial class PerformManager : HookedSingletonModel, IInCombatManager, IP
             var slot = context.Slot;
             if (slot == null || slot.Model != cardModel) return false;
             if (!slot.IsArrivalVisualPlaying && !area.IsSlotLayoutPlaying) return true;
+            if (--framesLeft < 0) return AbandonStuckPresentation(cardModel);
             await area.AwaitProcessFrame();
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// 表现迟迟不收敛时放行：记一次告警，清掉「等入场」标记（避免同一张牌下次再卡），
+    /// 返回 <see langword="true" /> 让结算按「已到位」继续。代价只是少等一段表现。
+    /// </summary>
+    private bool AbandonStuckPresentation(CardModel cardModel)
+    {
+        BangDreamInSpireCore.Logger.Warn(
+            $"Card presentation for {cardModel.Id.Entry} did not settle within " +
+            $"{PresentationWaitFrameBudget} frames; continuing without waiting for it.");
+
+        _cardsPendingArrival.Remove(cardModel);
+        return true;
     }
 
     private void PlayPerformFlashVfx(CardModel cardModel)

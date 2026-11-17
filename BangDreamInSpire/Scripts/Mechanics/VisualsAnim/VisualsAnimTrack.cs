@@ -1,3 +1,4 @@
+using Godot;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Nodes;
@@ -102,13 +103,15 @@ public static class VisualsAnimTrack
             await gate.WaitAsync(token);
             acquired = true;
 
-            // 时间线必须全程在主线程推进：tween 信号、节点操作都在主线程，
-            // 若续体被调度到线程池会直接崩在 Godot 的节点访问上。
+            // 时间线必须全程在主线程推进：tween 信号、节点操作都在主线程。
+            // 信号量竞争后的续体可能落在线程池 —— 此时**不能丢弃**整条时间线：
+            // 那样连 Callback 里的玩法请求（伤害）都会静默消失，与「按生物串行、排在后面」的承诺相反。
+            // 改为显式回主线程再继续。
             if (!NGame.IsMainThread())
             {
-                BangDreamInSpireCore.Logger.Error(
-                    "VisualsAnim track resumed off the main thread; aborting this animation.");
-                return;
+                BangDreamInSpireCore.Logger.Warn(
+                    "VisualsAnim track resumed off the main thread; hopping back to the main thread.");
+                await SwitchToMainThreadAsync(token);
             }
 
             proxy = VisualsAnimProxyRegistry.Acquire(creature);
@@ -136,5 +139,19 @@ public static class VisualsAnimTrack
 
             linked.Dispose();
         }
+    }
+
+    /// <summary>
+    /// 把续体送回 Godot 主线程。本项目没有安装 <c>SynchronizationContext</c>，
+    /// <c>await</c> 在线程池上完成的 Task 时会落回线程池，因此用「延迟调用 + 非内联 TCS」显式切换。
+    /// TCS 刻意不带 <c>RunContinuationsAsynchronously</c>：要让续体在主线程内联执行。
+    /// </summary>
+    private static async Task SwitchToMainThreadAsync(CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var completion = new TaskCompletionSource<bool>();
+        Callable.From(() => completion.TrySetResult(true)).CallDeferred();
+        await completion.Task.WaitAsync(cancellationToken);
     }
 }
