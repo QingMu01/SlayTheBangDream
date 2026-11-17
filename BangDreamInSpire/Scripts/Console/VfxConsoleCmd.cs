@@ -12,6 +12,11 @@ public class VfxConsoleCmd : AbstractConsoleCmd
 {
     public override CmdResult Process(Player? issuingPlayer, string[] args)
     {
+        if (args.Length == 0)
+        {
+            return new CmdResult(false, "index must be int value!");
+        }
+
         if (int.TryParse(args[0], out var index))
         {
             if (index < 0 || index >= BangDreamPreloadManager.VfxAssets.Count)

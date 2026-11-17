@@ -93,6 +93,7 @@ public partial class NPerformArea : Control, IPerformArea
     private bool _isHintAnimating;
     private bool _hintNeedsPositionRefresh;
     private bool _isExiting;
+    private bool _subscribedToResourceChanged;
 
     // ── 歌单冻结 / 分组激活（占位表现） ──────────────────────────────────────────
     //
@@ -174,7 +175,14 @@ public partial class NPerformArea : Control, IPerformArea
             return;
         }
 
+        // 同一节点重复 SubmitChanged（重连/复活/后续重构）时不能叠加回调。
+        if (_subscribedToResourceChanged)
+        {
+            return;
+        }
+
         SecondaryResourceStateStore.Get(_player).Changed += OnSecondaryResourceChanged;
+        _subscribedToResourceChanged = true;
     }
 
     /// <summary>
@@ -532,10 +540,13 @@ public partial class NPerformArea : Control, IPerformArea
         HideSelectionPrompt();
         PerformTargetingArrow.End();
 
-        if (_player != null && SecondaryResourceStateStore.TryGet(_player, out var resourceState))
+        if (_subscribedToResourceChanged && _player != null &&
+            SecondaryResourceStateStore.TryGet(_player, out var resourceState))
         {
             resourceState.Changed -= OnSecondaryResourceChanged;
         }
+
+        _subscribedToResourceChanged = false;
 
         CancelLayoutTween();
         CancelSlotEntranceTween(false);
@@ -727,6 +738,12 @@ public partial class NPerformArea : Control, IPerformArea
 
     private async Task ApplySlotSync()
     {
+        // 布局链在 _ExitTree 后仍可能被 await 续到：对已退树/已释放的槽位建 tween 只会写脏。
+        if (_isExiting || !IsInsideTree())
+        {
+            return;
+        }
+
         EnsureSlotCount();
 
         foreach (var slotIndex in _newlyActiveSlots)
@@ -747,6 +764,7 @@ public partial class NPerformArea : Control, IPerformArea
 
     private Task AnimateLayout()
     {
+        if (_isExiting || !IsInsideTree()) return Task.CompletedTask;
         if (_itemContainer == null) return Task.CompletedTask;
 
         CancelSlotEntranceTween(true);
