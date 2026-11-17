@@ -18,10 +18,8 @@ public class SubsideCapability : CardCapability, ICardDescriptionContributor, IC
 {
     private const string SubsidePostfix = ".subside";
 
-    private static readonly LocString Text = new("gameplay_ui", "BANG_DREAM_IN_SPIRE_SUBSIDE_PLAY_TEXT");
-
+    // LocString 的 Add 是写内部字典：不能把可变实例做成 static，否则同一帧渲染多张余音卡时变量互相覆盖。
     private static readonly LocString Title = new("static_hover_tips", "BANG_DREAM_IN_SPIRE_SUBSIDE.title");
-    private static readonly LocString Description = new("static_hover_tips", "BANG_DREAM_IN_SPIRE_SUBSIDE.description");
 
     public IEnumerable<CardDescriptionFragment> GetDescriptionFragments(CardDescriptionContext context)
     {
@@ -43,8 +41,9 @@ public class SubsideCapability : CardCapability, ICardDescriptionContributor, IC
         }
 
 
-        Text.Add(new StringVar("Description", subsideDescription.GetFormattedText()));
-        yield return new CardDescriptionFragment(Text);
+        var text = new LocString("gameplay_ui", "BANG_DREAM_IN_SPIRE_SUBSIDE_PLAY_TEXT");
+        text.Add(new StringVar("Description", subsideDescription.GetFormattedText()));
+        yield return new CardDescriptionFragment(text);
     }
 
     public IEnumerable<IHoverTip> GetHoverTips(CardModel card)
@@ -52,10 +51,11 @@ public class SubsideCapability : CardCapability, ICardDescriptionContributor, IC
         card.TryGetSecondaryCosts(out var set);
         if (set.ResourceIds.Contains(BangDreamConst.LingeredResource))
         {
-            Description.Add("Amount", SecondaryResourcePaymentResolver.Plan(card).Lines
+            var description = new LocString("static_hover_tips", "BANG_DREAM_IN_SPIRE_SUBSIDE.description");
+            description.Add("Amount", SecondaryResourcePaymentResolver.Plan(card).Lines
                 .Where(line => line.ResourceId.Equals(BangDreamConst.LingeredResource))
                 .Sum(line => line.Value));
-            yield return new HoverTip(Title, Description);
+            yield return new HoverTip(Title, description);
         }
     }
 

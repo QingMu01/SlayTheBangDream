@@ -346,6 +346,8 @@ public sealed class CombatAsyncDamageManager
     /// <summary>脱手表征泵：按注册顺序生成动画并观察命中，命中后请求同步结算。不占用同步 Action。</summary>
     private static async Task PumpAsync(Session session)
     {
+        // 正在生成的那枚不在 SpawnQueue 里：泵异常退出时必须单独兜底，否则它会永久未结算。
+        NoteState? inFlight = null;
         try
         {
             while (true)
@@ -370,7 +372,9 @@ public sealed class CombatAsyncDamageManager
                     }
                 }
 
+                inFlight = note;
                 await SpawnAsync(session, note);
+                inFlight = null;
             }
         }
         catch (Exception exception)
@@ -378,6 +382,11 @@ public sealed class CombatAsyncDamageManager
             BangDreamInSpireCore.Logger.Error($"Async damage presentation pump error: {exception}");
             lock (session.Gate)
                 session.PumpRunning = false;
+
+            if (inFlight is { Resolved: false } pending)
+            {
+                RunOnMainThread(() => RequestResolveOnArrival(session, pending));
+            }
         }
         finally
         {

@@ -155,6 +155,9 @@ internal static class ExtraPileCmd
                 selectedCards = (await RunManager.Instance.PlayerChoiceSynchronizer
                         .WaitForRemoteChoice(player, choiceId))
                     .AsIndexes()
+                    // 各端候选集顺序/数量可能不一致（版本差、状态差）：越界索引直接丢弃，
+                    // 与同文件删牌路径的边界过滤保持一致。
+                    .Where(index => index >= 0 && index < upgradableCards.Count)
                     .Select(index => upgradableCards[index])
                     .ToList();
             }
