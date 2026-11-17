@@ -202,7 +202,10 @@ public class PuppeteerFormManager : HookedSingletonModel, IInCombatManager, IPup
         performManager.SetPlaylistFrozen(true);
         performManager.SetActivatedGroups(ActivatedGroups);
 
-        PlayTrigger(character.PuppetSwitchInTrigger);
+        // 有本体切出动作时先播它，animator 会自动接傀儡切入；没有就直接播傀儡切入。
+        PlayTrigger(character.HostSwitchOutTrigger is { Length: > 0 } hostSwitchOut
+            ? hostSwitchOut
+            : character.PuppetSwitchInTrigger);
 
         BangDreamInSpireCore.Logger.Info(
             $"Player {_player.Character} ({_player.NetId}) host died, switch to puppet : {puppetHp}/{puppetMax}.");

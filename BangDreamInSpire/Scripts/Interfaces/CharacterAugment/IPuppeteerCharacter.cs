@@ -19,6 +19,16 @@ public interface IPuppeteerCharacter : IPerformableCharacter
     /// <summary>切回本体形态时播放的动作触发名（例如 <c>Doll_SwitchOut</c>）。</summary>
     string PuppetSwitchOutTrigger { get; }
 
+    /// <summary>
+    /// 本体形态的**切出**动作（例如 <c>SwitchOut</c>）；返回空串表示骨架没有该动作，
+    /// 直接播 <see cref="PuppetSwitchInTrigger" />。
+    /// <para>
+    /// 有该动作时，形态切换会先播本体切出、再自动接傀儡切入（串联在角色的 animator 里，
+    /// 由 <c>AnimState.NextState</c> 完成，不依赖游戏侧计时）。
+    /// </para>
+    /// </summary>
+    string HostSwitchOutTrigger => "";
+
     /// <summary>傀儡形态的待机动作触发名（例如 <c>Doll_Idle</c>）。</summary>
     string PuppetIdleTrigger { get; }
 
