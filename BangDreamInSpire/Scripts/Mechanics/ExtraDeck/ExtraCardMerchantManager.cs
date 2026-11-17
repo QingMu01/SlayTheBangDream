@@ -162,18 +162,20 @@ internal static class ExtraCardMerchantManager
     {
         var musicSlots = inventoryNode.GetNode<Control>("%MusicCards").GetChildren().OfType<NMusicCardSlot>().ToList();
         var removalSlot = inventoryNode.GetNodeOrNull<NExtraDeckRemovalSlot>("%ExtraDeckRemoval");
-        foreach (var musicSlot in musicSlots)
-        {
-            musicSlot.Initialize(inventoryNode);
-        }
-
-        if (removalSlot != null)
-        {
-            removalSlot.Initialize(inventoryNode);
-        }
-
         if (supportsExtraCardPool)
         {
+            // 只有真的会 Fill 的槽位才 Initialize：基类 Initialize 会订阅 Player.GoldChanged
+            // 并连接悬停信号，而「Initialize 了但从未 Fill」的槽位在 UpdateVisual 里没有条目可读。
+            foreach (var musicSlot in musicSlots)
+            {
+                musicSlot.Initialize(inventoryNode);
+            }
+
+            if (removalSlot != null)
+            {
+                removalSlot.Initialize(inventoryNode);
+            }
+
             for (var i = 0; i < musicSlots.Count && i < musicEntries.Count; i++)
             {
                 musicSlots[i].Fill(musicEntries[i]);

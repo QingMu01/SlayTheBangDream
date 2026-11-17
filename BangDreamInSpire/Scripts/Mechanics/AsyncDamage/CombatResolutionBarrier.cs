@@ -13,8 +13,14 @@ public static class CombatResolutionBarrier
     {
         public int LeaseCount { get; set; }
 
-        public TaskCompletionSource<bool> Completion { get; } =
-            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        /// <summary>
+        /// 刻意**不带** <see cref="TaskCreationOptions.RunContinuationsAsynchronously" />：
+        /// 等待方是本体回合结束流程（<c>WaitForAsyncDamageResolutionPatch</c>），
+        /// 它必须在主线程继续执行。带该标志会把续体甩到线程池，随后触碰 Godot 节点即崩。
+        /// 由 <see cref="Release" /> / <see cref="ForceComplete" /> 保证 <c>TrySetResult</c>
+        /// 都在锁外调用，因此同步内联续体不会造成锁重入。
+        /// </summary>
+        public TaskCompletionSource<bool> Completion { get; } = new();
     }
 
     private sealed class BarrierLease(ICombatState combatState) : IDisposable

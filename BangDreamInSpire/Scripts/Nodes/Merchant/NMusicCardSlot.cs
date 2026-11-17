@@ -63,6 +63,16 @@ public partial class NMusicCardSlot : NMerchantSlot
     protected override void UpdateVisual()
     {
         base.UpdateVisual();
+        if (_entry is null)
+        {
+            // 槽位数可能多于实际条目（音乐卡槽位固定 3 个，条目可能不足），
+            // 这类槽位从未 Fill，不能解引用 —— 直接按「无内容」隐藏。
+            Visible = false;
+            MouseFilter = MouseFilterEnum.Ignore;
+            ClearHoverTip();
+            return;
+        }
+
         var creationResult = _entry.CreationResult;
         if (creationResult == null)
         {
@@ -165,6 +175,9 @@ public partial class NMusicCardSlot : NMerchantSlot
     {
         base._ExitTree();
         _cardNode?.QueueFreeSafely();
+
+        if (_entry is null)
+            return; // 从未 Fill：没有订阅可解
 
         _entry.EntryUpdated -= UpdateVisual;
         _entry.PurchaseFailed -= OnPurchaseFailed;

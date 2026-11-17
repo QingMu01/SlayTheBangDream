@@ -41,8 +41,30 @@ namespace BangDreamInSpire.Scripts.Mechanics.Perform;
 /// </remarks>
 public sealed class PerformSlotTargetingPatches : IModPatches
 {
-    private static readonly FieldInfo IsTryingToPlayCardField =
-        AccessTools.Field(typeof(NCardPlay), "_isTryingToPlayCard")!;
+    /// <summary>
+    /// 本体私有字段定位结果，允许为 <see langword="null" />。
+    /// <para>
+    /// 静态字段初始化里用 <c>!</c> 硬取，会在本体重命名/移除该成员时抛
+    /// <see cref="TypeInitializationException" />：它发生在补丁注册**之前**，
+    /// 会绕过补丁层 <c>IsCritical=false</c> 的保护，直接让 mod 整体初始化失败。
+    /// 因此统一改成「定位失败 = null」，由调用点判空并降级。
+    /// </para>
+    /// </summary>
+    private static readonly FieldInfo? IsTryingToPlayCardField =
+        AccessTools.Field(typeof(NCardPlay), "_isTryingToPlayCard");
+
+    private static int _degradationLogged;
+
+    /// <summary>本体签名变动导致的降级只在首次发生时告警一次，避免每次出牌刷屏。</summary>
+    internal static void LogMissingMemberOnce(string members)
+    {
+        if (Interlocked.Exchange(ref _degradationLogged, 1) == 1)
+            return;
+
+        BangDreamInSpireCore.Logger.Warn(
+            $"本体私有成员 {members} 定位失败：手动落位目标选择的相关能力已降级，" +
+            "出牌仍按原版规则进行。本体升级后请复核该成员是否改名。");
+    }
 
     public static void AddTo(ModPatcher patcher)
     {
@@ -87,6 +109,12 @@ public sealed class PerformSlotTargetingPatches : IModPatches
     /// </summary>
     internal static void AllowPlayOutsidePlayZone(NCardPlay cardPlay)
     {
+        if (IsTryingToPlayCardField == null)
+        {
+            LogMissingMemberOnce("NCardPlay._isTryingToPlayCard");
+            return;
+        }
+
         IsTryingToPlayCardField.SetValue(cardPlay, true);
     }
 }
@@ -127,19 +155,51 @@ internal sealed class BeginManualSlotSelectionPatch : IPatchMethod
 /// </summary>
 internal sealed class ManualSlotTargetSelectionPatch : IPatchMethod
 {
-    /// <summary>原版"卡牌归位到屏幕下方中央"（与指向生物时一致）。</summary>
-    private static readonly Action<NCardPlay> CenterCard =
-        AccessTools.MethodDelegate<Action<NCardPlay>>(
-            AccessTools.DeclaredMethod(typeof(NCardPlay), "CenterCard")!);
+    // 以下三个本体私有成员的定位结果都允许为 null：静态初始化里硬取（`!`）会把本体重命名
+    // 放大成 TypeInitializationException，绕过补丁的 IsCritical=false 保护。定位失败时由调用点降级。
 
-    /// <summary>原版"是否拖到底部取消区"。</summary>
-    private static readonly Func<NMouseCardPlay, bool> IsCardInCancelZone =
-        AccessTools.MethodDelegate<Func<NMouseCardPlay, bool>>(
-            AccessTools.DeclaredMethod(typeof(NMouseCardPlay), "IsCardInCancelZone")!);
+    /// <summary>原版"卡牌归位到屏幕下方中央"（与指向生物时一致）。缺失只影响归位表现。</summary>
+    private static readonly Action<NCardPlay>? CenterCard =
+        CreateDelegate<Action<NCardPlay>>(typeof(NCardPlay), "CenterCard");
 
-    /// <summary>原版记录左键是否按下的字段。</summary>
-    private static readonly AccessTools.FieldRef<NMouseCardPlay, bool> IsLeftMouseDown =
-        AccessTools.FieldRefAccess<NMouseCardPlay, bool>("_isLeftMouseDown");
+    /// <summary>原版"是否拖到底部取消区"。缺失时无法用拖到底部取消。</summary>
+    private static readonly Func<NMouseCardPlay, bool>? IsCardInCancelZone =
+        CreateDelegate<Func<NMouseCardPlay, bool>>(typeof(NMouseCardPlay), "IsCardInCancelZone");
+
+    /// <summary>原版记录左键是否按下的字段。缺失时手动落位选择整体退回原版流程。</summary>
+    private static readonly AccessTools.FieldRef<NMouseCardPlay, bool>? IsLeftMouseDown =
+        CreateFieldAccessor<NMouseCardPlay, bool>("_isLeftMouseDown");
+
+    private static TDelegate? CreateDelegate<TDelegate>(Type declaringType, string methodName)
+        where TDelegate : Delegate
+    {
+        try
+        {
+            var method = AccessTools.DeclaredMethod(declaringType, methodName);
+            return method == null ? null : AccessTools.MethodDelegate<TDelegate>(method);
+        }
+        catch (Exception exception)
+        {
+            BangDreamInSpireCore.Logger.Warn(
+                $"本体私有方法 {declaringType.Name}.{methodName} 定位失败，手动落位选择将降级：{exception.Message}");
+            return null;
+        }
+    }
+
+    private static AccessTools.FieldRef<TDeclaring, TField>? CreateFieldAccessor<TDeclaring, TField>(string fieldName)
+        where TDeclaring : class
+    {
+        try
+        {
+            return AccessTools.FieldRefAccess<TDeclaring, TField>(fieldName);
+        }
+        catch (Exception exception)
+        {
+            BangDreamInSpireCore.Logger.Warn(
+                $"本体私有字段 {typeof(TDeclaring).Name}.{fieldName} 定位失败，手动落位选择将降级：{exception.Message}");
+            return null;
+        }
+    }
 
     /// <summary>本次等待的收尾方式。</summary>
     private enum TargetWaitResult
@@ -186,7 +246,9 @@ internal sealed class ManualSlotTargetSelectionPatch : IPatchMethod
         {
             // 与指向生物的目标选择一致：卡牌归位到屏幕下方中央、隐藏系统指针，
             // 由指示箭头从卡牌指向鼠标，而不是让卡牌跟着鼠标走。
-            CenterCard(instance);
+            // CenterCard 定位失败时跳过归位（只是表现差异），选择流程继续。
+            if (CenterCard != null)
+                CenterCard(instance);
             result = await WaitForTargetSelection(instance, targetMode, card, manager);
         }
         finally
@@ -238,6 +300,17 @@ internal sealed class ManualSlotTargetSelectionPatch : IPatchMethod
         CardModel card,
         PerformManager manager)
     {
+        var isLeftMouseDownAccessor = IsLeftMouseDown;
+        var isCancelZoneAccessor = IsCardInCancelZone;
+        if (isLeftMouseDownAccessor == null || isCancelZoneAccessor == null)
+        {
+            // 左键状态或取消区判定缺失时无法安全驱动等待循环（会退化成死循环或无法取消），
+            // 整个手动落位选择退回原版流程。
+            PerformSlotTargetingPatches.LogMissingMemberOnce(
+                "NMouseCardPlay._isLeftMouseDown / NMouseCardPlay.IsCardInCancelZone");
+            return TargetWaitResult.Cancelled;
+        }
+
         var mode = targetMode;
         // 拖拽模式下原版 Start() 时左键按下（_isLeftMouseDown = true）：以此作为初值，
         // 使"按下→已松开"发生在等待循环之前时，第一帧就能按"松开"处理（原版同样如此）。
@@ -245,7 +318,7 @@ internal sealed class ManualSlotTargetSelectionPatch : IPatchMethod
 
         while (GodotObject.IsInstanceValid(instance) && manager.IsManualSlotSelectionActive(card))
         {
-            var isLeftMouseDown = IsLeftMouseDown(instance);
+            var isLeftMouseDown = isLeftMouseDownAccessor(instance);
             var isRelease = wasLeftMouseDown && !isLeftMouseDown;
             wasLeftMouseDown = isLeftMouseDown;
 
@@ -268,7 +341,7 @@ internal sealed class ManualSlotTargetSelectionPatch : IPatchMethod
                 }
             }
 
-            if (IsCardInCancelZone(instance))
+            if (isCancelZoneAccessor(instance))
             {
                 return TargetWaitResult.Cancelled;
             }

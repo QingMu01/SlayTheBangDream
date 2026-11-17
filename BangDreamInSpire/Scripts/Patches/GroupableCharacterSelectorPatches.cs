@@ -250,7 +250,10 @@ internal static class CharacterSelectScreenSupport
         {
             // 分组按钮自身也用 GroupCharacterPlaceholder 作为 Character，必须靠 GroupState 区分；
             // 这样即便将来有人把这段挪到插入之后，也不会再把分组按钮一起隐藏。
-            if (GroupableCharacterSelectorPatches.GroupState.ContainsKey(button))
+            // 只豁免「有分组值」的条目：本体占位按钮也曾被 GetOrCreate 写成 null 条目，
+            // 只判 ContainsKey 会把这些本体占位按钮一并豁免，导致它们在 Blitz/Dread 屏上可见且点击即崩。
+            if (GroupableCharacterSelectorPatches.GroupState.TryGetValue(button, out var groupState) &&
+                groupState.HasValue)
             {
                 continue;
             }
@@ -511,14 +514,20 @@ internal class InitSelectorPatch : IPatchMethod
 
         if (!____isSelected && IsSupportedScreen(____delegate) && ____character is GroupCharacterPlaceholder)
         {
-            var characterGroup = GroupableCharacterSelectorPatches.GroupState.GetOrCreate(__instance);
-            if (characterGroup.HasValue)
+            // 只读取、不用 GetOrCreate：在本体占位按钮上创建条目会把它标记成「分组按钮」，
+            // 让隐藏逻辑误以为它是我们插入的按钮而放行。
+            if (GroupableCharacterSelectorPatches.GroupState.TryGetValue(__instance, out var characterGroup) &&
+                characterGroup.HasValue)
             {
-                GroupableCharacterSelectorPatches.GetSelector(____delegate)?.Init(characterGroup.Value, __instance, ____delegate);
+                GroupableCharacterSelectorPatches.GetSelector(____delegate)
+                    ?.Init(characterGroup.Value, __instance, ____delegate);
             }
             else
             {
-                throw new NullReferenceException($"Selected group button({__instance.Name}) not be init.");
+                // 本体占位按钮（没有对应分组）：不初始化，交给后续隐藏逻辑藏掉。
+                // 不能抛异常 —— 一抛就会打断整个角色选择屏。
+                BangDreamInSpireCore.Logger.Warn(
+                    $"Placeholder character button {__instance.Name} has no character group; skipping init.");
             }
         }
     }
@@ -547,8 +556,9 @@ internal class SelectGroupButtonIconPatch : IPatchMethod
     {
         if (__instance.Character is GroupCharacterPlaceholder)
         {
-            var characterGroup = GroupableCharacterSelectorPatches.GroupState.GetOrCreate(__instance);
-            if (characterGroup.HasValue)
+            // 同上：只读取，避免给本体占位按钮留下 null 条目。
+            if (GroupableCharacterSelectorPatches.GroupState.TryGetValue(__instance, out var characterGroup) &&
+                characterGroup.HasValue)
             {
                 var groupSelectIcon = characterGroup.Value.GetGroupSelectIcon();
                 if (!string.IsNullOrEmpty(groupSelectIcon) && ResourceLoader.Exists(groupSelectIcon))

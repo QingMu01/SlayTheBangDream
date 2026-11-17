@@ -66,6 +66,15 @@ public partial class NExtraDeckRemovalSlot : NMerchantSlot
             return;
         }
 
+        if (_entry is null)
+        {
+            // 从未 Fill（商人未开放额外卡池）：没有条目可显示，整块隐藏。
+            Visible = false;
+            MouseFilter = MouseFilterEnum.Ignore;
+            ClearHoverTip();
+            return;
+        }
+
         if (_entry.Used)
         {
             _hitbox.MouseFilter = MouseFilterEnum.Ignore;
@@ -121,6 +130,9 @@ public partial class NExtraDeckRemovalSlot : NMerchantSlot
     public override void _ExitTree()
     {
         base._ExitTree();
+
+        if (_entry is null)
+            return; // 从未 Fill：没有订阅可解
 
         _entry.EntryUpdated -= UpdateVisual;
         _entry.PurchaseFailed -= OnPurchaseFailed;

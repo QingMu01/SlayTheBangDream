@@ -47,6 +47,9 @@ public partial class BangDreamAscensionPanel : Control
 
     private MultiplayerUiMode _mode = MultiplayerUiMode.Singleplayer;
 
+    /// <summary>是否已向全局热键栈压过本面板的 Tab 绑定（决定退树时要不要摘除）。</summary>
+    private bool _hotkeysPushed;
+
     private Tween? _tween;
 
     public int Ascension { get; private set; }
@@ -104,15 +107,13 @@ public partial class BangDreamAscensionPanel : Control
                 SetFireBlue();
                 _arrowsVisible = true;
                 ApplySavedAscension(multiplayer: true);
-                NHotkeyManager.Instance?.PushHotkeyPressedBinding(TabLeftHotkey, DecrementAscension);
-                NHotkeyManager.Instance?.PushHotkeyPressedBinding(TabRightHotkey, IncrementAscension);
+                PushHotkeys();
                 break;
             case MultiplayerUiMode.Singleplayer:
                 SetFireRed();
                 _arrowsVisible = true;
                 ApplySavedAscension(multiplayer: false);
-                NHotkeyManager.Instance?.PushHotkeyPressedBinding(TabLeftHotkey, DecrementAscension);
-                NHotkeyManager.Instance?.PushHotkeyPressedBinding(TabRightHotkey, IncrementAscension);
+                PushHotkeys();
                 break;
             case MultiplayerUiMode.None:
             case MultiplayerUiMode.Client:
@@ -178,13 +179,33 @@ public partial class BangDreamAscensionPanel : Control
         _ascensionLevel?.AddThemeColorOverride(FontOutlineTheme, RedLabelOutline);
     }
 
+    /// <summary>向全局热键栈压入本面板的 Tab 绑定（转调升/降档）。</summary>
+    private void PushHotkeys()
+    {
+        NHotkeyManager.Instance?.PushHotkeyPressedBinding(TabLeftHotkey, DecrementAscension);
+        NHotkeyManager.Instance?.PushHotkeyPressedBinding(TabRightHotkey, IncrementAscension);
+        _hotkeysPushed = true;
+    }
+
+    /// <summary>
+    /// 退树时摘除热键绑定。必须做：<c>NHotkeyManager</c> 的命中处理只执行
+    /// **最高优先级**那一条绑定并 <c>SetInputAsHandled</c>，本面板压入的绑定若一直留着，
+    /// 会永久压住原版 Tab 查牌堆/弃牌堆的绑定，且每次按键都会对已释放节点回调。
+    /// </summary>
+    public override void _ExitTree()
+    {
+        base._ExitTree();
+        Cleanup();
+    }
+
     public void Cleanup()
     {
-        if ((uint)(_mode - 1) <= 1u)
-        {
-            NHotkeyManager.Instance?.RemoveHotkeyPressedBinding(TabLeftHotkey, DecrementAscension);
-            NHotkeyManager.Instance?.RemoveHotkeyPressedBinding(TabRightHotkey, IncrementAscension);
-        }
+        if (!_hotkeysPushed)
+            return;
+
+        _hotkeysPushed = false;
+        NHotkeyManager.Instance?.RemoveHotkeyPressedBinding(TabLeftHotkey, DecrementAscension);
+        NHotkeyManager.Instance?.RemoveHotkeyPressedBinding(TabRightHotkey, IncrementAscension);
     }
 
     public void SetAscensionLevel(int ascension)
