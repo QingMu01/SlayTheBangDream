@@ -14,7 +14,6 @@ using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
-using BangDreamInSpire.Scripts.Nodes.VFX;
 using STS2RitsuLib.Combat.SecondaryResources;
 
 namespace BangDreamInSpire.Scripts.Nodes;
