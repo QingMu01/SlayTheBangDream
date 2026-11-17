@@ -212,7 +212,7 @@
   "ITS_CRYCHIC_CARD_NOTE_TORRENT.title": "音符洪流",
   "ITS_CRYCHIC_CARD_NOTE_TORRENT.description": "对所有敌人造成{Damage:diff()}点伤害X次。\n本回合每获得{LingeredPerExtraHit:diff()}点[gold]余音[/gold]，额外造成1次伤害。",
   "ITS_CRYCHIC_CARD_SURGE.title": "激荡",
-  "ITS_CRYCHIC_CARD_SURGE.description": "对所有敌人造成{Damage:diff()}点伤害。\n每次攻击后，这张牌造成的伤害翻倍并生成{LingeredResource:secondaryResourceIcons()}。",
+  "ITS_CRYCHIC_CARD_SURGE.description": "依次对敌人造成伤害：首次{Damage:diff()}点，之后每次命中翻倍。\n每次攻击后生成{LingeredResource:secondaryResourceIcons()}。",
   "ITS_CRYCHIC_CARD_SYMBOL_I_SAKIKO.title": "元素一：火之章",
   "ITS_CRYCHIC_CARD_SYMBOL_I_SAKIKO.description": "",
   "ITS_CRYCHIC_CARD_SYMBOL_I_SAKIKO.instant": "获得{Buff:diff()}点[gold]活力[/gold]。",
