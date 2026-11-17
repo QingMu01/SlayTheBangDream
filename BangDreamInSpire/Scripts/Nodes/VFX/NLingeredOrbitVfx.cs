@@ -982,26 +982,17 @@ public sealed partial class NLingeredOrbitVfx : Node2D
         viewport.UseHdr2D = true;
         viewport.TransparentBg = true;
 
+        // 辉光强度/阈值/档位全部由场景里的 Environment 子资源配置（铁律一：不要在代码里
+        // 覆盖场景美术基准值）。这里只兜底一个「场景漏配」的最小环境。
         var worldEnvironment = viewport.GetNode<WorldEnvironment>("WorldEnvironment");
-        var environment = worldEnvironment.Environment ?? new Environment();
-        environment.BackgroundMode = Environment.BGMode.Canvas;
-        environment.GlowEnabled = true;
-        environment.GlowNormalized = true;
-        environment.GlowIntensity = 0.65f;
-        environment.GlowStrength = 0.8f;
-        environment.GlowBloom = 0.02f;
-        environment.GlowBlendMode = Environment.GlowBlendModeEnum.Additive;
-        environment.GlowHdrThreshold = 0.9f;
-        environment.GlowHdrScale = 1.1f;
-        environment.GlowHdrLuminanceCap = 8f;
-        environment.SetGlowLevel(0, 0.08f);
-        environment.SetGlowLevel(1, 0.32f);
-        environment.SetGlowLevel(2, 0.72f);
-        environment.SetGlowLevel(3, 0.92f);
-        environment.SetGlowLevel(4, 0.62f);
-        environment.SetGlowLevel(5, 0.24f);
-        environment.SetGlowLevel(6, 0.06f);
-        worldEnvironment.Environment = environment;
+        if (worldEnvironment.Environment == null)
+        {
+            worldEnvironment.Environment = new Environment
+            {
+                BackgroundMode = Environment.BGMode.Canvas,
+                GlowEnabled = true
+            };
+        }
     }
 
     private void SetRenderActive(bool active)
