@@ -44,7 +44,13 @@ public sealed class WeakPointBreakPower : BandPowerModel
     /// <summary>退出弱点击破：清空破绽（连带视觉淡出）。</summary>
     public override async Task AfterRemoved(Creature oldOwner)
     {
-        await PowerCmd.Remove<WeaknessBreakPower>(oldOwner);
+        // 死亡清理会由 RemoveAllPowersAfterDeath 统一移除；PowerCmd.Remove 内建 0.2-0.4s
+        // 等待，在死亡链上再排一次只会拖慢战斗结束。
+        if (!oldOwner.IsDead)
+        {
+            await PowerCmd.Remove<WeaknessBreakPower>(oldOwner);
+        }
+
         NWeaknessBreakVfx.Sync(oldOwner);
     }
 }

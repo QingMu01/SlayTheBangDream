@@ -83,7 +83,6 @@ public sealed class LingeredMechanic : IBangDreamMechanic
                 SetupTiming = NodeAttachmentSetupTiming.AfterAdd,
             });
 
-        context.Content.RegisterSingleton<LingeredResourcesRule>();
 
         context.SubscribeLifecycle<ModelRegistryInitializedEvent>(_ =>
         {

@@ -867,7 +867,9 @@ public partial class PerformManager : HookedSingletonModel, IInCombatManager, IP
 
     public override async Task AfterCardPlayed(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        if (_player == null)
+        // 每个经理都会收到全部出牌事件；只有出牌者的经理需要为「入场表现」等待一次，
+        // 否则 N 人联机每次音乐牌出牌会叠加 N 份延迟。
+        if (_player == null || play.Card.Owner != Player)
         {
             return;
         }

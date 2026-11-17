@@ -25,6 +25,7 @@ public class LingeredOrbitManager : HookedSingletonModel, IInCombatManager
     private Player? _player;
     private CardModel? _previewCard;
     private bool _isSubscribed;
+    private SecondaryResourceState? _subscribedState;
 
     public override bool ShouldReceiveCombatHooks => false;
 
@@ -65,7 +66,8 @@ public class LingeredOrbitManager : HookedSingletonModel, IInCombatManager
         OrbitVfx = orbitVfx;
         OrbitVfx.Initialize(Math.Max(0,
             SecondaryResourceCmd.Get(Player, BangDreamConst.LingeredResource)));
-        SecondaryResourceStateStore.Get(Player).Changed += OnSecondaryResourceChanged;
+        _subscribedState = SecondaryResourceStateStore.Get(Player);
+        _subscribedState.Changed += OnSecondaryResourceChanged;
         _isSubscribed = true;
     }
 
@@ -100,9 +102,11 @@ public class LingeredOrbitManager : HookedSingletonModel, IInCombatManager
             return;
         }
 
-        if (_player != null && SecondaryResourceStateStore.TryGet(_player, out var resourceState))
+        // 用订阅时保存的实例退订：store 在两场战斗间可能被替换，TryGet 会拿不到旧对象。
+        if (_subscribedState != null)
         {
-            resourceState.Changed -= OnSecondaryResourceChanged;
+            _subscribedState.Changed -= OnSecondaryResourceChanged;
+            _subscribedState = null;
         }
 
         _isSubscribed = false;

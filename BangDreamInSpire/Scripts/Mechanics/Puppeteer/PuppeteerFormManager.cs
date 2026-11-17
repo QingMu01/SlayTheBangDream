@@ -1,3 +1,4 @@
+using Godot;
 using BangDreamInSpire.Scripts.Enums;
 using BangDreamInSpire.Scripts.Extensions;
 using BangDreamInSpire.Scripts.Interfaces;
@@ -434,14 +435,18 @@ public class PuppeteerFormManager : HookedSingletonModel, IInCombatManager, IPup
     {
         if (string.IsNullOrEmpty(trigger)) return;
 
-        _player?.Creature.GetCreatureNode()?.SetAnimationTrigger(trigger);
+        // 战斗结束清理期节点可能已入销毁队列：先判活再触碰 Spine。
+        if (_player?.Creature.GetCreatureNode() is { } node && GodotObject.IsInstanceValid(node))
+        {
+            node.SetAnimationTrigger(trigger);
+        }
     }
 
     /// <summary>若还停在傀儡动作上，强制回到本体待机（战斗开始 / 形态归位时使用）。</summary>
     private void ResetHostAnimationIfNeeded(IPuppeteerCharacter character)
     {
         var node = _player?.Creature.GetCreatureNode();
-        if (node == null) return;
+        if (node == null || !GodotObject.IsInstanceValid(node)) return;
 
         var current = node.SpineAnimation.GetCurrentAnimationName();
         if (current == null) return;

@@ -24,7 +24,6 @@ public sealed class BreakMechanic : IBangDreamMechanic
         BangDreamConst.BreakEffect = context.RegisterCardKeyword("BreakEffect");
 
         // 击破触发规则的战斗钩子实例（每局克隆一份）。
-        context.Content.RegisterSingleton<BreakRules>();
     }
 
     public void RegisterPatches(ModPatcher patcher)

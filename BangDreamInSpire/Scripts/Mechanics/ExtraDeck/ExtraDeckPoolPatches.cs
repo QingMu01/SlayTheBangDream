@@ -61,9 +61,17 @@ internal class ExtraPoolConcatToStandardPoolInLibraryPatch : IPatchMethod
     [HarmonyPriority(Priority.Last)]
     [HarmonyAfter(Const.ModId + ".framework-character-assets")]
     public static void Postfix(
-        Dictionary<NCardPoolFilter, Func<CardModel, bool>> ____poolFilters,
-        Dictionary<CharacterModel, NCardPoolFilter> ____cardPoolFilters)
+        Dictionary<NCardPoolFilter, Func<CardModel, bool>>? ____poolFilters,
+        Dictionary<CharacterModel, NCardPoolFilter>? ____cardPoolFilters)
     {
+        // 本体重命名字段时参数注入会是 null：早退，别让卡库 _Ready 直接 NRE。
+        if (____poolFilters == null || ____cardPoolFilters == null)
+        {
+            BangDreamInSpireCore.Logger.Warn(
+                "[ExtraDeck] card library filters not found; skip extra pool concat.");
+            return;
+        }
+
         foreach (var characterModel in ____cardPoolFilters.Keys)
         {
             if (characterModel is IExtraDeckSupportCharacter character)
@@ -72,8 +80,12 @@ internal class ExtraPoolConcatToStandardPoolInLibraryPatch : IPatchMethod
                 var characterCardPool = characterModel.CardPool;
                 var characterExtraCardPool = character.ExtraCardPool;
 
+                // 与已有筛选器组合而不是整体替换，避免吞掉其它 mod 的过滤逻辑。
+                var previousFilter = ____poolFilters.GetValueOrDefault(filter);
                 ____poolFilters[filter] = model =>
-                    characterCardPool.AllCards.Contains(model) || characterExtraCardPool.AllCards.Contains(model);
+                    (previousFilter?.Invoke(model) ?? false) ||
+                    characterCardPool.AllCards.Contains(model) ||
+                    characterExtraCardPool.AllCards.Contains(model);
             }
         }
     }
