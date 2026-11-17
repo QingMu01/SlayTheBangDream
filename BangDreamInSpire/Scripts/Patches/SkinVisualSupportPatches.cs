@@ -278,7 +278,7 @@ internal class FakeMerchantScenePatch : IPatchMethod
 
             // 优先换成皮肤自带的商人场景；皮肤没配 MerchantScene 时退回皮肤的 creature 视觉，
             // 否则该事件会把模组角色显示成本体的占位模型（铁甲）。
-            Node replacement = BangDreamMerchant.Create(currentPlayer);
+            Node? replacement = BangDreamMerchant.Create(currentPlayer);
             if (replacement == null)
             {
                 var visualScene = SkinManager.ResolvePlayerVisualScene(currentPlayer);
