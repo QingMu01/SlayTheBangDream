@@ -17,6 +17,9 @@ public sealed class VisualsAnimMechanic : IBangDreamMechanic
 
     public int Order => 360;
 
+    /// <summary>含玩法的演出会租 <c>async_damage</c> 的回合结束屏障，故必须在其之后装配。</summary>
+    public IReadOnlyList<string> Dependencies => ["async_damage"];
+
     public void RegisterContent(BangDreamMechanicContext context)
     {
         context.SubscribeLifecycle<CombatEndedEvent>(_ => VisualsAnimTrack.ResetCombat());

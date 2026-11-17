@@ -417,10 +417,14 @@ cloneTrack?.SetTrackTime(sourceTrack.GetTrackTime());
 
 ### 13.4 已知边界
 
-- **回合结束时在跑的演出**：`Callback` 里的伤害请求走的是玩家驱动动作，玩家在演出中途结束回合时
-  该请求可能被 `StartCancellingAllPlayerDrivenCombatActions` 取消。演出目前不持有
-  `CombatResolutionBarrier` 租赁，所以回合结束**不会**等演出跑完。若要保证伤害不丢，
-  应让时间线也租一个屏障（同一战斗 key，额外一个 lease）。
+- **回合结束时在跑的演出**（已处理）：`Callback` 里的请求走玩家驱动动作，玩家在演出中途结束回合时
+  该请求会被 `StartCancellingAllPlayerDrivenCombatActions` 取消。现在 **含 `Callback` 的演出**
+  在提交时会自动向 `CombatResolutionBarrier` 租一个租赁（同一战斗 key，额外一个 lease），
+  时间线结束（含取消）时释放，因此回合结束会等这类演出跑完再推进。
+  纯视觉演出不租，避免无谓拖住回合结束。实现见 `VisualsAnimCmd.AcquireResolutionLease`；
+  该依赖使 `visuals_anim` 声明了 `Dependencies = ["async_damage"]`。
+  **仍存的边界**：租赁只保证「回合结束会等」，不保证演出本身不被打断 ——
+  战斗直接结束（`ResetCombat`）时演出仍会被取消。
 - **`Home` 在创建时捕获**：战斗中途若布局重排（换位、召唤），基准位置会过期。
 - **非骨架生物不镜像动画**：`VisualsAnimMirror` 只在 `NCreature.HasSpineAnimation` 与克隆同为真时创建。
   非 Spine（Live2D 等）的克隆只是一个静止画面，需要另行按 `Body` 实际类型驱动。

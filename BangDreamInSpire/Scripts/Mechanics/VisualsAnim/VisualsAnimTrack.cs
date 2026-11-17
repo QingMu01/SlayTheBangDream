@@ -32,21 +32,25 @@ public static class VisualsAnimTrack
     public static Task RunAsync(
         Creature creature,
         IReadOnlyList<IVisualsAnimStep> steps,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        IDisposable? completionLease = null)
     {
         ArgumentNullException.ThrowIfNull(creature);
         ArgumentNullException.ThrowIfNull(steps);
 
-        return RunCoreAsync(creature, steps, cancellationToken);
+        return RunCoreAsync(creature, steps, cancellationToken, completionLease);
     }
 
     /// <summary>提交一条演出后立即返回，不阻塞调用方（典型用法：在 <c>OnPlay</c> 里提交）。</summary>
-    public static void Submit(Creature creature, IReadOnlyList<IVisualsAnimStep> steps)
+    public static void Submit(
+        Creature creature,
+        IReadOnlyList<IVisualsAnimStep> steps,
+        IDisposable? completionLease = null)
     {
         ArgumentNullException.ThrowIfNull(creature);
         ArgumentNullException.ThrowIfNull(steps);
 
-        TaskHelper.RunSafely(RunCoreAsync(creature, steps, default));
+        TaskHelper.RunSafely(RunCoreAsync(creature, steps, default, completionLease));
     }
 
     /// <summary>战斗结束：取消所有在跑的演出并释放代理，避免回合或节点生命周期被悬挂的时间线拖住。</summary>
@@ -80,7 +84,27 @@ public static class VisualsAnimTrack
         }
     }
 
+    /// <summary>
+    /// 时间线外壳：只负责保证 <paramref name="completionLease" />（回合结束屏障租赁）一定被释放，
+    /// 即使建立令牌源或推演过程中抛异常也不会让屏障悬挂。
+    /// </summary>
     private static async Task RunCoreAsync(
+        Creature creature,
+        IReadOnlyList<IVisualsAnimStep> steps,
+        CancellationToken cancellationToken,
+        IDisposable? completionLease)
+    {
+        try
+        {
+            await RunTimelineAsync(creature, steps, cancellationToken);
+        }
+        finally
+        {
+            completionLease?.Dispose();
+        }
+    }
+
+    private static async Task RunTimelineAsync(
         Creature creature,
         IReadOnlyList<IVisualsAnimStep> steps,
         CancellationToken cancellationToken)

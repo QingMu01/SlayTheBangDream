@@ -1,3 +1,4 @@
+using BangDreamInSpire.Scripts.Mechanics.AsyncDamage;
 using Godot;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 
@@ -22,7 +23,7 @@ public static class VisualsAnimCmd
     /// <summary>提交演出后立即返回。</summary>
     public static void Submit(Creature creature, params IVisualsAnimStep[] steps)
     {
-        VisualsAnimTrack.Submit(creature, steps);
+        VisualsAnimTrack.Submit(creature, steps, AcquireResolutionLease(creature, steps));
     }
 
     /// <summary>提交演出并等待它跑完（会占住调用方的动作直到演出结束，慎用）。</summary>
@@ -31,7 +32,34 @@ public static class VisualsAnimCmd
         IReadOnlyList<IVisualsAnimStep> steps,
         CancellationToken cancellationToken = default)
     {
-        return VisualsAnimTrack.RunAsync(creature, steps, cancellationToken);
+        return VisualsAnimTrack.RunAsync(
+            creature, steps, cancellationToken, AcquireResolutionLease(creature, steps));
+    }
+
+    /// <summary>
+    /// 含 <see cref="CallbackStep" /> 的演出承载玩法（例如推进到某处时发射音符），
+    /// 必须租一个 <see cref="CombatResolutionBarrier" /> 租赁，否则玩家在演出中途结束回合时，
+    /// 那些请求会被 `StartCancellingAllPlayerDrivenCombatActions` 取消，伤害静默丢失
+    /// （即 docs/mechanic-authoring.md §13.4 记录过的边界）。
+    /// <para>纯视觉演出不租，避免无谓地拖住回合结束。</para>
+    /// </summary>
+    private static IDisposable? AcquireResolutionLease(Creature creature, IReadOnlyList<IVisualsAnimStep> steps)
+    {
+        var hasGameplaySteps = false;
+        foreach (var step in steps)
+        {
+            if (step is CallbackStep)
+            {
+                hasGameplaySteps = true;
+                break;
+            }
+        }
+
+        if (!hasGameplaySteps)
+            return null;
+
+        var combatState = creature.CombatState;
+        return combatState == null ? null : CombatResolutionBarrier.Acquire(combatState);
     }
 
     /// <summary>相对基准位置做缓动位移。</summary>
