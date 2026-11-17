@@ -98,7 +98,8 @@ internal class CreatureVisualsPatch : IPatchMethod
         // 占位视觉从未入树，直接回收，避免每次创建角色都泄漏一个 creature visuals。
         if (GodotObject.IsInstanceValid(placeholder))
         {
-            placeholder.QueueFree();
+            // 占位视觉从未入树，QueueFree 的释放时机没有保证，直接 Free。
+            placeholder.Free();
         }
     }
 }
@@ -122,6 +123,12 @@ internal class EnergyCounterPatch : IPatchMethod
             {
                 var energyCounter = RitsuGodotNodeFactories.CreateFromScenePath<NEnergyCounter>(path);
                 Traverse.Create(energyCounter).Field("_player").SetValue(player);
+                if (__result != null && GodotObject.IsInstanceValid(__result))
+                {
+                    // 本体已实例化的占位节点从未入树，替换后立即回收。
+                    __result.Free();
+                }
+
                 __result = energyCounter;
             }
         }
@@ -151,6 +158,11 @@ internal class RestSiteScenePatch : IPatchMethod
 
                 CachePlayer.SetValue(restSiteCharacter, player);
                 CacheIndex.SetValue(restSiteCharacter, characterIndex);
+                if (__result != null && GodotObject.IsInstanceValid(__result))
+                {
+                    __result.Free();
+                }
+
                 __result = restSiteCharacter;
             }
         }
@@ -230,7 +242,9 @@ internal class MerchantScenePatch : IPatchMethod
         var players = ____players.ToList();
         players.Reverse();
         var nodeContainer = ____characterContainer.GetChildren().OfType<NMerchantCharacter>().ToList();
-        for (var i = 0; i < players.Count; i++)
+        // 容器与玩家数量不一致时夹取（同 FakeMerchant 路径的写法），避免 IndexOutOfRange。
+        var count = Math.Min(players.Count, nodeContainer.Count);
+        for (var i = 0; i < count; i++)
         {
             var currentPlayer = players[i];
             var merchantCharacter = BangDreamMerchant.Create(currentPlayer);
@@ -611,6 +625,13 @@ internal class CardRewardPatch : IPatchMethod
             var ui = SkinManager.ResolvePlayerSkin(__instance.Player)?.SkinTemplate.Ui;
             if (ui != null)
             {
+                // 本体只在 TryGetSingleRarityInPool().HasValue 成立时才索引候选；
+                // 0 张候选（跨池异常/版本差）时直接保留本体图标，避免越界。
+                if (____cards.Count == 0)
+                {
+                    return;
+                }
+
                 var newIconPath = ____cards[0].Card.Rarity switch
                 {
                     CardRarity.Uncommon => ui.RewardUncommonCardIcon,

@@ -12,7 +12,6 @@ using HarmonyLib;
 using MegaCrit.Sts2.Core.Entities.UI;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Models;
-using MegaCrit.Sts2.Core.Models.Characters;
 using MegaCrit.Sts2.Core.Multiplayer.Game.Lobby;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 using MegaCrit.Sts2.Core.Nodes.Screens.Blitz;
@@ -289,7 +288,8 @@ internal static class CharacterSelectScreenSupport
         for (var i = buttons.Count - 1; i >= 0; --i)
         {
             var button = buttons[i];
-            if (!button.IsLocked && SetupGroupableCharacterSelectButtonPatch.VanillaCharacters.Contains(button.Character))
+            // 不写死本体角色表（0.113 已新增 Fool，写死会漏项）：非模组、非占位的按钮就是本体角色。
+            if (!button.IsLocked && button.Character is not IGroupableCharacter and not GroupCharacterPlaceholder)
             {
                 lastCharacterIndex = i;
                 break;
@@ -402,16 +402,6 @@ internal class SetupGroupableCharacterSelectButtonPatch : IPatchMethod
     {
         return [new ModPatchTarget(typeof(NCharacterSelectScreen), "InitCharacterButtons")];
     }
-
-    // 原版所有角色
-    internal static readonly List<CharacterModel> VanillaCharacters =
-    [
-        ModelDb.Character<Ironclad>(),
-        ModelDb.Character<Silent>(),
-        ModelDb.Character<Regent>(),
-        ModelDb.Character<Necrobinder>(),
-        ModelDb.Character<Defect>()
-    ];
 
     [HarmonyPriority(1024)]
     public static void Postfix(NCharacterSelectScreen __instance,

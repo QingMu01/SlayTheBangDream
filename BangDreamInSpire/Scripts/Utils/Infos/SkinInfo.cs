@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Collections.Concurrent;
+using System.Reflection;
 using BangDreamInSpire.Scripts.Extensions;
 using MegaCrit.Sts2.Core.Models;
 
@@ -92,11 +93,16 @@ public class SkinInfo
             : IdsToModels<PotionModel>(SkinTemplate.Starting.StartingPotions);
     }
 
+    /// <summary>按类型缓存的字符串属性表：每次开局每玩家都会走一次，避免重复反射扫描。</summary>
+    private static readonly ConcurrentDictionary<Type, PropertyInfo[]> StringPropertyCache = new();
+
     private static IEnumerable<string> GetNonEmptyStrings<T>(T obj)
     {
-        var props = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance)
+        var props = StringPropertyCache.GetOrAdd(typeof(T), static type => type
+            .GetProperties(BindingFlags.Public | BindingFlags.Instance)
             .Where(p => p.PropertyType == typeof(string))
-            .Where(p => !p.Name.EndsWith("AnimName"));
+            .Where(p => !p.Name.EndsWith("AnimName"))
+            .ToArray());
         foreach (var prop in props)
         {
             var value = (string?)prop.GetValue(obj);
