@@ -1,5 +1,6 @@
 using BangDreamInSpire.Scripts.Extensions;
 using BangDreamInSpire.Scripts.Interfaces.Mechanics;
+using BangDreamInSpire.Scripts.Utils;
 using Godot;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
@@ -26,6 +27,11 @@ public class Waltz() : AbstractMutsumiCard(CustomCost, CustomType, CustomRarity,
     private const CardType CustomType = CardType.Attack;
     private const CardRarity CustomRarity = CardRarity.Uncommon;
     private const TargetType CustomTarget = TargetType.AllEnemies;
+
+    protected override IEnumerable<CardKeyword> CardKeywords =>
+    [
+        BangDreamConst.MusicNote
+    ];
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [

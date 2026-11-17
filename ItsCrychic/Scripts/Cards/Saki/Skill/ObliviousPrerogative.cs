@@ -52,6 +52,8 @@ public class ObliviousPrerogative()
         _autoPlayCard = null;
     }
 
+    // 注意：.subside 文本的语义由 ModifyCardPlayCount + 瞬时字段 _autoPlayCard 实现，
+    // 不走 OnSubside（这里有意留空）。改 .subside 文案时必须同步核对本文件的这两处。
     public Task OnSubside(PlayerChoiceContext choiceContext, CardPlay play)
     {
         return Task.CompletedTask;

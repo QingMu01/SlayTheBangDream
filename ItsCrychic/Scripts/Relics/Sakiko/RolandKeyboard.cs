@@ -1,4 +1,5 @@
-﻿using MegaCrit.Sts2.Core.Entities.Cards;
+﻿using BangDreamInSpire.Scripts.Utils;
+using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Entities.Relics;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
@@ -25,7 +26,9 @@ public class RolandKeyboard : AbstractSakikoRelic, ISecondaryResourceHookListene
 
     public override Task AfterCardPlayedLate(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        if (!play.Card.IsDupe && _canEffective && play.Card.SecondaryCosts().HasCosts)
+        // 与 Synthesizer 保持一致：X 费余音牌不消耗「首次免费休止」。
+        if (!play.Card.IsDupe && _canEffective && play.Card.SecondaryCosts().HasCosts &&
+            !play.SecondaryResources().CostsX(BangDreamConst.LingeredResource))
         {
             Flash();
             _canEffective = false;
