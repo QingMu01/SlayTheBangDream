@@ -13,7 +13,8 @@ namespace BangDreamInSpire.Scripts.Mechanics.Perform.Chord;
 /// <see cref="Interfaces.GameHook.IPerformTriggerListener" /> 规则读取），不参与音乐牌的入组判定。
 /// </para>
 /// <para>
-/// 和弦在卡牌奖励生成时随机赋予，见 <see cref="SetChord" />；没有设计期或静态赋值入口。
+/// 和弦由 <see cref="SetChord" /> 在运行时赋值；当前只有控制台命令与休息处「和弦设计」两处调用，
+/// 卡牌奖励流程尚未接入（见 docs/mechanic-authoring.md §9）。
 /// </para>
 /// </summary>
 [RegisterModelCapability]

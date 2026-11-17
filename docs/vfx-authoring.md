@@ -58,7 +58,7 @@ tween.TweenMethod(Callable.From<float>(ApplyState), 0f, 1f, LifeTime);
 - **继承 `Node2D`** —— 纯视觉播放，命中/结束时机由 Tween 自身控制，调用方只关心「播了」。绝大多数攻击、命中、UI 特效都属于此类。
 - **继承 `NBangDreamFlyingVfx`** —— 特效需要「飞过去」，且**命中时刻要驱动玩法状态**（如 `MusicNoteAsyncDamageEffect` 用 `HitTriggered` 决定何时施加伤害）。这是少数派。
 
-参考实现：`MusicHitVfx` / `MusicFlashVfx` / `MusicWaveVfx` 等为 `Node2D`；`MusicNoteFlyingVfx` 为飞行类。写新特效时若不确定，先按 `Node2D` 写；等真的需要 `await` 命中信号时再改基类。
+参考实现：`MusicHitVfx` / `MusicFlashVfx` / `MusicWaveVfx` 等为 `Node2D`；`MusicNoteFlyingVfx` 为飞行类。写新特效时若不确定，先按 `Node2D` 写；等真的需要 `await` 命中信号时再改基类。注意：`MusicHitVfx` / `MusicFlashVfx` / `MusicWaveVfx` / `MusicSlashVfx` 没有配套 `.tscn`，只能作为**伪代码级参考**，不能按 F6 直接预览。
 
 ### 2.1 确认特效是否真的被接入
 

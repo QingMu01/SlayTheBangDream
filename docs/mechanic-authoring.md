@@ -56,7 +56,7 @@ public sealed class MyMechanic : IBangDreamMechanic
 {
     public string Id => "my_mechanic";
     public int Order => 500;
-    public IReadOnlyList<Type> RequiredCharacterCapabilities => [typeof(IMyCharacter)];
+    // RequiredCharacterCapabilities 是预留字段，当前核心装配不读取；能力判定写在 manager 内。
 
     public void RegisterContent(BangDreamMechanicContext context)
     {
@@ -100,7 +100,7 @@ public sealed class MyMechanic : IBangDreamMechanic
 | `Id` | 唯一标识，用作补丁分组名与去重键 |
 | `Order` | 装配排序权重，小者先装配 |
 | `Dependencies` | 其它机制的 `Id`；缺失或成环抛异常 |
-| `RequiredCharacterCapabilities` | 启用所需的角色接口；空表示全局装配 |
+| `RequiredCharacterCapabilities` | 预留字段：当前核心装配不读取；能力判定在各 manager 内完成 |
 | `RegisterContent(ctx)` | 注册静态内容 |
 | `RegisterPatches(patcher)` | 注册本机制的 Harmony 补丁（全量注入，时机与核心一致） |
 | `InstantiatePlayerState(player)` | 为该玩家实例化机制状态模型 |
@@ -200,9 +200,13 @@ public sealed class MyMechanic : IBangDreamMechanic
 | 表现泵异常 | `PumpAsync` 的 `finally` 调 `DrainQueueAsync`，把队列中剩余音符全部兜底落地 |
 | 节点被移除 / 战斗结束 | `BangDreamVfxManager` 在 `TreeExited` / `VfxFinished` 时完成句柄，避免 `await` 永久挂起 |
 
+> 注意：最后一条由**表现实现方**（`NBangDreamFlyingVfx` 系）提供，核心不保证。新接入其它表现类型时，
+> 必须自己提供完成路径（或退回 `FailNoteAsync` 的兜底），不能假设 `BangDreamVfxManager` 会替你收口。
+
 ### 7.6 已知边界（尚未实现）
 
-- **拿不到批次句柄**：`LaunchAsync` 返回 `Task.CompletedTask`，调用方无法「等这批落地再发下一批」。
+- **拿不到批次句柄**：交互模式下 `LaunchAsync` 返回 `Task.CompletedTask`（非交互模式返回 inline 任务），
+  调用方无法「等这批落地再发下一批」。
   需要跨批次串联的编排（演出 → 伤害 → 演出 → 伤害）目前只能靠 `Cmd.Wait` 估算，不精确。
 - **批次内多次命中无法串行**：`PumpAsync` 只等到 `StartAnimationAsync` 返回就启动下一枚，**不等 `Landing`**。
   这对音符是对的（各飞各的），但对「同一角色连续两次冲刺」是错的——两段位移会叠在一起。
@@ -240,7 +244,7 @@ public sealed class MyMechanic : IBangDreamMechanic
 | 用途 | **只**用于卡牌打出后激活对应分组中音乐牌的奏响（角色规则经 `IPerformTriggerListener` 读取，如 `MutsumiSpecialRules`）：该分组内**全部**已落位卡牌一起奏响；多和弦卡牌会同时激活其全部和弦分组。 |
 | 不参与入组 | 音乐牌进入哪个分组由 `PerformTargetTypes.RequestGroup` 指定，未指定时落回 `IPerformScheme.DefaultGroup`（`PerformCapacityState.ResolveDefaultGroup()`，不读取和弦）。 |
 | 赋值 | `card.GetOrCreateCapability<ChordCapability>().SetChord(chord)`；传 `PerformChord.None` 会移除该能力。 |
-| 赋值时机 | 卡牌奖励生成时可随机赋予（跟随卡牌实例进入卡组）；另有**休息处选项「和弦设计」**（仅睦）让玩家手动给卡组里的一张牌指定和弦（见 §9.2）。 |
+| 赋值时机 | 当前只有两处赋值：控制台命令，以及**休息处选项「和弦设计」**（仅睦）让玩家手动给卡组里的一张牌指定和弦（见 §9.2）。卡牌奖励流程尚未接入和弦。 |
 | 读取 | `card.TryGetCapability<ChordCapability>(out var capability)`，没有该能力即无和弦。 |
 
 ```csharp

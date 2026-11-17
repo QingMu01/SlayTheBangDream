@@ -60,7 +60,7 @@
   库代码不出现任何角色名；睦在 `WakabaMutsumi` 实现。
 
 ### 2.2 机制模块
-`Scripts/Mechanics/Puppeteer/PuppeteerMechanic.cs`，`Id = "puppeteer"`，`Order = 250`，`Dependencies = ["perform"]`（冻结与激活都操作 `PerformManager`），`RequiredCharacterCapabilities = [typeof(IPuppeteerCharacter)]`。
+`Scripts/Mechanics/Puppeteer/PuppeteerMechanic.cs`，`Id = "puppeteer"`，`Order = 250`，`Dependencies = ["perform"]`（冻结与激活都操作 `PerformManager`），`RequiredCharacterCapabilities = [typeof(IPuppeteerCharacter)]`（预留字段，当前核心装配不读取）。
 每玩家状态模型 `PuppeteerFormManager : HookedSingletonModel(HookType.Combat)`（克隆 + 绑定 player，沿用 `PerformManager` 的做法）。
 
 职责：

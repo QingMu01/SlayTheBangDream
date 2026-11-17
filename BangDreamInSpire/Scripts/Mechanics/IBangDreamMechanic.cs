@@ -19,7 +19,10 @@ public interface IBangDreamMechanic
     /// <summary>本机制所依赖的其它机制 <see cref="Id" />；缺失或成环会在装配阶段抛出异常。</summary>
     IReadOnlyList<string> Dependencies => [];
 
-    /// <summary>启用本机制所需的角色能力接口类型；为空表示机制全局装配（不依赖特定角色）。</summary>
+    /// <summary>
+    /// 预留字段：当前核心装配不读取它；各机制在自己的 manager 内按角色能力早退。
+    /// 不要据此认为「未实现接口的角色不会装配该机制」——所有机制对所有角色都会注册内容与补丁。
+    /// </summary>
     IReadOnlyList<Type> RequiredCharacterCapabilities => [];
 
     /// <summary>注册关键字、牌堆、二级资源、奖励、节点附加、Run 数据等静态内容。</summary>
