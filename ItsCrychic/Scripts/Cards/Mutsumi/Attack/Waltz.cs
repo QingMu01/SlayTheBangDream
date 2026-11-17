@@ -1,5 +1,5 @@
 using BangDreamInSpire.Scripts.Extensions;
-using BangDreamInSpire.Scripts.Mechanics.VisualsAnim;
+using BangDreamInSpire.Scripts.Interfaces.Mechanics;
 using Godot;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
@@ -11,7 +11,7 @@ namespace ItsCrychic.Scripts.Cards.Mutsumi.Attack;
 /// <summary>
 /// 华尔兹：一段脱手的角色位移演出，位移过程中反复向敌人发射音符。
 /// <para>
-/// 这是「演出 + 异步伤害」的探针卡：演出走 <see cref="VisualsAnimCmd" />（脱手、按生物串行），
+/// 这是「演出 + 异步伤害」的探针卡：演出走 <see cref="VisualsAnimExtensions" />（脱手、按生物串行），
 /// 伤害走 <see cref="MusicNoteExtensions" /> 的稳定入口（异步伤害的一个实现，不阻塞出牌）。
 /// </para>
 /// <para>
@@ -41,27 +41,27 @@ public class Waltz() : AbstractMutsumiCard(CustomCost, CustomType, CustomRarity,
         var repeat = DynamicVars.Repeat.IntValue;
         var damage = DynamicVars.Damage.BaseValue;
 
-        var steps = new List<IVisualsAnimStep>
+        var steps = new List<VisualsAnimStep>
         {
-            VisualsAnimCmd.Move(new Vector2(0f, rise), 0.5f),
-            VisualsAnimCmd.Teleport(new Vector2(side, rise)),
-            VisualsAnimCmd.Move(new Vector2(side, 0f), 0.5f),
-            VisualsAnimCmd.Wait(0.5f)
+            VisualsAnimExtensions.Move(new Vector2(0f, rise), 0.5f),
+            VisualsAnimExtensions.Teleport(new Vector2(side, rise)),
+            VisualsAnimExtensions.Move(new Vector2(side, 0f), 0.5f),
+            VisualsAnimExtensions.Wait(0.5f)
         };
 
         for (var i = 0; i < repeat; i++)
         {
             // STS1 原版每次命中前是 FlipProcess（rotateY 转一圈），不是左右翻面。
-            steps.Add(VisualsAnimCmd.Spin(1, 0.5f));
-            steps.Add(VisualsAnimCmd.Callback(async _ => await this.ShootMusicNotes(1, 0, damage)));
+            steps.Add(VisualsAnimExtensions.Spin(1, 0.5f));
+            steps.Add(VisualsAnimExtensions.Callback(async _ => await this.ShootMusicNotes(1, 0, damage)));
         }
 
         // 先缓动归位，再强制对齐到基准位置与基准朝向（避免残留偏移）。
-        steps.Add(VisualsAnimCmd.Move(Vector2.Zero, 0.5f));
-        steps.Add(VisualsAnimCmd.Reset());
+        steps.Add(VisualsAnimExtensions.Move(Vector2.Zero, 0.5f));
+        steps.Add(VisualsAnimExtensions.Reset());
 
         // 脱手：演出在动作队列之外推进，出牌动作立即结束，玩家可以继续出牌。
-        VisualsAnimCmd.Submit(Owner.Creature, [.. steps]);
+        Owner.Creature.PlayVisualsAnim([.. steps]);
 
         return Task.CompletedTask;
     }
