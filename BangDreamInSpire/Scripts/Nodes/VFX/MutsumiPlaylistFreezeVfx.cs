@@ -216,13 +216,13 @@ public partial class MutsumiPlaylistFreezeVfx : Node2D
                 var t1 = (seg + 1) / (float)segments;
                 var p0 = new Vector2(anchorX + sway * t0 * 0.4f, Mathf.Lerp(threadTopY, crossbarY, t0));
                 var p1 = new Vector2(anchorX + sway * t1, Mathf.Lerp(threadTopY, crossbarY, t1));
-                DrawLineGlow([p0, p1], ThreadColor, ThreadWidth, alpha * Mathf.Lerp(0.15f, 1f, t1));
+                DrawLineGlow(p0, p1, ThreadColor, ThreadWidth, alpha * Mathf.Lerp(0.15f, 1f, t1));
             }
 
             // 横杆
             DrawLineGlow(
-                [new Vector2(anchorX + sway - CrossbarLength / 2f, crossbarY),
-                 new Vector2(anchorX + sway + CrossbarLength / 2f, crossbarY)],
+                new Vector2(anchorX + sway - CrossbarLength / 2f, crossbarY),
+                new Vector2(anchorX + sway + CrossbarLength / 2f, crossbarY),
                 CrossbarColor, CrossbarWidth, CrossbarAlpha * _fade * breath);
 
             // 吊线 + 吊点：落在每条行的内端（靠近命中框那一侧，镜像列取右侧）
@@ -230,9 +230,9 @@ public partial class MutsumiPlaylistFreezeVfx : Node2D
             {
                 var hookX = group.Mirrored ? row.End.X - 12f : row.Position.X + 12f;
                 var hookY = row.Position.Y - 4f;
-                DrawLineGlow(
-                    [new Vector2(anchorX + sway, crossbarY), new Vector2(anchorX + sway, hookY),
-                     new Vector2(hookX, hookY)],
+                DrawLineGlow3(
+                    new Vector2(anchorX + sway, crossbarY), new Vector2(anchorX + sway, hookY),
+                    new Vector2(hookX, hookY),
                     ThreadColor, HangerWidth, HangerAlpha * _fade * breath);
                 DrawKnot(hookX, hookY, KnotAlpha * _fade);
             }
@@ -289,12 +289,38 @@ public partial class MutsumiPlaylistFreezeVfx : Node2D
         return bounds;
     }
 
-    private void DrawLineGlow(Vector2[] points, Color color, float width, float alpha)
+    /// <summary>外发光的固定三遍参数；提成静态表，避免每帧每段线都分配。</summary>
+    private static readonly (float Factor, float Scale)[] GlowPasses =
+    [
+        (4.0f, 0.10f), (2.2f, 0.18f), (1.0f, 1.0f)
+    ];
+
+    private readonly Vector2[] _segmentBuffer = new Vector2[2];
+    private readonly Vector2[] _polylineBuffer = new Vector2[3];
+    private readonly Vector2[] _knotPolygon = new Vector2[4];
+    private readonly Vector2[] _knotOutline = new Vector2[5];
+
+    private void DrawLineGlow(Vector2 from, Vector2 to, Color color, float width, float alpha)
     {
         if (alpha <= 0.001f) return;
+        _segmentBuffer[0] = from;
+        _segmentBuffer[1] = to;
+        DrawLineGlowPasses(_segmentBuffer, color, width, alpha);
+    }
 
-        // 外发光：同一条折线描三遍、由宽到窄、由低到高 alpha
-        foreach (var (factor, scale) in new[] { (4.0f, 0.10f), (2.2f, 0.18f), (1.0f, 1.0f) })
+    private void DrawLineGlow3(Vector2 a, Vector2 b, Vector2 c, Color color, float width, float alpha)
+    {
+        if (alpha <= 0.001f) return;
+        _polylineBuffer[0] = a;
+        _polylineBuffer[1] = b;
+        _polylineBuffer[2] = c;
+        DrawLineGlowPasses(_polylineBuffer, color, width, alpha);
+    }
+
+    private void DrawLineGlowPasses(Vector2[] points, Color color, float width, float alpha)
+    {
+        // 同一条折线描三遍、由宽到窄、由低到高 alpha。
+        foreach (var (factor, scale) in GlowPasses)
         {
             DrawPolyline(points, new Color(color, Mathf.Min(1f, alpha * scale)), width * factor, true);
         }
@@ -304,14 +330,18 @@ public partial class MutsumiPlaylistFreezeVfx : Node2D
     {
         if (alpha <= 0.001f) return;
 
-        var points = new[]
-        {
-            new Vector2(x, y - KnotSize), new Vector2(x + KnotSize, y),
-            new Vector2(x, y + KnotSize), new Vector2(x - KnotSize, y)
-        };
-        DrawColoredPolygon(points, new Color(KnotColor, alpha));
-        DrawPolyline([points[0], points[1], points[2], points[3], points[0]],
-            new Color(KnotColor, Mathf.Min(1f, alpha * 1.2f)), 1.2f, true);
+        _knotPolygon[0] = new Vector2(x, y - KnotSize);
+        _knotPolygon[1] = new Vector2(x + KnotSize, y);
+        _knotPolygon[2] = new Vector2(x, y + KnotSize);
+        _knotPolygon[3] = new Vector2(x - KnotSize, y);
+        DrawColoredPolygon(_knotPolygon, new Color(KnotColor, alpha));
+
+        _knotOutline[0] = _knotPolygon[0];
+        _knotOutline[1] = _knotPolygon[1];
+        _knotOutline[2] = _knotPolygon[2];
+        _knotOutline[3] = _knotPolygon[3];
+        _knotOutline[4] = _knotPolygon[0];
+        DrawPolyline(_knotOutline, new Color(KnotColor, Mathf.Min(1f, alpha * 1.2f)), 1.2f, true);
     }
 
     /// <summary>预览态用假行：按 NPerformArea 的真实几何（112×35、行距 49、两列、右侧镜像）造 12 行。</summary>

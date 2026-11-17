@@ -1,5 +1,6 @@
 using BangDreamInSpire.Scripts.Utils;
 using Godot;
+using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Random;
 
 namespace BangDreamInSpire.Scripts.Nodes.VFX;
@@ -172,7 +173,7 @@ public partial class MusicWaveVfx : Node2D
 
         if (VfxPreviewSupport.ShouldSelfFree(this))
         {
-            QueueFree();
+            this.QueueFreeSafely();
             return;
         }
 

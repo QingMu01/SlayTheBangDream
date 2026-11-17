@@ -52,6 +52,14 @@ public partial class MutsumiGroupActivationVfx : Node2D
     private readonly Dictionary<PerformChord, GroupState> _active = [];
     private GroupState? _shot;
     private float _shotElapsed;
+    /// <summary>吊线外发光的固定三遍参数；提成静态表，避免每帧每条线都分配。</summary>
+    private static readonly (float Width, float Scale)[] GlowPasses =
+    [
+        (8f, 0.10f), (4f, 0.20f), (2f, 1f)
+    ];
+
+    private readonly Vector2[] _threadBuffer = new Vector2[3];
+
     private float _time;
     private Texture2D? _ringTexture;
     private Texture2D? _starTexture;
@@ -234,10 +242,12 @@ public partial class MutsumiGroupActivationVfx : Node2D
         var mid = from.Lerp(to, 0.5f);
         // 轻微下垂：中点向重力方向偏移 2px，读作「绷紧但仍有重量」
         mid += new Vector2(0f, 2f);
-        var points = new[] { from, mid, end };
-        foreach (var (width, scale) in new[] { (8f, 0.10f), (4f, 0.20f), (2f, 1f) })
+        _threadBuffer[0] = from;
+        _threadBuffer[1] = mid;
+        _threadBuffer[2] = end;
+        foreach (var (width, scale) in GlowPasses)
         {
-            DrawPolyline(points, new Color(color, Mathf.Min(1f, alpha * scale)), width, true);
+            DrawPolyline(_threadBuffer, new Color(color, Mathf.Min(1f, alpha * scale)), width, true);
         }
     }
 

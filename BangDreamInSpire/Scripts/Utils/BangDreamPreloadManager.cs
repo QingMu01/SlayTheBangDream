@@ -58,7 +58,12 @@ public static class BangDreamPreloadManager
         "res://BangDreamInSpire/scenes/vfx/card_trail_sakiko.tscn",
         "res://BangDreamInSpire/images/sceneui/xz-energy_lingered_small.png",
         "res://BangDreamInSpire/images/sceneui/xz-energy_lingered.png",
-        "res://BangDreamInSpire/images/sceneui/music_reward.png"
+        "res://BangDreamInSpire/images/sceneui/music_reward.png",
+        // 睦的演奏区特效贴图：首次冻结 / 分组激活时同步读盘，提前放进 run 预载集。
+        "res://BangDreamInSpire/images/vfx/flying_music_note/glow_soft.png",
+        "res://BangDreamInSpire/images/vfx/whiteRing.png",
+        "res://BangDreamInSpire/images/vfx/star_322.png",
+        "res://BangDreamInSpire/images/vfx/star_270_1.png"
     ];
 
     /// <summary>
@@ -72,8 +77,8 @@ public static class BangDreamPreloadManager
 
     internal static readonly HashSet<string> VfxAssets =
     [
-        "res://BangDreamInSpire/scenes/vfx/staff_ring_vfx.tscn",
-        "res://BangDreamInSpire/scenes/vfx/music_equalizer_vfx.tscn",
+        // staff_ring / music_equalizer 只被彼此引用、无实例化点，预载它们等于白占 run 预算；
+        // 场景文件本身按 keep-list 保留（编辑器/预览仍可用）。
         "res://BangDreamInSpire/scenes/vfx/perform_flash_vfx.tscn"
     ];
 

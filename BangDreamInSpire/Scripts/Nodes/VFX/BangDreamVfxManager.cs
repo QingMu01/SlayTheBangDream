@@ -41,7 +41,11 @@ public partial class BangDreamVfxManager : Control
 
         _activeVfx.Clear();
 
-        Instance = null;
+        // 新旧战斗房间管理器可能短暂共存：旧实例退树时不能清掉新实例的注册。
+        if (Instance == this)
+        {
+            Instance = null;
+        }
     }
 
     public override void _Ready()
