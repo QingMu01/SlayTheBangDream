@@ -40,9 +40,14 @@ public static class CharacterGroupExtensions
     /// </summary>
     public static GroupInfo GetGroupInfo(this CharacterGroup group)
     {
-        return BandInfo.TryGetValue(group, out var info)
-            ? info
-            : throw new ArgumentException($"Unknow character group: {group}.");
+        if (BandInfo.TryGetValue(group, out var info))
+        {
+            return info;
+        }
+
+        // 第三方角色 mod 可能新增枚举值：回落默认样式并告警，不要在选人屏 Postfix 里抛异常。
+        BangDreamInSpireCore.Logger.Warn($"Unknown character group: {group}; falling back to default style.");
+        return new GroupInfo(group.ToString(), new Color("#8CD3D4"));
     }
 
     /// <summary>

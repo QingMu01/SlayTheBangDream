@@ -340,7 +340,8 @@ public partial class PerfFrameSampler : Node
         try
         {
             // 先排空后台写队列，再同步写退出报告，确保 perf-latest 是最后一份。
-            PerfSession.FlushPendingWrites();
+            // 退出路径最多等 300ms：写链卡住时不该让游戏关闭多停 2 秒。
+            PerfSession.FlushPendingWrites(timeoutMs: 300);
             PerfSession.Dump("exit", sync: true);
         }
         catch
