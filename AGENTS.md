@@ -46,8 +46,19 @@ C# 代码位于各项目的 `Scripts/` 目录下，Godot 资源（图片、场�
 
 版本号口径：游戏本体取游戏日志的 `Release Version`（`~/.local/share/SlayTheSpire2/logs/godot.log`，
 也可看 `[RitsuLib.Loader] Host=`），解包源取 `../sts2unpack/<目录名>`。两者差一个补丁位是正常的
-（0.113.1 本体 / 0.113.0 解包）。**注意**：两个 mod 清单里的 `min_game_version` 目前仍是 `0.111.0`，
-与 `beta` 实际依赖的 0.113 API 不一致，属待收敛项。
+（0.113.1 本体 / 0.113.0 解包）。
+
+**两个 mod 清单里的版本声明随分支走，不跨分支合并**（与 `Directory.Build.props` 的 `Sts2Dir` 默认值同理，
+属分支专属配置）：
+
+| 字段 | `beta` | `main` | 取值依据 |
+|---|---|---|---|
+| `min_game_version` | `0.113.0` | `0.111.0` | 编译所用解包源的 API 地板值；0.113.x 全系可加载（本体 0.113.1 ≥ 0.113.0） |
+| `dependencies[STS2-RitsuLib].min_version` | `0.6.11` | `0.6.10` | 与 `Directory.Build.props` 的 `PackageReference` 同版本 |
+
+改本体/依赖版本时**三处一起对**：`Directory.Build.props` 的 `PackageReference`、两个 mod 的 `min_game_version`、
+两个 mod 的 RitsuLib `min_version`。清单里的版本声明只是加载门槛，不会自动跟随编译引用，漏改的表现是
+「在旧版本本体/依赖上仍被允许加载，随后在运行期炸 API 不匹配」。
 
 - 版本切换走 `Directory.Build.local.props` 或环境变量（见下节），**不要**改被跟踪的 `Directory.Build.props` 默认值。
 - 跨分支同步共享改动时，只合并源码、文档与场景文本；合并后必须在目标版本上重新构建 + 无头运行，不能只看能编译。
