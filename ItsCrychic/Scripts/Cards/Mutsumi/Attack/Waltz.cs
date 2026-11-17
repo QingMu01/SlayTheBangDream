@@ -1,5 +1,4 @@
 using BangDreamInSpire.Scripts.Extensions;
-using BangDreamInSpire.Scripts.Mechanics.MusicNote;
 using BangDreamInSpire.Scripts.Mechanics.VisualsAnim;
 using Godot;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -13,7 +12,7 @@ namespace ItsCrychic.Scripts.Cards.Mutsumi.Attack;
 /// 华尔兹：一段脱手的角色位移演出，位移过程中反复向敌人发射音符。
 /// <para>
 /// 这是「演出 + 异步伤害」的探针卡：演出走 <see cref="VisualsAnimCmd" />（脱手、按生物串行），
-/// 伤害走 <see cref="MusicNoteCmd" />（异步伤害的一个实现，不阻塞出牌）。
+/// 伤害走 <see cref="MusicNoteExtensions" /> 的稳定入口（异步伤害的一个实现，不阻塞出牌）。
 /// </para>
 /// <para>
 /// 与 STS1 原版《华尔兹》的差异：原版是对全体敌人直接结算的 Cleave，这里改为音符齐射（随机目标），
@@ -54,7 +53,7 @@ public class Waltz() : AbstractMutsumiCard(CustomCost, CustomType, CustomRarity,
         {
             // STS1 原版每次命中前是 FlipProcess（rotateY 转一圈），不是左右翻面。
             steps.Add(VisualsAnimCmd.Spin(1, 0.5f));
-            steps.Add(VisualsAnimCmd.Callback(async _ => await MusicNoteCmd.FromCard(this, 1, 0, damage)));
+            steps.Add(VisualsAnimCmd.Callback(async _ => await this.ShootMusicNotes(1, 0, damage)));
         }
 
         // 先缓动归位，再强制对齐到基准位置与基准朝向（避免残留偏移）。
