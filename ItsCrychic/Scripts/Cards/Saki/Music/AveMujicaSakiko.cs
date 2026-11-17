@@ -52,6 +52,17 @@ public class AveMujicaSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTar
         return Task.CompletedTask;
     }
 
+    public override Task AfterCardEnteredCombat(CardModel card)
+    {
+        // 新战斗开始时清掉上一场残留的强化记录（歌单清理被冻结跳过时不会走 Leave 回调）。
+        if (card == this)
+        {
+            _affectedCards.Clear();
+        }
+
+        return Task.CompletedTask;
+    }
+
     protected override void OnUpgrade()
     {
         DynamicVars.Repeat.UpgradeValueBy(1);

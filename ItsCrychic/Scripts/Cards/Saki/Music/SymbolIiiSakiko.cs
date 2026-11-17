@@ -15,6 +15,8 @@ public class SymbolIiiSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTar
 
     public override bool IsInstant => true;
 
+    public override bool GainsBlock => true;
+
     protected override HashSet<CardTag> CanonicalTags =>
     [
         BangDreamConst.SymbolCard

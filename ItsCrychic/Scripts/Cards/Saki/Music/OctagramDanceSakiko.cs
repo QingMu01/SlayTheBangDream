@@ -25,11 +25,18 @@ public class OctagramDanceSakiko() : AbstractSakikoMusicCard(CustomRarity, Custo
 
         var manager = Owner.AttachedData().Perform;
         var slotIndex = manager.GetSlotIndex(this);
-        var cardsBySlot = manager.PerformPile.Cards
-            .Where(card => card != this)
-            .Select(card => (card, manager.GetSlotIndex(card)))
-            .Where(entry => entry.Item2 >= 1)
-            .ToDictionary(entry => entry.Item2, entry => entry.card);
+        // 同一槽位出现两张牌是异常态；ToDictionary 会直接抛，这里按首次出现保留即可。
+        var cardsBySlot = new Dictionary<int, CardModel>();
+        foreach (var card in manager.PerformPile.Cards)
+        {
+            if (card == this) continue;
+
+            var slot = manager.GetSlotIndex(card);
+            if (slot >= 1)
+            {
+                cardsBySlot.TryAdd(slot, card);
+            }
+        }
 
         // 相邻位为同名牌时沿该方向继续寻找最近的非同名牌
         var adjacentCards = new List<CardModel>();

@@ -20,11 +20,13 @@ public class KamisamaBakaSakiko() : AbstractSakikoMusicCard(CustomRarity, Custom
 
     public override async Task OnPerform(PlayerChoiceContext choiceContext, CardPerform perform)
     {
+        // 排除本卡的所有实例：否则抽到第二张同名卡会直接空转。
         var performCandidates = Owner.AttachedData().Perform.PerformPile.Cards
-            .Where(card => card != this && !card.IsUpgraded && card is IPerformCard)
+            .Where(card => card != this && card is not KamisamaBakaSakiko && !card.IsUpgraded &&
+                           card is IPerformCard)
             .ToList();
         var performCard = Owner.RunState.Rng.CombatCardSelection.NextItem(performCandidates);
-        if (performCard == null || (performCard != this && performCard is KamisamaBakaSakiko)) return;
+        if (performCard == null) return;
         CardCmd.Upgrade(performCard);
         for (var repeat = 0; repeat < DynamicVars.Repeat.IntValue; repeat++)
         {

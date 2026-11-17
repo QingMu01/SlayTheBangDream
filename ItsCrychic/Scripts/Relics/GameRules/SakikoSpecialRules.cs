@@ -45,7 +45,7 @@ public class SakikoSpecialRules : HiddenRelic, IPerformTriggerListener, ISeconda
                 case RoomType.Monster:
                 {
                     var roll = player.RunState.Rng.CombatCardGeneration.NextInt(0, 99);
-                    if (roll <= MusicRewardChance)
+                    if (roll < MusicRewardChance)
                     {
                         cardReward = player.CreateMusicCardReward(
                             BangDreamModelHelper.CardCreationOptionsForRoom(extraDeck.ExtraCardPool, RoomType.Monster),

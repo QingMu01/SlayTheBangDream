@@ -19,6 +19,8 @@ public class MemoryPuzzle() : BandCardModel(CustomCost, CustomType, CustomRarity
     private const CardRarity CustomRarity = CardRarity.Token;
     private const TargetType CustomTarget = TargetType.None;
 
+    public override bool GainsBlock => true;
+
     protected override IEnumerable<CardKeyword> CardKeywords =>
     [
         CardKeyword.Exhaust,

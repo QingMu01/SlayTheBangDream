@@ -58,4 +58,15 @@ public class InYourBlueEyesSakiko() : AbstractSakikoMusicCard(CustomRarity, Cust
         _boundCard = null;
         return Task.CompletedTask;
     }
+
+    public override Task AfterCardEnteredCombat(CardModel card)
+    {
+        // 歌单清理在冻结期会被跳过：新战斗开始时无条件复位，避免跨战斗永久绑死。
+        if (card == this)
+        {
+            _boundCard = null;
+        }
+
+        return Task.CompletedTask;
+    }
 }
