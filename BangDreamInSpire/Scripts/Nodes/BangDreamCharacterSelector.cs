@@ -1,6 +1,7 @@
 using BangDreamInSpire.Scripts.Enums;
 using BangDreamInSpire.Scripts.Extensions;
 using BangDreamInSpire.Scripts.Interfaces.CharacterAugment;
+using BangDreamInSpire.Scripts.Nodes.GroupSelect;
 using BangDreamInSpire.Scripts.Nodes.MegeScript;
 using BangDreamInSpire.Scripts.Nodes.SubNode;
 using BangDreamInSpire.Scripts.Patches;
@@ -79,6 +80,11 @@ public partial class BangDreamCharacterSelector : Control
     private ICharacterSelectButtonDelegate? _delegate;
 
     public StartRunLobby? Lobby { get; set; }
+
+    /// <summary>当前所在屏幕的适配器；决定覆盖层插入点与是否显示进阶面板。</summary>
+    internal CharacterSelectAdapter? Adapter { get; set; }
+
+    private bool SupportsAscension => Adapter?.SupportsAscension ?? true;
 
     public BangDreamAscensionPanel AscensionPanel =>
         _ascensionPanel ?? throw new NullReferenceException("ascension panel is not init.");
@@ -245,7 +251,7 @@ public partial class BangDreamCharacterSelector : Control
         // 弹窗同步角色数据（皮肤 / 初始卡组 / 初始遗物），关闭时也保持最新。
         _detailsPopup?.SetCharacter(character, Lobby);
 
-        if (_ascensionPanel != null)
+        if (_ascensionPanel != null && SupportsAscension)
         {
             var progress = SaveManager.Instance.Progress;
 
@@ -281,6 +287,12 @@ public partial class BangDreamCharacterSelector : Control
         _buttonGroup = group;
         _sourceButton = button;
         _delegate = delegateButton;
+
+        // 恐惧模式没有进阶概念：本模组面板里的进阶选项也要一起隐藏。
+        if (_ascensionPanel != null)
+        {
+            _ascensionPanel.Visible = SupportsAscension;
+        }
 
         _characters = ModelDb.AllCharacters.Where(c => c is IGroupableCharacter ac && ac.Group == group).ToList();
         _buttons = [];

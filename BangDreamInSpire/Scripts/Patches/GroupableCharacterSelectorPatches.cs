@@ -5,6 +5,7 @@ using BangDreamInSpire.Scripts.Enums;
 using BangDreamInSpire.Scripts.Extensions;
 using BangDreamInSpire.Scripts.Interfaces.CharacterAugment;
 using BangDreamInSpire.Scripts.Nodes;
+using BangDreamInSpire.Scripts.Nodes.GroupSelect;
 using BangDreamInSpire.Scripts.Utils;
 using Godot;
 using HarmonyLib;
@@ -104,33 +105,8 @@ public class GroupableCharacterSelectorPatches : IModPatches
         return true;
     }
 
-    /// <summary>切回「分组选择器」视图：隐藏本体信息面板/背景，显示自定义选择器。</summary>
-    internal static void ApplyGroupView(object screen)
-    {
-        var infoPanel = CharacterSelectScreenSupport.GetInfoPanel(screen);
-        if (infoPanel != null)
-        {
-            infoPanel.Visible = false;
-        }
-
-        var ascensionPanel = CharacterSelectScreenSupport.GetAscensionPanel(screen);
-        if (ascensionPanel != null)
-        {
-            ascensionPanel.Visible = false;
-        }
-
-        var bgContainer = CharacterSelectScreenSupport.GetBgContainer(screen);
-        if (bgContainer != null)
-        {
-            bgContainer.Visible = false;
-        }
-
-        var selector = GetSelector(screen);
-        if (selector != null)
-        {
-            selector.Visible = true;
-        }
-    }
+    /// <summary>切回「分组选择器」视图（各屏差异由 <see cref="CharacterSelectAdapter" /> 处理）。</summary>
+    internal static void ApplyGroupView(object screen) => CharacterSelectAdapter.Apply(screen, groupView: true);
 
     public static void AddTo(ModPatcher patcher)
     {
@@ -361,30 +337,8 @@ internal class HiddenUiPatch : IPatchMethod
 
     public static void Postfix(object __instance, NCharacterSelectButton charSelectButton)
     {
-        var infoPanel = CharacterSelectScreenSupport.GetInfoPanel(__instance);
-        var ascensionPanel = CharacterSelectScreenSupport.GetAscensionPanel(__instance);
-        var bgContainer = CharacterSelectScreenSupport.GetBgContainer(__instance);
-
-        if (infoPanel != null)
-        {
-            infoPanel.Visible = charSelectButton.Character is not GroupCharacterPlaceholder;
-        }
-
-        if (ascensionPanel != null)
-        {
-            var ascensionVisible = ascensionPanel.Visible;
-            ascensionPanel.Visible = charSelectButton.Character is not GroupCharacterPlaceholder && ascensionVisible;
-        }
-
-        if (bgContainer != null)
-        {
-            bgContainer.Visible = charSelectButton.Character is not GroupCharacterPlaceholder;
-            var selector = GroupableCharacterSelectorPatches.GetSelector(__instance);
-            if (selector != null)
-            {
-                selector.Visible = !bgContainer.Visible;
-            }
-        }
+        // 选中分组占位按钮 = 分组视图；选中真实角色 = 本体角色详情视图。
+        CharacterSelectAdapter.Apply(__instance, charSelectButton.Character is GroupCharacterPlaceholder);
     }
 }
 
@@ -405,31 +359,38 @@ internal class SetupGroupableCharacterSelectorPatch : IPatchMethod
     public static void Postfix(object __instance)
     {
         var screen = (Node)__instance;
-        var bgContainer = CharacterSelectScreenSupport.GetBgContainer(__instance);
-
-        var customControl = new Control();
-        if (bgContainer != null)
+        if (CharacterSelectAdapter.For(__instance) is not { } adapter)
         {
-            customControl.Position = new Vector2(bgContainer.Position.X, bgContainer.Position.Y);
-            customControl.Size = new Vector2(bgContainer.Size.X, bgContainer.Size.Y);
+            return;
         }
 
-        screen.AddChildSafely(customControl);
-        if (bgContainer != null)
+        // 先做本屏特有的输入 / 层级处理（快速屏的装饰大字等）。
+        adapter.Prepare(screen);
+
+        // 覆盖层按背景容器的位置与尺寸摆放：选择器场景的舞台坐标就是按它设计的。
+        var customControl = new Control { Name = "BangDreamSelectorHost" };
+        if (adapter.GetBackground(__instance) is { } background)
         {
-            var originalIndex = screen.GetChildren().IndexOf(bgContainer);
-            if (originalIndex >= 0)
-            {
-                screen.MoveChild(customControl, originalIndex + 1);
-            }
+            customControl.Position = new Vector2(background.Position.X, background.Position.Y);
+            customControl.Size = new Vector2(background.Size.X, background.Size.Y);
         }
+
+        // 插入点由适配器决定：标准 / 快速插在背景之后，恐惧插在 SubViewportContainer 之后。
+        adapter.InsertOverlay(screen, customControl);
 
         var characterSelector = PreloadKey.CharacterSelector.GetScene().Instantiate<BangDreamCharacterSelector>();
         characterSelector.Name = "BangDreamSelector";
+        characterSelector.Adapter = adapter;
         characterSelector.Visible = false;
         customControl.AddChildSafely(characterSelector);
 
         GroupableCharacterSelectorPatches.SetSelector(__instance, characterSelector);
+
+        // 一行诊断：实机排查时能直接确认覆盖层插到了哪一层、该屏是否支持进阶。
+        BangDreamInSpireCore.Logger.Info(
+            $"[GroupSelect] {adapter.ModeName}屏覆盖层: index={customControl.GetIndex()}/{screen.GetChildCount()}, " +
+            $"rect=({customControl.Position.X:F0},{customControl.Position.Y:F0}," +
+            $"{customControl.Size.X:F0}x{customControl.Size.Y:F0}), ascension={adapter.SupportsAscension}");
     }
 }
 
@@ -610,12 +571,15 @@ internal class AscensionPanelHostModePatch : IPatchMethod
 
     public static void Postfix(object __instance, StartRunLobby ____lobby)
     {
-        var selector = GroupableCharacterSelectorPatches.GetSelector(__instance);
-        if (selector != null)
+        // 进阶面板只属于有进阶概念的屏（标准 / 快速）；恐惧屏由适配器声明不适用。
+        if (CharacterSelectAdapter.For(__instance) is not { SupportsAscension: true } ||
+            GroupableCharacterSelectorPatches.GetSelector(__instance) is not { } selector)
         {
-            selector.Lobby = ____lobby;
-            selector.AscensionPanel.Initialize(MultiplayerUiMode.Host, ____lobby.GameMode);
+            return;
         }
+
+        selector.Lobby = ____lobby;
+        selector.AscensionPanel.Initialize(MultiplayerUiMode.Host, ____lobby.GameMode);
     }
 }
 
@@ -635,12 +599,15 @@ internal class AscensionPanelMultiplayerModePatch : IPatchMethod
 
     public static void Postfix(object __instance, StartRunLobby ____lobby)
     {
-        var selector = GroupableCharacterSelectorPatches.GetSelector(__instance);
-        if (selector != null)
+        // 进阶面板只属于有进阶概念的屏（标准 / 快速）；恐惧屏由适配器声明不适用。
+        if (CharacterSelectAdapter.For(__instance) is not { SupportsAscension: true } ||
+            GroupableCharacterSelectorPatches.GetSelector(__instance) is not { } selector)
         {
-            selector.Lobby = ____lobby;
-            selector.AscensionPanel.Initialize(MultiplayerUiMode.Client, ____lobby.GameMode);
+            return;
         }
+
+        selector.Lobby = ____lobby;
+        selector.AscensionPanel.Initialize(MultiplayerUiMode.Client, ____lobby.GameMode);
     }
 }
 
@@ -659,11 +626,14 @@ internal class AscensionPanelSingleplayerModePatch : IPatchMethod
 
     public static void Postfix(object __instance, StartRunLobby ____lobby)
     {
-        var selector = GroupableCharacterSelectorPatches.GetSelector(__instance);
-        if (selector != null)
+        // 进阶面板只属于有进阶概念的屏（标准 / 快速）；恐惧屏由适配器声明不适用。
+        if (CharacterSelectAdapter.For(__instance) is not { SupportsAscension: true } ||
+            GroupableCharacterSelectorPatches.GetSelector(__instance) is not { } selector)
         {
-            selector.Lobby = ____lobby;
-            selector.AscensionPanel.Initialize(MultiplayerUiMode.Singleplayer, ____lobby.GameMode);
+            return;
         }
+
+        selector.Lobby = ____lobby;
+        selector.AscensionPanel.Initialize(MultiplayerUiMode.Singleplayer, ____lobby.GameMode);
     }
 }
