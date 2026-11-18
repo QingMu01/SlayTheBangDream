@@ -26,16 +26,6 @@ public static class VisualsAnimCmd
         VisualsAnimTrack.Submit(creature, steps, AcquireResolutionLease(creature, steps));
     }
 
-    /// <summary>提交演出并等待它跑完（会占住调用方的动作直到演出结束，慎用）。</summary>
-    public static Task RunAsync(
-        Creature creature,
-        IReadOnlyList<IVisualsAnimStep> steps,
-        CancellationToken cancellationToken = default)
-    {
-        return VisualsAnimTrack.RunAsync(
-            creature, steps, cancellationToken, AcquireResolutionLease(creature, steps));
-    }
-
     /// <summary>
     /// 含 <see cref="CallbackStep" /> 的演出承载玩法（例如推进到某处时发射音符），
     /// 必须租一个 <see cref="CombatResolutionBarrier" /> 租赁，否则玩家在演出中途结束回合时，

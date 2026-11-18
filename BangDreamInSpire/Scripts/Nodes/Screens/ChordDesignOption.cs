@@ -43,12 +43,18 @@ public class ChordDesignOption(Player owner) : ModRestSiteOptionTemplate(owner)
 
     public override string CustomIconPath => "res://BangDreamInSpire/images/sceneui/music_draw.png";
 
-    public override LocString Description => new(
+    // 休息处选项在进房时生成，NRestSiteButton 只在创建 / Reload 时读一次 IsEnabled 与 Description，
+    // 期间卡组不会变化（选中后由 NRestSiteRoom.DisableOptions 整体禁用）。
+    // 因此两者都首次访问求值并缓存；LocString 只在 enabled / disabled 两个 key 间切换，构造一次即可。
+    private bool? _isEnabled;
+    private LocString? _description;
+
+    public override LocString Description => _description ??= new(
         LocTable,
         $"OPTION_{OptionId}.{(IsEnabled ? "description" : "descriptionDisabled")}"
     );
 
-    public override bool IsEnabled => Owner.Deck.Cards.Count > 0;
+    public override bool IsEnabled => _isEnabled ??= Owner.Deck.Cards.Count > 0;
 
     /// <summary>选中并应用后的那张牌；<see cref="DoLocalPostSelectVfx" /> 用它播放「展示 → 飞入卡组」。</summary>
     private CardModel? _appliedCard;

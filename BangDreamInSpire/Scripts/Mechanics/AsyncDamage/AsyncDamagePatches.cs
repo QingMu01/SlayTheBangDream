@@ -17,6 +17,12 @@ public class AsyncDamagePatches : IModPatches
 
 /// <summary>
 /// 回合结束前等待全部在飞异步伤害落地结算，避免音符伤害随回合切换被丢弃。
+/// <para>
+/// <b>覆盖边界</b>：本体只在「玩家结束回合」的转场里调用
+/// <c>WaitUntilQueueIsEmptyOrWaitingOnNonPlayerDrivenAction</c>，因此等待只覆盖这一处；
+/// 敌方回合结束、强制结束战斗等其它转场**不会**等在飞伤害（见 docs/mechanic-authoring.md §7.4）。
+/// 不要顺手新增补丁目标来扩大覆盖范围——多等一个转场就是多一次跨端同步等待，属于产品语义决策。
+/// </para>
 /// </summary>
 internal class WaitForAsyncDamageResolutionPatch : IPatchMethod
 {
@@ -26,6 +32,7 @@ internal class WaitForAsyncDamageResolutionPatch : IPatchMethod
     {
         return
         [
+            // 唯一等待点：玩家结束回合转场。其它转场不在覆盖范围内（见类注释与文档 §7.4）。
             new ModPatchTarget(typeof(CombatManager), "WaitUntilQueueIsEmptyOrWaitingOnNonPlayerDrivenAction")
         ];
     }

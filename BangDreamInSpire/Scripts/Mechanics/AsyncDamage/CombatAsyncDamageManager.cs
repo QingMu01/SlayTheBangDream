@@ -178,6 +178,10 @@ public sealed class CombatAsyncDamageManager
     /// <summary>
     /// 就地结算该战斗当前所有在飞音符（含弹跳），用于需要立即读取完整伤害记录的调用方。
     /// 运行于调用方所属的同步 Action 内，故多端看到相同的结算集合与顺序。
+    /// <para>
+    /// <b>experimental / 预留入口</b>：当前没有任何调用点（见 docs/mechanic-authoring.md §7.6）。
+    /// 接入前需要确认调用点本身是同步 Action，否则多端结算顺序无法保证。
+    /// </para>
     /// </summary>
     public async Task FlushPendingAsync(ICombatState combatState)
     {
@@ -340,6 +344,9 @@ public sealed class CombatAsyncDamageManager
             session.PumpRunning = true;
         }
 
+        // 脱手只到「第一个真正未完成的 await」为止：异步方法会同步执行到那里。
+        // 因此 BeforeSpawnAsync / StartAnimationAsync 若同步完成，整批仍会留在调用方这个同步 Action 里。
+        // 需要真正脱手的实现必须在首个 await 处让出（见 docs/mechanic-authoring.md §7.2）。
         _ = PumpAsync(session);
     }
 

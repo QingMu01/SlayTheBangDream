@@ -1,12 +1,11 @@
 using BangDreamInSpire.Scripts.Extensions;
 using BangDreamInSpire.Scripts.Interfaces.CharacterAugment;
 using BangDreamInSpire.Scripts.Mechanics;
-using BangDreamInSpire.Scripts.Utils;
 using Godot;
 using MegaCrit.Sts2.Core.Entities.Players;
+using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using STS2RitsuLib.Patching.Core;
-using STS2RitsuLib.Scaffolding.Godot.NodeAttachments;
 
 namespace BangDreamInSpire.Scripts.Nodes;
 
@@ -26,21 +25,8 @@ public sealed class PerformAreaMechanic : IBangDreamMechanic
 
     public void RegisterContent(BangDreamMechanicContext context)
     {
-        context.NodeAttachments.RegisterReadyChild<NCreature, NPerformArea>(
-            "perform_area",
-            static creature => NPerformArea.Create(creature.Entity.Player),
-            static (creature, area) =>
-            {
-                area.Visible = BangDreamCapabilities.HasPerform(creature.Entity.Player);
-                area.GlobalPosition = ResolvePerformAreaPosition(creature);
-            },
-            new NodeAttachmentOptions
-            {
-                Name = "PerformArea",
-                Order = 10,
-                DuplicatePolicy = NodeAttachmentDuplicatePolicy.ReplaceExistingByName,
-                SetupTiming = NodeAttachmentSetupTiming.AfterAdd,
-            });
+        // 演奏区节点改为在玩家专属的 SubmitCombatState 里按需创建（见该方法说明），
+        // 这里没有静态内容要注册。
     }
 
     public void RegisterPatches(ModPatcher patcher)
@@ -48,22 +34,32 @@ public sealed class PerformAreaMechanic : IBangDreamMechanic
     }
 
     /// <summary>
-    /// 战斗开始时把已就绪的演奏区节点回填给 <see cref="PerformManager" />。
-    /// 时序与原实现一致：节点在战斗开始前已挂到生物节点上（由 <c>RegisterReadyChild</c> 创建）。
+    /// 战斗开始时为玩家创建演奏区节点并回填给 <see cref="PerformManager" />。
     /// </summary>
+    /// <remarks>
+    /// 早先这里只做回填，节点由 <c>NodeAttachments.RegisterReadyChild&lt;NCreature, NPerformArea&gt;</c>
+    /// 挂在生物节点的 <c>_Ready</c> 上。但该注册的父类型 <see cref="NCreature" /> 敌我共用，
+    /// 而 RitsuLib 的工厂必须返回有效节点（返回 <see langword="null" /> 会被判为附加失败并记错误日志），
+    /// 无法在工厂里给敌人跳过 —— 结果每只敌人也会白建一个隐藏节点并算一次摆放位置。
+    /// 改为在玩家专属的生命周期入口按需创建：管理器本来就只在 <c>AttachPerformArea</c> 之后
+    /// 才使用这个节点，因此行为等价，敌人不再产生多余节点。
+    /// </remarks>
     public void SubmitCombatState(Player player)
     {
         var manager = player.AttachedData().PerformManager;
         if (manager.TryGetPerformArea(out _)) return;
 
         var creatureNode = player.Creature.GetCreatureNode();
-        if (creatureNode == null) return;
+        // 必须在已进入树时创建：NPerformArea 的槽位容器在 _Ready 里初始化，
+        // 未就绪就 SyncSlots 会读到空容器（原实现在生物节点 _Ready 里创建，天然满足该前提）。
+        if (creatureNode == null || !creatureNode.IsInsideTree()) return;
 
-        if (ModNodeAttachmentRegistry.For(BangDreamConst.ModId)
-            .TryGetAttached<NCreature, NPerformArea>(creatureNode, "perform_area", out var areaNode))
-        {
-            manager.AttachPerformArea(areaNode);
-        }
+        var areaNode = NPerformArea.Create(player);
+        areaNode.Name = "PerformArea";
+        creatureNode.AddChildSafely(areaNode);
+        areaNode.Visible = BangDreamCapabilities.HasPerform(player);
+        areaNode.GlobalPosition = ResolvePerformAreaPosition(creatureNode);
+        manager.AttachPerformArea(areaNode);
     }
 
     /// <summary>按角色演奏方案给出的摆放规则定位演奏区域。</summary>

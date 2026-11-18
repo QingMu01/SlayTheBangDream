@@ -180,8 +180,26 @@ internal static class ExtraPileCmd
     }
 
     /// <summary>
-    /// 从额外抽牌堆抽牌。逐行镜像本体的 <c>CardPileCmd.DrawInternal</c>（抽牌堆来源是写死的
-    /// <c>PileType.Draw.GetPile(player)</c>，本体没有「从任意牌堆抽牌」的参数化入口）。
+    /// 从额外抽牌堆抽牌。骨架对照本体的 <c>CardPileCmd.DrawInternal</c>（本体的抽牌堆来源写死为
+    /// <c>PileType.Draw</c>，没有「从任意牌堆抽牌」的参数化入口），但**不是逐行镜像**——差异清单：
+    /// <list type="bullet">
+    /// <item>
+    /// 牌堆：来源是 <see cref="BangDreamConst.ExtraDraw" /> 而非 <c>PileType.Draw</c>。额外抽牌堆没有
+    /// 「弃牌堆洗回」规则，所以不调用本体每抽一张前的 <c>ShuffleIfNecessary</c>：该方法的实现只搬运
+    /// <c>PileType.Draw</c> / <c>PileType.Discard</c>，对额外牌堆没有意义。将来若给额外牌堆加洗回规则，
+    /// 必须在这里补对应逻辑。
+    /// </item>
+    /// <item>
+    /// <c>Hook.AfterPreventingDraw</c>：本方法在 <c>modifier != null</c> 时才调用。本体签名收非空的
+    /// <c>AbstractModel</c>，而 <c>Hook.ShouldDraw</c> 的 out 参数在本项目 nullable 语境下是
+    /// <c>AbstractModel?</c>；<c>AfterPreventingDraw</c> 内部本来也用 <c>Contains(modifier)</c> 判定，
+    /// 这层前置只处理可空性，不改变语义。
+    /// </item>
+    /// <item>
+    /// 开头在 <c>CombatManager.Instance.IsOverOrEnding</c> 之外并判 <c>player.Creature.CombatState == null</c>：
+    /// 额外牌堆的入口可能早于战斗状态就绪被调用。
+    /// </item>
+    /// </list>
     /// <para>
     /// 0.113.0 复核结论：<c>CardPileCmd</c> 的抽牌入口仍然全部锁死 <c>PileType.Draw</c>，
     /// 只新增了同为抽牌堆的 <c>AutoPlayFromDrawPile</c>。因此本方法不可删除、不可改调本体 API，
@@ -228,7 +246,7 @@ internal static class ExtraPileCmd
             if (!CheckIfDrawIsPossibleAndShowThoughtBubbleIfNot(player))
                 break;
 
-            var card = drawPile.Cards.ToList().FirstOrDefault();
+            var card = drawPile.Cards.FirstOrDefault();
             if (card == null || hand.Cards.Count >= CardPile.MaxCardsInHand)
                 break;
 

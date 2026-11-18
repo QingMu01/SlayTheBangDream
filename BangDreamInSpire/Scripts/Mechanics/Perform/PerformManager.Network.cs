@@ -20,6 +20,14 @@ namespace BangDreamInSpire.Scripts.Mechanics.Perform;
 
 public partial class PerformManager
 {
+    /// <summary>
+    /// 歌单生命周期动作的 payload。
+    /// <para>
+    /// <c>ChordMask</c> 与 <c>RequestGroupMask</c> 携带 <see cref="PerformChord" /> 的原始位掩码，
+    /// 会序列化后上线（联机两端必须一致）：PerformChord 的位值不可重排 / 不可复用，只能追加
+    /// （见枚举的 remarks）。
+    /// </para>
+    /// </summary>
     private sealed record PerformNetworkActionPayload(
         PerformNetworkActionKind Kind,
         uint? CardIndex,

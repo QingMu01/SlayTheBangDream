@@ -128,7 +128,7 @@ internal sealed class MusicNoteAsyncDamageEffect(
             context.CombatState,
             context.LastRootContext,
             context.Request.Dealer.Player);
-        BangDreamVfxManager.NotifyCombatStateChanged();
+        MusicNoteCmd.NotifyCombatStateChanged();
     }
 
     private MusicNoteFlyingVfx CreateVfx(AsyncDamageSpawnContext context)

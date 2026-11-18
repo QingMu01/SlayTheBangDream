@@ -162,6 +162,12 @@ public sealed class MyMechanic : IBangDreamMechanic
 
 `AsyncDamageAnimationHandle.Landing` **必须**在动画抵达目标时完成；`Completion` 只用于观察生命周期，不驱动玩法。
 
+**`BeforeSpawnAsync` 必须真的 `await`**（时序前提，不是风格问题）：表现泵是 `_ = PumpAsync(...)` 启动的，
+而异步方法会**同步执行到第一个真正未完成的 await**。若 `BeforeSpawnAsync`（或紧随其后的
+`StartAnimationAsync`）同步完成，整批会在发射方那个同步 Action 里一路推进到结束——「不占同步 Action」
+对同步实现**不成立**。需要真正脱手的实现应在首个 await 处显式让出（`await Task.Yield()` 或等一帧）
+再开始起手动作。
+
 ### 7.3 时序
 
 1. 发起方（卡片 / 能力 / 遗物）把请求交给原版动作队列（`RitsuLibManagedNetActions.Request`），
@@ -190,6 +196,13 @@ public sealed class MyMechanic : IBangDreamMechanic
 在队列空后继续等待屏障，避免回合切换时在飞伤害被丢弃。
 战斗结束由 `AsyncDamageMechanic` 订阅 `CombatEndedEvent` 调 `OnCombatEnded` 强制完成，
 防止租赁悬挂让回合永远推进不了。
+
+**覆盖范围：当前只有「玩家结束回合」这一个转场**。等待点挂在
+`CombatManager.WaitUntilQueueIsEmptyOrWaitingOnNonPlayerDrivenAction` 上，而本体**只**在玩家结束回合的转场里
+调用它。敌方回合结束、强制结束战斗等其它转场**不会**等在飞伤害：那里的批次要等命中信号到达才继续，
+观感上结算可能落到下一个阶段之后；若该转场里战斗直接结束，`OnCombatEnded` 会清掉在飞记录并强制完成屏障，
+**这部分伤害不再产生**。扩大覆盖范围（新增补丁目标）属于产品语义决策——每多挂一个转场就多一次跨端同步等待，
+不要顺手加。
 
 ### 7.5 退化路径
 
@@ -432,4 +445,10 @@ cloneTrack?.SetTrackTime(sourceTrack.GetTrackTime());
 - **`Home` 在创建时捕获**：战斗中途若布局重排（换位、召唤），基准位置会过期。
 - **非骨架生物不镜像动画**：`VisualsAnimMirror` 只在 `NCreature.HasSpineAnimation` 与克隆同为真时创建。
   非 Spine（Live2D 等）的克隆只是一个静止画面，需要另行按 `Body` 实际类型驱动。
+- **皮肤与恐惧症模式的体型**：克隆创建时补调 `NCreatureVisuals.SetUpSkin(Monster)`（与原体 `NCreature._Ready` 同序），
+  有皮肤的怪物（拜尔丁的发色、多眼生物的瞳孔皮肤等）在演出中不会跳回默认皮肤；**玩家角色不受影响**
+  （玩家的皮肤走 `GenerateAnimator`，本来就不经过 `SetUpSkin`）。
+  **仍存的边界**：恐惧症模式的体型/皮肤切换（`NCreatureVisuals.UpdatePhobiaMode`）**没有复现**——
+  骨架镜像只驱动 `SpineBody`（`_body`），切到 `%PhobiaModeVisuals` 后会停在 setup pose；
+  加上克隆按生物缓存复用，创建之后再改该选项也不会同步。开启这一辅助选项的玩家，演出中的克隆显示普通体型。
 - **拿不到异步伤害批次句柄**：演出无法「等这批命中再推进下一段」，见 §7.6。

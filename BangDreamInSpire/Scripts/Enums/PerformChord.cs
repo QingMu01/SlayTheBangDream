@@ -4,6 +4,13 @@ namespace BangDreamInSpire.Scripts.Enums;
 /// 演奏和弦。以位掩码表达，一张卡牌可同时带有多个和弦：打出该卡牌时，其全部和弦对应的
 /// 分组都会奏响。
 /// </summary>
+/// <remarks>
+/// 本枚举的数值会以**原始 int** 落盘并上线：
+/// <c>ChordCapability.SaveAdditionalState</c> 直接写 <c>(int)Chord</c>，
+/// <c>PerformManager.PerformNetworkActionPayload</c> 的 <c>ChordMask</c> / <c>RequestGroupMask</c> 同理。
+/// 因此位值**不可重排、不可复用、不可删除**——那会静默改变已有存档与联机 payload 的语义；
+/// 新增和弦只能追加未占用的位（当前已占用 <c>1 &lt;&lt; 0..3</c>，下一位为 <c>1 &lt;&lt; 4</c>）。
+/// </remarks>
 [Flags]
 public enum PerformChord
 {

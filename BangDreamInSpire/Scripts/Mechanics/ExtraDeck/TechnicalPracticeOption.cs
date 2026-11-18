@@ -19,16 +19,23 @@ public class TechnicalPracticeOption(Player owner) : ModRestSiteOptionTemplate(o
 {
     private IEnumerable<CardModel> _selection = [];
 
+    // 休息处选项在进房时生成，NRestSiteButton 只在创建 / Reload 时读一次 IsEnabled 与 Description，
+    // 期间额外卡组的可升级性不会变化（选中后由 NRestSiteRoom.DisableOptions 整体禁用）。
+    // 因此两者都首次访问求值并缓存；LocString 只在 enabled / disabled 两个 key 间切换，构造一次即可。
+    private bool? _isEnabled;
+    private LocString? _description;
+
     public override string OptionId => "BANG_DREAM_IN_SPIRE_TECHNICAL_PRACTICE";
 
     public override string CustomIconPath => "res://BangDreamInSpire/images/sceneui/technical_practice.png";
 
-    public override LocString Description => new(
+    public override LocString Description => _description ??= new(
         "rest_site_ui",
         $"OPTION_{OptionId}.{(IsEnabled ? "description" : "descriptionDisabled")}"
     );
 
-    public override bool IsEnabled => BangDreamConst.ExtraDeck.GetPile(Owner).Cards.Any(card => card.IsUpgradable);
+    public override bool IsEnabled =>
+        _isEnabled ??= BangDreamConst.ExtraDeck.GetPile(Owner).Cards.Any(card => card.IsUpgradable);
 
     public override async Task<bool> OnSelect()
     {

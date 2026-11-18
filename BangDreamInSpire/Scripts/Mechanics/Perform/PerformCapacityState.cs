@@ -26,15 +26,13 @@ public enum PerformCapacityChangeResult
 /// </summary>
 public sealed class PerformCapacityState(IPerformScheme scheme)
 {
-    private readonly Dictionary<PerformChord, int> _capacityByGroup = scheme.Groups.ToDictionary(
-        group => group.Chord,
-        group => Math.Clamp(group.DefaultSlots, 0, group.MaxSlots));
+    private readonly Dictionary<PerformChord, int> _capacityByGroup = BuildCapacityByGroup(scheme);
 
     private Dictionary<PerformChord, PerformGroupDescriptor>? _groupByChord;
     private List<int>? _allActiveSlots;
 
     private Dictionary<PerformChord, PerformGroupDescriptor> GroupByChord =>
-        _groupByChord ??= scheme.Groups.ToDictionary(group => group.Chord);
+        _groupByChord ??= BuildGroupIndex(scheme);
 
     /// <summary>全部分组的容量上限之和。</summary>
     public int TotalSlotCount => scheme.TotalSlotCount;
@@ -124,6 +122,34 @@ public sealed class PerformCapacityState(IPerformScheme scheme)
         }
 
         return ApplyDelta(-amount, ResolveTargetGroups(group));
+    }
+
+    /// <summary>
+    /// 以 <see cref="PerformGroupDescriptor.Chord" /> 为键建立分组索引。和弦是分组的身份
+    /// （见 <see cref="IPerformScheme.Groups" /> 的唯一性约束），重复时直接报出冲突的和弦，
+    /// 而不是让 <c>ToDictionary</c> 抛一条没有上下文的 <see cref="ArgumentException" />。
+    /// </summary>
+    private static Dictionary<PerformChord, PerformGroupDescriptor> BuildGroupIndex(IPerformScheme scheme)
+    {
+        var byChord = new Dictionary<PerformChord, PerformGroupDescriptor>();
+        foreach (var group in scheme.Groups)
+        {
+            if (!byChord.TryAdd(group.Chord, group))
+            {
+                throw new InvalidOperationException(
+                    $"演奏方案 {scheme.GetType().Name} 的分组和弦重复：'{group.Chord}'。" +
+                    "同一方案内分组和弦必须唯一（PerformChord.None 至多出现在一个分组）。");
+            }
+        }
+
+        return byChord;
+    }
+
+    private static Dictionary<PerformChord, int> BuildCapacityByGroup(IPerformScheme scheme)
+    {
+        return BuildGroupIndex(scheme).ToDictionary(
+            pair => pair.Key,
+            pair => Math.Clamp(pair.Value.DefaultSlots, 0, pair.Value.MaxSlots));
     }
 
     private bool ApplyDelta(int delta, IReadOnlyList<PerformGroupDescriptor> targets)

@@ -83,7 +83,9 @@ public class PuppeteerFormManager : HookedSingletonModel, IInCombatManager, IPup
         // 战斗外 Creature 始终是本体配置，所以上限取本体池与当前上限的较大值（休息处回血 / 遗物加血都会反映进来）；
         // 若运行数据记录着"上一场停在傀儡形态"（战斗中存档的残留），Creature 上的数值是傀儡池，必须以运行数据为准。
         var savedPuppet = data.ActiveForm == PuppeteerForm.Puppet;
-        var hostMax = savedPuppet
+        // 旧存档可能只有 ActiveForm 而没有 HostMaxHp（字段缺失 → 0）：此时不能把本体上限压成 1，
+        // 回落到当前 Creature 上限（与 InitializeRunData 首次播种的口径一致）。
+        var hostMax = savedPuppet && data.HostMaxHp > 0
             ? Math.Max(1, data.HostMaxHp)
             : Math.Max(1, creature.MaxHp);
         // 本体已死（0 血）时强制复活到 1 点：战斗开始必须有小睦登场。

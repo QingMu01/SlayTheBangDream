@@ -1,6 +1,9 @@
+using System.Reflection;
 using System.Text.Json;
 using BangDreamInSpire.Scripts.Mechanics.AsyncDamage;
 using BangDreamInSpire.Scripts.Utils;
+using HarmonyLib;
+using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Context;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Multiplayer;
@@ -36,10 +39,25 @@ internal static class MusicNoteCmd
             static context => ExecuteNetworkRequest(context),
             GameActionType.Combat);
 
+    /// <summary>本体 <c>CombatStateTracker.NotifyCombatStateChanged</c> 是私有方法，反射句柄见下。</summary>
+    private static readonly MethodInfo? StateChangedNotifier =
+        AccessTools.Method(typeof(CombatStateTracker), "NotifyCombatStateChanged");
+
     /// <summary>在模组初始化阶段注册描述符，确保接收远端 Action 前本地已具备解码信息。</summary>
     internal static void InitializeNetwork()
     {
         RitsuLibManagedNetActions.Register(NetworkAction);
+    }
+
+    /// <summary>
+    /// 本体 <c>CombatStateTracker.NotifyCombatStateChanged</c> 是私有方法，这里用反射强制刷新一次状态通知。
+    /// 入口属于玩法层（音符整批结算之后），不再挂在 VFX 管理器上，避免把「能改写战斗状态」的通道
+    /// 暴露给特效层（见 review D-20）。
+    /// </summary>
+    internal static void NotifyCombatStateChanged()
+    {
+        if (CombatManager.Instance.IsInProgress)
+            StateChangedNotifier?.Invoke(CombatManager.Instance.StateTracker, ["BangDreamVfx"]);
     }
 
     public static Task FromCard(CardModel source, int baseCount, int bounceCount = 0, decimal baseDamage = 1m,
@@ -66,10 +84,28 @@ internal static class MusicNoteCmd
             : Submit(source.Owner.Creature, baseCount, bounceCount, baseDamage, null, target, source);
     }
 
+    /// <summary>从任意生物发射音符。</summary>
+    /// <remarks>
+    /// <paramref name="dealer" /> 必须是玩家拥有的生物：动作队列的归属端与 <c>NetId</c> 都取自
+    /// <see cref="Creature.Player" />，非玩家 dealer 没有归属端，请求只会被网络层拒绝或退化成
+    /// 各端各自的本地直执行（跨端结算不一致）。因此这里明确拒绝，而不是让它在 <see cref="Submit" />
+    /// 里以「RunState 为 null」的形式报一个看不懂的参数异常。
+    /// </remarks>
     public static Task CustomShot(Creature dealer, int baseCount, int bounceCount = 0, decimal baseDamage = 1m,
         Creature? target = null, bool shouldImmediate = false)
     {
-        return Submit(dealer, baseCount, bounceCount, baseDamage, null, target);
+        ArgumentNullException.ThrowIfNull(dealer);
+        if (dealer.Player == null)
+        {
+            throw new InvalidOperationException(
+                $"Music note dealer '{dealer.LogName}' (combatId={dealer.CombatId?.ToString() ?? "null"}) " +
+                "is not owned by a player; music notes can only be fired by player-owned creatures.");
+        }
+
+        // shouldImmediate 此前被签名收下却未生效：立即结算必须走 SubmitImmediate，否则会静默排进动作队列。
+        return shouldImmediate
+            ? SubmitImmediate(dealer, baseCount, bounceCount, baseDamage, target, null)
+            : Submit(dealer, baseCount, bounceCount, baseDamage, null, target);
     }
 
     internal static Task Submit(Creature dealer, int count, int bounceCount = 0, decimal baseDamage = 1m,

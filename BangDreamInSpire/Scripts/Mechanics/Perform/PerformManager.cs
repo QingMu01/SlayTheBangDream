@@ -92,6 +92,14 @@ public partial class PerformManager : HookedSingletonModel, IInCombatManager, IP
     private Player? _player;
     private CardPile? _pile;
 
+    /// <summary>
+    /// 本实例是否尚未绑定玩家。注册的单例会与每玩家克隆一起进入
+    /// <c>CombatState.IterateHookListeners</c>（原因见下方 <see cref="ModifyCardPlayResultLocation" /> 的说明），
+    /// 因此**每个 hook override 都必须先用它短路**再读 <see cref="Player" />；否则单例那份会抛
+    /// 「Owner is not Initialized」并让整次出牌失败。
+    /// </summary>
+    protected bool IsUnbound => _player == null;
+
     private readonly Queue<CardModel> _cardsAwaitingArrival = [];
     private readonly HashSet<CardModel> _cardsWithArrivalVisual = [];
     private readonly HashSet<CardModel> _cardsPendingArrival = [];
@@ -605,6 +613,14 @@ public partial class PerformManager : HookedSingletonModel, IInCombatManager, IP
                 nameof(orderedCards));
         }
 
+        // 重排把槽位重写成 1 基连续索引，只适用于单块连续分组的方案（祥子）；歌单规模超过当前
+        // 已激活容量时会写出 IsValidSlot 之外的槽位（正常入队流程一直做这层校验，这里是对外 API 的补强）。
+        if (orderedCards.Count > _capacity.ActiveSlotCount)
+        {
+            throw new InvalidOperationException(
+                $"Cannot reorder {orderedCards.Count} cards into {_capacity.ActiveSlotCount} active perform slots.");
+        }
+
         // 重排视为"重新加入歌单"：清空本次入场的即兴标记，使即兴牌重新演奏。
         foreach (var card in orderedCards)
         {
@@ -848,10 +864,11 @@ public partial class PerformManager : HookedSingletonModel, IInCombatManager, IP
     // 「RitsuLib 战斗钩子订阅」两种身份进入 CombatState.IterateHookListeners；这两份都没绑定玩家，
     // 读 Player 会抛 Owner is not Initialized 并让整次出牌失败。真正的每玩家结算由
     // PerformMechanic.GetCombatHookModels 注册的那份克隆负责（见 SubmitCombatState 的 _player）。
+    // 新增 override 一律先用 IsUnbound 短路。
     public override CardLocation ModifyCardPlayResultLocation(CardModel card, bool isAutoPlay, ResourceInfo resources,
         CardLocation cardLocation)
     {
-        if (_player == null)
+        if (IsUnbound)
         {
             return cardLocation;
         }
@@ -869,7 +886,7 @@ public partial class PerformManager : HookedSingletonModel, IInCombatManager, IP
     {
         // 每个经理都会收到全部出牌事件；只有出牌者的经理需要为「入场表现」等待一次，
         // 否则 N 人联机每次音乐牌出牌会叠加 N 份延迟。
-        if (_player == null || play.Card.Owner != Player)
+        if (IsUnbound || play.Card.Owner != Player)
         {
             return;
         }
@@ -888,6 +905,9 @@ public partial class PerformManager : HookedSingletonModel, IInCombatManager, IP
             ? character.CreatePerformScheme()
             : EmptyPerformScheme.Instance;
         _capacity = new PerformCapacityState(_scheme);
+        // 分组激活位是跨战斗复用的缓存（演奏区重建时由 SetActivatedGroups 重新投喂），
+        // 必须在本场开始前清空，否则上一场的掩码会残留到下一场。
+        _activeGroups = PerformChord.None;
 
         if (PerformArea != null)
         {

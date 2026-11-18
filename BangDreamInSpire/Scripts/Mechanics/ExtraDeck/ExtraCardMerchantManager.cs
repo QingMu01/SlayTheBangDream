@@ -104,7 +104,7 @@ internal static class ExtraCardMerchantManager
             foreach (var rarity in new[] { CardRarity.Uncommon, CardRarity.Uncommon, CardRarity.Rare })
             {
                 var entry = new MusicCardMerchantEntry(player, cardPool, rarity, duplicateGuard);
-                entry.Populate(inventory);
+                entry.Populate();
                 musicEntries.Add(entry);
             }
 
@@ -112,6 +112,8 @@ internal static class ExtraCardMerchantManager
         }
 
         inventoryNode.Initialize(inventory, MerchantRoom.Dialogue);
+        // 音乐牌与删牌条目刻意不进 inventory.AllEntries（库存列表只收原版条目类型），
+        // 靠 BindSlots 手工绑到场景槽位；因此下面的购买刷新要单独遍历这两组条目。
         BindSlots(inventoryNode, musicEntries, removalEntry, supportsExtraCardPool);
 
         void OnAnyPurchaseCompleted(PurchaseStatus _, MerchantEntry __)

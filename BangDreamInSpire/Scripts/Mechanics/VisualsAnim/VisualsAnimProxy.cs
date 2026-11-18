@@ -89,12 +89,6 @@ public sealed class VisualsAnimProxy
         ? Visuals.VfxSpawnPosition.GlobalPosition
         : Source.VfxSpawnPosition;
 
-    /// <summary>把世界坐标换算成载体的局部位置，供「移动到某个生物身边」这类步骤使用。</summary>
-    public Vector2 ToLocal(Vector2 global)
-    {
-        return Source.GetGlobalTransform().AffineInverse() * global;
-    }
-
     /// <summary>朝向：以 <see cref="BaseScale" /> 的绝对值取符号，避免与外部缩放叠加出错。</summary>
     public void Face(bool right)
     {
@@ -214,6 +208,14 @@ public sealed class VisualsAnimProxy
         clone.Position = Vector2.Zero;
         clone.Scale = baseScale;
         clone.Visible = false;
+
+        // 克隆是同一视觉场景的独立实例，_Ready 只做基础节点绑定：皮肤（拜尔丁的发色、多眼生物的瞳孔皮肤等）
+        // 由 NCreature._Ready 在原体上另行调用 SetUpSkin 设置，克隆不会自动继承，必须在这里补一次。
+        // 顺序与原体一致（先皮肤、后动画），只在怪物且有骨架时调用；玩家角色的皮肤走 GenerateAnimator，不受影响。
+        // 恐惧症模式的体型/皮肤（NCreatureVisuals.UpdatePhobiaMode）刻意不复现：镜像只驱动 SpineBody，
+        // 切到 phobia 体型后会停在 setup pose，属于已知边界（见 docs/mechanic-authoring.md §13.4）。
+        if (creature.Monster != null && clone.HasSpineAnimation)
+            clone.SetUpSkin(creature.Monster);
 
         // 骨架克隆必须复现本体的当前帧，否则动画只会停在待机。
         VisualsAnimMirror? mirror = null;

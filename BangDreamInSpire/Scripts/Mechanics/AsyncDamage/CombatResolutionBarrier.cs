@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using MegaCrit.Sts2.Core.Combat;
 
 namespace BangDreamInSpire.Scripts.Mechanics.AsyncDamage;
@@ -36,7 +37,14 @@ public static class CombatResolutionBarrier
     }
 
     private static readonly Lock BarrierLock = new();
-    private static readonly Dictionary<ICombatState, BarrierState> States = new(ReferenceEqualityComparer.Instance);
+
+    /// <summary>
+    /// 弱表：按战斗登记的在飞状态不能强引用 <see cref="ICombatState" />。
+    /// 战斗结束事件里 <c>CombatEndedEvent.CombatState</c> 可能为 null（此时不会调用
+    /// <see cref="ForceComplete" />），强引用字典会把这些状态永久留在内存里。
+    /// 弱表按对象标识（引用相等）组织，等价于此前的 <see cref="ReferenceEqualityComparer" />。
+    /// </summary>
+    private static readonly ConditionalWeakTable<ICombatState, BarrierState> States = new();
 
     /// <summary>为指定战斗登记一项尚未完成的异步结算。返回的租赁必须在结算结束时释放。</summary>
     public static IDisposable Acquire(ICombatState combatState)
@@ -45,12 +53,7 @@ public static class CombatResolutionBarrier
 
         lock (BarrierLock)
         {
-            if (!States.TryGetValue(combatState, out var state))
-            {
-                state = new BarrierState();
-                States[combatState] = state;
-            }
-
+            var state = States.GetValue(combatState, static _ => new BarrierState());
             state.LeaseCount++;
         }
 
@@ -84,9 +87,10 @@ public static class CombatResolutionBarrier
         TaskCompletionSource<bool>? completion;
         lock (BarrierLock)
         {
-            if (!States.Remove(combatState, out var state))
+            if (!States.TryGetValue(combatState, out var state))
                 return;
 
+            States.Remove(combatState);
             completion = state.Completion;
         }
 

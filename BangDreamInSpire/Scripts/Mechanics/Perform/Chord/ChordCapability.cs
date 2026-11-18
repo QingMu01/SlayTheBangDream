@@ -73,6 +73,7 @@ public sealed class ChordCapability : CardCapability, ICardOverlayContributor
     /// <inheritdoc />
     protected override JsonNode? SaveAdditionalState()
     {
+        // 和弦按原始 int 落盘：PerformChord 的位值不可重排 / 不可复用，只能追加（见枚举的 remarks）。
         return Chord == PerformChord.None
             ? null
             : new JsonObject { [ChordStateKey] = (int)Chord };

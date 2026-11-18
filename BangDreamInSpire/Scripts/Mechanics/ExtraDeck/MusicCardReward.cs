@@ -10,7 +10,6 @@ using MegaCrit.Sts2.Core.Factories;
 using MegaCrit.Sts2.Core.GameActions;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Helpers;
-using MegaCrit.Sts2.Core.Hooks;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Nodes;
 using MegaCrit.Sts2.Core.Nodes.Cards.Holders;
@@ -33,8 +32,6 @@ public class MusicCardReward : ModCustomReward
     protected override string RewardIconPath => "res://BangDreamInSpire/images/sceneui/music_reward.png";
 
     private NCardRewardSelectionScreen? _currentlyShownScreen;
-
-    private readonly bool _cardsWereManuallySet;
 
     private readonly PlayerChoiceSynchronizer? _synchronizer;
 
@@ -59,40 +56,13 @@ public class MusicCardReward : ModCustomReward
         player.RelicObtained += OnRelicObtained;
     }
 
-    public MusicCardReward(
-        IEnumerable<CardModel> cardsToOffer,
-        CardCreationSource source,
-        Player player,
-        PlayerChoiceSynchronizer? synchronizer = null) : base(player)
-    {
-        Options = new CardCreationOptions([], source,
-            CardRarityOddsType.Uniform).WithFlags(
-            CardCreationFlags.NoCardPoolModifications |
-            CardCreationFlags.NoCardModelModifications |
-            CardCreationFlags.IsCardReward
-        );
-        _cardsWereManuallySet = true;
-        _musicCards = cardsToOffer.Select(c => new CardCreationResult(c)).ToList();
-        OptionCount = _musicCards.Count;
-        _synchronizer = synchronizer ?? RunManager.Instance.PlayerChoiceSynchronizer;
-    }
-
     public override void Populate()
     {
-        if (_cardsWereManuallySet)
-        {
-            if (!Hook.TryModifyCardRewardOptions(Player.RunState, Player, _musicCards, Options,
-                    out var modifiers)) return;
-            TaskHelper.RunSafely(Hook.AfterModifyingCardRewardOptions(Player.RunState, modifiers));
-        }
-        else
-        {
-            if (_musicCards.Count > 0)
-                return;
-            var forReward = CardFactory.CreateForReward(Player, OptionCount, Options);
-            _musicCards.Clear();
-            _musicCards.AddRange(forReward);
-        }
+        if (_musicCards.Count > 0)
+            return;
+        var forReward = CardFactory.CreateForReward(Player, OptionCount, Options);
+        _musicCards.Clear();
+        _musicCards.AddRange(forReward);
     }
 
     protected override async Task<bool> OnSelect()
@@ -273,6 +243,8 @@ public class MusicCardReward : ModCustomReward
 
     public override SerializableReward ToSerializable()
     {
+        // 手工构造的奖励（没有卡池）不可序列化：反序列化只按 CardPoolIds 重建，
+        // 因此注册表里的奖励必须始终由 CardCreationOptions 构造。
         if (Options.CardPools.Count <= 0)
             throw new InvalidOperationException(
                 "Tried to serialize a MusicCardReward without any card pools! This is not currently supported.");
@@ -297,8 +269,6 @@ public class MusicCardReward : ModCustomReward
 
     private void OnRelicObtained(RelicModel relic)
     {
-        if (_musicCards == null)
-            throw new InvalidOperationException("cards must be set first before you can update them");
         if (relic.TryModifyCardRewardOptions(Player, _musicCards, Options))
             TaskHelper.RunSafely(relic.AfterModifyingRewards());
         if (!relic.TryModifyCardRewardOptionsLate(Player, _musicCards, Options))

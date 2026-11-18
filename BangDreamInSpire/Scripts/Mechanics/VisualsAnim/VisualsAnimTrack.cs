@@ -30,19 +30,6 @@ public static class VisualsAnimTrack
 
     private static CancellationTokenSource _combatCancellation = new();
 
-    /// <summary>提交一条演出并等待它跑完。会按生物排队。</summary>
-    public static Task RunAsync(
-        Creature creature,
-        IReadOnlyList<IVisualsAnimStep> steps,
-        CancellationToken cancellationToken = default,
-        IDisposable? completionLease = null)
-    {
-        ArgumentNullException.ThrowIfNull(creature);
-        ArgumentNullException.ThrowIfNull(steps);
-
-        return RunCoreAsync(creature, steps, cancellationToken, completionLease);
-    }
-
     /// <summary>提交一条演出后立即返回，不阻塞调用方（典型用法：在 <c>OnPlay</c> 里提交）。</summary>
     public static void Submit(
         Creature creature,

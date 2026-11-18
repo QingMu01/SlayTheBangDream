@@ -77,7 +77,15 @@ public readonly record struct PerformGroupDescriptor(
 /// </summary>
 public interface IPerformScheme
 {
-    /// <summary>全部分组，按 <see cref="PerformGroupDescriptor.BaseSlotIndex" /> 升序。</summary>
+    /// <summary>
+    /// 全部分组，按 <see cref="PerformGroupDescriptor.BaseSlotIndex" /> 升序。
+    /// <para>
+    /// <b>同一方案内分组和弦必须唯一</b>：<see cref="PerformGroupDescriptor.Chord" /> 是分组的身份，
+    /// <c>PerformCapacityState</c> 直接以它为键建索引。重复（包括把
+    /// <see cref="PerformChord.None" /> 给两个分组）会让战斗开始时的容量初始化抛
+    /// <see cref="InvalidOperationException" />。
+    /// </para>
+    /// </summary>
     IReadOnlyList<PerformGroupDescriptor> Groups { get; }
 
     /// <summary>

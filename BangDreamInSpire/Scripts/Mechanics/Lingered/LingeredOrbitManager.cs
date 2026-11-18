@@ -162,11 +162,17 @@ public class LingeredOrbitManager : HookedSingletonModel, IInCombatManager
         var lines = SecondaryResourcePaymentResolver.Plan(card).Lines
             .Where(line => line.ResourceId.Equals(BangDreamConst.LingeredResource))
             .ToList();
-        if (lines.Count == 0 || lines.Any(line => !line.IsAffordable))
+        if (lines.Count == 0)
         {
             return 0;
         }
 
-        return lines.Sum(line => line.AmountToSpend);
+        // 预览语义是「打出这张卡会消耗几个余音」，口径就是结算时真正扣减的数量 AmountToSpend：
+        // · X 费（SecondaryResourceCost.X()）的 Cost 恒为 0、金额随可用余音走，只有 AmountToSpend 是正确值；
+        // · 资源不足时 AmountToSpend 已按资源定义的不足支付策略收敛
+        //   （本机制为 AllowPlay(spendAvailable: false)，即付出 0；若改为 spendAvailable: true 则是可用部分）。
+        // 因此不能再用 !IsAffordable 一律归零：X 费卡会恒被判定为「够付」，而 spendAvailable: true 的
+        // 不足支付卡会被显示成「不消耗」但实际扣掉全部可用量。
+        return lines.Sum(line => Math.Max(0, line.AmountToSpend));
     }
 }
