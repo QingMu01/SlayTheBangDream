@@ -66,22 +66,17 @@
 工具用法与判据见 [references/asset-selection.md](references/asset-selection.md)。
 
 1. `library_info` 看规模与已有标签；`get_selection_spec`（或 `polaris://spec/selection.json`）取权威取值——**facet/角色/阈值不要凭记忆猜**。
-2. `search_assets` 用**结构化过滤**而不是关键词：`tags:["VFX"]`、`alpha`、`fill_ratio`、`holes`（`[0,0]`=实心）、`components`（`[1,1]`=单颗主体）、`dark_outline`、`glow_range`、`colors`+`color_min_ratio`、`width/height`。主体级：`role` + `mode` + `facets` + `dimensions` + `target_px`/`tint`/`blend` + `unknown_features`。
-3. 读 `risks` / `required_review`：未知证据不算通过，标了待复核的必须目视。
-4. `render_contact_sheet`（≤256 个）**只用来粗筛淘汰**，分辨率不够下结论；缩小到少数候选后 `render_asset_preview`（`max_size` 到 2048）逐个看高清，**这步不能跳**。
-5. 图集/序列帧用 `get_asset_group_preview` 拿帧结构——**这是设 `hframes`/`vframes` 的唯一依据**。
-6. `export_assets` 到 `.scratch/vfx/`（自动带 `_provenance.json`）；不在库内改名/删除。
-7. **入库前跑本体归属校验**：`python .agents/skills/vfx-authoring/scripts/check_asset_origin.py <导出目录>`
-   - `BODY`：**不复制**，场景里直接引本体 uid + path；
-   - `LOCAL`：重命名为语义名，复制进 `images/vfx/<特效名>/`；
-   - `REVIEW`：疑似改绘，人眼判定后二选一。
-8. **候选必须落到 uuid 或真实路径**；"某个闪光贴图"等于没做侦察。
+2. 按选材参考的过滤表用 `search_assets` 定位候选，并检查 `risks` / `required_review`：未知证据不算通过，待复核项必须目视。
+3. `render_contact_sheet`（≤256 个）只用于粗筛；少数候选必须逐个 `render_asset_preview` 看高清。图集/序列帧用 `get_asset_group_preview` 拿帧结构。
+4. `export_assets` 到 `.scratch/vfx/`（自动带 `_provenance.json`）；不在库内改名/删除。
+5. **入库前跑本体归属校验**：`BODY` 直接引用本体 uid + path，`LOCAL` 才复制，`REVIEW` 人工判定；命令与完整判据见选材参考。
+6. **候选必须落到 uuid 或真实路径**；"某个闪光贴图"等于没做侦察。
 
 **MCP 明确返回 `server is disconnected` 时**：立即停止侦察，报告实际错误与修复步骤，不用本地素材凑合、不伪造 uuid。恢复后从 S1 继续，不用重问已答内容。
 
 ## 7. S2 设计提案（替代访谈）
 
-**默认不做访谈，做提案。** 让用户在 8 个抽象选项里选，不如直接给 3 张图。
+**默认不做访谈，做提案。** 让用户在 8 个抽象选项里选，不如直接给 3 张图。创意方向与混合规则见 [references/creative-direction.md](references/creative-direction.md)。
 
 ### 7.1 提案长什么样
 
@@ -121,7 +116,7 @@
 | spark / debris / trail 且显示 < 256px | 联络表高清预览足够；放大 > 3× 仍要核对 |
 | 所有图层的"深色描边" | 任一角色下花色描边都要否决或说明理由（单色 modulate 改不掉边缘颜色） |
 
-预演规格写进 `plan.md` 的「素材预演」一节（不进契约块），**在 S4 摘要里给用户看**，同时说明它是静态近似、动态以 S5 录制为准。
+预演规格写进 `plan.md` 的「素材预演」一节（不进契约块），格式见 [references/preview-spec.md](references/preview-spec.md)；**在 S4 摘要里给用户看**，同时说明它是静态近似、动态以 S5 录制为准。
 
 否决表（按角色看特征，**同一字段在不同角色下含义相反**）：
 
@@ -150,16 +145,7 @@
 
 块外随便改：设计意图、决策与默认值、假设与风险、预演图路径、调参记录——措辞、补充说明、错别字都不会让批准失效。
 
-**授权包络给默认值**（不填就用这套），让绝大多数调参不需要重新批准：
-
-| 项 | 默认允许 |
-|---|---|
-| LIFE | ±40% |
-| 各层显示尺寸 | ±30% |
-| alpha 峰值 | ±0.25（0–1 内） |
-| 旋转角度 | ±15° |
-| 装饰层（spark/smoke/trail）增删 | 允许，不影响主体 |
-| **不可改** | 素材集合、主体形态、用途/触发与结算时刻、核心层数量 |
+参数起点见 [references/translation-tables.md](references/translation-tables.md)；默认授权包络与不可改项以 [计划模板 §5](references/plan-template.md#5-授权包络契约) 为准，不在此处复制数值。
 
 ## 10. S4 一次确认
 
@@ -183,7 +169,7 @@ python .agents/skills/vfx-authoring/scripts/check_gate.py --plan <plan.md>   # �
 
 ### S5.0 前置
 
-1. 素材复制到 `BangDreamInSpire/BangDreamInSpire/images/vfx/<特效名>/`，语义化命名。
+1. `LOCAL` 素材复制到 `BangDreamInSpire/BangDreamInSpire/images/vfx/<特效名>/`，语义化命名；`BODY` 素材直接引用本体 uid。
 2. `--headless --import` 生成 `.import` 与 uid，**不要手写 uid**。
    改过 `images/**` 里的任何 PNG 之后**必须重跑一次**再 build，否则 pck 里仍是旧 `.ctex`：
    `GODOT=$(dotnet msbuild BangDreamInSpire/BangDreamInSpire.csproj -getProperty:GodotExe)`
@@ -227,7 +213,7 @@ bash .agents/skills/vfx-authoring/scripts/stage.sh \
 
 ### S5.3 接入与交付
 
-1. **搜类名与场景路径确认真的接入了**；只命中定义文件即孤儿。`WithHitFx` 解析的是本体资源，改字符串到不了 mod（`docs/vfx-authoring.md` §2.1）。未接入时在计划与交付说明里明确声明。
+1. **搜类名与场景路径确认真的接入了**；只命中定义文件时列为孤儿候选，不得据此直接删除。`WithHitFx` 解析的是本体资源，改字符串到不了 mod（`docs/vfx-authoring.md` §2.1）。未接入时在计划与交付说明里明确声明。
 2. 交付物：场景 + 脚本 +（**仅非本体素材**）贴图与 `.import` + `tuning-log.md`（有调参时）+ mp4/gif。
 3. **交付时内联 mp4 与 gif**，不要只给文件名；一句话总结实际观感与验收结论。
 4. 特效目录**不产出** `README.md` / `SOURCES.md`；来源凭据写在计划文件里。

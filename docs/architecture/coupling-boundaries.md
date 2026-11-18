@@ -48,7 +48,7 @@ python3 tools/check-architecture.py --strict   # 收口用：WARN 也 exit 1
 
 ## 4. 例外登记
 
-当前 allowlist 覆盖两类例外，另有一类已收敛项作为记录：
+**当前例外只以脚本的 [`ALLOWLIST`](../../tools/check-architecture.py) 为准**，本节不复制逐文件清单，避免双份登记漂移。现有例外分为两类，另有一类已收敛项作为记录：
 
 - **VFX 契约**：`Lingered` / `MusicNote` 的机制直接引用 `Nodes.VFX`（角色专属特效已迁出，见下条）。
 - **商人 UI 契约**：`ExtraCardMerchantManager` 直接操作 `Nodes.Merchant`；

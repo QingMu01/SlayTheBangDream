@@ -9,7 +9,7 @@
 | `BangDreamInSpire/{addons,animations,fonts,images,materials,models,scenes,shaders,themes,src}/**` | 本体同步资源：gitignore、不进 mod pck、编辑器引用它们的**本体 uid**。删了编辑器里所有本体引用显示资源缺失；`src/` 同时是查本体实现的唯一来源 | `.gitignore`、`tools/sync-sts2-assets.sh`、`BangDreamInSpire/export_presets.cfg` |
 | `BangDreamInSpire.json` / `ItsCrychic.json` | mod loader 入口清单，缺了模组不加载 | 各 csproj `Content Include` |
 | `bin/spine-godot-extension-*` | 官方 Spine 运行时扩展，删了要重新下载 | `Directory.Build.targets` |
-| `BangDreamInSpire/.godot/{polka_probe.gd,polka_rebuild_check.gd,polka_long.tscn,polka_short.tscn}` | **手写文件却躺在 gitignore 的缓存目录里**。任何「删 `.godot` 重开编辑器」都会连带丢失，应迁出后再删缓存 | 文件 mtime、`.gitignore` |
+| `**/.godot/**` 内的手写文件 | 缓存目录可整体重建，但手写文件必须先迁出；不得把特定探针文件名当成永久清单 | `.gitignore` |
 | `*.import` / `*.uid` | 引擎副产物，但必须随源一起提交；单独删会让场景报 `ext_resource, invalid UID` | `docs/card-authoring.md` §1.1、`docs/vfx-authoring.md` §4 |
 | 用户工作区里未提交/未跟踪的 WIP | 清理任务没有处置权，误删即不可恢复（本仓库有未跟踪文件在 rebase 中静默消失的前科） | 每次任务前 `git status --short` |
 
@@ -30,7 +30,7 @@
 | `BangDreamInSpire/BangDreamInSpire/scenes/vfx/music_crystal_hit_vfx.tscn` | **活跃保留** | **有意保留的预览件**（曾录帧验证，等接入卡牌）；它引用的 `MusicCrystalHitVfx.cs` 因此是活的 | 接入完成后 |
 | `BangDreamInSpire/BangDreamInSpire/skins/skin_template.json` | **活跃保留** | 皮肤模板，供新增角色复制，本身是活的 | 模板机制变更时 |
 | `MusicFlashVfx` / `MusicHitVfx` / `MusicWaveVfx` 等被文档引用的实现 | 活跃保留（代码侧） | 被文档当作 `Node2D` 参考实现引用。若要删，必须**同批改文档**，否则文档指向不存在的代码 | 文档改写后 |
-| `BangDreamInSpire/Scripts/Nodes/VFX/MusicSlashVfx.cs` | 预留待实装 | 无 `.tscn`、无调用点，但保存了斩击/冲击的完整参考实现；`docs/vfx-authoring.md` §2 已标注「已知保留」。要删必须先改文档或等实装 | 有场景/调用点接入，或文档删除该参考 |
+| `BangDreamInSpire/Scripts/Nodes/VFX/MusicSlashVfx.cs` | 预留待实装 | 无 `.tscn`、无调用点，但保存了斩击/冲击的完整参考实现；已列入本清单。要删必须先改文档或等实装 | 有场景/调用点接入，或文档删除该参考 |
 
 > 上表最后一行不是 keep 规则：这些是 `.cs` 脚本，靠扫描器的代码保护规则（有基类/接口即不判死）活着，不靠 `cascade_blocks`。机制不同，别混用。
 

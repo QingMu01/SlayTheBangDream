@@ -76,5 +76,9 @@ python3 tools/check-resource-uids.py   # 也可单独跑，只校验不打包
 | [`docs/vfx-authoring.md`](docs/vfx-authoring.md) | 特效规范；预览机制见 [`docs/vfx-preview-mechanism.md`](docs/vfx-preview-mechanism.md) |
 | [`docs/cleanup-authoring.md`](docs/cleanup-authoring.md) | 删除文件前的判定与安全域 |
 | [`docs/performance-monitoring.md`](docs/performance-monitoring.md) | 性能诊断（BDS-Perf）报告与读法 |
+| [`docs/architecture/coupling-boundaries.md`](docs/architecture/coupling-boundaries.md) | 模块依赖边界与检查规则 |
 | [`docs/architecture/music-cardtype-and-skin-isolation.md`](docs/architecture/music-cardtype-and-skin-isolation.md) | 音乐牌 CardType 与皮肤隔离的决策记录 |
+| [`docs/cleanup-log.md`](docs/cleanup-log.md) | 已执行清理的追加式历史账本 |
 | [`tools/localization.py`](tools/localization.py) | 本地化表校验 / 骨架生成 / 术语表抽取 |
+
+可执行工作流：[卡牌开发](.agents/skills/card-development/SKILL.md) · [特效创作](.agents/skills/vfx-authoring/SKILL.md) · [过时文件清理](.agents/skills/obsolete-file-cleanup/SKILL.md)。规范回答「应该长什么样」，skill 回答「按什么顺序做」。

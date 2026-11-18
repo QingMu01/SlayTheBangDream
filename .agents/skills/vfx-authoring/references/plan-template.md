@@ -138,8 +138,9 @@ approved_at: ""
 
 ## 9. 交付物（不锁）
 
-- `BangDreamInSpire/scenes/vfx/<场景>.tscn` + 脚本
-- `images/vfx/<特效名>/`（**仅当校验判定为非本体素材时**）+ `tuning-log.md`（有调参时）
+- `BangDreamInSpire/BangDreamInSpire/scenes/vfx/<场景>.tscn` + 脚本
+- `BangDreamInSpire/BangDreamInSpire/images/vfx/<特效名>/`（**仅 LOCAL 素材**）
+- `.scratch/vfx/plans/tuning-log.md`（有调参时）
 - `.scratch/vfx/out/<slug>.mp4` + `.gif`
 ```
 

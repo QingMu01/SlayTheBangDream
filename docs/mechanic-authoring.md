@@ -13,7 +13,7 @@ BangDreamInSpire 的玩法机制被拆分为若干**机制模块**（mechanic）
 | 傀儡师 | `puppeteer` | 250 | `perform` | `IPuppeteerCharacter` | 双生命池的跨战斗保存、本体/傀儡形态切换（死亡拦截）、傀儡形态下的歌单冻结与分组激活 |
 | 余音 | `lingered` | 300 | — | `ILingeredResourceCharacter` | 余音二级资源与卡面费用 UI、休止结算与驱动、环绕资源预览 |
 | 异步伤害 | `async_damage` | 350 | — | （全局） | 「有动画的伤害不卡手」的公共底座：批次发射、命中信号驱动结算、独立同步结算动作、回合结束屏障；音符只是它的一个实现 |
-| 视觉动画 | `visuals_anim` | 360 | — | （全局） | 「有位移的表现不卡手」：按生物串行、脱手推进的角色演出时间线；视觉代理（隐藏原体 + 克隆视觉）与 `VfxSpawnPosition` 重定向 |
+| 视觉动画 | `visuals_anim` | 360 | `async_damage` | （全局） | 「有位移的表现不卡手」：按生物串行、脱手推进的角色演出时间线；视觉代理（隐藏原体 + 克隆视觉）与 `VfxSpawnPosition` 重定向 |
 | 音符 | `music_note` | 400 | `async_damage` | （全局） | 音符发射/弹跳、命中同拍结算、音符伤害追踪、VFX 容器 |
 | 破绽 | `break` | 600 | — | （全局） | 破绽层数上限与「弱点击破」状态、发现/进入/击破三个 Hook 广播、常驻 VFX、击破效果触发规则 |
 
@@ -190,7 +190,6 @@ public sealed class MyMechanic : IBangDreamMechanic
 9. 批次全部落地后执行 `AfterBatchAsync`，随后 `CheckWinCondition`。
 
 **关键点：发射与结算被拆成两条独立的同步 Action，飞行发生在它们之间且不占队列。**
-这是它和「结算动作在队列里等待飞行」那版设计的根本区别——后者会把出牌动作一起堵住，正是本机制要消灭的问题。
 
 ### 7.4 屏障与回合结束
 
@@ -228,9 +227,6 @@ public sealed class MyMechanic : IBangDreamMechanic
   这对音符是对的（各飞各的），但对「同一角色连续两次冲刺」是错的——两段位移会叠在一起。
 - `FlushPendingAsync` 当前**没有调用点**，是预留的「就地落地」入口（注释里提到的 Finale / Moonlight 未接入）。
 
-> 说明：本节的早期版本描述的是「结算动作在队列中等待飞行」「不使用 VFX 信号驱动玩法状态」
-> 「`CombatResolutionBarrier` 已删除」，那一版已被当前实现取代，不要再按旧描述改代码。
-
 ## 8. 音乐牌的手动落位目标类型
 
 `PerformTargetTypes` 提供两个供音乐牌使用的 `TargetType`：
@@ -262,11 +258,6 @@ public sealed class MyMechanic : IBangDreamMechanic
 | 赋值 | `card.GetOrCreateCapability<ChordCapability>().SetChord(chord)`；传 `PerformChord.None` 会移除该能力。 |
 | 赋值时机 | 当前只有两处赋值：控制台命令，以及**休息处选项「和弦设计」**（仅睦）让玩家手动给卡组里的一张牌指定和弦（见 §9.2）。卡牌奖励流程尚未接入和弦。 |
 | 读取 | `card.TryGetCapability<ChordCapability>(out var capability)`，没有该能力即无和弦。 |
-
-```csharp
-// 卡牌奖励生成时随机赋予和弦
-rewardCard.GetOrCreateCapability<ChordCapability>().SetChord(randomChord);
-```
 
 - 能力类型由 `[RegisterModelCapability]` 自动注册，无需手动初始化。
 - 和弦不参与入组判定，因此与 `RequestGroup` 目标类型正交：手动落位只换分组，不改写和弦。
@@ -304,9 +295,6 @@ rewardCard.GetOrCreateCapability<ChordCapability>().SetChord(randomChord);
 | 滚动 | 本体滚动容器只有纵向，面板自绘 `NChordScrollbar`（横向轨道）：滚轮按格步进、拖条吸附到最近的牌、键盘/手柄焦点进入某张牌也会把整行带到它上面；滑块位置 = 选中牌在卡组里的序号比例，可视比例按 `1/牌数` 计算（内容不足一屏时隐藏）。 |
 | 接线 | 注入依赖玩家**拥有** `MutsumiSpecialRules`（`Hook.ModifyRestSiteOptions` 只遍历 `runState.IterateHookListeners` 里的已拥有模型）。该遗物已加 `[RegisterRelic(typeof(DeprecatedRelicPool))]`，两个睦皮肤 `skins/mutsumi/*.json` 的 `StartingRelics` 追加了 `ITS_CRYCHIC_RELIC_MUTSUMI_SPECIAL_RULES`（保留 `ITS_CRYCHIC_RELIC_SAKIKO_SPECIAL_RULES` 以复用音乐牌奖励逻辑）。 |
 | 素材 | 选项图标 `res://BangDreamInSpire/images/sceneui/music_draw.png`（`images/**` 不入库，缺图时图标缺失但不影响逻辑）。 |
-
-
-
 
 ## 10. 傀儡师（双形态双生命池）
 

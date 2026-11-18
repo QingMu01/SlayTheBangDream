@@ -1,9 +1,9 @@
 # 过时文件清理规范
 
 本文是**「某个文件能不能删」的唯一事实来源**。新增、修改、重构、清理任何资源或脚本时都必须满足这里的约束。
-执行流程（按什么顺序做、跑哪些脚本、什么算完成）见 `.agents/skills/obsolete-file-cleanup/SKILL.md`；本文只回答「判定长什么样」。
+执行流程（按什么顺序做、跑哪些脚本、什么算完成）见 [obsolete-file-cleanup skill](../.agents/skills/obsolete-file-cleanup/SKILL.md)；本文只回答「判定长什么样」。
 
-相关文档：卡牌见 `docs/card-authoring.md`，机制见 `docs/mechanic-authoring.md`，特效见 `docs/vfx-authoring.md`。
+相关文档：[卡牌](card-authoring.md)、[机制](mechanic-authoring.md)、[特效](vfx-authoring.md)。
 
 ## 1. 三条铁律
 
@@ -18,7 +18,7 @@
 | 目录 / 类型 | 性质 | 能否按孤儿规则删 | 依据 |
 |---|---|---|---|
 | `BangDreamInSpire/{addons,animations,fonts,images,materials,models,scenes,shaders,themes,src}/**` | 本体同步（`tools/sync-sts2-assets.sh` 生成，gitignore） | **禁止**。要重建就整目录跑 sync 脚本 | `.gitignore`、`tools/sync-sts2-assets.sh`、`BangDreamInSpire/export_presets.cfg`、`AGENTS.md` 项目结构节 |
-| `BangDreamInSpire/.godot/**`、`ItsCrychic/.godot/**` | 引擎缓存（可再生） | 默认可删，**但其中有手写文件必须先迁出**（见 `references/keep-list.md`） | `.gitignore` |
+| `BangDreamInSpire/.godot/**`、`ItsCrychic/.godot/**` | 引擎缓存（可再生） | 默认可删，**但其中有手写文件必须先迁出**（见 [keep-list](../.agents/skills/obsolete-file-cleanup/references/keep-list.md)） | `.gitignore` |
 | `bin/**` | 构建产物 | 可删，**但 `bin/spine-godot-extension-*` 是官方扩展，删了要重新下载** | `.gitignore`、`Directory.Build.targets` |
 | `.scratch/**` | agent 临时空间：录帧/导出/计划/审计快照（**随时可能被整体清理**） | 可删；扫描快照与签字用的 `decisions.tsv` 都是易失产物，**长期留档只认 `docs/cleanup-log.md`** | `.gitignore`、`AGENTS.md` 开发约定节 |
 | `BangDreamInSpire/BangDreamInSpire/**`、`ItsCrychic/ItsCrychic/**` | **mod 自有真资源**（入库、进 pck） | 按引用图判定 | 两个 `export_presets.cfg` 未排除 |
@@ -42,7 +42,7 @@
 | 5 | **JSON 字符串引用** | `skins/*/*.json` 的 `StartingRelics` / 牌组用 entry 字符串（如 `ITS_CRYCHIC_RELIC_SAKIKO_SPECIAL_RULES`） | 删 Relic/卡后 skin 挂空 |
 | 6 | **反射 / 特性注册** | 见 §4 | 删了可能让游戏启动崩或功能静默失效 |
 
-各形态的解析规则、实现出处与已知误报，见 `references/reference-graph.md`。
+各形态的解析规则、实现出处与已知误报，见 [reference-graph](../.agents/skills/obsolete-file-cleanup/references/reference-graph.md)。
 
 ## 4. 注册机制：为什么「无引用」不能证明类死了
 
@@ -74,7 +74,7 @@
 死簇的硬规则：
 
 - **不得并入确认孤儿**。把死簇混进确认孤儿会制造假阳性；被保留的预览场景以 uid+path 引用的脚本就是典型例子。
-- **级联必须区分保留意图**：引用者若命中**活跃保留**规则（有意保留的预览件、模板），就不算「已确认无引用」，其被引用者不得因级联进入死簇；若只命中**预留待实装**规则（未实装角色的素材、等实装的场景），它本身就是「无引用但先别删」的死簇形态，**不得阻断级联**，只决定分档落 B。两类性质在 `references/keep-list.md` 中逐条标注，脚本里对应 `keep_rules.py` 的 `cascade_blocks` 字段。
+- **级联必须区分保留意图**：引用者若命中**活跃保留**规则（有意保留的预览件、模板），就不算「已确认无引用」，其被引用者不得因级联进入死簇；若只命中**预留待实装**规则（未实装角色的素材、等实装的场景），它本身就是「无引用但先别删」的死簇形态，**不得阻断级联**，只决定分档落 B。两类性质在 [keep-list](../.agents/skills/obsolete-file-cleanup/references/keep-list.md) 中逐条标注，脚本里对应 `keep_rules.py` 的 `cascade_blocks` 字段。
 - **级联必须迭代到不动点**，不能只算一轮（A←B、B←C、C←A 的环要能收敛）。
 - **阻断只在种子层判定**：当前实现里「引用者命中活跃保留 ⇒ 阻断」只对**初始种子**（自身无任何引用者）生效。签字时要按簇整体看，不要逐条拍板。
 
@@ -85,7 +85,7 @@
 | 档 | 含义 | 要求 |
 |---|---|---|
 | **A 可直接删** | 明确废件（旧版素材、无引用的 shader/材质/场景） | 仍须先建引用图并留下证据 |
-| **B 建议保留** | 未实装角色预留素材、有意保留的预览件、模板、等实装的死簇 | **每条必须写理由**；清单见 `references/keep-list.md` |
+| **B 建议保留** | 未实装角色预留素材、有意保留的预览件、模板、等实装的死簇 | **每条必须写理由**；清单见 [keep-list](../.agents/skills/obsolete-file-cleanup/references/keep-list.md) |
 | **C 需人工确认** | 结构性冗余、空目录、跨工程边界、判定不了的一切；**`images/card_portraits/**` 一律落 C** | **默认落 C**，不得默认进 A |
 
 卡图不直接进 A 档：即使确认「无对应类」，也要经美术确认为「可删」后才转 A。
@@ -117,24 +117,16 @@
 
 - 本体同步目录与 `BangDreamInSpire/src/**`（解包游戏源码）。
 - `*.import` / `*.uid` 单独删除（必须与源同批）。
-- `.godot/` 内的手写文件（`polka_probe.gd`、`polka_rebuild_check.gd`、`polka_long.tscn`、`polka_short.tscn`）——应先迁出 `.godot` 再加白名单，否则「删缓存重开编辑器」会连带丢失。
+- `.godot/` 内的手写文件——应先迁出再清缓存，否则「删缓存重开编辑器」会连带丢失。
 - `bin/spine-godot-extension-*`。
 - 被 `.tscn` 以 uid 引用的脚本，删脚本必须同批处理引用它的场景。
 - 用户工作区里未提交、未跟踪的 WIP 文件：任何清理都必须先 `git status --short` 识别并绕开。
 
 ## 8. 验证与交付
 
-清理任务的验收顺序（详见 skill）：
+扫描、签字、dry-run、apply 与验收命令以 skill 为准，本文不复制执行清单。`sign_off.py --apply` 会把批次追加到 [cleanup-log](cleanup-log.md)；交付须包含分档依据、命令结果和实际修改文件表。
 
-1. `scan_orphans.py --project-root .` → 四态 + 死簇清单，`exit 0/1` 有语义。
-2. `cleanup_manifest.py` → 紧凑清单 `cleanup_manifest.md`（人看）+ `cleanup_decisions.tsv`（人改）。
-3. 在 tsv 里逐条填 `action`（`delete`/`keep`/`defer`）与 `note`；**A 档必须填满**，`keep`/`defer` 必须写理由。
-4. `sign_off.py --dry-run` 复核 rm 清单；有未决 A 项会 `exit 1`。
-5. `sign_off.py --apply` 执行：先 `git add`、删资源 + sidecar、向 `docs/cleanup-log.md` 追加批次记录。安全域与未跟踪 WIP 会被硬拒绝。
-6. 残留搜索、JSON 校验、`git diff --check`、完整构建。
-7. 交付：清单 + 每条依据 + 命令与输出 + 修改文件表 + `cleanup-log.md` 里的批次条目。
-
-**脚本只证明「静态引用关系」，不证明「运行时是否被动态加载」。** 编译通过也不能替代第 5 步。存在未解释的集合差异、断链、构建错误或残留引用时，不得宣布完成。
+**脚本只证明「静态引用关系」，不证明「运行时是否被动态加载」。** 编译通过不能替代残留搜索与运行验证。存在未解释的集合差异、断链、构建错误或残留引用时，不得宣布完成。
 
 ## 9. 已知限制（判定盲区，交付时必须声明）
 

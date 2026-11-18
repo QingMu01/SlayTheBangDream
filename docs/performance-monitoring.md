@@ -100,7 +100,7 @@ BDS-Perf 是 `BangDreamInSpire` 内的轻量诊断模块（`Scripts/Diagnostics/
 - `Present(×周期)` 用 `DisplayServer.ScreenGetRefreshRate()` 折算；取不到时按 60Hz 兜底，高刷屏上的离线报告周期数可能偏大（`environment.refresh_rate_hz` 会写出实际读到的值）。
 - 自动报告写盘在后台线程；极端情况下（玩家在报告生成后立即强杀进程）可能丢失最新一份，但 `perf-latest` 由下一次报告覆盖。
 - 编辑器与发布版路径不同，见 §1；作者侧复现优先发布版。
-- 帧采样器在 mod 初始化阶段就会挂到 NGame 上（GameReady/GameTreeEntered 都做了 replay 兜底），覆盖 RitsuLib 自举之后到主菜单、进战斗、房间切换的全过程；mod 初始化之前的引擎/本体阶段由日志里的 `[Startup]` 绝对 tick 提供。
+- **仅开启诊断时**，帧采样器在 mod 初始化阶段挂到 NGame 上（GameReady/GameTreeEntered 都做了 replay 兜底），覆盖 RitsuLib 自举之后到主菜单、进战斗、房间切换的全过程；mod 初始化之前的引擎/本体阶段由日志里的 `[Startup]` 绝对 tick 提供。
 
 ## 7. Linux / Wayland（含 XWayland）怎么读
 

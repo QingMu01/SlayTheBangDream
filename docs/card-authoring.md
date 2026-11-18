@@ -1,9 +1,9 @@
 # 卡牌开发规范
 
 本文是**卡牌实现方式的唯一事实来源**：新增、修改、重构卡牌都必须满足这里的约束。
-执行流程（按什么顺序做、跑哪些校验、什么算完成）见 `.agents/skills/card-development/SKILL.md`；本文只回答「应该长什么样」。
+执行流程见 [card-development skill](../.agents/skills/card-development/SKILL.md)；本文只回答「应该长什么样」。
 
-相关文档：机制接入见 `docs/mechanic-authoring.md`，特效见 `docs/vfx-authoring.md`。
+相关文档：[机制接入](mechanic-authoring.md)、[特效开发](vfx-authoring.md)。
 
 ## 1. 卡牌解剖
 
@@ -17,7 +17,7 @@
 - 命名空间与 `Scripts/` 下目录结构完全对应（`ItsCrychic.Scripts.Cards.Saki.Skill`）。
 - **命名空间第一段必须等于 Mod 目录名**（`ItsCrychic` / `BangDreamInSpire`）：卡图路径由 `PathExtensions.GetCardImg` 用 `type.Namespace.Split(".")[0]` 拼出，写错会静默回退默认立绘。
 - 现有角色目录：`Saki`、`Mutsumi`；类型目录按内容建：`Attack`、`Skill`、`Power`、`Music`（音乐牌）。跨角色共用的 Token 放在 `Scripts/Cards/Token/`。
-- 抽象基类以 `Abstract` 前缀命名。
+- `ItsCrychic` 的角色抽象基类以 `Abstract` 前缀命名；核心共享基类的命名见 `AGENTS.md`。
 - 每个 `.cs` 必须有同名 `.cs.uid`。UID 由 Godot 导入生成，**不要手写或复制伪造**。
 
 ### 1.2 基类与卡池注册
@@ -68,7 +68,7 @@ public class BandPractice() : AbstractSakikoCard(CustomCost, CustomType, CustomR
   - `AnySlot`：出牌时拖到**任意已激活槽位**并松开，强制进入该槽位并顶掉其中原有的牌。
   - `RequestGroup`：出牌时拖到**任意分组**上松开，按卡牌自身的入队策略进入该分组（和弦与其余规则不变）。只有单个分组的角色（如祥子）不进入分组选择，效果与 `TargetType.None` 相同。
   - 交互复刻原版单体目标（拖拽/点击、取消区、右键取消）；容量为 0、手柄方向导航、自动出牌与单分组角色不进入选择流程。完整规则见 `docs/mechanic-authoring.md` §8。
-- 卡牌和弦（`ChordCapability`）：随卡牌实例存档，**只**用于卡牌打出后激活对应分组中音乐牌的奏响，不参与音乐牌的入组判定；在卡牌奖励随机生成时赋予（另有休息处「和弦设计」手动赋予），没有设计期或静态赋值入口。详见 `docs/mechanic-authoring.md` §9。
+- 卡牌和弦（`ChordCapability`）：随卡牌实例存档，**只**用于卡牌打出后激活对应分组中音乐牌的奏响，不参与音乐牌的入组判定。当前由控制台命令或休息处「和弦设计」赋予，卡牌奖励流程尚未接入。详见 [机制指南 §9](mechanic-authoring.md#9-卡牌和弦)。
 
 ### 2.3 卡图与卡框
 
@@ -168,8 +168,8 @@ protected override IEnumerable<IHoverTip> CardHoverTips =>
 
 ### 4.5 结算时序与机制接入
 
-- 需要玩法结算的异步效果（音符等）必须走原版动作队列（`RitsuLibManagedNetActions.Request`），遵循「发射即锁定、命中才结算」，详见 `docs/mechanic-authoring.md` 第 7 节。
-- **VFX 不得驱动玩法状态**。
+- 需要玩法结算的异步效果（音符等）必须走原版动作队列（`RitsuLibManagedNetActions.Request`），遵循「发射即锁定、命中才结算」，详见 [机制指南 §7](mechanic-authoring.md#7-异步伤害结算时序约定)。
+- 纯视觉 VFX 不得直接修改玩法状态；异步伤害只通过上述命中信号与独立结算 Action 衔接。
 - 音乐牌实现 `IPerformCard`（由 `MusicCardModel` 提供），休止牌实现 `ISubsideCard`；额外卡组 / 演奏 / 余音 / 音符机制见 `docs/mechanic-authoring.md`。
 - 特效见 `docs/vfx-authoring.md`；特效基类默认继承 `Node2D`。
 
@@ -188,12 +188,7 @@ protected override IEnumerable<IHoverTip> CardHoverTips =>
 
 ### 5.1 新增卡牌清单
 
-1. 新建 `Scripts/Cards/<角色>/<类型>/<ClassName>.cs` 与 `.cs.uid`。
-2. 放入卡图 `images/card_portraits/<ClassName>.png`（可选 `_Bate.png`），经 Godot 导入生成 `.import`。
-3. 在 `cards.json` 添加 `.title` 与 `.description`（音乐牌用 `.instant`，休止牌加 `.subside`）。
-4. 引入新 Power 时：`Scripts/Power/<Buff|Debuff|Temporary>/<Xxx>Power.cs` + `.uid` + `powers.json`。
-5. 注册：角色卡由抽象基类 `Inherit = true` 自动完成；Token 需 `[RegisterCard(typeof(TokenCardPool))]`。
-6. 构建并实机确认卡池可见、描述正确。
+按 §1–4 完成类与 UID、卡池注册、卡图、本地化和效果实现；具体执行顺序与审计命令见 [card-development skill](../.agents/skills/card-development/SKILL.md)。
 
 ### 5.2 重构与清理
 
@@ -215,7 +210,7 @@ protected override IEnumerable<IHoverTip> CardHoverTips =>
 
 ### 6.2 语义可查
 
-按 `effect-audit-checklist.md` 逐卡核对，不留未解释项。编译通过不能替代语义核对。
+按 [效果审计清单](../.agents/skills/card-development/references/effect-audit-checklist.md) 逐卡核对，不留未解释项。编译通过不能替代语义核对。
 
 ### 6.3 交付
 

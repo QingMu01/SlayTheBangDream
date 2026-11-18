@@ -73,12 +73,11 @@ C# 代码位于各项目的 `Scripts/` 目录下，Godot 资源（图片、场�
 - **STS2-RitsuLib 的版本以 NuGet 编译引用为准**：唯一权威是 `Directory.Build.props` 里的
   `PackageReference Include="STS2.RitsuLib" Version="..."`（当前 `beta` = 0.6.11、`main` = 0.6.10）。
   **不要为了「适配 beta」改这个引用**：上游同时支持本体双版本，分支差异只来自本体 API。
-  本地源码 `~/code/SlayTheSpire/STS2-RitsuLib`（`main` = v0.6.8）与本机运行时实际加载的版本
-  （看游戏目录 `mods/STS2-RitsuLib/mod_manifest.json`，当前 0.6.13）**都只作参考**，不得据此下版本结论。
+  本地源码与游戏目录 `mods/STS2-RitsuLib/mod_manifest.json` 只作参考，不得据此下版本结论。
   文档见其 `README.zh.md` 与 `docs/pages/guide/*.md`。
   XML 文档在 NuGet 包内且**按程序集分片**：`~/.nuget/packages/sts2.ritsulib/<版本>/lib/net9.0/` 下
-  `STS2-RitsuLib.Runtime.xml`（主 API，约 9.5k member）、`.Ui.xml`、`.Settings.xml`、`.Shared.xml`；
-  同目录的 `STS2-RitsuLib.xml` 是**空壳**（0 member），查文档别读它。
+  `STS2-RitsuLib.Runtime.xml`（主 API）、`.Ui.xml`、`.Settings.xml`、`.Shared.xml`；
+  同目录的 `STS2-RitsuLib.xml` 是**空壳**，查文档别读它。
 - **游戏本体**：`sts2.dll` 的同名 XML 文档在本体安装目录
   （`dotnet msbuild BangDreamInSpire/BangDreamInSpire.csproj -getProperty:Sts2DataDir`）。
   查本体实现读解包源 `../sts2unpack/<版本>/src`（`main` 用 0.111.0、`beta` 用 0.113.0；可用 `$STS2_UNPACKED` 覆盖，或用

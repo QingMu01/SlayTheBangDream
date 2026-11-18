@@ -1,8 +1,8 @@
 # 特效开发指南
 
-新增或改造一个特效时该遵守的约定。预览机制（编辑器里为何静止、三种环境如何共存、`VfxPreviewSupport` 各成员）见《特效预览机制》（`vfx-preview-mechanism.md`）——本文假定你已了解那套接缝。
+新增或改造一个特效时该遵守的约定。编辑器静止、三种环境共存与 `VfxPreviewSupport` 的原理见 [特效预览机制](vfx-preview-mechanism.md)。
 
-**要与用户协作、从零设计一个新特效**时，走 skill `.agents/skills/vfx-authoring/`：素材侦察 → **设计提案（带图）** → 计划与契约批准 → 实现 → 录制验收。模型负责设计，用户只做审稿（选方向、定验收边界）；授权模式下无需逐项请示。本文仍是实现规范的唯一事实来源。
+**要与用户协作、从零设计一个新特效**时，走 [vfx-authoring skill](../.agents/skills/vfx-authoring/SKILL.md)：素材侦察 → **设计提案（带图）** → 计划与契约批准 → 实现 → 录制验收。模型负责设计，用户只做审稿（选方向、定验收边界）；授权模式下无需逐项请示。本文仍是实现规范的唯一事实来源。
 
 ## 1. 三条铁律（改错会破坏游戏内表现）
 
@@ -41,7 +41,7 @@ tween.TweenProperty(node, "modulate:a", 0f, 0.20f).SetDelay(0.30f);
 tween.TweenMethod(Callable.From<float>(ApplyState), 0f, 1f, LifeTime);
 ```
 
-同一个属性（`scale` 的「弹入」+「扩散」也是）必须合并成单一 `TweenMethod`，在方法内按 elapsed 分段求值。**症状是「动画看起来没生效」而不是报错**，所以务必靠录帧（§3.1）而不是靠读代码来确认。
+同一个属性（`scale` 的「弹入」+「扩散」也是）必须合并成单一 `TweenMethod`，在方法内按 elapsed 分段求值。**症状是「动画看起来没生效」而不是报错**。
 
 ## 2. 基类怎么选：默认 `Node2D`
 
@@ -58,18 +58,13 @@ tween.TweenMethod(Callable.From<float>(ApplyState), 0f, 1f, LifeTime);
 - **继承 `Node2D`** —— 纯视觉播放，命中/结束时机由 Tween 自身控制，调用方只关心「播了」。绝大多数攻击、命中、UI 特效都属于此类。
 - **继承 `NBangDreamFlyingVfx`** —— 特效需要「飞过去」，且**命中时刻要驱动玩法状态**（如 `MusicNoteAsyncDamageEffect` 用 `HitTriggered` 决定何时施加伤害）。这是少数派。
 
-参考实现：`MusicHitVfx` / `MusicFlashVfx` / `MusicWaveVfx` 等为 `Node2D`；`MusicNoteFlyingVfx` 为飞行类。写新特效时若不确定，先按 `Node2D` 写；等真的需要 `await` 命中信号时再改基类。注意：`MusicHitVfx` / `MusicFlashVfx` / `MusicWaveVfx` / `MusicSlashVfx` 没有配套 `.tscn`，只能作为**伪代码级参考**，不能按 F6 直接预览。
+参考实现：`MusicHitVfx` / `MusicFlashVfx` / `MusicWaveVfx` 等为 `Node2D`；`MusicNoteFlyingVfx` 为飞行类。写新特效时若不确定，先按 `Node2D` 写；等真的需要 `await` 命中信号时再改基类。部分参考实现没有配套 `.tscn`，不能按 F6 直接预览。
 
 ### 2.1 确认特效是否真的被接入
 
-**做完特效不等于它在游戏里会出现。** 新建的特效脚本与场景很容易是「孤儿」——F6 里看着一切正常，游戏内却永远不会触发。交付前用全仓库搜索确认有调用点：
+**做完特效不等于它在游戏里会出现。** 交付前用类名与场景路径搜索调用点；只命中定义文件时，将其列为孤儿候选，而不是直接判死或删除。删除判定必须走 [清理规范](cleanup-authoring.md) 的引用图与签字流程。
 
-```bash
-# 搜类名与场景路径，只命中定义文件本身即为孤儿
-grep -rn "MusicSlashVfx\|vfx_music_slash" --include=*.cs --include=*.tscn .
-```
-
-**已知保留（清理时勿当死代码删）**：`MusicSlashVfx` 为**预留待实装**——当前没有配套 `.tscn`、也没有调用点，但它保存了斩击/冲击的完整参考实现，**保留**；`MusicHitVfx` / `MusicFlashVfx` / `MusicWaveVfx` 是没有场景的文档参考实现，`MusicCrystalHitVfx` 是有意保留的预览件，均不按孤儿处理。完整清单见 `.agents/skills/obsolete-file-cleanup/references/keep-list.md`。
+预留、参考与预览件的保留状态统一维护在 [keep-list](../.agents/skills/obsolete-file-cleanup/references/keep-list.md)，本节不复制清单。
 
 **注意 `WithHitFx` 的路径解析规则**：游戏内走 `VfxCmd` → `SceneHelper.GetScenePath`，规则是 `"res://scenes/" + innerPath + ".tscn"`，解析到的是**游戏本体**的资源目录。所以 `WithHitFx("vfx/vfx_attack_slash")` 拿到的是原版斩击，**永远到不了 mod 自己的 `res://BangDreamInSpire/scenes/vfx/...`**。想让某张卡用上自定义特效，必须走注入路径（如 `PreloadManager.Cache.GetScene(...)` + `AddChildSafely`），不能只改字符串。
 
@@ -91,7 +86,7 @@ grep -rn "MusicSlashVfx\|vfx_music_slash" --include=*.cs --include=*.tscn .
 
 ### 3.1 录制成视频逐帧核对（调观感的唯一可靠手段）
 
-`--headless` 只能验「有没有报错」，**验不了「看起来对不对」**。调观感必须录帧：「粒子挤在一起」「旋转很怪」「动画没生效」这类问题，读代码看不出来，跑一次才知道。
+无头运行不能替代目视验收；调观感必须按本节录帧核对。
 
 ```bash
 # Godot 可执行文件取自 Directory.Build.props 的 <GodotExe>（单属性查询直接打印值）
@@ -105,8 +100,9 @@ GODOT=$(dotnet msbuild BangDreamInSpire/BangDreamInSpire.csproj -getProperty:God
   "res://BangDreamInSpire/scenes/vfx/<场景>.tscn"
 
 # 合成 mp4 交付（record.sh 会自动挑可用编码器；手工合成时 Fedora 等发行版需换 libopenh264）
-ffmpeg -y -loglevel error -framerate 60 -i frame%08d.png \
-  -c:v libx264 -pix_fmt yuv420p -crf 18 ../<场景>_v2.mp4
+ffmpeg -y -loglevel error -framerate 60 \
+  -i "$PWD/.scratch/vfx/rec/frame%08d.png" \
+  -c:v libx264 -pix_fmt yuv420p -crf 18 "$PWD/.scratch/vfx/<场景>_v2.mp4"
 ```
 
 要点：
@@ -129,11 +125,11 @@ ffmpeg -y -loglevel error -framerate 60 -i frame%08d.png \
 
 1. `search_assets` 定位候选。除 `tags: ["VFX"]` / 关键词 / `kinds` 外，**优先用结构化过滤**（SQL 级，`total` 即真实命中数）：`alpha`、`fill_ratio`、`glow_range`、`edge_softness`、`dark_outline`、`layout`、`colors` + `color_min_ratio`、`sub_types`。首轮定位用 `detail: "minimal"` 省 token，再用 `render_contact_sheet` 拼图确认形态。主体级选材（`role` / `mode` / `facets` / `dimensions` / `target_px` / `tint` / `blend` / `unknown_features`）的受控取值先读 `get_selection_spec`，**不要凭记忆猜**；重点看 `risks` 与 `required_review`。
 2. `get_asset_group_preview` 读取图集的切分参数（行列数、单帧尺寸）——**这是设置 `hframes`/`vframes` 的唯一依据**，不要目测。
-3. `export_assets` 导出到项目外的临时目录（如 `.scratch/vfx`），**不要在资产库内改名**。每个资产的导出子目录会附 `_provenance.json`（uuid / 名称 / 标签 / 描述 / 逐文件 hash），这是溯源依据。
-4. 复制进 `BangDreamInSpire/BangDreamInSpire/images/vfx/<特效名>/` 并重命名为语义化文件名（`music_slash_main.png` 而非 `fx_301403_tex_002.png`）。
-5. 运行 `--headless --import` 让引擎生成 `.import` 与 uid，**不要手写 uid**。手写的 uid 不保证合法，且可能与全库冲突。
-6. 场景里引用资源用**引擎生成的 uid**（从 `.import` 的 `uid=` 行读），`path=` 同时保留作可读性兜底。
-7. **复制进工程之前先做本体归属校验**（见 §4.1）：命中本体的素材**不复制**，改为直接引用本体 uid。
+3. `export_assets` 导出到仓库内但不入库的 `.scratch/vfx/`，**不要在资产库内改名**。每个资产的导出子目录会附 `_provenance.json`（uuid / 名称 / 标签 / 描述 / 逐文件 hash），这是溯源依据。
+4. **复制前先做本体归属校验**（见 §4.1）：`BODY` 直接引用本体 uid，`REVIEW` 先人工判定，只有 `LOCAL` 才继续复制。
+5. 将 `LOCAL` 素材复制进 `BangDreamInSpire/BangDreamInSpire/images/vfx/<特效名>/`，并重命名为语义化文件名（`music_slash_main.png` 而非 `fx_301403_tex_002.png`）。
+6. 运行 `--headless --import` 让引擎生成 `.import` 与 uid，**不要手写 uid**。手写的 uid 不保证合法，且可能与全库冲突。
+7. 场景里引用资源用**引擎生成的 uid**（从 `.import` 的 `uid=` 行读），`path=` 同时保留作可读性兜底。
 
 `.import` 文件必须与 PNG 留在同一目录，否则场景引用会失效。
 
@@ -150,7 +146,7 @@ python .agents/skills/vfx-authoring/scripts/check_asset_origin.py <导出目录>
 | 结论 | 含义 | 处理 |
 |---|---|---|
 | `BODY <res://…> uid=…` | 逐字节 md5 命中，或**尺寸 + RGBA 像素**都相同（库内是本体图但被重新编码过） | **不复制**；场景里直接写输出的本体 `uid` + `path` |
-| `LOCAL` | 本体里没有对应图 | 按上面第 2–4 步复制进 `images/vfx/<特效名>/`、导入、取 uid |
+| `LOCAL` | 本体里没有对应图 | 按上面第 5–7 步复制、导入并引用 uid |
 | `REVIEW` | 与本体某张图**同尺寸且感知哈希接近**（疑似在本体图上改绘） | 人工判定后，按上两条之一处理 |
 
 - 本体根缺省为 `BangDreamInSpire/images`（编辑器同步目录，其 `.import` 里的 uid 就是本体 uid）；也可 `--body-root ../sts2unpack/<版本>` 指向解包源。
@@ -185,9 +181,9 @@ dotnet build BangDreamInSpire/BangDreamInSpire.csproj -c Debug \
   --path BangDreamInSpire --quit-after 150
 ```
 
-以上两条命令加 `| grep -iE "error|script error|failed"`，**无输出即通过**。`--headless --editor` 不会把新场景的 uid 回写进 `.tscn`；没有引擎生成的场景 uid 时保留 path 引用，由编辑器保存生成后再记录，不能手写或猜测 uid。
+以上两条 Godot 命令加 `| grep -iE "error|script error|failed"`，**无输出即通过**。`--headless --editor` 不会把新场景的 uid 回写进 `.tscn`；没有引擎生成的场景 uid 时保留 path 引用，由编辑器保存生成后再记录，不能手写或猜测 uid。
 
-**这两条只验证「没有报错」，不验证「观感对不对」——调观感请看 §3.1 录帧核对。**
+无头检查通过后，仍须按 §3.1 录帧验收观感。
 
 已知的非问题（实测确认，不要误当新缺陷）：
 
@@ -209,5 +205,3 @@ dotnet build BangDreamInSpire/BangDreamInSpire.csproj -c Debug \
 **三、`CanvasItemMaterial`（ADD）+ 紫色 `modulate` 染「烘焙了颜色」的贴图会偏红。** 2D 加法混合在线性空间做乘法，粉色边 × 蓝紫 modulate 会压出偏红的灰紫。带颜色的贴图不要用 modulate 染色，改为 shader 里用**亮度重建颜色**（`glow_color * max(r,g,b)`）再 `blend_add` 输出（参考 `res://BangDreamInSpire/shaders/strike_sakiko_glow.gdshader`）。纯白/灰阶贴图可以直接 modulate。
 
 **四、辉光层若固定用主帧贴图，主帧消失后会留下一整块刀影。** 辉光层应跟随主层**逐帧换同一张序列帧**，或与主层同生命周期隐藏；否则录帧会看到「白刀按帧消失、紫色大刀还在」。
-
-以上四条都只能靠**录帧目视**发现——编译、无头运行、单帧截图全部正常。

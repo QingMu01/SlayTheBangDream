@@ -64,8 +64,7 @@ v4 特征会检测**贴边均匀背景**（`border_uniform`）：识别到黑底
    关注 `risks` 与 `required_review`：**未知证据不会被当作通过**；
 3. `render_contact_sheet` 粗筛 + 接近原分辨率目视；
 4. 预演脚本对候选做形态/混合近似，用上面的对照表解释差异；
-5. 结论写回时：结构化语义用 `update_asset_description(semantics=...)`，
-   负面观察（「不是星芒」「中心有洞」）写 `selection_note`，不要写进描述字段。
+5. 选材结论写入本特效计划；补描述、修误标是独立的元数据维护任务，不属于本 skill（见 [asset-selection.md](asset-selection.md)）。
 
 ## 漂移防护（两边都有测试钉住）
 

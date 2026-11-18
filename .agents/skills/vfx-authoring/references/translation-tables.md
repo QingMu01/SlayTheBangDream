@@ -84,7 +84,7 @@
 
 | 素材特征 | 混合模式 | 附加参数 |
 |---|---|---|
-| 透明占比 > 0（有 alpha） | `alpha`（`CanvasItemMaterial.BLEND_MODE_MIX`） | 无 |
+| `alpha_has_non_opaque = true`（有 alpha） | `alpha`（`CanvasItemMaterial.BLEND_MODE_MIX`） | 无 |
 | 有 alpha 且要发光叠加 | `alpha_add`（`BLEND_MODE_ADD`） | 无 |
 | 透明占比 = 0，黑底 JPG | 预览用 `crush_add` 模拟压黑；运行时用亮度重建 shader（见 [csharp-recipes.md](csharp-recipes.md) §3） | `black_point` 见下 |
 | 含 alpha 的白色/灰阶贴图 | 通常 alpha 或 alpha_add | 保留纹理 alpha；不要用忽略纹理 alpha 的压黑路径 |
@@ -120,7 +120,8 @@
 
 ```
 e_scale = 1.0 - pow(1.0 - local, 3.0)   // 缓出
-e_alpha = 1.0 - pow(local, alpha_pow)   // alpha_pow 越小消失越快
+fade = pow(local, alpha_pow)             // 插值参数；越小消失越快
+alpha = Lerp(a0, a1, fade)               // a1 = 0 时淡出到 0
 ```
 
 **单一 tween 铁律**：所有层在同一 `tween_method(_apply_state, 0, 1, LIFE)` 里算，绝不建两个 tweener 写同一属性（见 `docs/vfx-authoring.md` §1 铁律三）。
