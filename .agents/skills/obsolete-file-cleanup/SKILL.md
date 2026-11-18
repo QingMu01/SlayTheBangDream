@@ -83,7 +83,7 @@ python3 .agents/skills/obsolete-file-cleanup/scripts/cleanup_manifest.py
 - B 档**逐条**核对理由是否仍然成立（等实装的角色是否真的还没实装）。
 - C 档补齐判定或明确挂起，并写清挂起原因。
 - 涉及模型类（Card/Power/Relic）的删除，必须准备构建验证，不能只看静态引用。
-- 卡图不直接删，按 `references/deprecation-ledger.md` 记账。
+- 卡图不直接删：无对应类的卡图落 C 档，经美术确认「可删」后再删。
 
 签字的具体操作：
 

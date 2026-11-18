@@ -21,7 +21,7 @@ ItsCrychic（内容）  ──→  BangDreamInSpire（核心）       单向，�
 `Nodes` ↔ `Nodes.SubNode` 父子节点、`Utils` ↔ `Utils.Infos` 同层拆分。
 
 `Scripts/Mechanics` 里除 `Perform` 之外的模块对 `Nodes` 的依赖暂列 WARN（W2），逐项登记在脚本
-`ALLOWLIST`，收敛目标阶段为 P3。
+`ALLOWLIST`，新增例外须注明原因。
 
 ## 2. 规则表
 
@@ -48,7 +48,7 @@ python3 tools/check-architecture.py --strict   # 收口用：WARN 也 exit 1
 
 ## 4. 例外登记
 
-当前 allowlist 覆盖两类未收敛项（目标阶段 P3），另有一类已收敛项作为记录：
+当前 allowlist 覆盖两类例外，另有一类已收敛项作为记录：
 
 - **VFX 契约**：`Lingered` / `MusicNote` 的机制直接引用 `Nodes.VFX`（角色专属特效已迁出，见下条）。
 - **商人 UI 契约**：`ExtraCardMerchantManager` 直接操作 `Nodes.Merchant`；

@@ -88,7 +88,7 @@
 | **B 建议保留** | 未实装角色预留素材、有意保留的预览件、模板、等实装的死簇 | **每条必须写理由**；清单见 `references/keep-list.md` |
 | **C 需人工确认** | 结构性冗余、空目录、跨工程边界、判定不了的一切；**`images/card_portraits/**` 一律落 C** | **默认落 C**，不得默认进 A |
 
-卡图不直接进 A 档：即使确认「无对应类」，也要按 §6 第 10 条与 `references/deprecation-ledger.md` 记账，经美术确认为可删后才转 A。
+卡图不直接进 A 档：即使确认「无对应类」，也要经美术确认为「可删」后才转 A。
 
 ## 6. 硬性条款
 
@@ -105,7 +105,7 @@
 7. **删除前逐条 `os.path.exists` 复核**：快照必然过期，过期项单列 `stale`，不得静默混入。
 8. **删除前先 `git add`**：保证可回滚。本仓库既有误删前科，也有未跟踪文件在 rebase/reset 中静默消失的前科。
 9. **删除后残留验证必须全绿**：旧类名、entry 字符串、本地化键、资源名的 `rg` 命中 = 0；JSON 可解析且无重复键；`git diff --check`；完整构建通过；**硬编码清单已同步**（如 `BangDreamPreloadManager` 的 `VfxAssets`）。
-10. **不直接删除仍可能复用的卡图**：写进 `ItsCrychic/ItsCrychic/images/card_portraits/DEPRECATED.md`，格式见 `references/deprecation-ledger.md`；资源不存在就如实记「无对应资源」，不得虚构文件。
+10. **卡图删除需美术确认**：`images/card_portraits/**` 一律落 C 档，经美术确认「可删」后才转 A；不得凭引用图直接删。
 11. **工具与快照可复现，但快照是易失品**：脚本入库在 `.agents/skills/obsolete-file-cleanup/scripts/`；扫描快照与签字用的 `decisions.tsv` 落 `.scratch/cleanup/audit/`，**随时可能被整体清理**。因此：
     - 每份快照头部必须写「脚本名 + 版本 + 时间 + 输入域」，**禁止无出处的裸 `.txt`**；
     - 「扫描 → 签字 → dry-run → apply」应在**同一次会话内**完成；快照一旦可能过期，就当场重跑；

@@ -43,3 +43,14 @@
 | 4 | `docs/vfx/mutsumi/mutsumi-tuning-log.md` | 0.00 MB | — |
 | 5 | `docs/vfx/mutsumi/mutsumi-weakness-break.md` | 0.01 MB | — |
 
+## 2026-11-18 16:13:49+0800 —— 删除 1 项 / 0.00 MB
+
+- HEAD: `8d2c3d6`
+- 脚本: `sign_off.py` v1.3.0
+- decisions: `.scratch/cleanup/audit/deprecation-ledger-removal.tsv`
+- --force: False
+
+| # | 路径 | 体积 | sidecar |
+|---:|---|---:|---|
+| 1 | `.agents/skills/obsolete-file-cleanup/references/deprecation-ledger.md` | 0.00 MB | — |
+

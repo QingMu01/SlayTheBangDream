@@ -20,15 +20,15 @@ CORE_SCRIPTS = f"{CORE}/Scripts"
 
 # 允许的例外：相对路径 -> 原因。逐项删除时先从这里移除，脚本会提示过期条目。
 ALLOWLIST: dict[str, str] = {
-    # --- 内容模组对核心 Nodes 的残留（P3：需要 VFX/商人 UI 契约） ---
-    "ItsCrychic/Scripts/Cards/Saki/Attack/Oscillation.cs": "P3: 依赖核心 VFX 节点类型",
-    "ItsCrychic/Scripts/Nodes/MegaScripts/CrychicMerchant.cs": "P3: 继承核心商人 UI 基类",
-    # --- 核心机制对 Nodes 的残留（P3：需要 VFX 工厂/UI 桥） ---
-    "BangDreamInSpire/Scripts/Mechanics/ExtraDeck/ExtraCardMerchantManager.cs": "P3: 商人库存 UI 直接操作节点",
-    "BangDreamInSpire/Scripts/Mechanics/Lingered/LingeredOrbitManager.cs": "P3: 环绕资源预览 VFX",
-    "BangDreamInSpire/Scripts/Mechanics/Lingered/LingeredMechanic.cs": "P3: 环绕资源预览 VFX 注册",
-    "BangDreamInSpire/Scripts/Mechanics/MusicNote/MusicNoteAsyncDamageEffect.cs": "P3: 音符飞行 VFX",
-    "BangDreamInSpire/Scripts/Mechanics/MusicNote/VfxManagerPatches.cs": "P3: VFX 容器补丁",
+    # --- 内容模组对核心 Nodes 的残留（待抽 VFX/商人 UI 契约） ---
+    "ItsCrychic/Scripts/Cards/Saki/Attack/Oscillation.cs": "依赖核心 VFX 节点类型",
+    "ItsCrychic/Scripts/Nodes/MegaScripts/CrychicMerchant.cs": "继承核心商人 UI 基类",
+    # --- 核心机制对 Nodes 的残留（待抽 VFX 工厂/UI 桥） ---
+    "BangDreamInSpire/Scripts/Mechanics/ExtraDeck/ExtraCardMerchantManager.cs": "商人库存 UI 直接操作节点",
+    "BangDreamInSpire/Scripts/Mechanics/Lingered/LingeredOrbitManager.cs": "环绕资源预览 VFX",
+    "BangDreamInSpire/Scripts/Mechanics/Lingered/LingeredMechanic.cs": "环绕资源预览 VFX 注册",
+    "BangDreamInSpire/Scripts/Mechanics/MusicNote/MusicNoteAsyncDamageEffect.cs": "音符飞行 VFX",
+    "BangDreamInSpire/Scripts/Mechanics/MusicNote/VfxManagerPatches.cs": "VFX 容器补丁",
 }
 
 # 不用 \b：角色名常嵌在标识符中间（StrikeSakikoVfx），那正是要抓的专属命名。

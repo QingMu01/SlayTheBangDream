@@ -199,7 +199,7 @@ protected override IEnumerable<IHoverTip> CardHoverTips =>
 
 - 名称变化时同步标题、描述与所有代码引用，不依赖旧标题残留。
 - 删除表外卡牌时删除 C#、UID、本地化条目及专属无用 Power。**删除判定走 `docs/cleanup-authoring.md` 的引用图**，`rg` 只用于删除后的残留搜索，不能单独作为「无引用」的证据。
-- **不直接删除仍可能复用的卡图**：在 `images/card_portraits/DEPRECATED.md` 记录废弃文件与原因（该文件目前不存在，首次需要时创建）。资源不存在时如实记录「无对应资源」，不要虚构文件。
+- **卡图删除需美术确认**：无对应类的卡图按 `docs/cleanup-authoring.md` 落 C 档，经美术确认「可删」后才删；资源不存在时如实记录事实，不要虚构文件。
 - 移动资源时优先保留原 UID。
 - 只改任务范围内文件；与用户已有修改重叠时采用最小补丁。
 

@@ -322,15 +322,13 @@ def main(argv: list[str] | None = None) -> int:
         if rule:
             add(tier_b, path, rule.reason, rule.recheck, source, code=keep_code(rule))
             continue
-        # 卡图不直接删：docs/cleanup-authoring.md §6 第 10 条要求仍可能复用的卡图
-        # 先记账到 images/card_portraits/DEPRECATED.md，等美术确认；账本格式见
-        # references/deprecation-ledger.md。这是**通用规则**，不是逐文件白名单：
-        # 任何进入分档流程的卡图（= 无同名类/无共享图匹配）都落 C。
+        # 卡图不直接删：docs/cleanup-authoring.md §6 第 10 条要求卡图落 C、经美术确认后删。
+        # 这是**通用规则**，不是逐文件白名单：任何进入分档流程的卡图
+        # （= 无同名类/无共享图匹配）都落 C。
         if "/images/card_portraits/" in path:
             add(tier_c, path,
-                "无对应卡类的卡图：不直接删除，按 docs/cleanup-authoring.md §6 第 10 条 记入 "
-                "images/card_portraits/DEPRECATED.md（格式见 references/deprecation-ledger.md），等美术确认",
-                "美术确认「可删」并记账后再删", source, code="C2")
+                "无对应卡类的卡图：不直接删除（docs/cleanup-authoring.md §6 第 10 条），等美术确认",
+                "美术确认「可删」后再删", source, code="C2")
             continue
         add(tier_a, path, f"引用图无命中（快照判定：{meta}）", "", source, code="A1")
 
@@ -356,9 +354,8 @@ def main(argv: list[str] | None = None) -> int:
             continue
         if "/images/card_portraits/" in path:
             add(tier_c, path,
-                "死簇成员且无对应卡类的卡图：不直接删除，按 docs/cleanup-authoring.md §6 第 10 条 记入 "
-                "images/card_portraits/DEPRECATED.md，等美术确认",
-                "美术确认「可删」并记账后再删", source, code="C2")
+                "死簇成员且无对应卡类的卡图：不直接删除（docs/cleanup-authoring.md §6 第 10 条），等美术确认",
+                "美术确认「可删」后再删", source, code="C2")
             continue
         add(tier_b, path,
             f"死簇：引用者全部为孤儿/待实装（快照：{meta}）；判定强度弱于「确认无引用」",
