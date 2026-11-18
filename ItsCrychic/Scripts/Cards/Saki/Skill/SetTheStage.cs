@@ -31,6 +31,10 @@ public class SetTheStage() : AbstractSakikoCard(CustomCost, CustomType, CustomRa
         if (playTarget != null)
         {
             await CreatureCmd.LoseBlock(choiceContext, playTarget, playTarget.Block, Owner.Creature);
+            // 本卡把格挡给「目标」（可能是敌人），不是拥有者获得格挡，因此**刻意不覆写** GainsBlock。
+            // 已核对本体消费点：Nimble.CanEnchant 要求「卡牌本身给拥有者格挡」；
+            // StretchPower.BeforeCardPlayed/ModifyBlockAdditive 会把增益加给该卡下一次格挡（不区分目标），
+            // 若此处声明 GainsBlock=true 反而会让敌方格挡吃到我方力量类加成。
             await CreatureCmd.GainBlock(playTarget, DynamicVars.Block, play);
         }
     }

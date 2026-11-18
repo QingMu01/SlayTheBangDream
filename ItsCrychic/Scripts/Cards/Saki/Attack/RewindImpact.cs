@@ -27,7 +27,9 @@ public class RewindImpact()
 
     protected override IEnumerable<DynamicVar> CardVars =>
     [
-        QuickVar.Damage.Create(14)
+        QuickVar.Damage.Create(14),
+        // 余音数值走动态变量，避免 .subside 文案里写死 18 与实现各改一半。
+        QuickVar.LingeredResource.Create(18)
     ];
 
     protected override async Task OnPlay(PlayerChoiceContext choiceContext, CardPlay play)
@@ -46,7 +48,8 @@ public class RewindImpact()
 
     public Task OnSubside(PlayerChoiceContext choiceContext, CardPlay play)
     {
-        return PowerCmd.Apply<NextTurnLingeredPower>(choiceContext, Owner.Creature, 18,
+        return PowerCmd.Apply<NextTurnLingeredPower>(choiceContext, Owner.Creature,
+            QuickVar.LingeredResource.GetVar(this).IntValue,
             Owner.Creature, this);
     }
 

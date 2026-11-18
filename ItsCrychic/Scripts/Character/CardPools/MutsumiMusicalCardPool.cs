@@ -1,10 +1,12 @@
-﻿using BangDreamInSpire.Scripts.Utils;
+using BangDreamInSpire.Scripts.Utils;
 using Godot;
 using ItsCrychic.Scripts.Utils;
 using STS2RitsuLib.Scaffolding.Content;
 
 namespace ItsCrychic.Scripts.Character.CardPools;
 
+// 预留占位：睦目前没有音乐卡。若确定不再需要，按 obsolete-file-cleanup 流程签字后与
+// AbstractMutsumiMusicCard 一并删除，勿直接移除（卡池注册会影响模型集合）。
 public class MutsumiMusicalCardPool : TypeListCardPoolModel
 {
     public override string Title => CrychicMemberEnum.Mutsumi.GetMemberName() + "MusicPool";
