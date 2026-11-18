@@ -57,7 +57,7 @@ public sealed class PerformAreaMechanic : IBangDreamMechanic
         var areaNode = NPerformArea.Create(player);
         areaNode.Name = "PerformArea";
         creatureNode.AddChildSafely(areaNode);
-        areaNode.Visible = BangDreamCapabilities.HasPerform(player);
+        areaNode.Visible = BangDreamCapabilities.HasPerformArea(player);
         areaNode.GlobalPosition = ResolvePerformAreaPosition(creatureNode);
         manager.AttachPerformArea(areaNode);
     }

@@ -107,7 +107,10 @@ public partial class PerformManager
             payload.Kind == PerformNetworkActionKind.Enter
                 ? PerformAreaChangeType.Added
                 : PerformAreaChangeType.Removed);
-        await HandlePerformAreaChange(choiceContext, change, ToEnqueueRequest(payload));
+        // 与单机回退路径保持一致：都经 hook 包装入口执行（联机侧已有 choiceContext，走接收上下文的重载）。
+        await BangDreamHook.RunPerformHookAction(
+            choiceContext, card,
+            context => HandlePerformAreaChange(context, change, ToEnqueueRequest(payload)));
     }
 
     private async Task ExecuteLocalPerformAction(PerformNetworkActionPayload payload)

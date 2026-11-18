@@ -8,6 +8,7 @@ using BangDreamInSpire.Scripts.Interfaces.Mechanics;
 using BangDreamInSpire.Scripts.Mechanics.Perform.Schemes;
 using BangDreamInSpire.Scripts.Utils;
 using BangDreamInSpire.Scripts.Utils.Infos;
+using Godot;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Context;
@@ -100,9 +101,17 @@ public partial class PerformManager : HookedSingletonModel, IInCombatManager, IP
     /// </summary>
     protected bool IsUnbound => _player == null;
 
-    private readonly Queue<CardModel> _cardsAwaitingArrival = [];
     private readonly HashSet<CardModel> _cardsWithArrivalVisual = [];
     private readonly HashSet<CardModel> _cardsPendingArrival = [];
+
+    /// <summary>
+    /// 每张「等待入场表现」的牌各自的观察令牌。用令牌而不是队列，是因为原版
+    /// <c>CardPile.CardAddFinished</c> 不带牌参数：多张牌同帧入场时无法知道是「哪一张」落地，
+    /// FIFO 会把完成事件配给错误的牌（A-10）。这里改为逐牌观察该牌自身 NCard 的飞行状态。
+    /// </summary>
+    private readonly Dictionary<CardModel, int> _arrivalWatchTokens = [];
+
+    private int _nextArrivalWatchToken;
     private readonly HashSet<CardModel> _pendingPerformAreaAdditions = [];
     private readonly HashSet<CardModel> _initialPerformAreaAdditions = [];
     private readonly HashSet<CardModel> _instantPerformedCards = [];
@@ -186,9 +195,11 @@ public partial class PerformManager : HookedSingletonModel, IInCombatManager, IP
 
         if (HasCardArrivalVisual(cardModel))
         {
-            _cardsAwaitingArrival.Enqueue(cardModel);
             _cardsWithArrivalVisual.Add(cardModel);
             _cardsPendingArrival.Add(cardModel);
+            var watchToken = ++_nextArrivalWatchToken;
+            _arrivalWatchTokens[cardModel] = watchToken;
+            TaskHelper.RunSafely(WatchCardArrivalAsync(cardModel, watchToken));
         }
 
         if (_initialPerformAreaAdditions.Contains(cardModel)) return;
@@ -201,16 +212,109 @@ public partial class PerformManager : HookedSingletonModel, IInCombatManager, IP
                NCard.FindOnTable(cardModel, PileType.Hand) != null;
     }
 
-    private void OnCardAddFinished()
+    /// <summary>
+    /// 逐牌观察入场表现：原版飞牌动画结束的当帧会把 NCard 停在终点，因此「先移动过、随后连续两帧
+    /// 位置不变」就是该牌落地的自有时刻；没有飞行动画（直接置入歌单）则给 0.5 秒缓冲后按到达处理。
+    /// 这样完成事件与牌一一对应，不再依赖无参 <c>CardAddFinished</c> 的入队顺序。
+    /// </summary>
+    private async Task WatchCardArrivalAsync(CardModel cardModel, int watchToken)
     {
-        if (!_cardsAwaitingArrival.TryDequeue(out var cardModel)) return;
+        try
+        {
+            if (Engine.GetMainLoop() is not SceneTree tree)
+            {
+                MarkCardArrived(cardModel, watchToken);
+                return;
+            }
+
+            var moved = false;
+            var stableFrames = 0;
+            var elapsedFrames = 0;
+            Vector2? lastPosition = NCard.FindOnTable(cardModel)?.GlobalPosition;
+            // 比 WaitForCardPresentation 的预算少 10 帧，保证观察者先于等待方收口，不会把等待方拖到上限。
+            var framesLeft = PresentationWaitFrameBudget - 10;
+
+            while (framesLeft-- > 0)
+            {
+                await tree.ToSignal(tree, SceneTree.SignalName.ProcessFrame);
+                elapsedFrames++;
+
+                if (!IsArrivalWatchCurrent(cardModel, watchToken)) return;
+
+                var cardNode = NCard.FindOnTable(cardModel);
+                if (cardNode == null)
+                {
+                    // 首帧可能只是视觉节点尚未挂到桌面（HasCardArrivalVisual 在加牌瞬间为真），
+                    // 至少观察一帧再判定「视觉已消失 = 已到达」。
+                    if (elapsedFrames == 1) continue;
+                    MarkCardArrived(cardModel, watchToken);
+                    return;
+                }
+
+                var position = cardNode.GlobalPosition;
+                if (lastPosition is { } previous && !position.IsEqualApprox(previous))
+                {
+                    moved = true;
+                    stableFrames = 0;
+                }
+                else
+                {
+                    stableFrames++;
+                }
+
+                lastPosition = position;
+
+                // 飞牌结束后位置停在终点；先要求「移动过」，避免把静止在手里的牌误判为已到达。
+                if (moved && stableFrames >= 2)
+                {
+                    MarkCardArrived(cardModel, watchToken);
+                    return;
+                }
+
+                // 没有飞行动画（例如直接置入歌单）：0.5 秒后按到达处理。
+                if (!moved && framesLeft <= PresentationWaitFrameBudget - 40)
+                {
+                    MarkCardArrived(cardModel, watchToken);
+                    return;
+                }
+            }
+
+            MarkCardArrived(cardModel, watchToken);
+        }
+        catch (Exception ex)
+        {
+            BangDreamInSpireCore.Logger.Warn(
+                $"Card arrival watcher for {cardModel.Id.Entry} failed: {ex}");
+            MarkCardArrived(cardModel, watchToken);
+        }
+    }
+
+    private bool IsArrivalWatchCurrent(CardModel cardModel, int watchToken)
+    {
+        return _arrivalWatchTokens.TryGetValue(cardModel, out var current) &&
+               current == watchToken &&
+               _cardsPendingArrival.Contains(cardModel);
+    }
+
+    private void MarkCardArrived(CardModel cardModel, int watchToken)
+    {
+        if (!IsArrivalWatchCurrent(cardModel, watchToken)) return;
+
+        _arrivalWatchTokens.Remove(cardModel);
+        _cardsPendingArrival.Remove(cardModel);
         _cardsWithArrivalVisual.Remove(cardModel);
+
         if (cardModel.Pile == PerformPile)
         {
             PerformArea?.PlayCardArrivalBounce(cardModel);
         }
 
         QueuePerformAreaChange(cardModel, PerformAreaChangeType.Arrived);
+    }
+
+    private void CancelArrivalWatch(CardModel cardModel)
+    {
+        _arrivalWatchTokens.Remove(cardModel);
     }
 
     private void OnCardRemoved(CardModel cardModel)
@@ -221,7 +325,7 @@ public partial class PerformManager : HookedSingletonModel, IInCombatManager, IP
         // 离开歌单即视为本次入场结束：再次进入时应重新触发即兴演奏与入场效果。
         _instantPerformedCards.Remove(cardModel);
         PerformArea?.RemoveItem(cardModel);
-        RemoveAwaitingArrival(cardModel);
+        CancelArrivalWatch(cardModel);
         _cardsWithArrivalVisual.Remove(cardModel);
         if (_cardsPendingArrival.Remove(cardModel))
         {
@@ -235,18 +339,6 @@ public partial class PerformManager : HookedSingletonModel, IInCombatManager, IP
         }
 
         QueuePerformAreaChange(cardModel, PerformAreaChangeType.Removed);
-    }
-
-    private void RemoveAwaitingArrival(CardModel cardModel)
-    {
-        if (!_cardsAwaitingArrival.Contains(cardModel)) return;
-
-        var remainingCards = _cardsAwaitingArrival.Where(card => card != cardModel).ToList();
-        _cardsAwaitingArrival.Clear();
-        foreach (var remainingCard in remainingCards)
-        {
-            _cardsAwaitingArrival.Enqueue(remainingCard);
-        }
     }
 
     private async Task RemoveOverflowItems()
@@ -324,6 +416,7 @@ public partial class PerformManager : HookedSingletonModel, IInCombatManager, IP
 
     private Task HandleCardArrivedInternal(CardModel cardModel)
     {
+        CancelArrivalWatch(cardModel);
         _cardsPendingArrival.Remove(cardModel);
 
         if (!PerformPile.Cards.Contains(cardModel) || cardModel.CombatState == null) return Task.CompletedTask;
@@ -589,6 +682,7 @@ public partial class PerformManager : HookedSingletonModel, IInCombatManager, IP
             $"Card presentation for {cardModel.Id.Entry} did not settle within " +
             $"{PresentationWaitFrameBudget} frames; continuing without waiting for it.");
 
+        CancelArrivalWatch(cardModel);
         _cardsPendingArrival.Remove(cardModel);
         return true;
     }
@@ -917,9 +1011,8 @@ public partial class PerformManager : HookedSingletonModel, IInCombatManager, IP
         }
 
         PerformPile.CardAdded += OnCardAdded;
-        PerformPile.CardAddFinished += OnCardAddFinished;
         PerformPile.CardRemoved += OnCardRemoved;
-        _cardsAwaitingArrival.Clear();
+        _arrivalWatchTokens.Clear();
         _cardsWithArrivalVisual.Clear();
         _cardsPendingArrival.Clear();
         _initialPerformAreaAdditions.Clear();
@@ -933,9 +1026,8 @@ public partial class PerformManager : HookedSingletonModel, IInCombatManager, IP
         // 每次战斗都会重建演奏区节点，这里清掉引用，下一场由 PerformAreaMechanic 重新回填。
         PerformArea = null;
         PerformPile.CardAdded -= OnCardAdded;
-        PerformPile.CardAddFinished -= OnCardAddFinished;
         PerformPile.CardRemoved -= OnCardRemoved;
-        _cardsAwaitingArrival.Clear();
+        _arrivalWatchTokens.Clear();
         _cardsWithArrivalVisual.Clear();
         _cardsPendingArrival.Clear();
         _initialPerformAreaAdditions.Clear();

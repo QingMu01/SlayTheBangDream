@@ -14,6 +14,8 @@ namespace BangDreamInSpire.Scripts.Utils;
 
 public static class BangDreamHook
 {
+    private static bool _warnedPerformHookSkipped;
+
     public static decimal CaptureMusicNoteDamageAdditive(
         ICombatState combatState,
         Creature? dealer,
@@ -307,12 +309,29 @@ public static class BangDreamHook
     {
         if (!CanDispatchCombatHooks())
         {
+            // 该分支只代表「战斗已结束 / 正在结束」——结束流程中再跑演奏区变更会二次结算，
+            // 因此保持不执行，只记一次告警（A-11）。
+            WarnPerformHookSkippedOnce(source);
             return;
         }
 
         var netId = LocalContext.NetId;
         if (!netId.HasValue)
         {
+            // 无本地 NetId 时构造不出 HookPlayerChoiceContext，但时机本身仍安全，不能整段跳过（A-11）：
+            // 用不绑定玩家的 BlockingPlayerChoiceContext 兜底执行。该上下文不产生 GameAction、
+            // 不暂停玩家选择（信号直接完成），语义即「仅执行一次」；HandlePerformAreaChange 及其内部的
+            // OnCardEnterPerformArea / OnCardTriggeredPerform 都只把上下文用于模型栈与选择信号，可直接接受。
+            var fallbackContext = new BlockingPlayerChoiceContext();
+            fallbackContext.PushModel(source);
+            try
+            {
+                await ExecuteTaskThenInvokeExecutionFinished(source, fallbackContext, hook);
+            }
+            finally
+            {
+                fallbackContext.PopModel(source);
+            }
             return;
         }
 
@@ -327,7 +346,12 @@ public static class BangDreamHook
         AbstractModel source,
         Func<PlayerChoiceContext, Task> hook)
     {
-        if (!CanDispatchCombatHooks()) return;
+        if (!CanDispatchCombatHooks())
+        {
+            // 与 ICombatState 重载同口径：战斗结束 / 正在结束时保持不执行，只记一次告警。
+            WarnPerformHookSkippedOnce(source);
+            return;
+        }
 
         choiceContext.PushModel(source);
         try
@@ -392,6 +416,14 @@ public static class BangDreamHook
         {
             WarnListenerFailure(model, ex);
         }
+    }
+
+    private static void WarnPerformHookSkippedOnce(AbstractModel source)
+    {
+        if (_warnedPerformHookSkipped) return;
+        _warnedPerformHookSkipped = true;
+        BangDreamInSpireCore.Logger.Warn(
+            $"[BDS-Hook] 战斗已结束或正在结束，跳过 {source.GetType().Name} 的演奏区 hook（仅告警一次）。");
     }
 
     private static void WarnListenerFailure(object listener, Exception ex)
