@@ -1,5 +1,6 @@
 using System.Reflection;
 using BangDreamInSpire.Scripts.Cards;
+using BangDreamInSpire.Scripts.Diagnostics;
 using BangDreamInSpire.Scripts.Interfaces.CardAugment;
 using BangDreamInSpire.Scripts.Interfaces.CharacterAugment;
 using BangDreamInSpire.Scripts.Nodes.MegeScript;
@@ -173,6 +174,11 @@ internal class RestSiteAnimPatch : IPatchMethod
 {
     public static string PatchId => "create_rest_site_anim_by_skin_info";
 
+    private const string AnimNameFieldName = "animName";
+
+    private static readonly Func<CodeInstruction, bool> IsAnyLdloc = HarmonyIl.IsLdloc();
+    private static readonly Func<CodeInstruction, bool> IsAnyStfld = HarmonyIl.IsStfld();
+
     private static readonly MethodInfo GetRestSiteAnimNameMethod =
         AccessTools.Method(typeof(RestSiteAnimPatch), nameof(GetRestSiteAnimName));
 
@@ -188,13 +194,7 @@ internal class RestSiteAnimPatch : IPatchMethod
     {
         var rewriter = HarmonyIlRewriter.From(instructions);
 
-        var pattern = HarmonyIlPattern.Sequence(
-            HarmonyIl.IsLdloc(0),
-            HarmonyIl.IsLdloc(1),
-            HarmonyIl.IsStfld()
-        );
-
-        var matches = pattern.FindAll(rewriter.Code);
+        var matches = FindAnimNameAssignments(rewriter.Code);
 
         if (matches.Count == 1)
         {
@@ -211,8 +211,33 @@ internal class RestSiteAnimPatch : IPatchMethod
         }
 
         BangDreamInSpireCore.Logger.Error(
-            $"Replace rest site animName transpiler failed to match. found {matches.Count} il codes.");
+            $"Replace rest site animName transpiler failed to match. found {matches.Count} candidates.");
+        // 没有独立计数 API 时至少把失配记进时间线，开诊断时能和补丁日志对上。
+        PerfTimeline.Mark("patch:rest-site-anim:unmatched", $"candidates={matches.Count}");
         return rewriter.Code;
+    }
+
+    /// <summary>
+    /// 定位闭包对 <c>animName</c> 的赋值：<c>ldloc &lt;闭包&gt; ; ldloc &lt;animName&gt; ; stfld animName</c>。
+    /// 不再依赖编译器把两个局部变量放在 0/1 号槽位：只按字段名（string 类型的 <c>animName</c>）与前两条
+    /// 指令都是 ldloc 来判定，换编译器/构建配置后形态不符会走 Error 分支，而不是误改到别的指令。
+    /// </summary>
+    private static List<HarmonyIlMatch> FindAnimNameAssignments(IReadOnlyList<CodeInstruction> code)
+    {
+        var matches = new List<HarmonyIlMatch>();
+        for (var i = 2; i < code.Count; i++)
+        {
+            if (!IsAnyStfld(code[i]) || code[i].operand is not FieldInfo field ||
+                field.Name != AnimNameFieldName || field.FieldType != typeof(string) ||
+                !IsAnyLdloc(code[i - 1]) || !IsAnyLdloc(code[i - 2]))
+            {
+                continue;
+            }
+
+            matches.Add(new HarmonyIlMatch(i - 2, 3));
+        }
+
+        return matches;
     }
 
     private static string GetRestSiteAnimName(string originalName, Player player)
@@ -494,62 +519,65 @@ internal class TopBarPatch : IPatchMethod
     public static void Postfix(NTopBar __instance, IRunState runState)
     {
         var player = LocalContext.GetMe(runState);
-        if (player?.Character is ISkinSupportCharacter)
+        if (player?.Character is not ISkinSupportCharacter)
         {
-            var ui = SkinManager.ResolvePlayerSkin(player)?.SkinTemplate.Ui;
-            if (ui != null)
-            {
-                var hpIconPath = ui.TopBarHpIcon;
-                var goldIconPath = ui.TopBarGoldIcon;
-                var floorIconPath = ui.TopBarFloorIcon;
-                var mapIconPath = ui.TopBarMapIcon;
-                var deckIconPath = ui.TopBarDeckIcon;
-                var settingIconPath = ui.TopBarSettingIcon;
-
-                if (hpIconPath != null)
-                {
-                    var textureRect = __instance.Hp.GetNodeOrNull<TextureRect>("HpIcon");
-                    if (textureRect != null)
-                        textureRect.Texture = BangDreamPreloadManager.GetTexture2D(hpIconPath);
-                }
-
-                if (goldIconPath != null)
-                {
-                    var textureRect = __instance.Gold.GetNodeOrNull<TextureRect>("GoldIcon");
-                    if (textureRect != null)
-                        textureRect.Texture = BangDreamPreloadManager.GetTexture2D(goldIconPath);
-                }
-
-                if (floorIconPath != null)
-                {
-                    var textureRect =
-                        __instance.FloorIcon.GetNodeOrNull<TextureRect>("FloorIconPositioner/FloorInfoIcon");
-                    if (textureRect != null)
-                        textureRect.Texture = BangDreamPreloadManager.GetTexture2D(floorIconPath);
-                }
-
-                if (mapIconPath != null)
-                {
-                    var textureRect = __instance.Map.GetNodeOrNull<TextureRect>("Control/Icon");
-                    if (textureRect != null)
-                        textureRect.Texture = BangDreamPreloadManager.GetTexture2D(mapIconPath);
-                }
-
-                if (deckIconPath != null)
-                {
-                    var textureRect = __instance.Deck.GetNodeOrNull<TextureRect>("Control/Icon");
-                    if (textureRect != null)
-                        textureRect.Texture = BangDreamPreloadManager.GetTexture2D(deckIconPath);
-                }
-
-                if (settingIconPath != null)
-                {
-                    var textureRect = __instance.Pause.GetNodeOrNull<TextureRect>("Control/Icon");
-                    if (textureRect != null)
-                        textureRect.Texture = BangDreamPreloadManager.GetTexture2D(settingIconPath);
-                }
-            }
+            return;
         }
+
+        var ui = SkinManager.ResolvePlayerSkin(player)?.SkinTemplate.Ui;
+        if (ui == null)
+        {
+            return;
+        }
+
+        var attempted = 0;
+        var applied = 0;
+
+        // 这些子节点路径是本体的场景约定（改名即静默失效）：统计一次命中率，全部未命中时只 Warn 一次。
+        ApplyIcon(__instance.Hp, "HpIcon", ui.TopBarHpIcon, ref attempted, ref applied);
+        ApplyIcon(__instance.Gold, "GoldIcon", ui.TopBarGoldIcon, ref attempted, ref applied);
+        ApplyIcon(__instance.FloorIcon, "FloorIconPositioner/FloorInfoIcon", ui.TopBarFloorIcon, ref attempted,
+            ref applied);
+        ApplyIcon(__instance.Map, "Control/Icon", ui.TopBarMapIcon, ref attempted, ref applied);
+        ApplyIcon(__instance.Deck, "Control/Icon", ui.TopBarDeckIcon, ref attempted, ref applied);
+        ApplyIcon(__instance.Pause, "Control/Icon", ui.TopBarSettingIcon, ref attempted, ref applied);
+
+        if (attempted > 0 && applied == 0)
+        {
+            WarnMissingNodesOnce();
+        }
+    }
+
+    private static int _missingNodesWarned;
+
+    private static void ApplyIcon(Node root, string nodePath, string? iconPath, ref int attempted, ref int applied)
+    {
+        if (iconPath == null)
+        {
+            return;
+        }
+
+        attempted++;
+        var textureRect = root.GetNodeOrNull<TextureRect>(nodePath);
+        if (textureRect == null)
+        {
+            return;
+        }
+
+        textureRect.Texture = BangDreamPreloadManager.GetTexture2D(iconPath);
+        applied++;
+    }
+
+    private static void WarnMissingNodesOnce()
+    {
+        if (Interlocked.Exchange(ref _missingNodesWarned, 1) != 0)
+        {
+            return;
+        }
+
+        BangDreamInSpireCore.Logger.Warn(
+            $"[{PatchId}] 顶栏皮肤图标没有命中任何场景节点：" +
+            "6 条硬编码子节点路径可能已随本体场景改名（本次运行只提示一次）。");
     }
 }
 

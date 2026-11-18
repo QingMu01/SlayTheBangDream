@@ -41,7 +41,7 @@ internal static class PerfSession
 
     public static Logger? LoggerRef => _logger;
 
-    public static string? LastReportPath => _lastReportPath;
+    public static string? LastReportPath => Volatile.Read(ref _lastReportPath);
 
     /// <summary>
     /// 在 <c>BangDreamInSpireCore.Initialize</c> 的最开头调用。
@@ -206,12 +206,12 @@ internal static class PerfSession
     {
         if (!_config.Enabled)
         {
-            return _lastReportPath;
+            return LastReportPath;
         }
 
         if (Interlocked.Exchange(ref _dumping, 1) == 1)
         {
-            return _lastReportPath;
+            return LastReportPath;
         }
 
         try
@@ -219,10 +219,11 @@ internal static class PerfSession
             PerfReportPayload? payload = PerfReporter.Prepare(reason, _config, Sampler);
             if (payload == null)
             {
-                return _lastReportPath;
+                return LastReportPath;
             }
 
-            _lastReportPath = payload.MarkdownPath;
+            // 后台写盘线程与报告读取方都会读这个路径：用 Volatile 把写/读的可见性写成显式约定。
+            Volatile.Write(ref _lastReportPath, payload.MarkdownPath);
             if (sync)
             {
                 PerfReporter.WriteFiles(payload);
@@ -237,7 +238,7 @@ internal static class PerfSession
         catch (Exception ex)
         {
             _logger?.Warn($"[BDS-Perf] 写报告失败: {ex}");
-            return _lastReportPath;
+            return LastReportPath;
         }
         finally
         {
@@ -270,6 +271,43 @@ internal static class PerfSession
     public static void OnSamplerExit()
     {
         Sampler = null;
+    }
+
+    /// <summary>
+    /// 解除 BDS-Perf 持有的日志回调与生命周期订阅（每个进程只应调用一次）。
+    /// <para>
+    /// 目前没有调用点：两个 mod 都不支持卸载/热重载，进程退出时由 Godot 直接销毁，订阅随进程一起消失。
+    /// 这里把依赖写成显式约定——将来若支持 mod 卸载或热重载，必须在卸载前调用本方法，
+    /// 否则会重复订阅（日志回调被调用多次、生命周期事件被重复处理）。
+    /// </para>
+    /// </summary>
+    public static void Shutdown()
+    {
+        try
+        {
+            Log.LogCallback -= PerfTimeline.OnGameLog;
+        }
+        catch (Exception ex)
+        {
+            _logger?.Warn($"[BDS-Perf] 解除日志订阅失败: {ex.Message}");
+        }
+
+        lock (Gate)
+        {
+            foreach (var subscription in Subscriptions)
+            {
+                try
+                {
+                    subscription.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Warn($"[BDS-Perf] 释放生命周期订阅失败: {ex.Message}");
+                }
+            }
+
+            Subscriptions.Clear();
+        }
     }
 
     /// <summary>退出/同步写盘前等待后台写队列排空，避免旧 payload 覆盖 perf-latest。</summary>

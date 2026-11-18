@@ -19,10 +19,20 @@ public static class BangDreamHook
         Creature? dealer,
         AbstractModel? source)
     {
-        return IterateCombatHookListeners(combatState)
-            .OfType<IMusicNoteModifyHookListener>()
-            .ToList()
-            .Sum(listener => listener.CaptureMusicNoteDamageAdditive(dealer, source));
+        var total = 0m;
+        foreach (var listener in IterateCombatHookListeners(combatState).OfType<IMusicNoteModifyHookListener>())
+        {
+            try
+            {
+                total += listener.CaptureMusicNoteDamageAdditive(dealer, source);
+            }
+            catch (Exception ex)
+            {
+                WarnListenerFailure(listener, ex);
+            }
+        }
+
+        return total;
     }
 
     public static decimal ModifyMusicNoteDamage(
@@ -40,16 +50,32 @@ public static class BangDreamHook
             .ToList();
         if (modifyDamageHookType.HasFlag(ModifyDamageHookType.Additive))
         {
-            damageAmount = listeners.Aggregate(damageAmount,
-                (current, listener) =>
-                    current + listener.ModifyMusicNoteDamageAdditive(target, current, dealer, source));
+            foreach (var listener in listeners)
+            {
+                try
+                {
+                    damageAmount += listener.ModifyMusicNoteDamageAdditive(target, damageAmount, dealer, source);
+                }
+                catch (Exception ex)
+                {
+                    WarnListenerFailure(listener, ex);
+                }
+            }
         }
 
         if (modifyDamageHookType.HasFlag(ModifyDamageHookType.Multiplicative))
         {
-            damageAmount = listeners.Aggregate(damageAmount,
-                (current, listener) =>
-                    current * listener.ModifyMusicNoteDamageMultiplicative(target, current, dealer, source));
+            foreach (var listener in listeners)
+            {
+                try
+                {
+                    damageAmount *= listener.ModifyMusicNoteDamageMultiplicative(target, damageAmount, dealer, source);
+                }
+                catch (Exception ex)
+                {
+                    WarnListenerFailure(listener, ex);
+                }
+            }
         }
 
         return damageAmount;
@@ -58,15 +84,37 @@ public static class BangDreamHook
     public static decimal ModifyMusicNoteShotCount(ICombatState combatState, Creature? dealer, decimal amount,
         AbstractModel? source)
     {
-        return IterateCombatHookListeners(combatState).OfType<IMusicNoteModifyHookListener>().Aggregate(amount,
-            (current, model) => model.ModifyMusicNoteShotCount(current, dealer, source));
+        foreach (var model in IterateCombatHookListeners(combatState).OfType<IMusicNoteModifyHookListener>())
+        {
+            try
+            {
+                amount = model.ModifyMusicNoteShotCount(amount, dealer, source);
+            }
+            catch (Exception ex)
+            {
+                WarnListenerFailure(model, ex);
+            }
+        }
+
+        return amount;
     }
 
     public static decimal ModifyMusicNoteBounceCount(ICombatState combatState, Creature? dealer, decimal amount,
         AbstractModel? source)
     {
-        return IterateCombatHookListeners(combatState).OfType<IMusicNoteModifyHookListener>().Aggregate(amount,
-            (current, model) => model.ModifyMusicNoteBounceCount(current, dealer, source));
+        foreach (var model in IterateCombatHookListeners(combatState).OfType<IMusicNoteModifyHookListener>())
+        {
+            try
+            {
+                amount = model.ModifyMusicNoteBounceCount(amount, dealer, source);
+            }
+            catch (Exception ex)
+            {
+                WarnListenerFailure(model, ex);
+            }
+        }
+
+        return amount;
     }
 
     public static async Task AfterCardSubside(PlayerChoiceContext choiceContext, CardPlay play)
@@ -118,11 +166,14 @@ public static class BangDreamHook
         ICombatState combatState,
         CardModel cardModel)
     {
-        foreach (var model in IterateCombatHookListeners(combatState).Where(model => model is IPerformTriggerListener).ToList())
+        var listeners = IterateCombatHookListeners(combatState)
+            .Where(model => model is IPerformTriggerListener)
+            .ToList();
+        Func<IPerformTriggerListener, Task> dispatch =
+            listener => listener.OnCardTriggeredPerform(choiceContext, cardModel);
+        foreach (var model in listeners)
         {
-            await ExecuteTaskThenInvokeExecutionFinished(
-                model,
-                ((IPerformTriggerListener)model).OnCardTriggeredPerform(choiceContext, cardModel));
+            await ExecuteTaskThenInvokeExecutionFinished(model, (IPerformTriggerListener)model, dispatch);
         }
     }
 
@@ -172,9 +223,7 @@ public static class BangDreamHook
             choiceContext.PushModel(model);
             try
             {
-                await ExecuteTaskThenInvokeExecutionFinished(
-                    model,
-                    dispatch((TListener)(object)model));
+                await ExecuteTaskThenInvokeExecutionFinished(model, (TListener)(object)model, dispatch);
             }
             finally
             {
@@ -188,11 +237,10 @@ public static class BangDreamHook
         var listenerModels = IterateCombatHookListeners(combatState)
             .Where(model => model is IMusicNoteShotHookListener)
             .ToList();
+        Func<IMusicNoteShotHookListener, Task> dispatch = listener => listener.AfterShot(context, dealer);
         foreach (var model in listenerModels)
         {
-            await ExecuteTaskThenInvokeExecutionFinished(
-                model,
-                ((IMusicNoteShotHookListener)model).AfterShot(context, dealer));
+            await ExecuteTaskThenInvokeExecutionFinished(model, (IMusicNoteShotHookListener)model, dispatch);
         }
     }
 
@@ -248,9 +296,7 @@ public static class BangDreamHook
                      .Where(model => model is IWeaknessBreakHookListener)
                      .ToList())
         {
-            await ExecuteTaskThenInvokeExecutionFinished(
-                model,
-                dispatch((IWeaknessBreakHookListener)model));
+            await ExecuteTaskThenInvokeExecutionFinished(model, (IWeaknessBreakHookListener)model, dispatch);
         }
     }
 
@@ -271,7 +317,7 @@ public static class BangDreamHook
         }
 
         var choiceContext = new HookPlayerChoiceContext(source, netId.Value, combatState, GameActionType.Combat);
-        var task = ExecuteTaskThenInvokeExecutionFinished(source, hook(choiceContext));
+        var task = ExecuteTaskThenInvokeExecutionFinished(source, choiceContext, hook);
         await choiceContext.AssignTaskAndWaitForPauseOrCompletion(task);
         await choiceContext.WaitForCompletion();
     }
@@ -286,7 +332,7 @@ public static class BangDreamHook
         choiceContext.PushModel(source);
         try
         {
-            await ExecuteTaskThenInvokeExecutionFinished(source, hook(choiceContext));
+            await ExecuteTaskThenInvokeExecutionFinished(source, choiceContext, hook);
         }
         finally
         {
@@ -312,9 +358,45 @@ public static class BangDreamHook
         return CombatManager.Instance is not { IsOverOrEnding: true, IsStarting: false };
     }
 
-    private static async Task ExecuteTaskThenInvokeExecutionFinished(AbstractModel model, Task task)
+    /// <summary>
+    /// 调用单个监听者并做异常隔离：异常只记 Warn 并跳过该监听者，后续监听者继续分发；
+    /// 无论成败都补发 <see cref="AbstractModel.InvokeExecutionFinished" />，避免一个第三方监听者抛错
+    /// 让「后续监听者」与「执行完成通知」一起丢失。
+    /// </summary>
+    private static async Task ExecuteTaskThenInvokeExecutionFinished<TState>(
+        AbstractModel model,
+        TState state,
+        Func<TState, Task> action)
     {
-        await task;
-        model.InvokeExecutionFinished();
+        try
+        {
+            await action(state);
+        }
+        catch (Exception ex)
+        {
+            WarnListenerFailure(model, ex);
+        }
+        finally
+        {
+            InvokeExecutionFinishedSafely(model);
+        }
+    }
+
+    private static void InvokeExecutionFinishedSafely(AbstractModel model)
+    {
+        try
+        {
+            model.InvokeExecutionFinished();
+        }
+        catch (Exception ex)
+        {
+            WarnListenerFailure(model, ex);
+        }
+    }
+
+    private static void WarnListenerFailure(object listener, Exception ex)
+    {
+        BangDreamInSpireCore.Logger.Warn(
+            $"[BDS-Hook] 钩子监听者 {listener.GetType().Name} 抛出异常，已跳过该监听者并继续后续分发: {ex}");
     }
 }

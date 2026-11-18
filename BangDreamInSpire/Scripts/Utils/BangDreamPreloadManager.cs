@@ -52,12 +52,8 @@ public static class BangDreamPreloadManager
         "res://BangDreamInSpire/scenes/merchant/extra_card_merchant_inventory.tscn",
         // 以下资源原先只在首次使用时走主线程同步加载（BDS-Perf 报告里反复出现 Asset not cached），
         // 提前放进 run 资源集，把首次触碰的卡顿挪到房间预加载阶段。
-        "res://BangDreamInSpire/scenes/vfx/strike_sakiko_vfx.tscn",
         "res://BangDreamInSpire/scenes/vfx/oscillation_wave_vfx.tscn",
         "res://BangDreamInSpire/scenes/vfx/oscillation_hit_vfx.tscn",
-        "res://BangDreamInSpire/scenes/vfx/card_trail_sakiko.tscn",
-        "res://BangDreamInSpire/images/sceneui/xz-energy_lingered_small.png",
-        "res://BangDreamInSpire/images/sceneui/xz-energy_lingered.png",
         "res://BangDreamInSpire/images/sceneui/music_reward.png",
         // 睦的演奏区特效贴图：首次冻结 / 分组激活时同步读盘，提前放进 run 预载集。
         "res://BangDreamInSpire/images/vfx/flying_music_note/glow_soft.png",
@@ -69,11 +65,12 @@ public static class BangDreamPreloadManager
     /// <summary>
     /// 主菜单真正创建界面时才会用到的资源。它们原先在 <c>Time to main menu</c> 之前同步加载
     /// （character_selector.tscn 单次可达 240ms），放进 MainMenuEssentials 让它们在 logo 播放期间预载。
+    /// <para>
+    /// 角色专属资源不写在这里：核心库不得出现具体角色标识，由内容模组通过
+    /// <see cref="AddCustomCommonAsset" /> 注册后并入同一预载集。
+    /// </para>
     /// </summary>
-    private static readonly HashSet<string> MainMenuEssentialAssets =
-    [
-        "res://BangDreamInSpire/images/sceneui/sakiko_night.png"
-    ];
+    private static readonly HashSet<string> MainMenuEssentialAssets = [];
 
     internal static readonly HashSet<string> VfxAssets =
     [

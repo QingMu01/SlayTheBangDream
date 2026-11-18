@@ -14,9 +14,28 @@ public abstract class MusicCardModel(
     int baseCost,
     CardRarity rarity,
     TargetType target,
-    bool showInCardLibrary = true) : BandCardModel(baseCost, BangDreamConst.MusicCardType, rarity, target, showInCardLibrary),
+    bool showInCardLibrary = true) : BandCardModel(baseCost, RequireMusicCardType(), rarity, target, showInCardLibrary),
     IPerformCard
 {
+    /// <summary>
+    /// 读取运行时音乐卡类型。该值由 <c>PerformMechanic.RegisterContent</c> 在核心内容注册阶段写入，
+    /// 早于该阶段实例化音乐卡没有可用类型；这里把原始异常换成可读的前置条件说明，
+    /// 避免第三方 mod 只看到 “CardType.Music is not BangDreamTools.Initialized.”。
+    /// </summary>
+    private static CardType RequireMusicCardType()
+    {
+        try
+        {
+            return BangDreamConst.MusicCardType;
+        }
+        catch (InvalidOperationException ex)
+        {
+            throw new InvalidOperationException(
+                "音乐卡必须在核心内容注册（PerformMechanic.RegisterContent）之后构造：" +
+                "BangDreamConst.MusicCardType 尚未初始化。请等核心 mod 初始化完成后再实例化音乐卡。", ex);
+        }
+    }
+
     /// <summary>本体 quest 卡框：Music 是运行时新增类型，没有专属卡框资源，默认值必须指向一定存在的本体资源。</summary>
     private const string DefaultFramePath = "res://images/atlases/ui_atlas.sprites/card/card_frame_quest_s.tres";
 

@@ -49,5 +49,18 @@ public static class ItsCrychic
             "res://ItsCrychic/images/charui/char_select_saki.png");
         BangDreamPreloadManager.AddCustomCombatAsset("sakiko_small_energy",
             "res://ItsCrychic/images/charui/sakiko/sakiko_small_energy.png");
+
+        // 角色专属资源从核心预载表移出，改由内容模组注册（核心库不得出现具体角色资源）；
+        // 注册后与原先一样并入 run / 主菜单预载集，首次触碰不再走主线程同步加载。
+        BangDreamPreloadManager.AddCustomCombatAsset("sakiko_strike_vfx",
+            "res://BangDreamInSpire/scenes/vfx/strike_sakiko_vfx.tscn");
+        BangDreamPreloadManager.AddCustomCombatAsset("sakiko_card_trail",
+            "res://BangDreamInSpire/scenes/vfx/card_trail_sakiko.tscn");
+        BangDreamPreloadManager.AddCustomCombatAsset("sakiko_lingered_energy_small",
+            "res://BangDreamInSpire/images/sceneui/xz-energy_lingered_small.png");
+        BangDreamPreloadManager.AddCustomCombatAsset("sakiko_lingered_energy_large",
+            "res://BangDreamInSpire/images/sceneui/xz-energy_lingered.png");
+        BangDreamPreloadManager.AddCustomCommonAsset("sakiko_night",
+            "res://BangDreamInSpire/images/sceneui/sakiko_night.png");
     }
 }
