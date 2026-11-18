@@ -10,7 +10,7 @@ using MegaCrit.Sts2.Core.Helpers;
 namespace BangDreamInSpire.Scripts.Mechanics.Break;
 
 /// <summary>
-/// 破绽 / 弱点击破的常驻视觉（方案 A「裂纹积累」，2026-11-14 批准）。
+/// 破绽 / 弱点击破的常驻视觉（裂纹积累）。
 /// <para>
 /// 挂在目标 <see cref="NCreature" /> 上（节点名 <see cref="NodeName" />）：
 /// 破绽 1–3 层 = 命中框上缘 n 枚菱形破绽点 + 逐层增多的细裂纹；
@@ -19,7 +19,7 @@ namespace BangDreamInSpire.Scripts.Mechanics.Break;
 /// </para>
 /// <para>
 /// 外部只依赖 <see cref="Sync" />、<see cref="Refresh" />、<see cref="FadeOut" /> 与 <see cref="NodeName" />；
-/// 设计契约见 <c>docs/mechanic-authoring.md</c> §11 / §12.1。
+/// 设计契约见 <c>docs/mechanic-authoring.md</c> §11 / §11.1。
 /// </para>
 /// </summary>
 public sealed partial class NWeaknessBreakVfx : Control

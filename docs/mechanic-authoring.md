@@ -298,7 +298,7 @@ rewardCard.GetOrCreateCapability<ChordCapability>().SetChord(randomChord);
 
 | 项 | 约定 |
 |---|---|
-| 布局 | 三行居中排布（场景 `BangDreamInSpire/scenes/screens/chord_design_screen.tscn`，代码只填内容）：顶部和弦筹码（C/D/F/G，**始终同一行，不拆行**）→ 中央箭头 → 卡组卡牌行（**一格一张牌、始终同一行**）→ 箭头 → 居中结果预览卡。点筹码时**整行水平平移**，让选中筹码对齐到中央箭头正上方（其余筹码按原顺序让位、不交换；取消选中后整行回正）；点卡牌同样**整行水平平移**，让那张牌对齐下方箭头并保持常驻行内，结果区同步显示它的预览与和弦。打开时默认 C 和弦 + 第一张牌，两者都停在中轴上。左右分别是原版 `NBackButton` / `NConfirmButton`（取消返回、确定应用）。卡牌带高 406px（y294–700），行内容再乘 `CardLayerScale = 0.9`（静止 0.8×0.9 = 0.72 倍、悬停 1.0×0.9 = 0.9 倍），余量按「悬停放大后不被 `clip_contents` 裁切」定；箭头在 274–310 / 748–784，三行在 1080 高内紧凑分布。 |
+| 布局 | 三行居中排布（场景 `BangDreamInSpire/BangDreamInSpire/scenes/screens/chord_design_screen.tscn`，代码只填内容）：顶部和弦筹码（C/D/F/G，**始终同一行，不拆行**）→ 中央箭头 → 卡组卡牌行（**一格一张牌、始终同一行**）→ 箭头 → 居中结果预览卡。点筹码时**整行水平平移**，让选中筹码对齐到中央箭头正上方（其余筹码按原顺序让位、不交换；取消选中后整行回正）；点卡牌同样**整行水平平移**，让那张牌对齐下方箭头并保持常驻行内，结果区同步显示它的预览与和弦。打开时默认 C 和弦 + 第一张牌，两者都停在中轴上。左右分别是原版 `NBackButton` / `NConfirmButton`（取消返回、确定应用）。卡牌带高 406px（y294–700），行内容再乘 `CardLayerScale = 0.9`（静止 0.8×0.9 = 0.72 倍、悬停 1.0×0.9 = 0.9 倍），余量按「悬停放大后不被 `clip_contents` 裁切」定；箭头在 274–310 / 748–784，三行在 1080 高内紧凑分布。 |
 | 结果 | `ChordDesignResult(CardIndex, Chord, Additive)`；面板返回后由选项在 `Player.Deck.Cards` 上 `GetOrCreateCapability<ChordCapability>().SetChord(...)`——**确定之前卡组模型完全不变**。面板内的卡牌只是 `NCard` 视图（`NodePool` 复用节点）；结果预览先隐掉卡面自带的能力书签，再把按「结果和弦」构建的书签挂到**预览卡的 `%OverlayContainer`**（继承卡的缩放/变换，和真实卡牌一样位于卡面前景之下）。预览卡回池前与新建卡后都会 `RemoveStaleChordBookmarks` 清掉直挂的残留书签，避免旧书签随节点复用被带到别的卡上。 |
 | 收尾 | 确定后在 `DoLocalPostSelectVfx` 复用本体 `NCardUpgradeVfx`（与升级卡牌同一套表现）：屏幕中央放大展示（此时书签已是新和弦）→ 停留片刻 → `NCardFlyVfx` 飞入顶部卡组图标；选项 `AssetPaths` 追加 `NCardUpgradeVfx.AssetPaths` 以便预载，`DoLocalPostSelectVfx` 只等展示段结束（约 1.4–1.9s），飞行交给后场继续。 |
 | 增加 / 覆盖 | 结果右侧开关默认「覆盖」，`Additive=true` 时与现有和弦取并集。开关默认隐藏（`NChordDesignScreen.ModeToggleUnlocked = false`），留给后续事件遗物解锁。 |
@@ -377,8 +377,8 @@ rewardCard.GetOrCreateCapability<ChordCapability>().SetChord(randomChord);
 
 | 特效 | 触发 | 实现 | 素材 | 形态与约束 |
 |---|---|---|---|---|
-| 歌单冻结 · 提线悬停 | `PerformManager.SetPlaylistFrozen(true)` → `NPerformArea.ApplyFrozenVisuals`；解冻时主动 `Clear` | `MutsumiPlaylistFreezeVfx : IPerformAreaFreezeVisual`（`ItsCrychic/Scripts/Nodes/VFX/`；F6 预览 `ItsCrychic/scenes/vfx/mutsumi_playlist_freeze.tscn`） | `glow_soft`（紫灰覆膜）、`star_270_1`（线结高光），工程内素材 | 四组各一根主提线落到组横杆，横杆下每行一条吊线钩在**内端**；主线上端距组包围盒顶 **200px** 并做顶端 α 渐隐；行**不倾斜**（旋转会与布局缓动 / 镜像冲突）；端点取 `_items[i].Position` 实时值 |
-| 分组激活 · 提线收紧 | `PuppeteerFormManager.ActivateGroups(...)` 首次点亮某组 | `MutsumiGroupActivationVfx : IPerformAreaActivationVisual`（同上；F6 预览 `ItsCrychic/scenes/vfx/mutsumi_group_activation.tscn`） | `whiteRing`（扩散环）、`star_322`（星芒）、`star_270_1`（光点）、`glow_soft`（线结），工程内素材 | 该组三条行同时点亮（底色 0.22 + 2.2px 描边），从分组角标拉一根提线指向角色命中框中心；一次性部分 `LIFE = 0.40s`；提线 z 序**低于**分组激活角标 |
+| 歌单冻结 · 提线悬停 | `PerformManager.SetPlaylistFrozen(true)` → `NPerformArea.ApplyFrozenVisuals`；解冻时主动 `Clear` | `MutsumiPlaylistFreezeVfx : IPerformAreaFreezeVisual`（`ItsCrychic/Scripts/Nodes/VFX/`；F6 预览 `ItsCrychic/ItsCrychic/scenes/vfx/mutsumi_playlist_freeze.tscn`） | `glow_soft`（紫灰覆膜）、`star_270_1`（线结高光），工程内素材 | 四组各一根主提线落到组横杆，横杆下每行一条吊线钩在**内端**；主线上端距组包围盒顶 **200px** 并做顶端 α 渐隐；行**不倾斜**（旋转会与布局缓动 / 镜像冲突）；端点取 `_items[i].Position` 实时值 |
+| 分组激活 · 提线收紧 | `PuppeteerFormManager.ActivateGroups(...)` 首次点亮某组 | `MutsumiGroupActivationVfx : IPerformAreaActivationVisual`（同上；F6 预览 `ItsCrychic/ItsCrychic/scenes/vfx/mutsumi_group_activation.tscn`） | `whiteRing`（扩散环）、`star_322`（星芒）、`star_270_1`（光点）、`glow_soft`（线结），工程内素材 | 该组三条行同时点亮（底色 0.22 + 2.2px 描边），从分组角标拉一根提线指向角色命中框中心；一次性部分 `LIFE = 0.40s`；提线 z 序**低于**分组激活角标 |
 
 - 冻结 / 激活特效属**角色专属表现**，放内容模组；核心只出 `IPerformAreaFreezeVisual` / `IPerformAreaActivationVisual` 接口与 `NPerformArea` 挂点（A-12 决策 A）。
 - 素材都是工程内引用；`images/**` 不入库，新克隆缺图时特效退化为纯色或缺图，逻辑不受影响。

@@ -8,7 +8,7 @@ using MegaCrit.Sts2.Core.Helpers;
 namespace ItsCrychic.Scripts.Nodes.VFX;
 
 /// <summary>
-/// 歌单冻结 · 提线悬停（方案 B，2026-11-14 批准）。
+/// 歌单冻结 · 提线悬停。
 /// <para>
 /// 墨缇丝形态下歌单被封：四个和弦分组各被一根主提线吊住，组横杆下再垂下三根吊线，
 /// 各自钩在该组三条播放列表行的**内端**——「这些行现在挂在别人的线上」。行本身不倾斜

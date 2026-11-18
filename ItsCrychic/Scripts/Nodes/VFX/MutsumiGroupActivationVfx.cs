@@ -8,7 +8,7 @@ using MegaCrit.Sts2.Core.Helpers;
 namespace ItsCrychic.Scripts.Nodes.VFX;
 
 /// <summary>
-/// 分组激活 · 提线收紧（方案 B，2026-11-14 批准）。
+/// 分组激活 · 提线收紧。
 /// <para>
 /// 墨缇丝「演奏」不发动效果，而是把一个和弦分组点亮：该组三条播放列表行同时亮起描边，
 /// 并从这个分组角标拉出一根绷紧的提线指向角色本人，激活瞬间有一个光点沿线跑回去——

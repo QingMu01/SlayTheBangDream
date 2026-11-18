@@ -27,7 +27,7 @@
 | `ItsCrychic/ItsCrychic/images/charui/anon/**` | 预留待实装 | **未实装角色**的预留素材，不是过时 | 角色实装并接线后 |
 | `ItsCrychic/ItsCrychic/scenes/creature/anon01.tscn`、`anon02.tscn` | 预留待实装 | 同上，预留场景 | 同上 |
 | `ItsCrychic/ItsCrychic/images/charui/img_{soyo,taki,tomori}*.webp` | 预留待实装 | 未实装角色的立绘预留 | 对应角色实装后 |
-| `BangDreamInSpire/BangDreamInSpire/scenes/vfx/music_crystal_hit_vfx.tscn` | **活跃保留** | **有意保留的预览件**：有 `.scratch/vfx/rec/` 下的录帧记录，等接入卡牌；它引用的 `MusicCrystalHitVfx.cs` 因此是活的 | 接入完成后 |
+| `BangDreamInSpire/BangDreamInSpire/scenes/vfx/music_crystal_hit_vfx.tscn` | **活跃保留** | **有意保留的预览件**（曾录帧验证，等接入卡牌）；它引用的 `MusicCrystalHitVfx.cs` 因此是活的 | 接入完成后 |
 | `BangDreamInSpire/BangDreamInSpire/skins/skin_template.json` | **活跃保留** | 皮肤模板，供新增角色复制，本身是活的 | 模板机制变更时 |
 | `MusicFlashVfx` / `MusicHitVfx` / `MusicWaveVfx` 等被文档引用的实现 | 活跃保留（代码侧） | 被文档当作 `Node2D` 参考实现引用。若要删，必须**同批改文档**，否则文档指向不存在的代码 | 文档改写后 |
 | `BangDreamInSpire/Scripts/Nodes/VFX/MusicSlashVfx.cs` | 预留待实装 | 无 `.tscn`、无调用点，但保存了斩击/冲击的完整参考实现；`docs/vfx-authoring.md` §2 已标注「已知保留」。要删必须先改文档或等实装 | 有场景/调用点接入，或文档删除该参考 |
