@@ -113,6 +113,10 @@ public sealed class BreakRules : HookedSingletonModel
             return;
         }
 
+        // 触发条件 = 「本牌命中的目标**此刻仍处于弱点击破**」，不是「本牌造成了这次击破」。
+        // 这是有意语义（决策 B-08）：队友或前一张牌刚把目标打进弱点击破，本牌命中该目标同样触发「击破：」。
+        // 因此这里**不**按击破来源过滤，只校验目标仍然持有 WeakPointBreakPower；改动此处等于改玩法语义，
+        // 需要同步 docs/mechanic-authoring.md §11 与「击破」关键字文案。
         // 逐个目标触发：AOE 命中多个弱点击破目标时各自结算一次；同一张牌对同一目标只触发一次。
         foreach (var target in frame.Targets)
         {

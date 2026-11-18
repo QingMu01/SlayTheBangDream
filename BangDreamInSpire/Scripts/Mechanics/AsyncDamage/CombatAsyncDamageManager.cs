@@ -73,6 +73,9 @@ public sealed class CombatAsyncDamageManager
 
     private readonly ConditionalWeakTable<ICombatState, Session> _sessions = new();
 
+    /// <summary>锁外锁定伤害期间目标失效时，重新选择目标的最大次数（有界重试，避免无限循环）。</summary>
+    private const int MaxTargetSelectionAttempts = 4;
+
     public static CombatAsyncDamageManager Shared { get; } = new();
 
     private CombatAsyncDamageManager()
@@ -82,6 +85,12 @@ public sealed class CombatAsyncDamageManager
     /// <summary>
     /// 在同步 Action 内锁定整批根音符的目标与伤害后立即返回；飞行与命中由表现泵脱手驱动。
     /// 无交互模式（测试 / 无渲染）下退化为当场结算，保持原有确定性行为。
+    /// <para>
+    /// 锁边界：<see cref="Session.Gate" /> 内只做数据读写（批次/音符登记、预留账本）；
+    /// 每枚音符的目标选择与 <see cref="IAsyncDamageEffect.GetLockedDamage" />
+    /// 都在锁外调用（见 <see cref="ReserveTarget" />）。外部实现因此可以安全重入
+    /// <c>LaunchAsync</c> / <c>SpawnAsync</c>，但不得在 hook 内操作 Godot 节点或长时间阻塞。
+    /// </para>
     /// </summary>
     public Task LaunchAsync(AsyncDamageBatchRequest request)
     {
@@ -96,18 +105,25 @@ public sealed class CombatAsyncDamageManager
         BatchState batch;
         var interactive = !NonInteractiveMode.IsActive;
 
+        // 批次号分配必须串行；但除了取号，登记过程中不再持锁做任何外部调用。
         lock (session.Gate)
         {
             batch = new BatchState(session.NextBatchId++, request, combatState);
-            for (var index = 0; index < request.Count; index++)
+        }
+
+        // 每枚音符的「选目标 + 锁定伤害」统一走 ReserveTarget：
+        // 锁内只做数据快照与提交，GetTargetEffectiveHealth / GetLockedDamage 在锁外调用。
+        for (var index = 0; index < request.Count; index++)
+        {
+            if (!CanResolveCombat(combatState, request))
+                break;
+
+            var reservation = ReserveTarget(session, request, request.FixedTarget, excludedTarget: null);
+            if (reservation == null)
+                break;
+
+            lock (session.Gate)
             {
-                if (!CanResolveCombat(combatState, request))
-                    break;
-
-                var reservation = ReserveTarget(session, request, request.FixedTarget, excludedTarget: null);
-                if (reservation == null)
-                    break;
-
                 var note = RegisterNote(
                     session, batch, reservation.Value.Target, reservation.Value.Damage,
                     request.ChainCount, chainDepth: 0, isChain: false, request.InitialVisualSource,
@@ -116,12 +132,21 @@ public sealed class CombatAsyncDamageManager
                 if (interactive)
                     session.SpawnQueue.Enqueue(note.NoteId);
             }
+        }
 
+        lock (session.Gate)
+        {
             if (batch.PendingNotes == 0)
                 return Task.CompletedTask;
+        }
 
+        // 屏障租约在锁外获取（不触碰节点），再回锁与批次一起提交，
+        // 避免出现「批次已在 Batches 里可见、却还没有租约」的窗口。
+        var barrierLease = CombatResolutionBarrier.Acquire(combatState);
+        lock (session.Gate)
+        {
+            batch.BarrierLease = barrierLease;
             session.Batches[batch.BatchId] = batch;
-            batch.BarrierLease = CombatResolutionBarrier.Acquire(combatState);
         }
 
         if (!interactive)
@@ -284,11 +309,13 @@ public sealed class CombatAsyncDamageManager
             }
         }
 
-        NoteState? chain;
+        // 弹跳的目标选择同样要调用外部 hook，因此先在锁外完成「选目标 + 锁定伤害 + 登记」，
+        // 再回锁把新音符入队并归还本音符的预留（保持「先预留下一枚、再归还本枚」的旧顺序）。
+        var chain = ReserveChainNote(session, note);
+
         bool finished;
         lock (session.Gate)
         {
-            chain = ReserveChainNote(session, note);
             if (chain != null && spawnChains)
                 session.SpawnQueue.Enqueue(chain.NoteId);
 
@@ -603,7 +630,25 @@ public sealed class CombatAsyncDamageManager
         return note;
     }
 
-    /// <summary>为一次命中预留目标与锁定伤害。必须在 <see cref="Session.Gate" /> 内调用。</summary>
+    /// <summary>
+    /// 为一次命中预留目标与锁定伤害。
+    /// <para>
+    /// <b>锁边界</b>：本方法自己按「快照（锁内）→ 外部 hook（锁外）→ 提交预留（锁内）」三段执行，
+    /// 因此调用方<b>不得</b>包在 <c>lock (session.Gate)</c> 里调用，也不得在持有该锁时调用它。
+    /// 锁内只做数据读写（候选列表、<see cref="Session.ReservedDamage" />），
+    /// 绝不在持锁时调用外部实现或操作 Godot 节点。
+    /// </para>
+    /// <para>
+    /// <b><c>GetTargetEffectiveHealth</c> / <c>GetLockedDamage</c> 的调用契约</b>：这两个是外部实现
+    /// （任意 <see cref="IAsyncDamageEffect" />），在锁外被调用，因此实现里<b>不得</b>假设自己持有任何锁；
+    /// 允许重入 <c>LaunchAsync</c> / <c>SpawnAsync</c>（不再有锁重入风险），但两者都在发射/弹跳的同步 Action 内执行，
+    /// 不得长时间阻塞，也不要在这里操作节点（节点操作属于表现层，走 StartAnimationAsync）。
+    /// </para>
+    /// <para>
+    /// 锁外窗口内没有 <c>await</c>，调用方都在主线程的同步 Action 里，因此不会与另一次选择交错；
+    /// 若将来把调用方移到并行上下文，需要为候选选择再补一层在飞预留，否则并发选择可能超订同一目标。
+    /// </para>
+    /// </summary>
     private static (Creature Target, decimal Damage)? ReserveTarget(
         Session session,
         AsyncDamageBatchRequest request,
@@ -611,53 +656,105 @@ public sealed class CombatAsyncDamageManager
         Creature? excludedTarget)
     {
         var combatState = request.Dealer.CombatState!;
-        Creature? target = null;
-        if (fixedTarget != null)
+
+        // 目标在锁外被击杀/离场/换战斗时重新选择；次数有界，绝不无限循环。
+        for (var attempt = 0; attempt < MaxTargetSelectionAttempts; attempt++)
         {
-            if (!ReferenceEquals(fixedTarget, excludedTarget) &&
-                ReferenceEquals(fixedTarget.CombatState, combatState) &&
-                fixedTarget.IsHittable)
+            // 1) 锁内快照：只读状态，不做任何外部调用。
+            Creature[] candidates;
+            Creature? fixedCandidate = null;
+            lock (session.Gate)
             {
-                target = fixedTarget;
+                if (!CanResolveCombat(combatState, request))
+                    return null;
+
+                if (fixedTarget != null)
+                {
+                    if (!ReferenceEquals(fixedTarget, excludedTarget) &&
+                        ReferenceEquals(fixedTarget.CombatState, combatState) &&
+                        fixedTarget.IsHittable)
+                    {
+                        fixedCandidate = fixedTarget;
+                    }
+                    else
+                    {
+                        return null;
+                    }
+                }
+
+                candidates = fixedCandidate != null
+                    ? [fixedCandidate]
+                    : combatState.HittableEnemies
+                        .Where(candidate => !ReferenceEquals(candidate, excludedTarget))
+                        .ToArray();
+            }
+
+            if (candidates.Length == 0)
+                return null;
+
+            Creature? target;
+            if (fixedCandidate != null)
+            {
+                target = fixedCandidate;
             }
             else
             {
-                return null;
+                // 2a) 锁外：容量口径是外部 hook，逐个候选调用。
+                var capacities = new Dictionary<Creature, decimal>(ReferenceEqualityComparer.Instance);
+                foreach (var candidate in candidates)
+                {
+                    capacities[candidate] = Math.Max(0m, request.Effect.GetTargetEffectiveHealth(
+                        new AsyncDamageTargetContext(combatState, request, candidate)));
+                }
+
+                // 2b) 锁内：按预留账本与快照容量选目标（RNG 也在锁内，与旧实现同序）。
+                lock (session.Gate)
+                {
+                    var selectable = candidates.Where(candidate =>
+                    {
+                        session.ReservedDamage.TryGetValue(candidate, out var reservedDamage);
+                        return capacities[candidate] - reservedDamage > 0m;
+                    }).ToList();
+                    if (selectable.Count == 0)
+                        selectable = [.. candidates];
+
+                    target = request.Dealer.Player?.RunState.Rng.CombatTargets.NextItem(selectable);
+                }
+
+                if (target == null)
+                    return null;
             }
-        }
 
-        if (target == null)
-        {
-            var candidates = combatState.HittableEnemies
-                .Where(candidate => !ReferenceEquals(candidate, excludedTarget))
-                .ToList();
-            if (candidates.Count == 0)
-                return null;
+            // 2c) 锁外：锁定伤害是外部 hook。
+            var lockedDamage = Math.Max(0m, request.Effect.GetLockedDamage(
+                new AsyncDamageTargetContext(combatState, request, target)));
 
-            var selectable = candidates.Where(candidate =>
+            // 3) 回锁提交：目标在锁外窗口内失效则记 Warn 并重新选择。
+            lock (session.Gate)
             {
-                var targetContext = new AsyncDamageTargetContext(combatState, request, candidate);
-                var capacity = Math.Max(0m, request.Effect.GetTargetEffectiveHealth(targetContext));
-                session.ReservedDamage.TryGetValue(candidate, out var reservedDamage);
-                return capacity - reservedDamage > 0m;
-            }).ToList();
-            if (selectable.Count == 0)
-                selectable = candidates;
+                if (ReferenceEquals(target.CombatState, combatState) && target.IsHittable)
+                {
+                    session.ReservedDamage.TryGetValue(target, out var currentReservation);
+                    session.ReservedDamage[target] = currentReservation + lockedDamage;
+                    return (target, lockedDamage);
+                }
+            }
 
-            target = request.Dealer.Player?.RunState.Rng.CombatTargets.NextItem(selectable);
+            BangDreamInSpireCore.Logger.Warn(
+                $"Async damage target {target} became invalid while locking damage " +
+                $"(dealer={request.Dealer}, attempt={attempt + 1}/{MaxTargetSelectionAttempts}); reselecting.");
         }
 
-        if (target == null)
-            return null;
-
-        var context = new AsyncDamageTargetContext(combatState, request, target);
-        var lockedDamage = Math.Max(0m, request.Effect.GetLockedDamage(context));
-        session.ReservedDamage.TryGetValue(target, out var currentReservation);
-        session.ReservedDamage[target] = currentReservation + lockedDamage;
-        return (target, lockedDamage);
+        BangDreamInSpireCore.Logger.Warn(
+            $"Async damage gave up reserving a target after {MaxTargetSelectionAttempts} attempts " +
+            $"(dealer={request.Dealer}, fixedTarget={fixedTarget?.ToString() ?? "-"}).");
+        return null;
     }
 
-    /// <summary>为已命中音符登记下一枚弹跳。必须在 <see cref="Session.Gate" /> 内调用。</summary>
+    /// <summary>
+    /// 为已命中音符登记下一枚弹跳。本方法内部会走 <see cref="ReserveTarget" /> 的锁外外部调用，
+    /// 因此调用方<b>不得</b>在持有 <see cref="Session.Gate" /> 时调用它；登记本身在锁内完成。
+    /// </summary>
     private static NoteState? ReserveChainNote(Session session, NoteState note)
     {
         var request = note.Batch.Request;
@@ -669,10 +766,13 @@ public sealed class CombatAsyncDamageManager
         if (reservation == null)
             return null;
 
-        return RegisterNote(
-            session, note.Batch, reservation.Value.Target, reservation.Value.Damage,
-            note.ChainsRemaining - 1, note.ChainDepth + 1, isChain: true, note.Target,
-            index: 0, total: 1);
+        lock (session.Gate)
+        {
+            return RegisterNote(
+                session, note.Batch, reservation.Value.Target, reservation.Value.Damage,
+                note.ChainsRemaining - 1, note.ChainDepth + 1, isChain: true, note.Target,
+                index: 0, total: 1);
+        }
     }
 
     private static void ReleaseReservation(Session session, Creature target, decimal damage)
@@ -689,6 +789,9 @@ public sealed class CombatAsyncDamageManager
 
     private static bool IsLocalDealer(Player? dealer)
     {
+        // C-10 决策（C：保持现状）：dealer 无 Player 时每端都判定为本地 dealer。
+        // 当前所有发射点（音符 / 能力）的 dealer 都是玩家，该分支不可达；若将来接入敌方式发射器，
+        // 必须改为「固定宿主或按 dealer NetId」的确定性判定，否则会 N 端重复请求结算。
         if (dealer == null || !LocalContext.NetId.HasValue)
             return true;
 

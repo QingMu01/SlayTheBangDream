@@ -18,7 +18,7 @@
   "BANG_DREAM_IN_SPIRE_KEYWORD_WEAKNESS_BREAK.title": "破绽",
   "BANG_DREAM_IN_SPIRE_KEYWORD_WEAKNESS_BREAK.description": "受到[gold]破绽[/gold]影响。累计[blue]4[/blue]层时进入[gold]弱点击破[/gold]。",
   "BANG_DREAM_IN_SPIRE_KEYWORD_WEAK_POINT_BREAK.title": "弱点击破",
-  "BANG_DREAM_IN_SPIRE_KEYWORD_WEAK_POINT_BREAK.description": "持续[blue]1[/blue]个回合，期间不能再被发现[gold]破绽[/gold]。被带[gold]击破[/gold]效果的牌命中时触发该牌的击破效果；状态结束时[gold]破绽[/gold]清空。",
+  "BANG_DREAM_IN_SPIRE_KEYWORD_WEAK_POINT_BREAK.description": "持续[blue]1[/blue]个回合，期间不能再被发现[gold]破绽[/gold]。带[gold]击破[/gold]效果的牌命中处于[gold]弱点击破[/gold]的目标时触发其击破效果（击破可由队友或上一张牌造成）；状态结束时[gold]破绽[/gold]清空。",
   "BANG_DREAM_IN_SPIRE_KEYWORD_BREAK_EFFECT.title": "击破",
-  "BANG_DREAM_IN_SPIRE_KEYWORD_BREAK_EFFECT.description": "目标处于[gold]弱点击破[/gold]时，这张牌命中该目标会额外结算「击破：」之后的效果。"
+  "BANG_DREAM_IN_SPIRE_KEYWORD_BREAK_EFFECT.description": "目标处于[gold]弱点击破[/gold]时，这张牌命中该目标会额外结算「击破：」之后的效果。不要求击破由这张牌造成：队友或上一张牌击破后，命中该目标同样触发。"
 }

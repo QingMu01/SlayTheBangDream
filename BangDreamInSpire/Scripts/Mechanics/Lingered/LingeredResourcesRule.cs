@@ -17,6 +17,11 @@ namespace BangDreamInSpire.Scripts.Mechanics.Lingered;
 [RegisterSingleton]
 public sealed class LingeredResourcesRule() : HookedSingletonModel(HookType.Combat), ISecondaryResourceHookListener
 {
+    /// <summary>
+    /// 余音的上限是**硬上限**：任何提升上限的效果对余音无效（<c>GetMax</c> 只能把它压得更低）。
+    /// 溢出转换（<c>while (&gt;= HardMaxAmount)</c>）与兜底扣减（<see cref="EffectiveMax" />）共用这一口径，
+    /// 不允许出现「转换按 7、扣减按动态上限」两套上限。
+    /// </summary>
     public const int HardMaxAmount = 7;
 
     private readonly ConditionalWeakTable<Player, SemaphoreSlim> _overflowLocks = new();
@@ -92,7 +97,7 @@ public sealed class LingeredResourcesRule() : HookedSingletonModel(HookType.Comb
             try
             {
                 var current = SecondaryResourceCmd.Get(context.Player, BangDreamConst.LingeredResource);
-                var max = SecondaryResourceCmd.GetMax(context.Player, BangDreamConst.LingeredResource) ?? HardMaxAmount;
+                var max = EffectiveMax(context.Player);
                 var overflow = Math.Max(0, current - max);
                 if (overflow > 0)
                 {
@@ -105,6 +110,18 @@ public sealed class LingeredResourcesRule() : HookedSingletonModel(HookType.Comb
                 overflowLock.Release();
             }
         }
+    }
+
+    /// <summary>
+    /// 余音扣减使用的上限：<c>min(动态上限, <see cref="HardMaxAmount" />)</c>。
+    /// 7 是硬上限，因此动态上限只可能把扣减阈值压低（例如某个效果临时降上限），永远不能抬高；
+    /// 取 min 而不是直接用 <see cref="HardMaxAmount" />，是为了让「上限被压低」时仍能把余音压回上限内。
+    /// 扣减量恒为 <c>max(0, current - max) ≤ current</c>，不会把余音扣成负数。
+    /// </summary>
+    private static int EffectiveMax(Player player)
+    {
+        var dynamicMax = SecondaryResourceCmd.GetMax(player, BangDreamConst.LingeredResource) ?? HardMaxAmount;
+        return Math.Min(dynamicMax, HardMaxAmount);
     }
 
     public static bool IsSufficient(CardModel card)

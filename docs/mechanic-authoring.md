@@ -19,6 +19,9 @@ BangDreamInSpire 的玩法机制被拆分为若干**机制模块**（mechanic）
 
 `Order` 越小越先装配；`Dependencies` 中的机制必须存在，否则装配阶段抛异常。
 
+> **余音上限是硬上限「7」**：`LingeredResourcesRule.HardMaxAmount = 7` 同时用于溢出转换与兜底扣减，
+> 任何提升二级资源上限的效果对余音无效（动态上限只能把它压得更低）。不要在其它位置再引入第二套上限口径。
+
 机制按 `Assembly.GetTypes()` 自动发现（`IBangDreamMechanic` 的实现），因此新增模块只需新建类，无需登记。
 **机制层不得直接依赖 `Scripts/Nodes/**`**：需要 UI 时按 `perform_area` / `overlay_factories` 的范式，
 把节点创建留在 `Nodes` 侧，机制只依赖 `Scripts/Interfaces/Mechanics/**` 里的契约。边界由
@@ -113,9 +116,9 @@ public sealed class MyMechanic : IBangDreamMechanic
 
 ### `BangDreamCapabilities`
 
-能力判定的统一入口，库内所有角色/卡牌判定都经由它，避免散落 `is IXxxCharacter`：
+能力**粗判**的统一入口，只服务装配 / UI / 补丁的粗粒度判定；核心内部需要访问接口成员（读方案、取配置等）时仍可直接 `is IXxx`，不要求全面收口：
 
-`HasExtraDeck`、`HasPerform`（含 `CreatePerformScheme().TotalSlotCount > 0`）、`HasLingered` 均有 `CharacterModel` / `Player` 重载；`IsPerformCard`、`IsSubsideCard` 接收 `CardModel`。
+`HasExtraDeck`、`HasPerformArea`（实现演奏接口且 `CreatePerformScheme().TotalSlotCount > 0`，裸 `is IPerformableCharacter` 不等于它）、`HasLingered` 均有 `CharacterModel` / `Player` 重载；`IsPerformCard`、`IsSubsideCard` 接收 `CardModel`。
 
 ## 5. 兼容性约束
 
@@ -332,7 +335,7 @@ rewardCard.GetOrCreateCapability<ChordCapability>().SetChord(randomChord);
 | 层数与状态 | `WeaknessBreakPower` 上限 `BreakConst.MaxStacks` = 4（`TryModifyPowerAmountReceived` 截断 + `AfterApplied` 兜底）；满 4 层时由 `BreakCmd` 施加 `WeakPointBreakPower`（1 回合，目标一侧 `AfterSideTurnEnd` 递减，归零移除并清空破绽）。处于弱点击破时 `BreakCmd.CanDiscover` 短路，不能再被发现破绽。 |
 | 唯一入口 | **必须走 `BreakCmd.Discover(ctx, target, amount, source)`**：层数截断、满层进状态、Hook 广播、VFX 刷新都在里面。`source` 传卡牌才能让这次发现计入该牌的「击破」命中集合。 |
 | 广播 | `IWeaknessBreakHookListener`（`Scripts/Interfaces/GameHook/`）三个点：发现、进入弱点击破、击破触发；派发在 `BangDreamHook`，不 push `LastInvolvedModel`（与 `OnCardTriggeredPerform` 同款）。 |
-| 击破触发 | 卡牌实现 `IWeaknessBreakCard`（`HasBreakEffect` + `OnWeakPointBreak(ctx, play, target)`）。`BreakRules` 在 `BeforeCardPlayed` 压帧（先记 `CardPlay.Target`），出牌中按 `cardSource` 从 `AfterDamageReceived` / `AfterPowerAmountChanged` 补记命中目标（覆盖随机 / AOE / 非伤害；给自己上的增益不算），`AfterCardPlayedLate` 出栈逐个触发——此时「发现破绽 → 满层 → 弱点击破」已结算完，因此同张牌可以「先发现凑满、再触发击破」。同一张牌对同一目标只触发一次，不同目标各一次。 |
+| 击破触发 | 卡牌实现 `IWeaknessBreakCard`（`HasBreakEffect` + `OnWeakPointBreak(ctx, play, target)`）。`BreakRules` 在 `BeforeCardPlayed` 压帧（先记 `CardPlay.Target`），出牌中按 `cardSource` 从 `AfterDamageReceived` / `AfterPowerAmountChanged` 补记命中目标（覆盖随机 / AOE / 非伤害；给自己上的增益不算），`AfterCardPlayedLate` 出栈逐个触发——此时「发现破绽 → 满层 → 弱点击破」已结算完，因此同张牌可以「先发现凑满、再触发击破」。同一张牌对同一目标只触发一次，不同目标各一次。**触发语义写死为「本牌命中的目标此刻仍处于弱点击破」，不是「本牌造成了这次击破」**：队友或前一张牌刚打出的弱点击破同样算，后续命中该目标的牌继续触发「击破：」——这是有意设计（决策 B-08），不要按击破来源过滤。 |
 | 视觉 | 不占 Power 图标（`IsVisibleInternal = false`）：常驻 `NWeaknessBreakVfx` 挂在 `NCreature` 上，1–3 层是 n 枚指示点、弱点击破换破裂形态；Hover 时 `NHoverTipSet.CreateAndShow` 弹能力同款 tips，移除后淡出。施加能力用 `silent: true`，避免无图标却有受击抖动。 |
 | 调试 | `break 2` / `break 4` / `break self 3` / `break clear`（`BreakConsoleCmd`）。 |
 
