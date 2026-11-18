@@ -19,7 +19,7 @@ namespace BangDreamInSpire.Scripts.Mechanics.Break;
 /// </para>
 /// <para>
 /// 外部只依赖 <see cref="Sync" />、<see cref="Refresh" />、<see cref="FadeOut" /> 与 <see cref="NodeName" />；
-/// 设计契约见 <c>.scratch/vfx/plans/</c> 下的弱点破坏方案文档。
+/// 设计契约见 <c>docs/mechanic-authoring.md</c> §11 / §12.1。
 /// </para>
 /// </summary>
 public sealed partial class NWeaknessBreakVfx : Control

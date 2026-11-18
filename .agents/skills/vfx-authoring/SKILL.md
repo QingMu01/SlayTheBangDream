@@ -137,7 +137,7 @@
 
 ## 9. S3 计划与契约块
 
-写 `<repo>/.scratch/vfx/plans/<slug>.md`，模板见 [references/plan-template.md](references/plan-template.md)。
+写 `<repo>/.scratch/vfx/plans/<slug>.md`，模板见 [references/plan-template.md](references/plan-template.md)。计划稿是**过程文件**（`.scratch` 不入库、随时可清）；批准并实现后，把契约（触发点 / 层级 / 素材 uuid 与 BODY·LOCAL 判定）回写 `docs/mechanic-authoring.md` 对应机制章节，仓库里不留 per-effect 文档。
 
 **闸门只锁契约块**（`<!-- gate:begin -->` 与 `<!-- gate:end -->` 之间），四节：
 
@@ -175,7 +175,7 @@ python .agents/skills/vfx-authoring/scripts/check_gate.py --plan <plan.md>   # �
 
 - `preauthorized` 模式：把用户那句授权原话填进 `--approved-by`，然后直接进 S5（计划仍要落盘，供事后审计）。
 - `--approved-by` 必须是原话，不能自批准。契约变了要 `--reopen` 再确认。
-- 范围内调参写 `tuning-log.md`（旧值/新值/原因/证据/结论），不扩大授权、不改契约。
+- 范围内调参写 `tuning-log.md`（旧值/新值/原因/证据/结论；与计划同落 `.scratch/vfx/plans/`，过程文件不入库），不扩大授权、不改契约。
 
 ## 11. S5 实现与证据
 
@@ -261,10 +261,11 @@ bash .agents/skills/vfx-authoring/scripts/stage.sh \
 - [ ] 逐层：每层都有 stage.sh 录制与 `sheet.png`/`compare.png` 目视记录
 - [ ] `verify_frames.py` 有内容；冻结告警已按一次性/持续预期解释
 - [ ] 1:1 原始像素看过关键帧；正常速度看过完整播放
-- [ ] 验收标准逐条有结论；参数在包络内，调参进 tuning-log
+- [ ] 验收标准逐条有结论；参数在包络内，调参与偏离记进 `tuning-log.md`（过程文件，不入库）
 
 **交付阶段**
 - [ ] 全仓库有调用点，或明确声明"未接入"
 - [ ] 每个素材过 `check_asset_origin.py`（BODY 引用本体 / LOCAL 才复制）
 - [ ] mp4 + gif 已生成并**内联**在交付回复里
 - [ ] 通用坑已回写 `docs/vfx-authoring.md` §5（不写 per-effect README）
+- [ ] 契约（触发点 / 层级 / 素材 uuid）已回写 `docs/mechanic-authoring.md`；计划稿不入库

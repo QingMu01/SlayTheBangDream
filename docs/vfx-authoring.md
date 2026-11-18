@@ -155,7 +155,7 @@ python .agents/skills/vfx-authoring/scripts/check_asset_origin.py <导出目录>
 
 - 本体根缺省为 `BangDreamInSpire/images`（编辑器同步目录，其 `.import` 里的 uid 就是本体 uid）；也可 `--body-root ../sts2unpack/<版本>` 指向解包源。
 - 引用本体要求编辑器工程里已同步本体资源：新克隆先跑 `tools/sync-sts2-assets.sh`。
-- **特效目录不产出 `README.md` / `SOURCES.md`**；来源凭据（库内 uuid/名称、语义名、用途、校验判定）写进 `.scratch/vfx/plans/<slug>.md`。
+- **特效目录不产出 `README.md` / `SOURCES.md`**；来源凭据（库内 uuid/名称、语义名、用途、校验判定）写进 `.scratch/vfx/plans/<slug>.md`。计划稿是**过程文件**（不入库、随时可清）：批准并实现后，把契约（触发点 / 层级 / 素材 uuid 与 BODY·LOCAL 判定）回写 `docs/mechanic-authoring.md` 对应机制章节。
 
 ### 4.2 选材与取证的实操规则
 

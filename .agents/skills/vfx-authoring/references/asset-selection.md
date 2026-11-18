@@ -159,7 +159,7 @@ python .agents/skills/vfx-authoring/scripts/check_asset_origin.py <导出目录>
   4. 场景里引用资源用**引擎生成的 uid**（从 `.import` 的 `uid=` 行读），`path=` 保留作可读性兜底。
 - **`REVIEW`（疑似在本体图上改绘）**：同尺寸且感知哈希接近本体某张图，人工判定后按上面两条之一处理。
 
-**不产出 `README.md` / `SOURCES.md`**：库内 uuid/名称、语义名、用途与校验判定结果写进 `.scratch/vfx/plans/<slug>.md`。
+**不产出 `README.md` / `SOURCES.md`**：库内 uuid/名称、语义名、用途与校验判定结果写进 `.scratch/vfx/plans/<slug>.md`（过程文件，不入库）；实现后把 uuid 与 BODY·LOCAL 判定回写 `docs/mechanic-authoring.md` 对应机制章节。
 
 ## 回写描述（本 skill 不做）
 

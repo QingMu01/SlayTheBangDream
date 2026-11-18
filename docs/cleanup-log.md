@@ -28,3 +28,18 @@
 | 2 | `BangDreamInSpire/BangDreamInSpire/scenes/vfx/resonance_vfx.tscn` | 0.00 MB | — |
 | 3 | `BangDreamInSpire/BangDreamInSpire/shaders/resonance_luma.gdshader` | 0.00 MB | `BangDreamInSpire/BangDreamInSpire/shaders/resonance_luma.gdshader.uid` |
 
+## 2026-11-18 15:40:51+0800 —— 删除 5 项 / 0.05 MB
+
+- HEAD: `c92ec80`
+- 脚本: `sign_off.py` v1.3.0
+- decisions: `.scratch/cleanup/audit/mutsumi-docs-removal.tsv`
+- --force: False
+
+| # | 路径 | 体积 | sidecar |
+|---:|---|---:|---|
+| 1 | `docs/architecture/mutsumi-mechanics.md` | 0.02 MB | — |
+| 2 | `docs/vfx/mutsumi/mutsumi-freeze-playlist.md` | 0.01 MB | — |
+| 3 | `docs/vfx/mutsumi/mutsumi-group-activation.md` | 0.01 MB | — |
+| 4 | `docs/vfx/mutsumi/mutsumi-tuning-log.md` | 0.00 MB | — |
+| 5 | `docs/vfx/mutsumi/mutsumi-weakness-break.md` | 0.01 MB | — |
+
