@@ -1,8 +1,10 @@
 using System.Reflection;
 using BangDreamInSpire.Scripts.Enums;
 using BangDreamInSpire.Scripts.Extensions;
+using BangDreamInSpire.Scripts.Interfaces.Mechanics;
 using BangDreamInSpire.Scripts.Utils;
 using ItsCrychic.Scripts.Character;
+using ItsCrychic.Scripts.Nodes.VFX;
 using ItsCrychic.Scripts.Relics.Sakiko;
 using ItsCrychic.Scripts.Utils;
 using MegaCrit.Sts2.Core.Modding;
@@ -53,14 +55,31 @@ public static class ItsCrychic
         // 角色专属资源从核心预载表移出，改由内容模组注册（核心库不得出现具体角色资源）；
         // 注册后与原先一样并入 run / 主菜单预载集，首次触碰不再走主线程同步加载。
         BangDreamPreloadManager.AddCustomCombatAsset("sakiko_strike_vfx",
-            "res://BangDreamInSpire/scenes/vfx/strike_sakiko_vfx.tscn");
+            "res://ItsCrychic/scenes/vfx/strike_sakiko_vfx.tscn");
         BangDreamPreloadManager.AddCustomCombatAsset("sakiko_card_trail",
-            "res://BangDreamInSpire/scenes/vfx/card_trail_sakiko.tscn");
+            "res://BangDreamInSpire/scenes/vfx/card_trail.tscn");
         BangDreamPreloadManager.AddCustomCombatAsset("sakiko_lingered_energy_small",
             "res://BangDreamInSpire/images/sceneui/xz-energy_lingered_small.png");
         BangDreamPreloadManager.AddCustomCombatAsset("sakiko_lingered_energy_large",
             "res://BangDreamInSpire/images/sceneui/xz-energy_lingered.png");
         BangDreamPreloadManager.AddCustomCommonAsset("sakiko_night",
-            "res://BangDreamInSpire/images/sceneui/sakiko_night.png");
+            "res://ItsCrychic/images/sceneui/sakiko_night.png");
+
+        // 主菜单环境角色的日夜贴图（核心不写死具体角色资源）。
+        BangDreamInSpire.Scripts.Nodes.MainMenu.MainMenuEnvironmentCharacter.ConfigureEnvironmentTextures(
+            "res://ItsCrychic/images/sceneui/sakiko_day.png",
+            "res://ItsCrychic/images/sceneui/sakiko_night.png");
+
+        // 演奏区冻结 / 分组激活表现由内容模组实现；核心只提供数据与注册入口。
+        PerformAreaVisuals.RegisterFreezeVisual(static () => new MutsumiPlaylistFreezeVfx
+        {
+            Name = MutsumiPlaylistFreezeVfx.NodeName,
+            ZIndex = 4
+        });
+        PerformAreaVisuals.RegisterActivationVisual(static () => new MutsumiGroupActivationVfx
+        {
+            Name = MutsumiGroupActivationVfx.NodeName,
+            ZIndex = 7
+        });
     }
 }

@@ -1,11 +1,11 @@
 using BangDreamInSpire.Scripts.Enums;
-using BangDreamInSpire.Scripts.Mechanics.Perform;
+using BangDreamInSpire.Scripts.Interfaces.Mechanics;
 using BangDreamInSpire.Scripts.Utils.Infos;
 using BangDreamInSpire.Scripts.Utils;
 using Godot;
 using MegaCrit.Sts2.Core.Helpers;
 
-namespace BangDreamInSpire.Scripts.Nodes.VFX;
+namespace ItsCrychic.Scripts.Nodes.VFX;
 
 /// <summary>
 /// 分组激活 · 提线收紧（方案 B，2026-11-14 批准）。
@@ -20,23 +20,19 @@ namespace BangDreamInSpire.Scripts.Nodes.VFX;
 /// </para>
 /// </summary>
 [Tool]
-public partial class MutsumiGroupActivationVfx : Node2D
+public partial class MutsumiGroupActivationVfx : Node2D, IPerformAreaActivationVisual
 {
     /// <summary>挂在 <c>ItemContainer</c> 下的固定节点名前缀（实际节点为 <c>GroupActivationVfx</c>）。</summary>
     public const string NodeName = "GroupActivationVfx";
 
-    /// <summary>一个已激活分组的布局与端点（容器局部坐标）。</summary>
-    public readonly record struct GroupState(
-        PerformChord Group,
-        Rect2[] Rows,
-        Vector2 BadgeCenter,
-        Vector2 TargetCenter,
-        bool Mirrored);
+    public Node2D View => this;
 
-    /// <summary>一次性激活表现的时长；<c>NPerformArea</c> 用它把多组点亮串行排队。</summary>
-    public const float OneShotLifeTime = 0.40f;
+    public float OneShotLifeTime => OneShotLifeTimeSeconds;
 
-    private const float LifeTime = OneShotLifeTime;
+    /// <summary>一次性激活表现的时长；<c>NPerformArea</c> 通过接口属性读取。</summary>
+    public const float OneShotLifeTimeSeconds = 0.40f;
+
+    private const float LifeTime = OneShotLifeTimeSeconds;
     private const float RowsLitDuration = 0.12f;
     private const float ThreadGrowDuration = 0.18f;
     private const float RingDuration = 0.128f;
@@ -52,8 +48,8 @@ public partial class MutsumiGroupActivationVfx : Node2D
     private const float StarEndSize = 128f;
     private const float PulseSize = 54f;
 
-    private readonly Dictionary<PerformChord, GroupState> _active = [];
-    private GroupState? _shot;
+    private readonly Dictionary<PerformChord, PerformActivationGroup> _active = [];
+    private PerformActivationGroup? _shot;
     private float _shotElapsed;
     /// <summary>吊线外发光的固定三遍参数；提成静态表，避免每帧每条线都分配。</summary>
     private static readonly (float Width, float Scale)[] GlowPasses =
@@ -135,7 +131,7 @@ public partial class MutsumiGroupActivationVfx : Node2D
     }
 
     /// <summary>投喂全部已激活分组（幂等：每次变化整体重建常驻层）。</summary>
-    public void SetActive(IReadOnlyList<GroupState> states)
+    public void SetActive(IReadOnlyList<PerformActivationGroup> states)
     {
         _active.Clear();
         foreach (var state in states)
@@ -147,7 +143,7 @@ public partial class MutsumiGroupActivationVfx : Node2D
     }
 
     /// <summary>播放某个分组的一次性激活表现（0.40s）。</summary>
-    public void PlayOneShot(GroupState state)
+    public void PlayOneShot(PerformActivationGroup state)
     {
         _shot = state;
         _shotElapsed = 0f;
@@ -338,7 +334,7 @@ public partial class MutsumiGroupActivationVfx : Node2D
             false, new Color(1f, 1f, 1f, alpha));
     }
 
-    private List<GroupState> BuildPreviewStates()
+    private List<PerformActivationGroup> BuildPreviewStates()
     {
         const float itemWidth = 112f;
         const float itemHeight = 35f;
@@ -351,7 +347,7 @@ public partial class MutsumiGroupActivationVfx : Node2D
         var topY = -halfHitHeight + 32f;
         var bottomY = halfHitHeight - 32f - itemHeight;
 
-        var states = new List<GroupState>();
+        var states = new List<PerformActivationGroup>();
         foreach (var (group, x, startY, step, mirrored) in new (PerformChord, float, float, float, bool)[]
                  {
                      (PerformChord.C, left, topY, rowStep, false),
@@ -369,7 +365,7 @@ public partial class MutsumiGroupActivationVfx : Node2D
             var badge = mirrored
                 ? new Vector2(x + itemWidth + 14f, rows[0].Position.Y + 8f)
                 : new Vector2(x - 14f, rows[0].Position.Y + 8f);
-            states.Add(new GroupState(group, rows, badge, Vector2.Zero, mirrored));
+            states.Add(new PerformActivationGroup(group, rows, badge, Vector2.Zero, mirrored));
         }
 
         return states;

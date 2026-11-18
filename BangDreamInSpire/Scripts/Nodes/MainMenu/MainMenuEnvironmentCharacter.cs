@@ -5,8 +5,19 @@ namespace BangDreamInSpire.Scripts.Nodes.MainMenu;
 
 public partial class MainMenuEnvironmentCharacter : Control
 {
-    private const string DayPath = "res://BangDreamInSpire/images/sceneui/sakiko_day.png";
-    private const string NightPath = "res://BangDreamInSpire/images/sceneui/sakiko_night.png";
+    private static string? _dayPath;
+    private static string? _nightPath;
+
+    /// <summary>
+    /// 由内容模组在初始化时注册主菜单环境角色的日夜贴图（核心不写死具体角色资源）。
+    /// 可在实例创建前或之后调用；之后调用会立刻刷新当前实例。
+    /// </summary>
+    public static void ConfigureEnvironmentTextures(string? dayPath, string? nightPath)
+    {
+        _dayPath = dayPath;
+        _nightPath = nightPath;
+        _current?.ApplyCharacterByLocalTime();
+    }
 
     /// <summary>
     /// 一次点击的弹性参数。缩放字段是相对场景静止缩放（<see cref="_restingScale"/>）的倍率，
@@ -158,7 +169,13 @@ public partial class MainMenuEnvironmentCharacter : Control
         if (_characterSprite == null)
             return;
 
-        var path = IsDayTime(DateTime.Now) ? DayPath : NightPath;
+        var path = IsDayTime(DateTime.Now) ? _dayPath : _nightPath;
+        if (string.IsNullOrEmpty(path))
+        {
+            // 贴图由内容模组注册；未注册时保留场景里的占位（通常为空），不刷警告。
+            return;
+        }
+
         if (!ResourceLoader.Exists(path))
         {
             BangDreamInSpireCore.Logger.Warn($"Main menu environment character texture not found: {path}");

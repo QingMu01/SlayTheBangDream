@@ -63,7 +63,7 @@ anim_offset_max = 1.0
 [sub_resource type="Gradient" id="Gradient_ytddg"]
 colors = PackedColorArray(0.984314, 0.976471, 0.85098, 1, 0.877928, 0.851622, 3.85046e-07, 0)
 
-[node name="CardTrailSakiko" type="Node2D"]
+[node name="CardTrail" type="Node2D"]
 show_behind_parent = true
 script = ExtResource("1_fvy3m")
 

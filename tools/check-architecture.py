@@ -21,7 +21,6 @@ CORE_SCRIPTS = f"{CORE}/Scripts"
 # 允许的例外：相对路径 -> 原因。逐项删除时先从这里移除，脚本会提示过期条目。
 ALLOWLIST: dict[str, str] = {
     # --- 内容模组对核心 Nodes 的残留（P3：需要 VFX/商人 UI 契约） ---
-    "ItsCrychic/Scripts/Cards/Saki/Attack/StrikeSakiko.cs": "P3: 依赖核心 StrikeSakikoVfx 场景",
     "ItsCrychic/Scripts/Cards/Saki/Attack/Oscillation.cs": "P3: 依赖核心 VFX 节点类型",
     "ItsCrychic/Scripts/Nodes/MegaScripts/CrychicMerchant.cs": "P3: 继承核心商人 UI 基类",
     # --- 核心机制对 Nodes 的残留（P3：需要 VFX 工厂/UI 桥） ---
@@ -30,11 +29,6 @@ ALLOWLIST: dict[str, str] = {
     "BangDreamInSpire/Scripts/Mechanics/Lingered/LingeredMechanic.cs": "P3: 环绕资源预览 VFX 注册",
     "BangDreamInSpire/Scripts/Mechanics/MusicNote/MusicNoteAsyncDamageEffect.cs": "P3: 音符飞行 VFX",
     "BangDreamInSpire/Scripts/Mechanics/MusicNote/VfxManagerPatches.cs": "P3: VFX 容器补丁",
-    # --- 核心代码中的角色专属标识符（P3：VFX 迁移） ---
-    "BangDreamInSpire/Scripts/Nodes/VFX/StrikeSakikoVfx.cs": "P3: 角色专属 VFX 待迁回内容模组",
-    "BangDreamInSpire/Scripts/Nodes/VFX/MutsumiGroupActivationVfx.cs": "P3: 睦专属演奏区特效（分组激活）待迁回内容模组或换通用实现",
-    "BangDreamInSpire/Scripts/Nodes/VFX/MutsumiPlaylistFreezeVfx.cs": "P3: 睦专属演奏区特效（歌单冻结）待迁回内容模组或换通用实现",
-    "BangDreamInSpire/Scripts/Nodes/NPerformArea.cs": "P3: 引用上述两个睦专属演奏区特效，待特效契约化后移除",
 }
 
 # 不用 \b：角色名常嵌在标识符中间（StrikeSakikoVfx），那正是要抓的专属命名。

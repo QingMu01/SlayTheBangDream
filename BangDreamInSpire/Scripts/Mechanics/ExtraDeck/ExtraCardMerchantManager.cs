@@ -26,8 +26,8 @@ internal static class ExtraCardMerchantManager
     public const string InventoryScenePath =
         "res://BangDreamInSpire/scenes/merchant/extra_card_merchant_inventory.tscn";
 
-    private const string MerchantButtonScenePath =
-        "res://BangDreamInSpire/scenes/merchant/merchant_sakiko_button.tscn";
+    /// <summary>商人角色按钮场景由内容模组按角色提供，库代码不写死具体角色资源。</summary>
+    private const string MerchantButtonSceneFileName = "merchant_character_button";
 
     private const string NotOpenLocKey = "BANG_DREAM_IN_SPIRE_EXTRA_CARD_MERCHANT_NOT_OPEN";
 
@@ -46,7 +46,14 @@ internal static class ExtraCardMerchantManager
             return;
         }
 
-        var merchantButton = BangDreamPreloadManager.GetScene(MerchantButtonScenePath).Instantiate<NMerchantButton>();
+        var merchantButtonScenePath = ResolveMerchantButtonScenePath(player);
+        if (string.IsNullOrEmpty(merchantButtonScenePath))
+        {
+            BangDreamInSpireCore.Logger.Warn("No extra card merchant button scene registered; skip attaching.");
+            return;
+        }
+
+        var merchantButton = BangDreamPreloadManager.GetScene(merchantButtonScenePath).Instantiate<NMerchantButton>();
         merchantButton.Name = "ExtraCardMerchantButton";
         merchantButton.Position -= new Vector2(430f, 100f);
         merchantButton.IsLocalPlayerDead = supportsExtraCardPool && player.Creature.IsDead;
@@ -56,6 +63,29 @@ internal static class ExtraCardMerchantManager
         var binding = CreateBinding(inventoryNode: CreateInventoryNode(room), player, supportsExtraCardPool);
         merchantButton.Connect(NMerchantButton.SignalName.MerchantOpened,
             Callable.From<NMerchantButton>(_ => OnMerchantOpened(room, merchantButton, binding)));
+    }
+
+    /// <summary>
+    /// 取本局玩家的商人按钮场景：优先角色自己提供的路径；未提供时回落到任意已注册角色的场景
+    /// （多人局里非额外卡组角色也要能看到锁定的商人格），都没有则返回空串。
+    /// </summary>
+    private static string ResolveMerchantButtonScenePath(Player player)
+    {
+        if (player.Character is IExtraDeckSupportCharacter { MerchantCharacterButtonScenePath: { Length: > 0 } ownPath })
+        {
+            return ownPath;
+        }
+
+        foreach (var character in ModelDb.AllCharacters)
+        {
+            if (character is IExtraDeckSupportCharacter { MerchantCharacterButtonScenePath: { Length: > 0 } fallbackPath } &&
+                ResourceLoader.Exists(fallbackPath))
+            {
+                return fallbackPath;
+            }
+        }
+
+        return string.Empty;
     }
 
     public static NMerchantInventory? GetOpenInventory(NMerchantRoom room)

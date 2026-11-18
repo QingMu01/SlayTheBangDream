@@ -2,8 +2,8 @@
 
 [ext_resource type="Script" uid="uid://b7u5s7fkjlcd3" path="res://src/Core/Nodes/Rooms/NMerchantButton.cs" id="1_gpkwo"]
 [ext_resource type="PackedScene" uid="uid://bgy88bk44xxvk" path="res://scenes/ui/selection_reticle.tscn" id="2_i0cnq"]
-[ext_resource type="SpineAtlasResource" uid="uid://2ddr0n3ips3h" path="res://BangDreamInSpire/scenes/merchant/merchant_sakiko.atlas" id="3_2byo8"]
-[ext_resource type="SpineSkeletonFileResource" uid="uid://c6m45kahu3ony" path="res://BangDreamInSpire/scenes/merchant/merchant_sakiko.skel" id="4_taolp"]
+[ext_resource type="SpineAtlasResource" uid="uid://2ddr0n3ips3h" path="res://ItsCrychic/scenes/merchant/merchant_sakiko.atlas" id="3_2byo8"]
+[ext_resource type="SpineSkeletonFileResource" uid="uid://c6m45kahu3ony" path="res://ItsCrychic/scenes/merchant/merchant_sakiko.skel" id="4_taolp"]
 [ext_resource type="PackedScene" uid="uid://ddb8daodx7qsl" path="res://scenes/ui/hotkey_icon.tscn" id="4_wxhq1"]
 
 [sub_resource type="SpineSkeletonDataResource" id="SpineSkeletonDataResource_s08jj"]

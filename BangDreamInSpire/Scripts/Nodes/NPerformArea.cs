@@ -97,17 +97,17 @@ public partial class NPerformArea : Control, IPerformArea
 
     // ── 歌单冻结 / 分组激活（占位表现） ──────────────────────────────────────────
     //
-    // 冻结 / 分组激活的正式特效（2026-11-14 落地，方案见 docs/vfx/mutsumi/）：
-    //   * 冻结：子节点 MutsumiPlaylistFreezeVfx（ItemContainer 下，z=4），「提线悬停」——
-    //     每组一根主提线 + 横杆 + 每行一根吊线，坐标实时取自 _items[i].Position。
-    //   * 分组激活：子节点 MutsumiGroupActivationVfx（z=7），行描边 + 角标提线 + 一次性扫光/环/光点；
+    // 冻结 / 分组激活的表现由内容模组通过 PerformAreaVisuals 注册；核心只算布局并投喂数据，
+    // 不持有任何具体角色特效类型。
+    //   * 冻结层：PlaylistFreezeVfx（ItemContainer 下），按分组行布局画提线。
+    //   * 分组激活层：GroupActivationVfx，行描边 + 角标提线 + 一次性扫光/环/光点；
     //     角标本身仍是本类的 ActivatedGroupBadge_<和弦名>（ColorRect + Label）。
     // 外部只依赖 SetFrozen(bool) / SetActivatedGroups(PerformChord)；刷新入口是 ApplyItemVisibility。
-    private MutsumiPlaylistFreezeVfx? _freezeVfx;
-    private MutsumiGroupActivationVfx? _activationVfx;
+    private IPerformAreaFreezeVisual? _freezeVfx;
+    private IPerformAreaActivationVisual? _activationVfx;
     private bool _isFrozen;
     private PerformChord _activatedGroups = PerformChord.None;
-    private readonly Queue<MutsumiGroupActivationVfx.GroupState> _pendingActivationShots = [];
+    private readonly Queue<PerformActivationGroup> _pendingActivationShots = [];
     private Godot.Timer? _activationShotTimer;
     private bool _activationShotPlaying;
     private readonly Dictionary<NPerformItem, Color> _slotBaseModulate = [];
@@ -857,7 +857,7 @@ public partial class NPerformArea : Control, IPerformArea
     }
 
     /// <summary>
-    /// 冻结表现：槽位轻微降亮 + 「提线悬停」特效（<see cref="MutsumiPlaylistFreezeVfx" />）。
+    /// 冻结表现：槽位轻微降亮 + 内容模组注册的「提线悬停」层。
     /// 行坐标实时投喂，因此槽位增删、演奏区重建后提线会自动贴合。
     /// </summary>
     private void ApplyFrozenVisuals()
@@ -870,12 +870,12 @@ public partial class NPerformArea : Control, IPerformArea
 
         if (!_isFrozen)
         {
-            if (_freezeVfx != null && GodotObject.IsInstanceValid(_freezeVfx))
+            if (_freezeVfx != null && GodotObject.IsInstanceValid(_freezeVfx.View))
             {
                 _freezeVfx.PlayHide();
-                _freezeVfx = null;
             }
 
+            _freezeVfx = null;
             return;
         }
 
@@ -885,15 +885,15 @@ public partial class NPerformArea : Control, IPerformArea
             return;
         }
 
-        if (_freezeVfx == null || !GodotObject.IsInstanceValid(_freezeVfx))
+        if (_freezeVfx == null || !GodotObject.IsInstanceValid(_freezeVfx.View))
         {
-            _freezeVfx = new MutsumiPlaylistFreezeVfx
+            _freezeVfx = PerformAreaVisuals.CreateFreezeVisual();
+            if (_freezeVfx == null)
             {
-                Name = MutsumiPlaylistFreezeVfx.NodeName,
-                // 低于分组激活角标（角标 z=6）与选择高亮，高于行本身
-                ZIndex = 4
-            };
-            _itemContainer?.AddChild(_freezeVfx);
+                return;
+            }
+
+            _itemContainer?.AddChild(_freezeVfx.View);
             _freezeVfx.SetGroups(groups);
             _freezeVfx.PlayShow();
             return;
@@ -903,15 +903,15 @@ public partial class NPerformArea : Control, IPerformArea
     }
 
     /// <summary>收集冻结特效需要的分组行布局（容器局部坐标，与 <see cref="NPerformItem.Position" /> 同空间）。</summary>
-    private List<MutsumiPlaylistFreezeVfx.RowGroup> BuildFreezeGroups()
+    private List<PerformRowGroup> BuildFreezeGroups()
     {
-        var groups = new List<MutsumiPlaylistFreezeVfx.RowGroup>();
+        var groups = new List<PerformRowGroup>();
         if (_scheme == null || _itemContainer == null) return groups;
 
         foreach (var descriptor in _scheme.Groups)
         {
             if (!TryGetGroupRows(descriptor, out var rows, out var mirrored)) continue;
-            groups.Add(new MutsumiPlaylistFreezeVfx.RowGroup(descriptor.Chord, rows, mirrored));
+            groups.Add(new PerformRowGroup(descriptor.Chord, rows, mirrored));
         }
 
         return groups;
@@ -958,7 +958,7 @@ public partial class NPerformArea : Control, IPerformArea
     }
 
     /// <summary>
-    /// 分组激活表现：点亮角标（占位色块）+ 行描边 / 提线（<see cref="MutsumiGroupActivationVfx" />）。
+    /// 分组激活表现：点亮角标（占位色块）+ 内容模组注册的行描边 / 提线层。
     /// </summary>
     private void ApplyActivatedGroupVisuals()
     {
@@ -967,9 +967,9 @@ public partial class NPerformArea : Control, IPerformArea
         var states = BuildActivationStates();
         if (states.Count > 0)
         {
-            EnsureActivationVfx().SetActive(states);
+            EnsureActivationVfx()?.SetActive(states);
         }
-        else if (_activationVfx != null && GodotObject.IsInstanceValid(_activationVfx))
+        else if (_activationVfx != null && GodotObject.IsInstanceValid(_activationVfx.View))
         {
             // 解冻 / 复活后清空：必须主动清一次，否则常驻提线与行描边会留在场上。
             _activationVfx.Clear();
@@ -1037,9 +1037,9 @@ public partial class NPerformArea : Control, IPerformArea
     }
 
     /// <summary>已激活分组的完整布局：行、角标位置、角色命中框中心与镜像标记。</summary>
-    private List<MutsumiGroupActivationVfx.GroupState> BuildActivationStates()
+    private List<PerformActivationGroup> BuildActivationStates()
     {
-        var states = new List<MutsumiGroupActivationVfx.GroupState>();
+        var states = new List<PerformActivationGroup>();
         if (_scheme == null) return states;
 
         var target = GetPerformTargetCenter();
@@ -1049,7 +1049,7 @@ public partial class NPerformArea : Control, IPerformArea
             if (!TryGetGroupRows(descriptor, out var rows, out var mirrored)) continue;
             if (!TryGetGroupBadgeAnchor(descriptor.Chord, out var badge)) continue;
 
-            states.Add(new MutsumiGroupActivationVfx.GroupState(
+            states.Add(new PerformActivationGroup(
                 descriptor.Chord, rows, badge, target, mirrored));
         }
 
@@ -1058,7 +1058,7 @@ public partial class NPerformArea : Control, IPerformArea
 
     /// <summary>
     /// 为新点亮的分组排队播一次性「提线收紧」。一次性表现是单通道（VFX 内只持一个 <c>_shot</c>），
-    /// 所以多组同时点亮时按 <see cref="MutsumiGroupActivationVfx.OneShotLifeTime" /> 的节拍串行播放，
+    /// 所以多组同时点亮时按表现实现给出的 <see cref="IPerformAreaActivationVisual.OneShotLifeTime" /> 节拍串行播放，
     /// 而不是让后一组静默覆盖前一组。
     /// </summary>
     private void PlayGroupActivationOneShot(PerformChord newlyActivated)
@@ -1072,7 +1072,7 @@ public partial class NPerformArea : Control, IPerformArea
             if (!TryGetGroupRows(descriptor, out var rows, out var mirrored)) continue;
             if (!TryGetGroupBadgeAnchor(descriptor.Chord, out var badge)) continue;
 
-            _pendingActivationShots.Enqueue(new MutsumiGroupActivationVfx.GroupState(
+            _pendingActivationShots.Enqueue(new PerformActivationGroup(
                 descriptor.Chord, rows, badge, target, mirrored));
         }
 
@@ -1083,8 +1083,15 @@ public partial class NPerformArea : Control, IPerformArea
     {
         if (_activationShotPlaying || _isExiting || _pendingActivationShots.Count == 0) return;
 
+        var activationVfx = EnsureActivationVfx();
+        if (activationVfx == null)
+        {
+            _pendingActivationShots.Clear();
+            return;
+        }
+
         _activationShotPlaying = true;
-        EnsureActivationVfx().PlayOneShot(_pendingActivationShots.Dequeue());
+        activationVfx.PlayOneShot(_pendingActivationShots.Dequeue());
 
         if (_activationShotTimer == null)
         {
@@ -1094,7 +1101,7 @@ public partial class NPerformArea : Control, IPerformArea
             AddChild(_activationShotTimer);
         }
 
-        _activationShotTimer.Start(MutsumiGroupActivationVfx.OneShotLifeTime);
+        _activationShotTimer.Start(activationVfx.OneShotLifeTime);
     }
 
     private void OnActivationShotTimeout()
@@ -1104,19 +1111,20 @@ public partial class NPerformArea : Control, IPerformArea
         TryPlayNextActivationShot();
     }
 
-    private MutsumiGroupActivationVfx EnsureActivationVfx()
+    private IPerformAreaActivationVisual? EnsureActivationVfx()
     {
-        if (_activationVfx != null && GodotObject.IsInstanceValid(_activationVfx))
+        if (_activationVfx != null && GodotObject.IsInstanceValid(_activationVfx.View))
         {
             return _activationVfx;
         }
 
-        _activationVfx = new MutsumiGroupActivationVfx
+        _activationVfx = PerformAreaVisuals.CreateActivationVisual();
+        if (_activationVfx == null)
         {
-            Name = MutsumiGroupActivationVfx.NodeName,
-            ZIndex = 7
-        };
-        _itemContainer?.AddChild(_activationVfx);
+            return null;
+        }
+
+        _itemContainer?.AddChild(_activationVfx.View);
         return _activationVfx;
     }
 

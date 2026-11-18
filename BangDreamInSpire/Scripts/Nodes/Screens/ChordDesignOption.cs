@@ -22,7 +22,7 @@ namespace BangDreamInSpire.Scripts.Nodes.Screens;
 /// <summary>
 /// 火堆（休息处）选项「和弦设计」：打开 <see cref="NChordDesignScreen" />，给卡组里的一张牌设置和弦。
 /// <para>
-/// 钦定只在睦（<c>WakabaMutsumi</c>）的休息处出现（见 <c>MutsumiSpecialRules.TryModifyRestSiteOptions</c>）。
+/// 只在实现了对应规则的角色休息处出现（具体角色规则由内容模组提供）。
 /// 联机时 <see cref="RestSiteOption.OnSelect" /> 会在每个 peer 上执行，因此这里按
 /// <c>ReserveChoiceId / SyncLocalChoice / WaitForRemoteChoice</c> 把本地玩家的选择同步给其他 peer，
 /// 再在全部 peer 上以相同参数修改卡牌（与 <c>ExtraPileCmd</c> 同款范式）。

@@ -142,8 +142,8 @@ Task<int> Discover(PlayerChoiceContext ctx, Creature target, int amount, Abstrac
 | 和弦书签 | `Nodes/Cards/NChordBookmark.cs`（旧 `NChordCornerBadge` 已删）；`ChordCapability` 覆盖层 ID `chord_bookmark`；`NChordDesignScreen` 预览/清理同步改名 |
 | 傀儡师 | `Mechanics/Puppeteer/{PuppeteerMechanic,PuppeteerFormManager,PuppeteerRunData}.cs`；状态模型走 `AttachePlayerData.PuppeteerFormManager` 类型化入口（与 `PerformManager` 同款，未用弱表） |
 | 歌单冻结 | `PerformManager.IsPlaylistFrozen` / `SetPlaylistFrozen` / `SetActivatedGroups`；拦截点见 `docs/mechanic-authoring.md` §10 |
-| 歌单冻结特效 | `Nodes/VFX/MutsumiPlaylistFreezeVfx.cs`（「提线悬停」：四组主提线 + 横杆 + 每行吊线 + 紫灰覆膜，行坐标实时投喂）；`NPerformArea.ApplyFrozenVisuals` 驱动，`scenes/vfx/mutsumi_playlist_freeze.tscn` 供 F6 预览 |
-| 分组激活特效 | `Nodes/VFX/MutsumiGroupActivationVfx.cs`（「提线收紧」：行描边 + 角标提线 + 0.40s 一次性扫光/环/光点）；`NPerformArea.SetActivatedGroups` 驱动，`scenes/vfx/mutsumi_group_activation.tscn` 供 F6 预览 |
+| 歌单冻结特效 | `ItsCrychic/Scripts/Nodes/VFX/MutsumiPlaylistFreezeVfx.cs`（「提线悬停」：四组主提线 + 横杆 + 每行吊线 + 紫灰覆膜，行坐标实时投喂）；`NPerformArea.ApplyFrozenVisuals` 驱动，`ItsCrychic/scenes/vfx/mutsumi_playlist_freeze.tscn` 供 F6 预览 |
+| 分组激活特效 | `ItsCrychic/Scripts/Nodes/VFX/MutsumiGroupActivationVfx.cs`（「提线收紧」：行描边 + 角标提线 + 0.40s 一次性扫光/环/光点）；`NPerformArea.SetActivatedGroups` 驱动，`ItsCrychic/scenes/vfx/mutsumi_group_activation.tscn` 供 F6 预览 |
 | 破绽视觉 | `Mechanics/Break/NWeaknessBreakVfx.cs` 重写为「裂纹积累」：菱形层数点 + 逐层细裂纹；满 4 层压 `T_Cracks336` 碎裂贴图（一次性 0.75 → 0.22–0.34 呼吸）+ 碎片闪光 |
 | 破绽 | `Mechanics/Break/{BreakMechanic,BreakCmd,BreakRules,BreakConst,WeaknessBreakPower,WeakPointBreakPower,NWeaknessBreakVfx}.cs` |
 | Hook | `BangDreamHook.AfterWeaknessBreakDiscovered / AfterWeakPointBroken / AfterWeakPointBreakTriggered`；`IWeaknessBreakHookListener` |
@@ -182,4 +182,4 @@ Task<int> Discover(PlayerChoiceContext ctx, Creature target, int amount, Abstrac
 - [x] 本地化 JSON 合法（`python3 -m json.tool`）
 - [ ] 改动按单元提交（已分批提交，见 git log）；`docs/` 与本文件同步更新
 - 实机验收入口：控制台 `chord` / `break` / `puppet`（见 `docs/mechanic-authoring.md` §10 / §11）；
-  特效可先 F6 单独运行 `scenes/vfx/mutsumi_playlist_freeze.tscn` / `mutsumi_group_activation.tscn` 看形态
+  特效可先 F6 单独运行 `ItsCrychic/scenes/vfx/mutsumi_playlist_freeze.tscn` / `ItsCrychic/scenes/vfx/mutsumi_group_activation.tscn` 看形态

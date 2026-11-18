@@ -1,10 +1,9 @@
-[gd_scene load_steps=44 format=3 uid="uid://dck01ibc7cr71"]
+[gd_scene load_steps=43 format=3 uid="uid://dck01ibc7cr71"]
 
 [ext_resource type="Script" uid="uid://cmtlynk8dabtw" path="res://Scripts/Nodes/BangDreamCharacterSelector.cs" id="1_script"]
 [ext_resource type="Texture2D" uid="uid://bx7y6ggsxsgty" path="res://BangDreamInSpire/images/sceneui/bg_gray.9d1fe428.png" id="2_bg"]
 [ext_resource type="Texture2D" uid="uid://dsddcrx3c10pb" path="res://images/vfx/common/common_square_small.png" id="3_particle"]
 [ext_resource type="Shader" uid="uid://8uf51kmnmlpy" path="res://BangDreamInSpire/shaders/mix_color_and_line.gdshader" id="4_shader"]
-[ext_resource type="Texture2D" uid="uid://2d3vyqtct4cj" path="res://BangDreamInSpire/images/sceneui/img_sakiko-togawa_2.webp" id="5_poster"]
 [ext_resource type="Texture2D" uid="uid://cknkfj7wdeoq1" path="res://BangDreamInSpire/images/sceneui/health.png" id="6_health"]
 [ext_resource type="Texture2D" uid="uid://1efrtqal7gmo" path="res://BangDreamInSpire/images/sceneui/gold.png" id="7_gold"]
 [ext_resource type="FontVariation" uid="uid://c7kiei3ejbckl" path="res://themes/fonts/jpn/noto_sans_cjkjp_medium_shared.tres" id="8_noto"]
@@ -490,7 +489,6 @@ offset_right = 661.0
 offset_bottom = 811.0
 pivot_offset = Vector2(388, 806)
 mouse_filter = 2
-texture = ExtResource("5_poster")
 expand_mode = 1
 
 [node name="Content" type="VBoxContainer" parent="ShowCharacterInfo"]

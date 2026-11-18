@@ -18,4 +18,10 @@ public interface IExtraDeckSupportCharacter
     /// 额外卡池
     /// </summary>
     CardPoolModel ExtraCardPool { get; }
+
+    /// <summary>
+    /// 商人房间使用的角色按钮场景（内容模组提供）。为空表示该角色不提供自定义商人形象；
+    /// 核心会回落到其它已注册角色的按钮场景，避免把具体角色资源写进库代码。
+    /// </summary>
+    string MerchantCharacterButtonScenePath => "";
 }

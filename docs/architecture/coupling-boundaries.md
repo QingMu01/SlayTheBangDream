@@ -48,15 +48,17 @@ python3 tools/check-architecture.py --strict   # 收口用：WARN 也 exit 1
 
 ## 4. 例外登记
 
-当前 allowlist 覆盖三类未收敛项（目标阶段 P3）：
+当前 allowlist 覆盖两类未收敛项（目标阶段 P3），另有一类已收敛项作为记录：
 
-- **VFX 契约**：`StrikeSakikoVfx` 仍在核心，内容与机制两侧都直接引用；
-  `Lingered` / `MusicNote` 的机制直接引用 `Nodes.VFX`。
+- **VFX 契约**：`Lingered` / `MusicNote` 的机制直接引用 `Nodes.VFX`（角色专属特效已迁出，见下条）。
 - **商人 UI 契约**：`ExtraCardMerchantManager` 直接操作 `Nodes.Merchant`；
   `CrychicMerchant` 继承核心商人 UI 基类。
-- **角色专属演奏区特效**：`MutsumiGroupActivationVfx` / `MutsumiPlaylistFreezeVfx` 与
-  `StrikeSakikoVfx` 同属「角色专属表现留在核心」的欠账；`NPerformArea` 也直接持有这两个类型。
-  收敛时要么随 VFX 契约迁回内容模组，要么换成语义中性的通用实现。
+- **角色专属表现（已收敛）**：`StrikeSakikoVfx`、`MutsumiGroupActivationVfx`、
+  `MutsumiPlaylistFreezeVfx` 及其场景/着色器已迁到内容模组；核心只保留
+  `IPerformAreaFreezeVisual` / `IPerformAreaActivationVisual` 数据契约与 `PerformAreaVisuals` 注册入口，
+  `NPerformArea` 不再持有任何具体角色类型。商人按钮场景、主菜单日夜贴图同理：
+  路径由内容模组通过 `IExtraDeckSupportCharacter.MerchantCharacterButtonScenePath` 与
+  `MainMenuEnvironmentCharacter.ConfigureEnvironmentTextures` 提供。
 
 收敛路径与演奏区一致：抽接口 → 机制只依赖接口 → UI 侧机制注册实现。演奏区已经按此完成
 （`IPerformArea` + `Nodes/PerformAreaMechanic.cs`），可作为模板。

@@ -1,11 +1,11 @@
 using BangDreamInSpire.Scripts.Enums;
-using BangDreamInSpire.Scripts.Mechanics.Perform;
+using BangDreamInSpire.Scripts.Interfaces.Mechanics;
 using BangDreamInSpire.Scripts.Utils.Infos;
 using BangDreamInSpire.Scripts.Utils;
 using Godot;
 using MegaCrit.Sts2.Core.Helpers;
 
-namespace BangDreamInSpire.Scripts.Nodes.VFX;
+namespace ItsCrychic.Scripts.Nodes.VFX;
 
 /// <summary>
 /// 歌单冻结 · 提线悬停（方案 B，2026-11-14 批准）。
@@ -23,13 +23,12 @@ namespace BangDreamInSpire.Scripts.Nodes.VFX;
 /// </para>
 /// </summary>
 [Tool]
-public partial class MutsumiPlaylistFreezeVfx : Node2D
+public partial class MutsumiPlaylistFreezeVfx : Node2D, IPerformAreaFreezeVisual
 {
     /// <summary>挂在 <c>ItemContainer</c> 下的固定节点名。</summary>
     public const string NodeName = "PlaylistFreezeVfx";
 
-    /// <summary>一个分组的行布局：分组和弦、三条行的矩形（容器空间）、是否右侧镜像。</summary>
-    public readonly record struct RowGroup(PerformChord Group, Rect2[] Rows, bool Mirrored);
+    public Node2D View => this;
 
     private const float FadeInDuration = 0.25f;
     private const float FadeOutDuration = 0.30f;
@@ -65,7 +64,7 @@ public partial class MutsumiPlaylistFreezeVfx : Node2D
     private static readonly Color KnotColor = new("#efeaff");
     private static readonly Color WashColor = new("#b9a6ff");
 
-    private RowGroup[] _groups = [];
+    private PerformRowGroup[] _groups = [];
     private float _fade;
     private float _time;
     private Tween? _fadeTween;
@@ -114,7 +113,7 @@ public partial class MutsumiPlaylistFreezeVfx : Node2D
     }
 
     /// <summary>投喂分组行布局（容器局部坐标）。由 <c>NPerformArea</c> 在布局变化后调用。</summary>
-    public void SetGroups(IReadOnlyList<RowGroup> groups)
+    public void SetGroups(IReadOnlyList<PerformRowGroup> groups)
     {
         _groups = groups.ToArray();
         _previewRows = false;
@@ -345,7 +344,7 @@ public partial class MutsumiPlaylistFreezeVfx : Node2D
     }
 
     /// <summary>预览态用假行：按 NPerformArea 的真实几何（112×35、行距 49、两列、右侧镜像）造 12 行。</summary>
-    private static RowGroup[] BuildPreviewGroups()
+    private static PerformRowGroup[] BuildPreviewGroups()
     {
         const float itemWidth = 112f;
         const float itemHeight = 35f;
@@ -354,7 +353,7 @@ public partial class MutsumiPlaylistFreezeVfx : Node2D
         const float halfHitWidth = 160f;
         const float halfHitHeight = 150f;
 
-        var groups = new List<RowGroup>();
+        var groups = new List<PerformRowGroup>();
         var left = -halfHitWidth - columnGap - itemWidth;
         var right = halfHitWidth + columnGap;
         var topY = -halfHitHeight + 32f;
@@ -374,7 +373,7 @@ public partial class MutsumiPlaylistFreezeVfx : Node2D
                 rows[i] = new Rect2(x, startY + step * i, itemWidth, itemHeight);
             }
 
-            groups.Add(new RowGroup(chord, rows, mirrored));
+            groups.Add(new PerformRowGroup(chord, rows, mirrored));
         }
 
         return groups.ToArray();

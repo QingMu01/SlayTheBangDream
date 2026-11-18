@@ -37,8 +37,8 @@ internal class AttachExtraCardMerchantToRoomPatch : IPatchMethod
 
 internal class ExtraCardMerchantAnimationPatch : IPatchMethod
 {
-    internal const string MerchantButtonScenePath =
-        "res://BangDreamInSpire/scenes/merchant/merchant_sakiko_button.tscn";
+    /// <summary>内容模组提供的商人按钮场景文件名（与具体角色无关）。</summary>
+    internal const string MerchantButtonSceneFileName = "merchant_character_button";
 
     public static string PatchId => "replace_extra_card_merchant_idle_animation";
 
@@ -53,7 +53,8 @@ internal class ExtraCardMerchantAnimationPatch : IPatchMethod
 
     public static void Prefix(Node host, MegaSprite sprite, ref Action<MegaAnimationState> onReady)
     {
-        if (host is not NMerchantButton { SceneFilePath: MerchantButtonScenePath } merchantButton)
+        if (host is not NMerchantButton merchantButton ||
+            !merchantButton.SceneFilePath.Contains(MerchantButtonSceneFileName, StringComparison.Ordinal))
         {
             return;
         }
@@ -79,7 +80,8 @@ internal class ExtraCardMerchantFocusReticlePatch : IPatchMethod
 
     public static void Postfix(NMerchantButton __instance)
     {
-        if (__instance.SceneFilePath != ExtraCardMerchantAnimationPatch.MerchantButtonScenePath)
+        if (!__instance.SceneFilePath.Contains(
+                ExtraCardMerchantAnimationPatch.MerchantButtonSceneFileName, StringComparison.Ordinal))
         {
             return;
         }

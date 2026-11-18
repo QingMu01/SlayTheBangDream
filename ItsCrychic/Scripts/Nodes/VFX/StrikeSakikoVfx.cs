@@ -5,7 +5,7 @@ using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Nodes.Rooms;
 using MegaCrit.Sts2.Core.TestSupport;
 
-namespace BangDreamInSpire.Scripts.Nodes.VFX;
+namespace ItsCrychic.Scripts.Nodes.VFX;
 
 /// <summary>
 /// 祥子「打击」命中特效：原版 4 帧斩光重上色为白芯 + 蓝紫边，命中点爆出星辉
@@ -16,7 +16,7 @@ namespace BangDreamInSpire.Scripts.Nodes.VFX;
 [Tool]
 public partial class StrikeSakikoVfx : Node2D
 {
-    private const string ScenePath = "res://BangDreamInSpire/scenes/vfx/strike_sakiko_vfx.tscn";
+    private const string ScenePath = "res://ItsCrychic/scenes/vfx/strike_sakiko_vfx.tscn";
 
     /// <summary>整段时长（含星辉淡出）。</summary>
     private const float LifeTime = 0.40f;
@@ -66,8 +66,14 @@ public partial class StrikeSakikoVfx : Node2D
     private Sprite2D _bigStar = null!;
     private Sprite2D[] _smallStars = [];
 
-    /// <summary>4 帧斩击贴图（本体 vfx_attack_slash_00..03），与场景里 Slash 节点的初始贴图一致。</summary>
+    /// <summary>4 帧斩击贴图（本体 vfx_attack_slash_00..03），场景不再内嵌贴图，由 <see cref="_Ready" /> 运行时读取。</summary>
     [Export] private Texture2D[] _frames = [];
+
+    private const string SlashTexturePathFormat =
+        "res://images/vfx/vfx_attack_slash/vfx_attack_slash_0{0}.png";
+
+    private const string BigStarTexturePath = "res://images/packed/vfx/generic/sparkle.png";
+    private const string SmallStarTexturePath = "res://images/packed/vfx/generic/sparkle_2.png";
 
     // 从场景读回的美术基准值，重播时按此复位（不写死初值）。
     private Vector2 _glowBaseScale;
@@ -143,6 +149,9 @@ public partial class StrikeSakikoVfx : Node2D
             GetNode<Sprite2D>("Stars/SmallStar5"),
         ];
 
+        // 必须在 _smallStars 就绪后补齐运行时贴图（场景不再内嵌游戏贴图）。
+        EnsureDefaultTextures();
+
         // 只读回基准值，不写任何视觉状态，编辑器里场景保持静止。
         _glowBaseScale = _glow.Scale;
         _glowBaseColor = _glow.Modulate;
@@ -157,6 +166,31 @@ public partial class StrikeSakikoVfx : Node2D
 
         if (VfxPreviewSupport.AutoPlayOnReady)
             Replay();
+    }
+
+    /// <summary>
+    /// 场景不再内嵌本体贴图（内容工程里没有游戏 `res://images/**`，内嵌会变成编辑器缺失引用）；
+    /// 这里按原场景的贴图对应关系在运行时补齐，预览与游戏内行为不变。
+    /// </summary>
+    private void EnsureDefaultTextures()
+    {
+        if (_frames.Length != SlashFrameCount)
+        {
+            _frames = new Texture2D[SlashFrameCount];
+            for (var i = 0; i < SlashFrameCount; i++)
+            {
+                _frames[i] = BangDreamPreloadManager.GetTexture2D(
+                    string.Format(SlashTexturePathFormat, i));
+            }
+        }
+
+        _glow.Texture ??= _frames[1];
+        _slash.Texture ??= _frames[0];
+        _bigStar.Texture ??= BangDreamPreloadManager.GetTexture2D(BigStarTexturePath);
+        foreach (var smallStar in _smallStars)
+        {
+            smallStar.Texture ??= BangDreamPreloadManager.GetTexture2D(SmallStarTexturePath);
+        }
     }
 
     /// <summary>重置并重新播放一次。</summary>

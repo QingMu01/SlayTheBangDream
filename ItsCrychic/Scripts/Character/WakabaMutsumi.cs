@@ -68,7 +68,7 @@ public sealed class WakabaMutsumi()
         "res://ItsCrychic/images/charui/mutsumi/mutsumi_logo.png";
 
     public override string CustomTrailPath =>
-        "res://BangDreamInSpire/scenes/vfx/card_trail_sakiko.tscn";
+        "res://BangDreamInSpire/scenes/vfx/card_trail.tscn";
 
     public override string CustomIconPath =>
         "res://ItsCrychic/scenes/char_icon/mutsumi_icon.tscn";

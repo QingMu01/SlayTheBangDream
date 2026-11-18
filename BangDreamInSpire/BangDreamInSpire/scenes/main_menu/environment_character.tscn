@@ -1,7 +1,6 @@
-[gd_scene load_steps=5 format=3 uid="uid://cqbvf8pfv2rkh"]
+[gd_scene load_steps=4 format=3 uid="uid://cqbvf8pfv2rkh"]
 
 [ext_resource type="Script" uid="uid://dwrvq1uw1ab6m" path="res://Scripts/Nodes/MainMenu/MainMenuEnvironmentCharacter.cs" id="1_script"]
-[ext_resource type="Texture2D" uid="uid://bhtvg1tdhgntx" path="res://BangDreamInSpire/images/sceneui/sakiko_day.png" id="3_ogha2"]
 [ext_resource type="Shader" uid="uid://b5cr7jqxj6wvs" path="res://BangDreamInSpire/shaders/main_menu_environment_multiply.gdshader" id="3_shader"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_environment"]
@@ -35,7 +34,6 @@ unique_name_in_owner = true
 material = SubResource("ShaderMaterial_environment")
 position = Vector2(225, -225)
 scale = Vector2(0.55, 0.55)
-texture = ExtResource("3_ogha2")
 
 [node name="ClickArea" type="Control" parent="BottomLeftAnchor"]
 unique_name_in_owner = true

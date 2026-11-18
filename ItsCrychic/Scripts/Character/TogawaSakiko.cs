@@ -32,6 +32,9 @@ public sealed class TogawaSakiko() : BandMemberModel<SakikoStandardCardPool, Sak
     public bool ShouldAlwaysShowExtraPile => true;
     public CardPoolModel ExtraCardPool => ModelDb.CardPool<SakikoMusicalCardPool>();
 
+    public string MerchantCharacterButtonScenePath =>
+        "res://ItsCrychic/scenes/merchant/merchant_character_button.tscn";
+
     public override List<string> CharacterSkinList =>
     [
         "res://ItsCrychic/skins/sakiko/sakiko_default.json",
@@ -45,7 +48,7 @@ public sealed class TogawaSakiko() : BandMemberModel<SakikoStandardCardPool, Sak
         "res://ItsCrychic/images/charui/sakiko/sakiko_logo.png";
 
     public override string CustomTrailPath =>
-        "res://BangDreamInSpire/scenes/vfx/card_trail_sakiko.tscn";
+        "res://BangDreamInSpire/scenes/vfx/card_trail.tscn";
 
     public override string CustomIconPath =>
         "res://ItsCrychic/scenes/char_icon/sakiko_icon.tscn";

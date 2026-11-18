@@ -89,3 +89,84 @@ public interface IPerformArea
     /// <summary>写回已激活的分组（位掩码），点亮对应分组的行与角标。</summary>
     void SetActivatedGroups(PerformChord groups);
 }
+
+/// <summary>
+/// 歌单冻结层的数据：一个分组的行布局（容器局部坐标）与是否右侧镜像。
+/// 由核心计算、内容模组的表现实现消费，避免核心引用具体角色特效类型。
+/// </summary>
+public readonly record struct PerformRowGroup(PerformChord Group, Rect2[] Rows, bool Mirrored);
+
+/// <summary>
+/// 已激活分组的布局与端点（容器局部坐标）：行、角标中心、角色命中框中心、是否镜像。
+/// </summary>
+public readonly record struct PerformActivationGroup(
+    PerformChord Group,
+    Rect2[] Rows,
+    Vector2 BadgeCenter,
+    Vector2 TargetCenter,
+    bool Mirrored);
+
+/// <summary>
+/// 歌单冻结层的表现契约（具体实现由内容模组提供）。核心只负责在布局变化后投喂数据。
+/// </summary>
+public interface IPerformAreaFreezeVisual
+{
+    /// <summary>实际挂到演奏区 <c>ItemContainer</c> 下的节点。</summary>
+    Node2D View { get; }
+
+    /// <summary>投喂分组行布局（幂等）。</summary>
+    void SetGroups(IReadOnlyList<PerformRowGroup> groups);
+
+    /// <summary>开始冻结表现。</summary>
+    void PlayShow();
+
+    /// <summary>结束冻结表现（实现可自行淡出并释放节点）。</summary>
+    void PlayHide();
+}
+
+/// <summary>
+/// 分组激活表现契约（具体实现由内容模组提供）。
+/// </summary>
+public interface IPerformAreaActivationVisual
+{
+    /// <summary>实际挂到演奏区 <c>ItemContainer</c> 下的节点。</summary>
+    Node2D View { get; }
+
+    /// <summary>一次性激活表现时长，核心据此把多组点亮串行排队。</summary>
+    float OneShotLifeTime { get; }
+
+    /// <summary>投喂全部已激活分组（幂等）。</summary>
+    void SetActive(IReadOnlyList<PerformActivationGroup> groups);
+
+    /// <summary>播放某个分组的一次性激活表现。</summary>
+    void PlayOneShot(PerformActivationGroup group);
+
+    /// <summary>清空常驻层。</summary>
+    void Clear();
+}
+
+/// <summary>
+/// 内容模组注册演奏区表现实现的入口。核心不持有任何具体角色特效类型；
+/// 未注册时冻结/激活只有槽位降亮与角标等核心表现。
+/// </summary>
+public static class PerformAreaVisuals
+{
+    private static Func<IPerformAreaFreezeVisual>? _freezeFactory;
+    private static Func<IPerformAreaActivationVisual>? _activationFactory;
+
+    public static void RegisterFreezeVisual(Func<IPerformAreaFreezeVisual> factory)
+    {
+        ArgumentNullException.ThrowIfNull(factory);
+        _freezeFactory = factory;
+    }
+
+    public static void RegisterActivationVisual(Func<IPerformAreaActivationVisual> factory)
+    {
+        ArgumentNullException.ThrowIfNull(factory);
+        _activationFactory = factory;
+    }
+
+    public static IPerformAreaFreezeVisual? CreateFreezeVisual() => _freezeFactory?.Invoke();
+
+    public static IPerformAreaActivationVisual? CreateActivationVisual() => _activationFactory?.Invoke();
+}
