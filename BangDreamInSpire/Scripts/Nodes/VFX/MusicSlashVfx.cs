@@ -7,6 +7,10 @@ namespace BangDreamInSpire.Scripts.Nodes.VFX;
 /// <summary>
 /// 音乐主题演奏斩击：月牙弧交叉扫过 → 命中星芒与扩散环 → 谱号装饰闪亮消隐 → 音符/星屑粒子。
 /// 编辑器里保持作者摆放的静止状态，按 F6 或勾选 Inspector 的 Play 才播放。
+/// <para>
+/// 预留待实装：当前没有配套 <c>.tscn</c> 与调用点，保留作为斩击/冲击的完整参考实现，
+/// <b>勿按死代码删除</b>（见 <c>docs/vfx-authoring.md</c> §2.1 的已知保留清单）。
+/// </para>
 /// </summary>
 [Tool]
 public partial class MusicSlashVfx : Node2D
@@ -85,7 +89,16 @@ public partial class MusicSlashVfx : Node2D
     private Vector2 _staffCrestBaseScale;
     private float _slashMainBaseRotation;
     private float _slashSubBaseRotation;
+    private Color _slashGroupBaseModulate;
+    private Color _slashMainBaseModulate;
+    private Color _slashSubBaseModulate;
     private Color _ghostBaseModulate;
+    private Color _impactGroupBaseModulate;
+    private Color _shockRingBaseModulate;
+    private Color _expandRingBaseModulate;
+    private Color _coreFlashBaseModulate;
+    private Color _staffCrestBaseModulate;
+    private Color _critOverlayBaseModulate;
 
     private Tween? _tween;
 
@@ -138,7 +151,16 @@ public partial class MusicSlashVfx : Node2D
         _staffCrestBaseScale = _staffCrest.Scale;
         _slashMainBaseRotation = _slashMain.Rotation;
         _slashSubBaseRotation = _slashSub.Rotation;
+        _slashGroupBaseModulate = _slashGroup.Modulate;
+        _slashMainBaseModulate = _slashMain.Modulate;
+        _slashSubBaseModulate = _slashSub.Modulate;
         _ghostBaseModulate = _slashMainGhost.Modulate;
+        _impactGroupBaseModulate = _impactGroup.Modulate;
+        _shockRingBaseModulate = _shockRing.Modulate;
+        _expandRingBaseModulate = _expandRing.Modulate;
+        _coreFlashBaseModulate = _coreFlash.Modulate;
+        _staffCrestBaseModulate = _staffCrest.Modulate;
+        _critOverlayBaseModulate = _critOverlay.Modulate;
 
         if (VfxPreviewSupport.AutoPlayOnReady)
             Replay();
@@ -154,28 +176,31 @@ public partial class MusicSlashVfx : Node2D
 
         var tint = RandomizeTint ? VfxPreviewSupport.RandomCharacterColor(this) : PreviewTint;
 
-        // 主题色只上到斩击层，命中爆发层保持白色。
+        // 主题色只上到斩击层，命中爆发层保持场景 authored 的着色。
         _slashGroup.Visible = true;
-        _slashGroup.Modulate = new Color(tint.R, tint.G, tint.B, 1f);
-        ResetSlashSprite(_slashMain, SlashMainStart, _slashMainBaseScale, _slashMainBaseRotation, Colors.White);
-        ResetSlashSprite(_slashSub, SlashSubStart, _slashSubBaseScale, _slashSubBaseRotation, Colors.White);
+        _slashGroup.Modulate = new Color(tint.R, tint.G, tint.B, _slashGroupBaseModulate.A);
+        ResetSlashSprite(_slashMain, SlashMainStart, _slashMainBaseScale, _slashMainBaseRotation,
+            _slashMainBaseModulate);
+        ResetSlashSprite(_slashSub, SlashSubStart, _slashSubBaseScale, _slashSubBaseRotation,
+            _slashSubBaseModulate);
         ResetSlashSprite(_slashMainGhost, SlashMainStart, _slashMainBaseScale,
             _slashMainBaseRotation, _ghostBaseModulate);
         ResetSlashSprite(_slashSubGhost, SlashSubStart, _slashSubBaseScale,
             _slashSubBaseRotation, _ghostBaseModulate);
 
         _impactGroup.Visible = false;
-        _impactGroup.Modulate = Colors.White;
+        _impactGroup.Modulate = _impactGroupBaseModulate;
         _shockRing.Scale = _shockRingBaseScale;
-        _shockRing.Modulate = Colors.White;
+        _shockRing.Modulate = _shockRingBaseModulate;
         _expandRing.Frame = 0;
         _expandRing.Scale = _expandRingBaseScale;
-        _expandRing.Modulate = Colors.White;
+        _expandRing.Modulate = _expandRingBaseModulate;
         _coreFlash.Scale = _coreFlashBaseScale;
-        _coreFlash.Modulate = Colors.White;
+        _coreFlash.Modulate = _coreFlashBaseModulate;
         _staffCrest.Scale = _staffCrestBaseScale;
-        _staffCrest.Modulate = Colors.White;
+        _staffCrest.Modulate = _staffCrestBaseModulate;
         _critOverlay.Visible = IsCritical;
+        _critOverlay.Modulate = _critOverlayBaseModulate;
 
         _noteParticles.Emitting = false;
         _starParticles.Emitting = false;

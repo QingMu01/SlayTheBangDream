@@ -107,6 +107,9 @@ public partial class NPerformArea : Control, IPerformArea
     private MutsumiGroupActivationVfx? _activationVfx;
     private bool _isFrozen;
     private PerformChord _activatedGroups = PerformChord.None;
+    private readonly Queue<MutsumiGroupActivationVfx.GroupState> _pendingActivationShots = [];
+    private Godot.Timer? _activationShotTimer;
+    private bool _activationShotPlaying;
     private readonly Dictionary<NPerformItem, Color> _slotBaseModulate = [];
     private readonly Dictionary<PerformChord, ColorRect> _activatedGroupBadges = [];
 
@@ -197,6 +200,7 @@ public partial class NPerformArea : Control, IPerformArea
         if (!frozen && _activatedGroups != PerformChord.None)
         {
             _activatedGroups = PerformChord.None;
+            _pendingActivationShots.Clear();
         }
 
         ApplyFrozenVisuals();
@@ -213,6 +217,12 @@ public partial class NPerformArea : Control, IPerformArea
 
         var newlyActivated = groups & ~_activatedGroups;
         _activatedGroups = groups;
+        if (groups == PerformChord.None)
+        {
+            // 激活位被整体清空（解冻/复活）：丢弃尚未播出的排队项，避免给已熄灭的分组补播。
+            _pendingActivationShots.Clear();
+        }
+
         ApplyActivatedGroupVisuals();
         PlayGroupActivationOneShot(newlyActivated);
     }
@@ -531,6 +541,8 @@ public partial class NPerformArea : Control, IPerformArea
     public override void _ExitTree()
     {
         _isExiting = true;
+        _pendingActivationShots.Clear();
+        _activationShotPlaying = false;
         _slotSelectionCard = null;
         _slotSelectionMode = PerformSlotSelectionMode.None;
         _slotSelectionCandidates.Clear();
@@ -569,7 +581,7 @@ public partial class NPerformArea : Control, IPerformArea
         _slotCount = nextSlotCount;
         Visible = _slotCount > 0 && nextActiveSlots.Count > 0;
 
-        // 场景预置的槽位不经过 EnsureSlotCount 的新建路径，镜像状态需在此每次重算。
+        // 槽位由 EnsureSlotCount 在运行时按 _slotCount 创建；这里只重算已有槽位的镜像缩放。
         ApplyItemScale();
 
         if (!changed) return;
@@ -1044,7 +1056,11 @@ public partial class NPerformArea : Control, IPerformArea
         return states;
     }
 
-    /// <summary>为新点亮的分组播一次性「提线收紧」（每帧最多一个，多次点亮时逐个处理）。</summary>
+    /// <summary>
+    /// 为新点亮的分组排队播一次性「提线收紧」。一次性表现是单通道（VFX 内只持一个 <c>_shot</c>），
+    /// 所以多组同时点亮时按 <see cref="MutsumiGroupActivationVfx.OneShotLifeTime" /> 的节拍串行播放，
+    /// 而不是让后一组静默覆盖前一组。
+    /// </summary>
     private void PlayGroupActivationOneShot(PerformChord newlyActivated)
     {
         if (newlyActivated == PerformChord.None || _scheme == null) return;
@@ -1056,9 +1072,36 @@ public partial class NPerformArea : Control, IPerformArea
             if (!TryGetGroupRows(descriptor, out var rows, out var mirrored)) continue;
             if (!TryGetGroupBadgeAnchor(descriptor.Chord, out var badge)) continue;
 
-            EnsureActivationVfx().PlayOneShot(new MutsumiGroupActivationVfx.GroupState(
+            _pendingActivationShots.Enqueue(new MutsumiGroupActivationVfx.GroupState(
                 descriptor.Chord, rows, badge, target, mirrored));
         }
+
+        TryPlayNextActivationShot();
+    }
+
+    private void TryPlayNextActivationShot()
+    {
+        if (_activationShotPlaying || _isExiting || _pendingActivationShots.Count == 0) return;
+
+        _activationShotPlaying = true;
+        EnsureActivationVfx().PlayOneShot(_pendingActivationShots.Dequeue());
+
+        if (_activationShotTimer == null)
+        {
+            // 计时器挂在演奏区下，随节点退树一起释放，不会在节点已释放后回调。
+            _activationShotTimer = new Godot.Timer { OneShot = true };
+            _activationShotTimer.Timeout += OnActivationShotTimeout;
+            AddChild(_activationShotTimer);
+        }
+
+        _activationShotTimer.Start(MutsumiGroupActivationVfx.OneShotLifeTime);
+    }
+
+    private void OnActivationShotTimeout()
+    {
+        _activationShotPlaying = false;
+        if (_isExiting) return;
+        TryPlayNextActivationShot();
     }
 
     private MutsumiGroupActivationVfx EnsureActivationVfx()

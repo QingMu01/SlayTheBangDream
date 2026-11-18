@@ -50,6 +50,10 @@ internal static class ExtraDeckRunHistoryDataManager
 
         if (RunManager.Instance.DebugOnlyGetState() == null)
         {
+            // 代价说明：此时没有活的 RunState，只能 RunState.FromSerializable(run) 整局重建来拿额外卡组。
+            // 额外卡组是 RitsuLib 的 run-persistent 牌堆，内容在 `_ritsulib` 扩展文档里，没有公开 API 能从
+            // SerializableRun 直接读出；重建是当前唯一稳定路径，且只在写 history 时执行一次。
+            // 重建失败会降级为跳过（不阻塞存档主流程）；快照仍是 List<SerializableCard>，与既有 JSON 兼容。
             try
             {
                 var restoredState = RunState.FromSerializable(run);

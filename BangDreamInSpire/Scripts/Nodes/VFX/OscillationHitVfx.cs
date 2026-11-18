@@ -33,24 +33,28 @@ public partial class OscillationHitVfx : Node2D
     /// <summary>两枚音符相对命中点的初始偏移，避免起飞处重叠。</summary>
     private static readonly Vector2[] NoteStartOffset = [new(0f, -6f), new(14f, -22f)];
 
-    /// <summary>层定义，与 plan.md 的层结构表逐行对应。t0/t1 为归一化时间。</summary>
+    /// <summary>
+    /// 层定义，与 plan.md 的层结构表逐行对应。t0/t1 为归一化时间。
+    /// 颜色不写在这里：以场景节点 authored 的 modulate 为唯一基准（铁律一），由 <c>_Ready</c> 读回。
+    /// </summary>
     private sealed record LayerDef(
-        string NodePath, Color Tint, float T0, float T1,
+        string NodePath, float T0, float T1,
         float S0, float S1, float A0, float A1, float Rot, float AlphaPow);
 
     private static readonly LayerDef[] Layers =
     [
         // 中心辉光：命中点先亮一记，随后收掉，把注意力交给外扩的环。
-        new("CoreGlow", new Color(0.74f, 0.82f, 1.00f), 0.00f, 0.30f, 0.45f, 1.05f, 0.95f, 0f, 0f, 1.60f),
+        new("CoreGlow", 0.00f, 0.30f, 0.45f, 1.05f, 0.95f, 0f, 0f, 1.60f),
         // 软环：冲击波本体。
-        new("RingA", new Color(0.72f, 0.80f, 1.00f), 0.02f, 0.62f, 0.18f, 0.72f, 0.95f, 0f, -14f, 1.90f),
+        new("RingA", 0.02f, 0.62f, 0.18f, 0.72f, 0.95f, 0f, -14f, 1.90f),
         // 锐环：比软环更快更大，给边缘一道硬锋。
-        new("RingB", new Color(0.66f, 0.76f, 1.00f), 0.05f, 0.58f, 0.12f, 0.88f, 0.90f, 0f, 4f, 1.70f),
+        new("RingB", 0.05f, 0.58f, 0.12f, 0.88f, 0.90f, 0f, 4f, 1.70f),
         // 星芒：纯白短促，命中当帧最亮。
-        new("Star", Colors.White, 0.00f, 0.20f, 0.40f, 0.75f, 1.00f, 0f, 12f, 1.20f),
+        new("Star", 0.00f, 0.20f, 0.40f, 0.75f, 1.00f, 0f, 12f, 1.20f),
     ];
 
-    private readonly List<(Sprite2D Node, LayerDef Def, Vector2 BaseScale, float BaseRotation)> _layers = [];
+    private readonly List<(Sprite2D Node, LayerDef Def, Vector2 BaseScale, float BaseRotation, Color BaseModulate)>
+        _layers = [];
 
     private readonly List<NoteTrack> _notes = [];
 
@@ -63,7 +67,7 @@ public partial class OscillationHitVfx : Node2D
     private Tween? _tween;
 
     private sealed record NoteTrack(
-        Sprite2D Node, Vector2 BaseScale, float BaseRotation,
+        Sprite2D Node, Vector2 BaseScale, float BaseRotation, Color BaseModulate,
         Vector2 P0, Vector2 P1, Vector2 Control);
 
     /// <summary>勾选即重播一次（自动复位，便于反复触发）。</summary>
@@ -106,7 +110,7 @@ public partial class OscillationHitVfx : Node2D
             if (GetNodeOrNull<Sprite2D>(def.NodePath) is not { } sprite)
                 continue;
 
-            _layers.Add((sprite, def, sprite.Scale, sprite.Rotation));
+            _layers.Add((sprite, def, sprite.Scale, sprite.Rotation, sprite.Modulate));
         }
 
         // 先挂进树再定位（与 VfxCmd.PlayVfx 同序），避免依赖容器的变换是否为恒等。
@@ -129,7 +133,7 @@ public partial class OscillationHitVfx : Node2D
             // 二次贝塞尔的法向偏移：两枚音符朝相反方向弯，飞行中不会叠成一条线。
             var normal = new Vector2(-direction.Y, direction.X).Normalized();
             var control = (p0 + p1) * 0.5f + normal * NoteBend[i];
-            _notes.Add(new NoteTrack(note, note.Scale, note.Rotation, p0, p1, control));
+            _notes.Add(new NoteTrack(note, note.Scale, note.Rotation, note.Modulate, p0, p1, control));
         }
 
         // _Ready 里不写任何视觉状态；只在运行态播放。
@@ -144,11 +148,11 @@ public partial class OscillationHitVfx : Node2D
 
         VfxPreviewSupport.CenterForPreview(this);
 
-        foreach (var (node, _, baseScale, baseRotation) in _layers)
+        foreach (var (node, _, baseScale, baseRotation, baseModulate) in _layers)
         {
             node.Scale = baseScale;
             node.Rotation = baseRotation;
-            node.Modulate = Colors.White;
+            node.Modulate = baseModulate;
         }
 
         foreach (var note in _notes)
@@ -156,7 +160,7 @@ public partial class OscillationHitVfx : Node2D
             note.Node.Position = note.P0;
             note.Node.Scale = note.BaseScale;
             note.Node.Rotation = note.BaseRotation;
-            note.Node.Modulate = Colors.White;
+            note.Node.Modulate = note.BaseModulate;
             note.Node.Visible = false;
         }
 
@@ -171,7 +175,7 @@ public partial class OscillationHitVfx : Node2D
         var clamped = Mathf.Clamp(progress, 0f, 1f);
         var time = clamped * Life;
 
-        foreach (var (node, def, baseScale, baseRotation) in _layers)
+        foreach (var (node, def, baseScale, baseRotation, baseModulate) in _layers)
         {
             var span = Mathf.Max(def.T1 - def.T0, 0.0001f);
             var local = Mathf.Clamp((clamped - def.T0) / span, 0f, 1f);
@@ -180,7 +184,7 @@ public partial class OscillationHitVfx : Node2D
             if (clamped < def.T0)
             {
                 node.Scale = baseScale * def.S0;
-                node.Modulate = new Color(def.Tint.R, def.Tint.G, def.Tint.B, 0f);
+                node.Modulate = new Color(baseModulate.R, baseModulate.G, baseModulate.B, 0f);
                 continue;
             }
 
@@ -190,7 +194,7 @@ public partial class OscillationHitVfx : Node2D
 
             node.Scale = baseScale * Mathf.Lerp(def.S0, def.S1, eScale);
             node.Rotation = baseRotation + Mathf.DegToRad(def.Rot * eScale);
-            node.Modulate = new Color(def.Tint.R, def.Tint.G, def.Tint.B,
+            node.Modulate = new Color(baseModulate.R, baseModulate.G, baseModulate.B,
                 Mathf.Lerp(def.A0, def.A1, fade));
         }
 
@@ -223,7 +227,8 @@ public partial class OscillationHitVfx : Node2D
             var scale = Mathf.Lerp(1f, 0.55f, u) * Mathf.Lerp(0.45f, 1f, rise);
             note.Node.Scale = note.BaseScale * scale;
             note.Node.Rotation = note.BaseRotation + Mathf.DegToRad(NoteRotateDegrees[i] * u);
-            note.Node.Modulate = new Color(0.79f, 0.85f, 1.00f, rise * fadeOut * NoteAlpha[i]);
+            note.Node.Modulate = new Color(note.BaseModulate.R, note.BaseModulate.G, note.BaseModulate.B,
+                rise * fadeOut * NoteAlpha[i]);
         }
     }
 

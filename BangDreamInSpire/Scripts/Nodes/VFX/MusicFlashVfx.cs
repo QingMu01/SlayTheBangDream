@@ -18,6 +18,9 @@ public partial class MusicFlashVfx : Node2D
 
     private Tween? _tween;
 
+    /// <summary>场景中圆环组 authored 的着色；重播时恢复到该基准（铁律一，不写死 Colors.White）。</summary>
+    private Color _ringGroupBaseModulate = Colors.White;
+
     /// <summary>是否正在播放。编辑器里未播放时保持静止，避免圆环一直自转干扰设计。</summary>
     private bool _active;
 
@@ -45,6 +48,7 @@ public partial class MusicFlashVfx : Node2D
     public override void _Ready()
     {
         _ringGroup = GetNode<Node2D>("RingGroup");
+        _ringGroupBaseModulate = _ringGroup.Modulate;
         _outerRing = GetNode<Sprite2D>("RingGroup/OuterRing");
         _innerRing = GetNode<Sprite2D>("RingGroup/InnerRing");
         _particles = GetNode<GpuParticles2D>("MusicNoteParticles");
@@ -71,7 +75,7 @@ public partial class MusicFlashVfx : Node2D
         ApplyTint(tint);
 
         _ringGroup.Scale = Vector2.Zero;
-        _ringGroup.Modulate = Colors.White;
+        _ringGroup.Modulate = _ringGroupBaseModulate;
 
         var ringGroup = _ringGroup;
         _tween = CreateTween();

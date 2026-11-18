@@ -174,7 +174,7 @@ public partial class MusicNoteFlyingVfx : NBangDreamFlyingVfx
             _isMoving = false;
             _isHit = true;
             IsFinished = false;
-            CallDeferred(nameof(OnReachedEndAsync));
+            CallDeferred(nameof(OnReachedEnd));
         }
     }
 
@@ -245,7 +245,7 @@ public partial class MusicNoteFlyingVfx : NBangDreamFlyingVfx
                 _tween.TweenProperty(_sprites, "scale", Vector2.Zero, 0.25f);
             }
 
-            CallDeferred(nameof(OnReachedEndAsync));
+            CallDeferred(nameof(OnReachedEnd));
         }
     }
 
@@ -265,7 +265,16 @@ public partial class MusicNoteFlyingVfx : NBangDreamFlyingVfx
         return 2f * (1f - progress) * (control - start) + 2f * progress * (end - control);
     }
 
-    private async void OnReachedEndAsync()
+    /// <summary>
+    /// 命中帧：先广播命中三段，再等淡出补间结束广播 Finish。
+    /// <para>
+    /// 不 <c>await ToSignal(_tween, Finished)</c>：节点/补间被释放时 await 的续体不会恢复，
+    /// <c>finally</c> 里的 <c>EmitFinishSignal()</c> 会丢。改为给补间的
+    /// <c>Finished</c> 挂回调——补间正常结束才收口；节点被释放时补间一并被杀，
+    /// 由 <c>BangDreamVfxManager</c> 的 <c>TreeExited</c> 兜底完成句柄，不产生挂起。
+    /// </para>
+    /// </summary>
+    private void OnReachedEnd()
     {
         try
         {
@@ -276,13 +285,25 @@ public partial class MusicNoteFlyingVfx : NBangDreamFlyingVfx
             EmitAfterHitSignal();
 
             if (_tween != null)
-                await ToSignal(_tween, Tween.SignalName.Finished);
+            {
+                _tween.Finished += FinishReachedEnd;
+                return;
+            }
         }
         catch (Exception ex)
         {
             BangDreamInSpireCore.Logger.Warn($"MusicNoteVfx lifecycle exception: {ex}");
         }
-        finally
+
+        FinishReachedEnd();
+    }
+
+    private void FinishReachedEnd()
+    {
+        if (!IsInstanceValid(this))
+            return;
+
+        try
         {
             var previewing = !VfxPreviewSupport.ShouldSelfFree(this);
 
@@ -291,6 +312,10 @@ public partial class MusicNoteFlyingVfx : NBangDreamFlyingVfx
             // 预览态不自毁，按需循环重播以便反复打磨。
             if (previewing && LoopPreview)
                 Replay();
+        }
+        catch (Exception ex)
+        {
+            BangDreamInSpireCore.Logger.Warn($"MusicNoteVfx lifecycle exception: {ex}");
         }
     }
 

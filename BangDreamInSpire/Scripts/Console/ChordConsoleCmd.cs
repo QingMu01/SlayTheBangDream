@@ -17,6 +17,10 @@ namespace BangDreamInSpire.Scripts.Console;
 /// <c>chord none</c>（清空）。卡牌书签由能力的卡面覆盖层绘制，只在
 /// <c>NCard.ReloadOverlay</c> 之后重建，因此改完和弦要手动触发一次覆盖层刷新。
 /// </para>
+/// <para>
+/// 仅单人 / 主机验收用：命令声明 <c>IsNetworked = false</c>，不会广播；多人局里由任一端单独执行会造成
+/// host/client 状态分歧，请只在单人或主机侧验收。
+/// </para>
 /// </summary>
 public class ChordConsoleCmd : AbstractConsoleCmd
 {

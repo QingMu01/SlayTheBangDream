@@ -69,6 +69,8 @@ tween.TweenMethod(Callable.From<float>(ApplyState), 0f, 1f, LifeTime);
 grep -rn "MusicSlashVfx\|vfx_music_slash" --include=*.cs --include=*.tscn .
 ```
 
+**已知保留（清理时勿当死代码删）**：`MusicSlashVfx` 为**预留待实装**——当前没有配套 `.tscn`、也没有调用点，但它保存了斩击/冲击的完整参考实现，**保留**；`MusicHitVfx` / `MusicFlashVfx` / `MusicWaveVfx` 是没有场景的文档参考实现，`MusicCrystalHitVfx` 是有意保留的预览件，均不按孤儿处理。完整清单见 `.agents/skills/obsolete-file-cleanup/references/keep-list.md`。
+
 **注意 `WithHitFx` 的路径解析规则**：游戏内走 `VfxCmd` → `SceneHelper.GetScenePath`，规则是 `"res://scenes/" + innerPath + ".tscn"`，解析到的是**游戏本体**的资源目录。所以 `WithHitFx("vfx/vfx_attack_slash")` 拿到的是原版斩击，**永远到不了 mod 自己的 `res://BangDreamInSpire/scenes/vfx/...`**。想让某张卡用上自定义特效，必须走注入路径（如 `PreloadManager.Cache.GetScene(...)` + `AddChildSafely`），不能只改字符串。
 
 ## 3. 新增特效接入清单

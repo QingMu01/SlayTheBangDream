@@ -1,8 +1,7 @@
-[gd_scene load_steps=6 format=3 uid="uid://d2d6u0y3h7c2m"]
+[gd_scene load_steps=5 format=3 uid="uid://d2d6u0y3h7c2m"]
 
 [ext_resource type="Script" uid="uid://b8576qt422hi7" path="res://Scripts/Nodes/NPerformArea.cs" id="1_i3xyf"]
 [ext_resource type="Texture2D" uid="uid://6lq6g550om1r" path="res://BangDreamInSpire/images/sceneui/point_perform.png" id="2_u0m28"]
-[ext_resource type="PackedScene" uid="uid://txb6745aun8k" path="res://BangDreamInSpire/scenes/perform_item.tscn" id="2_u7htc"]
 [ext_resource type="FontVariation" path="res://themes/fonts/jpn/noto_sans_cjkjp_bold_shared.tres" id="4_font"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_selection"]
@@ -39,9 +38,6 @@ offset_left = -15.0
 offset_right = -15.0
 grow_horizontal = 0
 grow_vertical = 2
-
-[node name="PerformItem" parent="ItemContainer" instance=ExtResource("2_u7htc")]
-layout_mode = 0
 
 [node name="Hint" type="TextureRect" parent="."]
 unique_name_in_owner = true

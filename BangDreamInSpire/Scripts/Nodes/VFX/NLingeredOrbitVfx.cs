@@ -7,6 +7,12 @@ using Timer = Godot.Timer;
 
 namespace BangDreamInSpire.Scripts.Nodes.VFX;
 
+/// <summary>余音资源量轨道饰件（HDR SubViewport 双层）。</summary>
+/// <remarks>
+/// 维护性说明：本文件目前同时承担轨道渲染、资源增减动画、HDR SubViewport 配置、层挂载/重挂与预览演示。
+/// 拆分 <c>OrbitGlowViewport</c> / <c>OrbitNoteLayer</c> 属独立重构——收益大但风险高，暂缓（deferred），
+/// 建议单独立项；低风险的队列合并已在 <see cref="SubmitResourceAmount" /> 就地处理。
+/// </remarks>
 [Tool]
 public sealed partial class NLingeredOrbitVfx : Node2D
 {
@@ -265,10 +271,27 @@ public sealed partial class NLingeredOrbitVfx : Node2D
             return;
         }
 
-        _pendingChanges.Enqueue(new ResourceVisualChange(
+        var change = new ResourceVisualChange(
             Math.Max(0, targetAmount),
             Math.Max(0, previewAmountAfter),
-            _previewRevision));
+            _previewRevision);
+
+        // 队列语义：每次资源量变化排队播一段聚集/爆散动画（见 _Process 的 StartNextResourceChange）。
+        // 同一目标值的待处理变更只保留最新一条，避免连续提交同一目标时重复排队、显示滞后；
+        // 新变更始终排在队尾，因此最终的视觉数量仍等于最后一次提交的目标值。
+        if (_pendingChanges.Any(pending => pending.TargetAmount == change.TargetAmount))
+        {
+            var retained = _pendingChanges
+                .Where(pending => pending.TargetAmount != change.TargetAmount)
+                .ToArray();
+            _pendingChanges.Clear();
+            foreach (var pending in retained)
+            {
+                _pendingChanges.Enqueue(pending);
+            }
+        }
+
+        _pendingChanges.Enqueue(change);
     }
 
     public void ShowPreview(int amount)

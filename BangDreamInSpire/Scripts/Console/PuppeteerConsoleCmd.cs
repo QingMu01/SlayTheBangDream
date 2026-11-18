@@ -20,6 +20,10 @@ namespace BangDreamInSpire.Scripts.Console;
 /// <c>puppet activate CDFG</c> 手动激活分组（走与"试图演奏"相同的入口，四组齐了会复活小睦）；
 /// <c>puppet freeze</c> / <c>puppet unfreeze</c> 单独验收冻结表现。
 /// </para>
+/// <para>
+/// 仅单人 / 主机验收用：命令声明 <c>IsNetworked = false</c>，不会广播；多人局里由任一端单独执行会造成
+/// host/client 状态分歧，请只在单人或主机侧验收。
+/// </para>
 /// </summary>
 public class PuppeteerConsoleCmd : AbstractConsoleCmd
 {

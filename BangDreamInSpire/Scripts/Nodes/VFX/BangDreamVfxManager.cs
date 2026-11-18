@@ -1,8 +1,6 @@
-using System.Reflection;
 using BangDreamInSpire.Scripts.Enums;
 using BangDreamInSpire.Scripts.Utils.Infos;
 using Godot;
-using HarmonyLib;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Helpers;
 
@@ -10,9 +8,6 @@ namespace BangDreamInSpire.Scripts.Nodes.VFX;
 
 public partial class BangDreamVfxManager : Control
 {
-    private static readonly MethodInfo? StateChanged =
-        AccessTools.Method(typeof(CombatStateTracker), "NotifyCombatStateChanged");
-
     public static BangDreamVfxManager? Instance { get; private set; }
 
     private readonly Dictionary<NBangDreamFlyingVfx, Action> _treeExitedActions = new();
@@ -106,12 +101,6 @@ public partial class BangDreamVfxManager : Control
         }
 
         _activeVfx.Remove(vfx);
-    }
-
-    internal static void NotifyCombatStateChanged()
-    {
-        if (CombatManager.Instance.IsInProgress)
-            StateChanged?.Invoke(CombatManager.Instance.StateTracker, ["BangDreamVfx"]);
     }
 
     private void RegisterVfx(NBangDreamFlyingVfx flyingVfx, List<(StringName, Callable)> connections)

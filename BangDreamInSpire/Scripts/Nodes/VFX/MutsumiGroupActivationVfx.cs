@@ -33,7 +33,10 @@ public partial class MutsumiGroupActivationVfx : Node2D
         Vector2 TargetCenter,
         bool Mirrored);
 
-    private const float LifeTime = 0.40f;
+    /// <summary>一次性激活表现的时长；<c>NPerformArea</c> 用它把多组点亮串行排队。</summary>
+    public const float OneShotLifeTime = 0.40f;
+
+    private const float LifeTime = OneShotLifeTime;
     private const float RowsLitDuration = 0.12f;
     private const float ThreadGrowDuration = 0.18f;
     private const float RingDuration = 0.128f;
