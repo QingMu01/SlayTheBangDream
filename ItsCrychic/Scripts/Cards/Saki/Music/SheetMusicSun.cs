@@ -1,5 +1,6 @@
 using BangDreamInSpire.Scripts.Extensions;
 using BangDreamInSpire.Scripts.Interfaces.GameHook;
+using BangDreamInSpire.Scripts.Utils;
 using BangDreamInSpire.Scripts.Utils.Infos;
 using ItsCrychic.Scripts.Power.Temporary;
 using MegaCrit.Sts2.Core.Combat;
@@ -41,29 +42,16 @@ public class SheetMusicSun() : AbstractSakikoMusicCard(CustomRarity, CustomTarge
     public override async Task OnPerform(PlayerChoiceContext choiceContext, CardPerform perform)
     {
         var amount = QuickVar.Buff.GetVar(this).BaseValue;
-        await PowerCmd.Apply<SheetMusicSunPower>(choiceContext, Owner.Creature, amount,
+        var power = await PowerCmd.Apply<SheetMusicSunPower>(choiceContext, Owner.Creature, amount,
             Owner.Creature, this);
+        // 双向校验：能力到期/被移除时，它需要反过来确认这张牌是否还在歌单里。
+        power?.LinkCard(this);
         _grantedAmount += amount;
     }
 
     public async Task OnCardLeavePerformArea(PlayerChoiceContext choiceContext, CardModel cardModel)
     {
         if (cardModel != this) return;
-
-        await ConvertGrantedToPermanentAsync(choiceContext);
-    }
-
-    /// <summary>
-    /// 回合结束前主动转化。本体 <see cref="TemporaryStrengthPower" /> 在自己的
-    /// <c>AfterSideTurnEnd</c> 里移除并扣回力量，而本 hook（<c>BeforeSideTurnEnd</c>）先于它执行，
-    /// 因此在这里先把本次授予的临时力量转成永久，保证文案承诺的「离开歌单时保留」不会因为
-    /// 回合结束先移除临时 Power 而静默失效。
-    /// </summary>
-    public override async Task BeforeSideTurnEnd(
-        PlayerChoiceContext choiceContext, CombatSide side, IEnumerable<Creature> participants)
-    {
-        // 与临时 Power 的移除条件一致：只在本方回合结束（自己参与该回合）时转化。
-        if (!participants.Contains(Owner.Creature)) return;
 
         await ConvertGrantedToPermanentAsync(choiceContext);
     }
@@ -77,22 +65,50 @@ public class SheetMusicSun() : AbstractSakikoMusicCard(CustomRarity, CustomTarge
         if (_grantedAmount <= 0) return;
 
         var amount = _grantedAmount;
-        // 先清零再 await：避免转化途中被重入（例如同一时点又触发一次离场）导致重复结算。
+        // 先清零再 await：避免转化途中被重入（例如同一时点又触发一次离场或能力到期）导致重复结算。
         _grantedAmount = 0;
 
         var temporaryPower = Owner.Creature.GetPower<SheetMusicSunPower>();
         if (temporaryPower == null)
         {
-            // 临时 Power 已被提前移除：此时再给永久力量等于凭空加属性，只能告警说明承诺未兑现。
-            ItsCrychic.Logger.Warn(
-                $"{nameof(SheetMusicSun)}: temporary strength power is gone, {amount} temporary strength cannot be converted.");
+            // 能力已不在：双向校验由能力的到期/移除回调完成——牌已离场时它已转永久，牌仍在歌单时已失效。
             return;
         }
 
+        // 卡牌离场且能力仍在：撤掉能力（等量削减到 0）并把本次授予转成永久。
         await PowerCmd.Apply<StrengthPower>(choiceContext, Owner.Creature, amount,
             Owner.Creature, this);
         await PowerCmd.ModifyAmount(choiceContext, temporaryPower, -amount,
             Owner.Creature, this);
+    }
+
+    /// <summary>
+    /// 双向校验的另一半：能力在回合结束（或其他原因）即将被移除时，由能力回调。
+    /// 牌已不在歌单 → 按文案承诺把本次授予转成永久；牌仍在歌单 → 本回合内有效，到期失效。
+    /// </summary>
+    internal async Task OnTemporaryPowerExpiringAsync(PlayerChoiceContext choiceContext)
+    {
+        var amount = _grantedAmount;
+        _grantedAmount = 0;
+        if (amount <= 0) return;
+
+        // 战斗已结束/正在结束时不再补属性（此时 Creature 也会被回收）。
+        if (!MegaCrit.Sts2.Core.Combat.CombatManager.Instance.IsInProgress) return;
+
+        if (IsInPerformArea) return;
+
+        await PowerCmd.Apply<StrengthPower>(choiceContext, Owner.Creature, amount,
+            Owner.Creature, this);
+    }
+
+    /// <summary>这张牌当前是否仍在歌单（能力到期时据此决定是否保留）。</summary>
+    private bool IsInPerformArea
+    {
+        get
+        {
+            var performPile = BangDreamConst.PerformPile.GetPile(Owner);
+            return performPile != null && ReferenceEquals(Pile, performPile);
+        }
     }
 
     public override Task AfterCardEnteredCombat(CardModel card)
