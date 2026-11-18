@@ -83,8 +83,6 @@
 
 **默认不做访谈，做提案。** 让用户在 8 个抽象选项里选，不如直接给 3 张图。
 
-提案怎么写、参考拆解、把观感反馈转成可验证假设：[references/creative-direction.md](references/creative-direction.md)。用户说法 → 层结构 / 参数起点：[references/translation-tables.md](references/translation-tables.md)（表 3「用户说法 → 技术参数」与表 5「混合模式」最常用）。
-
 ### 7.1 提案长什么样
 
 2–3 个**完整方案**，不是一个方案的三个变体。每个包含：

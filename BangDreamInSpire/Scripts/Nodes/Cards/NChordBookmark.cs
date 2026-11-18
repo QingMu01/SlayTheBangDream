@@ -27,7 +27,7 @@ namespace BangDreamInSpire.Scripts.Nodes.Cards;
 /// 因此 1~4 枚都不会碰到标题横幅（横幅占 <c>y ∈ [−207, −124]</c>，卡面标题区在 y&lt;−124）；
 /// 另外组顶还有 <see cref="MinGroupTopY" /> = −160 的硬下限，任何情况下都不许把书签推到横幅高度上去。</item>
 /// </list>
-/// 同一套几何由 <see cref="BuildBookmarkRects" /> / <see cref="BuildBookmarkShape" /> 对外暴露；需要静帧核对排版时，按这两个方法的同一组常量在本地画一张 2× 预览图即可，不必进游戏。
+/// 同一套几何由 <see cref="BuildBookmarkRects" /> / <see cref="BuildBookmarkShape" /> 对外暴露。
 /// </para>
 /// <para>
 /// 渲染：首版<b>纯程序化多边形</b>（<see cref="Polygon2D" />），颜色唯一来源是

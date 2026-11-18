@@ -19,7 +19,7 @@ namespace ItsCrychic.Scripts.Nodes.VFX;
 /// 由 <c>NPerformArea</c> 在布局变化后通过 <see cref="SetGroups" /> 重新投喂，因此槽位增减、演奏区重建后自动贴合。
 /// </para>
 /// <para>
-/// 设计契约见 <c>docs/mechanic-authoring.md</c> §12.1；层级：提线 z 序低于分组激活角标。
+/// 层级：提线 z 序低于分组激活角标。
 /// </para>
 /// </summary>
 [Tool]
@@ -46,7 +46,7 @@ public partial class MutsumiPlaylistFreezeVfx : Node2D, IPerformAreaFreezeVisual
     private const float BreathPeriod = 1.8f;
     /// <summary>
     /// 主线上端距组包围盒顶边的距离。计划里写的是 60px，但 60px 的短桩读不出「从上方落下来」；
-    /// 按批准的预演图（线自画面上方垂下）加长到 200px，顶端做 alpha 渐隐。契约见 <c>docs/mechanic-authoring.md</c> §12.1。
+    /// 按批准的预演图（线自画面上方垂下）加长到 200px，顶端做 alpha 渐隐。
     /// </summary>
     private const float ThreadTopOffset = 200f;
 

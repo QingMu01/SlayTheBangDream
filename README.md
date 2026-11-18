@@ -77,5 +77,4 @@ python3 tools/check-resource-uids.py   # 也可单独跑，只校验不打包
 | [`docs/cleanup-authoring.md`](docs/cleanup-authoring.md) | 删除文件前的判定与安全域 |
 | [`docs/performance-monitoring.md`](docs/performance-monitoring.md) | 性能诊断（BDS-Perf）报告与读法 |
 | [`docs/architecture/music-cardtype-and-skin-isolation.md`](docs/architecture/music-cardtype-and-skin-isolation.md) | 音乐牌 CardType 与皮肤隔离的决策记录 |
-| [`docs/architecture/coupling-boundaries.md`](docs/architecture/coupling-boundaries.md) | 模块耦合边界（`tools/check-architecture.py` 的规则来源） |
 | [`tools/localization.py`](tools/localization.py) | 本地化表校验 / 骨架生成 / 术语表抽取 |

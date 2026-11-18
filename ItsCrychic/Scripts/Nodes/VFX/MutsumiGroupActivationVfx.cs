@@ -16,7 +16,6 @@ namespace ItsCrychic.Scripts.Nodes.VFX;
 /// </para>
 /// <para>
 /// 一次性部分 LIFE = 0.40s；常驻部分（行描边 + 提线）持续到解冻或战斗结束。
-/// 设计契约见 <c>docs/mechanic-authoring.md</c> §12.1。
 /// </para>
 /// </summary>
 [Tool]

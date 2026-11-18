@@ -274,8 +274,6 @@ rewardCard.GetOrCreateCapability<ChordCapability>().SetChord(randomChord);
 
 ### 9.1 卡面书签
 
-书签取代旧包角带（`NChordCornerBadge`）：后者在卡面拐角被标题横幅压住、与卡框边缘混在一起，辨识度差。
-
 和弦通过能力实现的**卡面覆盖层**（`ICardOverlayContributor`）画在卡牌**右边缘**：`ChordCapability` 返回一个
 `CardOverlayContribution`（`FromFactory`），节点是 `NChordBookmark`；RitsuLib 在 `NCard.ReloadOverlay()` 之后
 把能力覆盖层挂到 `%OverlayContainer` 下并重建，所以卡牌模型刷新时书签自动跟随，无需自己订阅事件。
@@ -318,15 +316,14 @@ rewardCard.GetOrCreateCapability<ChordCapability>().SetChord(randomChord);
 
 | 项 | 约定 |
 |---|---|
-| 形态与生命 | 本体（`PuppeteerForm.Host`）用角色 `StartingHp`；傀儡（`Puppet`）上限由 `IPuppeteerCharacter.PuppetMaxHp` 给出。切形态时先把旧形态当前血量写回运行数据，再 `SetMaxHpInternal` → `SetCurrentHpInternal` 写入新形态（顺序不能反：写上限会把当前值压进上限）。进阶不额外扣血。 |
+| 形态与生命 | 本体（`PuppeteerForm.Host`）用角色 `StartingHp`；傀儡（`Puppet`）上限由 `IPuppeteerCharacter.PuppetMaxHp` 给出。切形态时先把旧形态当前血量写回运行数据，再 `SetMaxHpInternal` → `SetCurrentHpInternal` 写入新形态（顺序不能反：写上限会把当前值压进上限）。 |
 | 死亡拦截 | **本体形态吞掉一切原版防死，傀儡形态正常吃。** 只拦「战斗内 + 本体形态 + 目标是本玩家角色」：`ShouldDie` 返回 `false`，在 `AfterPreventingDeath` 里切傀儡。原版 `Hook.ShouldDie` 先遍历全部 `ShouldDie`（首个 `false` 者胜出），全部通过后才遍历 `ShouldDieLate` —— 本体返回 `false` 时两轮都跑不到，故精灵药水（`ShouldDie` 型）与蜥蜴尾巴（`ShouldDieLate` 型）**都不触发也不消耗**；傀儡形态返回 `true`，两类防死照常生效。**顺序是硬约束**：本模型必须走 `GetRunStateHookModels`（运行态订阅组，`RunState.IterateHookListeners` 中排在遗物 / 药水**之前**）；挂到 `GetCombatHookModels`（战斗组最末、排在遗物之后）会让 `ShouldDie` 型防死抢先，本体就不切形态了。**必须在 `AfterPreventingDeath` 里把血量抬到 >0**，否则原版会递归重杀（10 次后抛异常）。傀儡形态阵亡才是真正的失败结算。 |
 | 战斗边界 | 战斗开始强制本体形态（本体 0 血 → 1 血）；胜利 / 战斗结束（`AfterCombatVictory` + `AfterCombatEnd` + 解除订阅，三入口幂等）切回本体，本体已死则按 1 血强制复活。战斗外恒为 `Host`，读档不会卡在傀儡形态。 |
 | 歌单冻结 | `PerformManager.IsPlaylistFrozen`：冻结时音乐牌不再进歌单（`ModifyCardPlayResultLocation` 保持原版去向）、`OnCardAdded` / `HandleCardAddedInternal` 拒绝入组、`Clean` / `RemoveOverflowItems` 整段跳过（歌单内容不可移除）。 |
-| 演奏→激活 | 冻结时所有「演奏」入口（`PerformSlot` / `PerformChordSlots` / `RequestSlotPerform` / `RequestChordPerform` / `PerformCard`，以及打出音乐牌本身）不再发动效果、不再排网络动作，改为 `PuppeteerFormManager.ActivateGroups(...)`。分组来源：卡牌 `RequestGroup` / 指定槽位所属分组 → 该组；和弦掩码 → 掩码覆盖的所有组；都没有 → 方案默认分组。**打出音乐牌本身也算「试图演奏」**：否则墨缇丝形态下音乐牌完全空转，分组只能靠带和弦的非音乐牌点亮。激活幂等，四组全亮触发复活。 |
+| 演奏→激活 | 冻结时所有「演奏」入口（`PerformSlot` / `PerformChordSlots` / `RequestSlotPerform` / `RequestChordPerform` / `PerformCard`，以及打出音乐牌本身）不再发动效果、不再排网络动作，改为 `PuppeteerFormManager.ActivateGroups(...)`。分组来源：卡牌 `RequestGroup` / 指定槽位所属分组 → 该组；和弦掩码 → 掩码覆盖的所有组；都没有 → 方案默认分组。激活幂等，四组全亮触发复活。 |
 | 复活 | 生命 = `min(HostMaxHp, PerformManager.Capacity × 2)`（默认四组各 1 → 8）；切回本体、解冻、清空激活位，播 `PuppetSwitchOutTrigger`。 |
 | 形态动作 | 不换场景、不换皮肤：`IPuppeteerCharacter` 给出 `PuppetSwitchInTrigger` / `PuppetSwitchOutTrigger` / `PuppetIdleTrigger` / `PuppetDieTrigger`，角色在自己的 `GenerateAnimator` 里注册（睦为 Spine 的 `Doll_Switchin` / `Doll_SwitchOut` / `Doll_Idle` / `Doll_Die`）。`Doll_Die` 的 `AddAnyState("Dead", ...)` 带条件 `IsPuppetForm(creature)`，因此只在傀儡形态阵亡时生效，条件失败落回通用死亡动作。 |
-| 演奏区表现 | `NPerformArea.SetFrozen(bool)` / `SetActivatedGroups(PerformChord)` 只保留兜底（槽位冷色相乘 + `FrozenOverlay`、`ActivatedGroupBadge_<和弦>`）；正式特效「提线悬停 / 提线收紧」在内容模组 `ItsCrychic`，契约见 §12.1。外部接口不变。 |
-| 边界 | 空歌单也能靠带和弦的牌激活分组（不要求组内有牌）；`Host` 复活后本场再死仍可再切傀儡（谁活着谁在场）。 |
+| 占位表现 | `NPerformArea.SetFrozen(bool)`：槽位冷色相乘 + `FrozenOverlay` 覆盖层；`SetActivatedGroups(PerformChord)`：`ActivatedGroupBadge_<和弦>` 角标。正式特效替换点写在 `NPerformArea` 的字段注释里，外部接口不变。 |
 | 调试 | `puppet state` / `puppet kill` / `puppet activate CDFG` / `puppet freeze` / `puppet unfreeze`（`PuppeteerConsoleCmd`）。 |
 
 ## 11. 破绽 / 弱点击破
@@ -339,20 +336,8 @@ rewardCard.GetOrCreateCapability<ChordCapability>().SetChord(randomChord);
 | 唯一入口 | **必须走 `BreakCmd.Discover(ctx, target, amount, source)`**：层数截断、满层进状态、Hook 广播、VFX 刷新都在里面。`source` 传卡牌才能让这次发现计入该牌的「击破」命中集合。 |
 | 广播 | `IWeaknessBreakHookListener`（`Scripts/Interfaces/GameHook/`）三个点：发现、进入弱点击破、击破触发；派发在 `BangDreamHook`，不 push `LastInvolvedModel`（与 `OnCardTriggeredPerform` 同款）。 |
 | 击破触发 | 卡牌实现 `IWeaknessBreakCard`（`HasBreakEffect` + `OnWeakPointBreak(ctx, play, target)`）。`BreakRules` 在 `BeforeCardPlayed` 压帧（先记 `CardPlay.Target`），出牌中按 `cardSource` 从 `AfterDamageReceived` / `AfterPowerAmountChanged` 补记命中目标（覆盖随机 / AOE / 非伤害；给自己上的增益不算），`AfterCardPlayedLate` 出栈逐个触发——此时「发现破绽 → 满层 → 弱点击破」已结算完，因此同张牌可以「先发现凑满、再触发击破」。同一张牌对同一目标只触发一次，不同目标各一次。**触发语义写死为「本牌命中的目标此刻仍处于弱点击破」，不是「本牌造成了这次击破」**：队友或前一张牌刚打出的弱点击破同样算，后续命中该目标的牌继续触发「击破：」——这是有意设计（决策 B-08），不要按击破来源过滤。 |
-| 视觉 | 不占 Power 图标（`IsVisibleInternal = false`）：常驻 `NWeaknessBreakVfx` 挂在 `NCreature` 上，1–3 层是 n 枚指示点、弱点击破换破裂形态；Hover 时 `NHoverTipSet.CreateAndShow` 弹能力同款 tips，移除后淡出。施加能力用 `silent: true`，避免无图标却有受击抖动。素材与形态见 §11.1。 |
+| 视觉 | 不占 Power 图标（`IsVisibleInternal = false`）：常驻 `NWeaknessBreakVfx` 挂在 `NCreature` 上，1–3 层是 n 枚指示点、弱点击破换破裂形态；Hover 时 `NHoverTipSet.CreateAndShow` 弹能力同款 tips，移除后淡出。施加能力用 `silent: true`，避免无图标却有受击抖动。 |
 | 调试 | `break 2` / `break 4` / `break self 3` / `break clear`（`BreakConsoleCmd`）。 |
-
-### 11.1 常驻 VFX 契约（裂纹积累）
-
-`NWeaknessBreakVfx : Control`（`Scripts/Mechanics/Break/`，挂 `NCreature`；F6 预览 `BangDreamInSpire/BangDreamInSpire/scenes/vfx/mutsumi_weakness_break.tscn`）。
-
-| 项 | 约定 |
-|---|---|
-| 触发 | `BreakCmd.Discover` 每次生效刷新层数；满 4 层一次性碎裂；`WeakPointBreakPower` 移除时 `FadeOut` 再 `QueueFree` |
-| 形态 | 1–3 层是菱形层数点 + 逐层细裂纹；4 层 / 弱点击破压碎裂贴图（一次性 0.75 → 0.22–0.34 呼吸） |
-| 素材 | `weakness_break_cracks.png`（资产库 `T_Cracks336`，uuid `79ed637f-b96b-4881-b595-47d35b70d8af`，`LOCAL` → 复制进 `BangDreamInSpire/BangDreamInSpire/images/vfx/weakness_break/`）；本体 `res://images/vfx/vfx_rock_shatter/vfx_rock_shatter_shine_01.png`（`BODY` → 引用不复制） |
-| 交互 | 不做 Power 图标；`MouseFilter = Stop` + 命中区域，Hover 弹能力同款 tips，退出即移除 |
-| 待验收 | 实机碎裂是否过曝；破绽 / 击破两条流程未实机跑过 |
 
 ## 12. 演奏区槽位的视觉形态（做特效/UI 前必读）
 
@@ -365,24 +350,8 @@ rewardCard.GetOrCreateCapability<ChordCapability>().SetChord(randomChord);
 | 行内组成 | 卡面 portrait（同款斜切）+ 点阵叠加 + 渐变遮罩 + 白色标题（28px，右侧列整体水平镜像）；行右侧另有一条 165×25 的标题底色带 | `perform_item.tscn` |
 | 分组与列 | 四组 × 3 行，贴命中框左右两侧成**两列**：左列 **C（上）/ D（下）**，右列 **F（上）/ G（下，镜像）**；同一列上下两组在竖直中段留约 5px 缝 | `MutsumiPerformScheme` 的 `PerformSlotCorner`、`NPerformArea.GetItemPosition` |
 | 间距 | 行距 `ItemSpacing(70) × ItemScale` ≈ **49px**；列与命中框边缘 `SlotHitboxGap = 10px`；`PerformAreaAnchor.HitboxCenter` 表示演奏区坐标原点在命中框中心 | `NPerformArea` |
-| 分组角标 | 在该组**第一行的外端**，尺寸 22px（由 `NPerformArea` 绘制，激活特效以它为锚点） | `NPerformArea.TryGetGroupBadgeAnchor` |
+| 分组角标 | 在该组**第一行的外端**，尺寸 22px（占位实现） | `NPerformArea.TryGetGroupBadgeAnchor` |
 | 行坐标获取 | 特效逐行定位请读 `_items[i].Position`（实时值），不要写死像素；右侧列用 `IsMirroredCorner` 判断镜像 | `NPerformArea.ApplyItemScale` / `GetItemPosition` |
-
-> 冻结 / 分组激活两套正式特效均已落地，契约见 §12.1（破绽的常驻 VFX 见 §11.1）；`NPerformArea` 只保留兜底占位
-> （`FrozenOverlay`、`ActivatedGroupBadge_<和弦>`），外部只依赖 `SetFrozen(bool)` / `SetActivatedGroups(PerformChord)` / `ApplyItemVisibility`。
-
-### 12.1 已落地特效（冻结 / 分组激活）
-
-两套方案 2026-11-14 经用户批准（提线悬停 / 提线收紧）。计划稿属过程文件、不入库，**契约以本节为准**。
-
-| 特效 | 触发 | 实现 | 素材 | 形态与约束 |
-|---|---|---|---|---|
-| 歌单冻结 · 提线悬停 | `PerformManager.SetPlaylistFrozen(true)` → `NPerformArea.ApplyFrozenVisuals`；解冻时主动 `Clear` | `MutsumiPlaylistFreezeVfx : IPerformAreaFreezeVisual`（`ItsCrychic/Scripts/Nodes/VFX/`；F6 预览 `ItsCrychic/ItsCrychic/scenes/vfx/mutsumi_playlist_freeze.tscn`） | `glow_soft`（紫灰覆膜）、`star_270_1`（线结高光），工程内素材 | 四组各一根主提线落到组横杆，横杆下每行一条吊线钩在**内端**；主线上端距组包围盒顶 **200px** 并做顶端 α 渐隐；行**不倾斜**（旋转会与布局缓动 / 镜像冲突）；端点取 `_items[i].Position` 实时值 |
-| 分组激活 · 提线收紧 | `PuppeteerFormManager.ActivateGroups(...)` 首次点亮某组 | `MutsumiGroupActivationVfx : IPerformAreaActivationVisual`（同上；F6 预览 `ItsCrychic/ItsCrychic/scenes/vfx/mutsumi_group_activation.tscn`） | `whiteRing`（扩散环）、`star_322`（星芒）、`star_270_1`（光点）、`glow_soft`（线结），工程内素材 | 该组三条行同时点亮（底色 0.22 + 2.2px 描边），从分组角标拉一根提线指向角色命中框中心；一次性部分 `LIFE = 0.40s`；提线 z 序**低于**分组激活角标 |
-
-- 冻结 / 激活特效属**角色专属表现**，放内容模组；核心只出 `IPerformAreaFreezeVisual` / `IPerformAreaActivationVisual` 接口与 `NPerformArea` 挂点（A-12 决策 A）。
-- 素材都是工程内引用；`images/**` 不入库，新克隆缺图时特效退化为纯色或缺图，逻辑不受影响。
-- **实机观感验收未完成**（提线甩动、扫光节奏；傀儡师流程未实机跑过）。
 
 ## 13. 角色视觉动画时间线（`visuals_anim`）
 
