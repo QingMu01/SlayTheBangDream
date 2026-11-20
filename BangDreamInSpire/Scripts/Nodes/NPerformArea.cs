@@ -100,6 +100,7 @@ public partial class NPerformArea : Control, IPerformArea
     private bool _isHintAnimating;
     private bool _hintNeedsPositionRefresh;
     private bool _isExiting;
+    private bool _isApplyingLayout;
     private bool _subscribedToResourceChanged;
 
     // ── 歌单冻结 / 分组激活（占位表现） ──────────────────────────────────────────
@@ -835,19 +836,48 @@ public partial class NPerformArea : Control, IPerformArea
 
     private void ApplyLayoutImmediately()
     {
-        if (_itemContainer == null) return;
+        if (_itemContainer == null || _isApplyingLayout) return;
 
-        ApplyItemVisibility();
+        // 先落位、再刷显隐与冻结层/角标：视觉层要按落位之后的几何重新贴。
+        // 冻结会改变槽位的落位与倾角（PerformHangStyle），直接落位不补缓动：
+        // 冻结层的提线/钩点是按槽位当时的姿态画的，缓动会让线和行脱开 0.25s，
+        // 而在 3px/3° 的量级下缓动本身也看不出「落位」，不如交给冻结层的淡入。
+        //
+        // _isApplyingLayout 是防重入保险：本方法与被它调用的刷新方法互相调用过一次，
+        // 结果是每个槽位创建时无限递归、栈溢出 SIGSEGV（0.113.1 实机，见 commit e5d9ff7 之后的崩溃）。
+        // 重入时外层那次已经会把活干完，直接返回即可。
+        _isApplyingLayout = true;
+        try
+        {
+            ApplySlotPositions();
+            ApplyItemVisibility();
+            UpdateHintPosition();
+        }
+        finally
+        {
+            _isApplyingLayout = false;
+        }
+    }
+
+    /// <summary>把激活槽位直接落到目标 <c>position</c> 与悬挂倾角（不缓动）。</summary>
+    private void ApplySlotPositions()
+    {
         for (var slotIndex = 1; slotIndex <= _items.Count; slotIndex++)
         {
             if (!_activeSlots.Contains(slotIndex)) continue;
-            _items[slotIndex - 1].Position = GetItemPosition(slotIndex);
-            _items[slotIndex - 1].SetHangTilt(_isFrozen ? GetHangTilt(slotIndex) : 0f);
-        }
 
-        UpdateHintPosition();
+            var item = _items[slotIndex - 1];
+            item.Position = GetItemPosition(slotIndex);
+            item.SetHangTilt(_isFrozen ? GetHangTilt(slotIndex) : 0f);
+        }
     }
 
+    /// <summary>刷新槽位显隐，并在槽位集合变化后重贴冻结层与激活角标。</summary>
+    /// <remarks>
+    /// 这里只刷表现，**不得**回头调用 <see cref="ApplyLayoutImmediately" />：两者互相调用会无限递归，
+    /// 战斗开始时第一次布局就把调用栈撑爆（实测 SIGSEGV / 栈溢出，递归体正是这两个方法）。
+    /// 需要「先落位再贴视觉」的调用方直接调 <see cref="ApplyLayoutImmediately" />。
+    /// </remarks>
     private void ApplyItemVisibility()
     {
         for (var index = 0; index < _items.Count; index++)
@@ -858,14 +888,6 @@ public partial class NPerformArea : Control, IPerformArea
         // 槽位集合变化后重新贴一次冻结层与激活角标（新增/移除槽位会改变它们的范围）。
         ApplyFrozenVisuals();
         ApplyActivatedGroupVisuals();
-
-        // 冻结会改变槽位的落位与倾角（PerformHangStyle）。这里直接落位、不补缓动：
-        // 冻结层的提线/钩点是按槽位当时的姿态画的，缓动会让线和行脱开 0.25s，
-        // 而在 3px/3° 的量级下缓动本身也看不出「落位」，不如交给冻结层的淡入。
-        if (IsInsideTree())
-        {
-            ApplyLayoutImmediately();
-        }
     }
 
     /// <summary>记录槽位的原始 modulate：冻结表现是相乘冷色，必须先留底才能原样还原。</summary>
