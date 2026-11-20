@@ -32,11 +32,11 @@ namespace BangDreamInSpire.Scripts.Mechanics.Perform;
 /// 注意：<c>BeginDrag</c>、<c>IsCardInPlayZone</c> 这类极小方法可能被 JIT 内联，补丁不保证在所有调用点生效；
 /// 任一钩子未生效时按原版出牌规则处理（不会再出现出牌区放宽）。
 /// <para>
-/// 0.113.0 复核结论（勿再重复调研）：本体仍未开放「群体/非生物目标」的卡牌出牌入口。
-/// <c>NTargetManager.StartTargeting</c> 依旧对非单目标类型抛 <c>InvalidOperationException</c>；
-/// <c>NMouseCardPlay.SingleCreatureTargeting</c> 依旧传 <c>nodeFilter: null</c> 并把非生物节点硬转后抛
-/// <c>ArgumentOutOfRangeException</c>。能力在（<c>AllowedToTargetNode</c> 对任意节点返回 true），但入口不传。
-/// 因此本文件的补丁与自建箭头必须保留；只有本体愿意把 <c>nodeFilter</c> 透传给卡牌路径时才可移除。
+/// 0.113.0 的本体未开放「群体/非生物目标」的卡牌出牌入口：
+/// <c>NTargetManager.StartTargeting</c> 对非单目标类型抛 <c>InvalidOperationException</c>；
+/// <c>NMouseCardPlay.SingleCreatureTargeting</c> 传 <c>nodeFilter: null</c>，并把非生物节点硬转后抛
+/// <c>ArgumentOutOfRangeException</c>。能力层允许任意节点（<c>AllowedToTargetNode</c> 返回 true），但入口不传。
+/// 因此本文件的补丁与自建箭头必须保留；只有本体把 <c>nodeFilter</c> 透传给卡牌路径时才可移除。
 /// </para>
 /// </remarks>
 public sealed class PerformSlotTargetingPatches : IModPatches
@@ -47,7 +47,7 @@ public sealed class PerformSlotTargetingPatches : IModPatches
     /// 静态字段初始化里用 <c>!</c> 硬取，会在本体重命名/移除该成员时抛
     /// <see cref="TypeInitializationException" />：它发生在补丁注册**之前**，
     /// 会绕过补丁层 <c>IsCritical=false</c> 的保护，直接让 mod 整体初始化失败。
-    /// 因此统一改成「定位失败 = null」，由调用点判空并降级。
+    /// 因此定位失败时返回 null，由调用点判空并降级。
     /// </para>
     /// </summary>
     private static readonly FieldInfo? IsTryingToPlayCardField =

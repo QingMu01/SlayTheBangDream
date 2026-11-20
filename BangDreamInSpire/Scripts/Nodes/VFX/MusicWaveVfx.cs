@@ -20,7 +20,7 @@ public partial class MusicWaveVfx : Node2D
     private bool _active;
     private float _elapsed;
 
-    /// <summary>场景中 MainNote 的原始着色（含蓝色基调）。原实现只动画其 alpha，这里保持一致。</summary>
+    /// <summary>场景中 MainNote 的原始着色（含蓝色基调）；动画只改变 alpha。</summary>
     private Color _noteBaseColor = Colors.White;
     private float _hueShift;
     private Sprite2D? _musicNote;
@@ -190,8 +190,8 @@ public partial class MusicWaveVfx : Node2D
     }
 
     /// <summary>
-    /// 编辑器里写「实例级」着色参数：它是每实例的，不会改动场景共享的 ShaderMaterial，
-    /// 因而不会把场景标记为已修改（逐帧的 brightness 尤其如此）。游戏内沿用原来的写法。
+    /// 编辑器里写「实例级」着色参数，避免改动场景共享的 ShaderMaterial 并把场景标记为已修改；
+    /// 游戏内写共享材质参数。
     /// </summary>
     private void ApplyShaderParam(StringName name, Variant value)
     {

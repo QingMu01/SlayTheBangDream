@@ -105,9 +105,8 @@ public partial class PerformManager : HookedSingletonModel, IInCombatManager, IP
     private readonly HashSet<CardModel> _cardsPendingArrival = [];
 
     /// <summary>
-    /// 每张「等待入场表现」的牌各自的观察令牌。用令牌而不是队列，是因为原版
-    /// <c>CardPile.CardAddFinished</c> 不带牌参数：多张牌同帧入场时无法知道是「哪一张」落地，
-    /// FIFO 会把完成事件配给错误的牌（A-10）。这里改为逐牌观察该牌自身 NCard 的飞行状态。
+    /// 每张「等待入场表现」的牌各自的观察令牌。原版 <c>CardPile.CardAddFinished</c> 不带牌参数，
+    /// 多张牌同帧入场时无法对应到具体卡牌，因此逐牌观察其 NCard 的飞行状态，并用令牌避免重复收口。
     /// </summary>
     private readonly Dictionary<CardModel, int> _arrivalWatchTokens = [];
 
@@ -215,7 +214,7 @@ public partial class PerformManager : HookedSingletonModel, IInCombatManager, IP
     /// <summary>
     /// 逐牌观察入场表现：原版飞牌动画结束的当帧会把 NCard 停在终点，因此「先移动过、随后连续两帧
     /// 位置不变」就是该牌落地的自有时刻；没有飞行动画（直接置入歌单）则给 0.5 秒缓冲后按到达处理。
-    /// 这样完成事件与牌一一对应，不再依赖无参 <c>CardAddFinished</c> 的入队顺序。
+    /// 完成事件因此与牌一一对应，不依赖无参 <c>CardAddFinished</c> 的入队顺序。
     /// </summary>
     private async Task WatchCardArrivalAsync(CardModel cardModel, int watchToken)
     {

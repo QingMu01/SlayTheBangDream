@@ -875,7 +875,7 @@ public partial class NPerformArea : Control, IPerformArea
     /// <summary>刷新槽位显隐，并在槽位集合变化后重贴冻结层与激活角标。</summary>
     /// <remarks>
     /// 这里只刷表现，**不得**回头调用 <see cref="ApplyLayoutImmediately" />：两者互相调用会无限递归，
-    /// 战斗开始时第一次布局就把调用栈撑爆（实测 SIGSEGV / 栈溢出，递归体正是这两个方法）。
+    /// 并在战斗开始时的首次布局中导致栈溢出。
     /// 需要「先落位再贴视觉」的调用方直接调 <see cref="ApplyLayoutImmediately" />。
     /// </remarks>
     private void ApplyItemVisibility()

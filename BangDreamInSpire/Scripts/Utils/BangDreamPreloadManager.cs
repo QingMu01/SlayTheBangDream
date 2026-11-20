@@ -50,8 +50,7 @@ public static class BangDreamPreloadManager
         "res://BangDreamInSpire/images/sceneui/default_portrait.png",
         "res://BangDreamInSpire/shaders/color_overlay.gdshader",
         "res://BangDreamInSpire/scenes/merchant/extra_card_merchant_inventory.tscn",
-        // 以下资源原先只在首次使用时走主线程同步加载（BDS-Perf 报告里反复出现 Asset not cached），
-        // 提前放进 run 资源集，把首次触碰的卡顿挪到房间预加载阶段。
+        // 战斗资源随房间预载，避免首次使用时在主线程同步加载。
         "res://BangDreamInSpire/scenes/vfx/oscillation_wave_vfx.tscn",
         "res://BangDreamInSpire/scenes/vfx/oscillation_hit_vfx.tscn",
         "res://BangDreamInSpire/images/sceneui/music_reward.png",
@@ -63,8 +62,7 @@ public static class BangDreamPreloadManager
     ];
 
     /// <summary>
-    /// 主菜单真正创建界面时才会用到的资源。它们原先在 <c>Time to main menu</c> 之前同步加载
-    /// （character_selector.tscn 单次可达 240ms），放进 MainMenuEssentials 让它们在 logo 播放期间预载。
+    /// 主菜单界面资源在 logo 播放期间预载，避免创建角色选择器等界面时同步加载。
     /// <para>
     /// 角色专属资源不写在这里：核心库不得出现具体角色标识，由内容模组通过
     /// <see cref="AddCustomCommonAsset" /> 注册后并入同一预载集。

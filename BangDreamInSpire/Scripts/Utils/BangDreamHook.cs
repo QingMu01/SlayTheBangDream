@@ -310,7 +310,7 @@ public static class BangDreamHook
         if (!CanDispatchCombatHooks())
         {
             // 该分支只代表「战斗已结束 / 正在结束」——结束流程中再跑演奏区变更会二次结算，
-            // 因此保持不执行，只记一次告警（A-11）。
+            // 因此跳过执行，只记一次告警。
             WarnPerformHookSkippedOnce(source);
             return;
         }
@@ -318,7 +318,7 @@ public static class BangDreamHook
         var netId = LocalContext.NetId;
         if (!netId.HasValue)
         {
-            // 无本地 NetId 时构造不出 HookPlayerChoiceContext，但时机本身仍安全，不能整段跳过（A-11）：
+            // 无本地 NetId 时构造不出 HookPlayerChoiceContext，但时机本身仍安全，不能整段跳过：
             // 用不绑定玩家的 BlockingPlayerChoiceContext 兜底执行。该上下文不产生 GameAction、
             // 不暂停玩家选择（信号直接完成），语义即「仅执行一次」；HandlePerformAreaChange 及其内部的
             // OnCardEnterPerformArea / OnCardTriggeredPerform 都只把上下文用于模型栈与选择信号，可直接接受。

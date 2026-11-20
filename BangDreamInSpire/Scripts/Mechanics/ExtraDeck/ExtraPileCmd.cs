@@ -201,8 +201,8 @@ internal static class ExtraPileCmd
     /// </item>
     /// </list>
     /// <para>
-    /// 0.113.0 复核结论：<c>CardPileCmd</c> 的抽牌入口仍然全部锁死 <c>PileType.Draw</c>，
-    /// 只新增了同为抽牌堆的 <c>AutoPlayFromDrawPile</c>。因此本方法不可删除、不可改调本体 API，
+    /// 在 0.113.0 中，<c>CardPileCmd</c> 的抽牌入口均固定使用 <c>PileType.Draw</c>，
+    /// <c>AutoPlayFromDrawPile</c> 也只服务抽牌堆。因此本方法不可删除、不可改调本体 API，
     /// 且**本体每次改动抽牌流程时必须同步这里**（对照本体 <c>CardPileCmd.DrawInternal</c>）。
     /// </para>
     /// </summary>

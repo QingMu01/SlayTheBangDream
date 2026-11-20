@@ -620,8 +620,8 @@ public partial class NPerformItem : NClickableControl, IPerformSlot
 
     /// <summary>
     /// 设置悬挂倾角。转的是 <c>Holder</c>（自身缩放为 1）而不是槽位根节点：
-    /// 根节点带着镜像缩放，Godot 的 <c>PivotOffset</c> 在带缩放的节点上会把整行平移
-    /// （实测镜像列位移 272px），转到无缩放的子节点上才是纯旋转。
+    /// 根节点带着镜像缩放，Godot 的 <c>PivotOffset</c> 在带缩放的节点上会把整行平移；
+    /// 旋转无缩放的子节点才是纯旋转。
     /// </summary>
     public void SetHangTilt(float radians)
     {
@@ -641,8 +641,8 @@ public partial class NPerformItem : NClickableControl, IPerformSlot
 
     /// <summary>
     /// 标题挂在 <c>TitleHolder</c>（普通 Control）下，而不是像卡面那样留在 MarginContainer 里：
-    /// Container 排布会把直接子节点的 rotation/scale 重置为 0/1，右列标题的「反向再翻一次」
-    /// 会被布局吃掉（实测每帧被写回 1），字形就一直是镜像的。挂到非 Container 下即可长稳。
+    /// Container 排布会把直接子节点的 rotation/scale 重置为 0/1，清除右列标题的反向翻转，
+    /// 使字形保持镜像；挂到非 Container 下可避免布局覆盖。
     /// </summary>
     private void UpdateTitleHolderSize(float itemWidth)
     {

@@ -84,7 +84,7 @@ public sealed class CombatAsyncDamageManager
 
     /// <summary>
     /// 在同步 Action 内锁定整批根音符的目标与伤害后立即返回；飞行与命中由表现泵脱手驱动。
-    /// 无交互模式（测试 / 无渲染）下退化为当场结算，保持原有确定性行为。
+    /// 无交互模式（测试 / 无渲染）下退化为当场结算，保证确定性。
     /// <para>
     /// 锁边界：<see cref="Session.Gate" /> 内只做数据读写（批次/音符登记、预留账本）；
     /// 每枚音符的目标选择与 <see cref="IAsyncDamageEffect.GetLockedDamage" />
@@ -105,7 +105,7 @@ public sealed class CombatAsyncDamageManager
         BatchState batch;
         var interactive = !NonInteractiveMode.IsActive;
 
-        // 批次号分配必须串行；但除了取号，登记过程中不再持锁做任何外部调用。
+        // 批次号分配必须串行；登记过程中的外部调用全部在锁外执行。
         lock (session.Gate)
         {
             batch = new BatchState(session.NextBatchId++, request, combatState);
@@ -641,7 +641,7 @@ public sealed class CombatAsyncDamageManager
     /// <para>
     /// <b><c>GetTargetEffectiveHealth</c> / <c>GetLockedDamage</c> 的调用契约</b>：这两个是外部实现
     /// （任意 <see cref="IAsyncDamageEffect" />），在锁外被调用，因此实现里<b>不得</b>假设自己持有任何锁；
-    /// 允许重入 <c>LaunchAsync</c> / <c>SpawnAsync</c>（不再有锁重入风险），但两者都在发射/弹跳的同步 Action 内执行，
+    /// 允许重入 <c>LaunchAsync</c> / <c>SpawnAsync</c>，但两者都在发射/弹跳的同步 Action 内执行，
     /// 不得长时间阻塞，也不要在这里操作节点（节点操作属于表现层，走 StartAnimationAsync）。
     /// </para>
     /// <para>
@@ -707,7 +707,7 @@ public sealed class CombatAsyncDamageManager
                         new AsyncDamageTargetContext(combatState, request, candidate)));
                 }
 
-                // 2b) 锁内：按预留账本与快照容量选目标（RNG 也在锁内，与旧实现同序）。
+                // 2b) 锁内：按预留账本与快照容量选目标，并在同一临界区推进 RNG。
                 lock (session.Gate)
                 {
                     var selectable = candidates.Where(candidate =>

@@ -8,11 +8,6 @@ using Timer = Godot.Timer;
 namespace BangDreamInSpire.Scripts.Nodes.VFX;
 
 /// <summary>余音资源量轨道饰件（HDR SubViewport 双层）。</summary>
-/// <remarks>
-/// 维护性说明：本文件目前同时承担轨道渲染、资源增减动画、HDR SubViewport 配置、层挂载/重挂与预览演示。
-/// 拆分 <c>OrbitGlowViewport</c> / <c>OrbitNoteLayer</c> 属独立重构——收益大但风险高，暂缓（deferred），
-/// 建议单独立项；低风险的队列合并已在 <see cref="SubmitResourceAmount" /> 就地处理。
-/// </remarks>
 [Tool]
 public sealed partial class NLingeredOrbitVfx : Node2D
 {
@@ -117,7 +112,7 @@ public sealed partial class NLingeredOrbitVfx : Node2D
         if (_previewDemoTimer != null)
             return;
 
-        // 用独立的 Timer 驱动增减演示，避免改动本类原有的逐帧动画循环。
+        // 独立 Timer 驱动增减演示，与逐帧动画循环解耦。
         _previewDemoTimer = new Timer { WaitTime = 2.5f, Autostart = true };
         _previewDemoTimer.Timeout += OnPreviewDemoTick;
         AddChild(_previewDemoTimer);

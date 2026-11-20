@@ -114,7 +114,7 @@ public partial class NCharacterButton : Button
     }
 
     /// <summary>
-    /// 用角色代表物（SelectLogo 纹章）做标签图标，替换原来的立绘裁脸。
+    /// 用角色代表物（SelectLogo 纹章）做标签图标。
     /// </summary>
     private void ApplyIcon(CharacterModel character)
     {

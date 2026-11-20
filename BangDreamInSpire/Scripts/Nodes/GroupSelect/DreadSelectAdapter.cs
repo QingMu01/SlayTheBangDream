@@ -8,7 +8,7 @@ namespace BangDreamInSpire.Scripts.Nodes.GroupSelect;
 /// 不是根节点的直接子节点 —— 基线按「背景的下一个兄弟」插覆盖层会解析失败、落到末尾，
 /// 把确认 / 返回整个盖住（表现为「恐惧模式下确认取消不可见」）。
 /// <para>
-/// 处理：覆盖层改为明确插到 <c>SubViewportContainer</c> 之后 —— 背景之上、所有本体 chrome 之下。
+/// 覆盖层明确插到 <c>SubViewportContainer</c> 之后：背景之上、所有本体 chrome 之下。
 /// 另外恐惧模式不使用进阶选项（固定 10 级、玩家不可选），<see cref="SupportsAscension" /> 为 false，
 /// 自定义选择器的进阶面板会随之隐藏。
 /// </para>

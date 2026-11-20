@@ -112,9 +112,8 @@ internal static class ExtraCardMerchantManager
         inventoryNode.GetNode<Label>("%NotOpenZone1Label").Text = notOpenText;
         inventoryNode.GetNode<Label>("%NotOpenZone4Label").Text = notOpenText;
 
-        // 0.113 起 MerchantInventory 提供公开的全参构造，模组可以直接持有自己的无色牌条目列表，
-        // 不必再反射写入私有的 _colorlessCardEntries。构造函数保存的是列表引用，
-        // 因此先构造库存、再逐条 Populate 追加，与原先的时序等价。
+        // MerchantInventory 的全参构造保存无色牌条目列表的引用，
+        // 因此可在构造库存后通过 Populate 逐项追加。
         var colorlessEntries = new List<MerchantCardEntry>();
         var inventory = new MerchantInventory(
             player,

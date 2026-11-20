@@ -45,15 +45,13 @@ public static class ItsCrychic
         // 设置 Crychic 角色组图标
         CharacterGroup.Crychic.SetBandSelectIcon("res://ItsCrychic/images/charui/char_select_saki.png");
 
-        // BDS-Perf 报告显示这些资源原先在首次使用时走主线程同步加载；并入对应的预载集，
-        // 把首次触碰的卡顿挪到预加载阶段（角色选择图标进主菜单，能量图标进 run 资源集）。
+        // 角色选择与能量图标加入对应预载集，避免首次使用时在主线程同步加载。
         BangDreamPreloadManager.AddCustomCommonAsset("crychic_group_select_icon",
             "res://ItsCrychic/images/charui/char_select_saki.png");
         BangDreamPreloadManager.AddCustomCombatAsset("sakiko_small_energy",
             "res://ItsCrychic/images/charui/sakiko/sakiko_small_energy.png");
 
-        // 角色专属资源从核心预载表移出，改由内容模组注册（核心库不得出现具体角色资源）；
-        // 注册后与原先一样并入 run / 主菜单预载集，首次触碰不再走主线程同步加载。
+        // 角色专属资源由内容模组注册，核心预载表不引用具体角色资源。
         BangDreamPreloadManager.AddCustomCombatAsset("sakiko_strike_vfx",
             "res://ItsCrychic/scenes/vfx/strike_sakiko_vfx.tscn");
         BangDreamPreloadManager.AddCustomCombatAsset("sakiko_card_trail",

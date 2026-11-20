@@ -28,7 +28,7 @@ public class AnglesSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTarget
     {
         ArgumentNullException.ThrowIfNull(CombatState);
 
-        // 牌源改为「你的牌组」中的攻击牌，而不是任意卡池。
+        // 仅从玩家牌组中的攻击牌选择。
         var deckCards = PileType.Deck.GetPile(Owner).Cards
             .Where(card => card.Type == CardType.Attack)
             .ToList();

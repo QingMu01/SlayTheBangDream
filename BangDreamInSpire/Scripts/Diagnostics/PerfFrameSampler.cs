@@ -373,7 +373,7 @@ public partial class PerfFrameSampler : Node
         if (_histogramFrames > 0)
         {
             // HistogramPercentile 返回的是直方图桶号，而桶号本身就是「毫秒」（见 _Process 里的 usec/1000），
-            // 不能再除以 1000（旧版这行把 p50/p95/p99 缩小了 1000 倍）。
+            // 此处结果已是毫秒，不能再除以 1000。
             snapshot.P50Ms = HistogramPercentile(50);
             snapshot.P95Ms = HistogramPercentile(95);
             snapshot.P99Ms = HistogramPercentile(99);

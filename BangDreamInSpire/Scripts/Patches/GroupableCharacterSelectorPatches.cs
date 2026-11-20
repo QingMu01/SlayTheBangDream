@@ -299,7 +299,7 @@ internal static class CharacterSelectScreenSupport
     /// <para>
     /// 恐惧屏的轮换按钮在 <c>InitCharacterButtons</c> 阶段还没 <c>Init</c>（<c>IsRandom</c> 仍为 false、
     /// <c>Character</c> 为 null），所以先直接反射本体字段拿节点，而不是靠按钮状态判断；
-    /// 拿不到时才退回「最后一个角色按钮之后」的旧逻辑。
+    /// 拿不到时才退回「最后一个角色按钮之后」。
     /// </para>
     /// </summary>
     private static int GetInsertIndex(Control container, object screen, List<NCharacterSelectButton> buttons)

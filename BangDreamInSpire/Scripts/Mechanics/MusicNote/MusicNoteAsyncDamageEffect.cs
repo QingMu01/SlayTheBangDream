@@ -67,8 +67,7 @@ internal sealed class MusicNoteAsyncDamageEffect(
                 var start = sourceNode.VfxSpawnPosition;
                 var end = targetNode.VfxSpawnPosition;
                 vfx.SetPath(start, end);
-                // 命中时刻由音符真实命中信号（HitTriggered → VfxHandle.Arrived）驱动，
-                // 不再用「距离 / 速度」推算，避免与表现层的 Speed / 缓动耦合。
+                // 命中时刻由音符真实命中信号（HitTriggered → VfxHandle.Arrived）驱动，与 Speed / 缓动解耦。
                 var handle = vfxManager.SubmitVfx(vfx);
                 return Task.FromResult(new AsyncDamageAnimationHandle(
                     handle.Arrived,
@@ -142,7 +141,7 @@ internal sealed class MusicNoteAsyncDamageEffect(
         if (recorded == 0)
         {
             // 理论上本体总会给原目标补一条结果（即使 0 伤害）；匹配不到说明吸收语义与预期不同，
-            // 保留 Warn + 原始条数，避免统计被静默吞掉（该场景仍列入「待实机确认吸收语义」）。
+            // 保留 Warn + 原始条数，避免统计被静默吞掉。
             BangDreamInSpireCore.Logger.Warn(
                 $"Music note #{context.SequenceId} produced no DamageResult received by target {context.Target} " +
                 $"(dealer={context.Request.Dealer}, results={results.Count()}); nothing recorded.");

@@ -250,7 +250,7 @@ public partial class MusicEqualizerVfx : Node2D
 
     /// <summary>
     /// 编辑器里写「实例级」着色参数，避免逐帧改动场景共享的 ShaderMaterial 而把场景标记为已修改；
-    /// 游戏内沿用原来写共享材质的写法。
+    /// 游戏内写共享材质参数。
     /// </summary>
     private void SetBrightness(float value)
     {

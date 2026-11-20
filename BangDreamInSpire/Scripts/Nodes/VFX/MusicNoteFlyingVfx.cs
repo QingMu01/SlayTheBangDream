@@ -269,9 +269,8 @@ public partial class MusicNoteFlyingVfx : NBangDreamFlyingVfx
     /// 命中帧：先广播命中三段，再等淡出补间结束广播 Finish。
     /// <para>
     /// 不 <c>await ToSignal(_tween, Finished)</c>：节点/补间被释放时 await 的续体不会恢复，
-    /// <c>finally</c> 里的 <c>EmitFinishSignal()</c> 会丢。改为给补间的
-    /// <c>Finished</c> 挂回调——补间正常结束才收口；节点被释放时补间一并被杀，
-    /// 由 <c>BangDreamVfxManager</c> 的 <c>TreeExited</c> 兜底完成句柄，不产生挂起。
+    /// <c>finally</c> 里的 <c>EmitFinishSignal()</c> 会丢。补间正常结束时通过 <c>Finished</c> 回调收口；
+    /// 节点被释放时补间一并被杀，由 <c>BangDreamVfxManager</c> 的 <c>TreeExited</c> 兜底完成句柄，不产生挂起。
     /// </para>
     /// </summary>
     private void OnReachedEnd()

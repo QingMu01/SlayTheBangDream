@@ -106,7 +106,7 @@ public static class VisualsAnimTrack
             // 时间线必须全程在主线程推进：tween 信号、节点操作都在主线程。
             // 信号量竞争后的续体可能落在线程池 —— 此时**不能丢弃**整条时间线：
             // 那样连 Callback 里的玩法请求（伤害）都会静默消失，与「按生物串行、排在后面」的承诺相反。
-            // 改为显式回主线程再继续。
+            // 显式回主线程后继续推进时间线。
             if (!NGame.IsMainThread())
             {
                 BangDreamInSpireCore.Logger.Warn(

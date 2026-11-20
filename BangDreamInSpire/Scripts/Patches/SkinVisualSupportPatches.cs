@@ -68,7 +68,7 @@ internal class CreatureVisualsPatch : IPatchMethod
     /// <summary>
     /// 把「按玩家取角色视觉」的唯一入口收敛到 <see cref="Creature.CreateVisuals" />。
     /// <para>
-    /// 原先只补 <c>NCreature.Create</c>，而该路径之外还有直接调用方会绕过皮肤：
+    /// 直接调用 <see cref="Creature.CreateVisuals" /> 的路径也必须应用皮肤：
     /// <c>NGameOverScreen</c> 在 <c>NCombatRoom.Instance == null</c>（战斗外死亡 / 战斗节点已释放）
     /// 时会用 <c>player.Creature.CreateVisuals()</c> 重建角色视觉来播死亡动画。
     /// 模组角色的 <c>AssetProfile</c> 为空，RitsuLib 会用 <c>ironclad</c> 占位补全路径，
@@ -76,7 +76,7 @@ internal class CreatureVisualsPatch : IPatchMethod
     /// </para>
     /// <para>
     /// <see cref="NCreature.Create" /> 内部同样是 <c>Visuals = entity.CreateVisuals()</c>，
-    /// 因此这里替换后无需再单独补 <c>NCreature.Create</c>（两处都补会重复实例化并泄漏一个节点）。
+    /// 因此无需单独补 <c>NCreature.Create</c>（两处都补会重复实例化并泄漏一个节点）。
     /// </para>
     /// </summary>
     public static void Postfix(Creature __instance, ref NCreatureVisuals? __result)
@@ -219,8 +219,8 @@ internal class RestSiteAnimPatch : IPatchMethod
 
     /// <summary>
     /// 定位闭包对 <c>animName</c> 的赋值：<c>ldloc &lt;闭包&gt; ; ldloc &lt;animName&gt; ; stfld animName</c>。
-    /// 不再依赖编译器把两个局部变量放在 0/1 号槽位：只按字段名（string 类型的 <c>animName</c>）与前两条
-    /// 指令都是 ldloc 来判定，换编译器/构建配置后形态不符会走 Error 分支，而不是误改到别的指令。
+    /// 按字段名（string 类型的 <c>animName</c>）与前两条指令均为 ldloc 来判定，不依赖局部变量槽位；
+    /// 换编译器/构建配置后形态不符会走 Error 分支，而不是误改到别的指令。
     /// </summary>
     private static List<HarmonyIlMatch> FindAnimNameAssignments(IReadOnlyList<CodeInstruction> code)
     {

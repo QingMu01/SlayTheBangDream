@@ -249,10 +249,7 @@ internal sealed class LoadExtraDeckRunHistoryViewPatch : IPatchMethod
                 .ToList();
             RestoreMissingAcquisitionFloors(____history, playerIcon.Player.Id, cards);
             var unlockState = SaveManager.Instance.GenerateUnlockStateFromProgress();
-            // F-13 ①（deferred）：本体 SelectPlayer 内部已经 CreateForNewRun 过一次，但该局部变量没有暴露给
-            // Postfix，这里只能再建一份（含起始牌组/遗物实例化），每次切换玩家会多造一整套模型。
-            // 复用需要额外捕获本体 NDeckHistory.LoadDeck 的 player 参数（多一条补丁 + 静态捕获窗口），
-            // 风险高于收益，暂缓；改 patch 目标到更内层时再一并处理。
+            // SelectPlayer 创建的 Player 未暴露给 Postfix；LoadDeck 需要包含起始牌组与遗物的独立实例。
             var player = Player.CreateForNewRun(
                 SaveUtil.CharacterOrDeprecated(playerIcon.Player.Character),
                 unlockState,

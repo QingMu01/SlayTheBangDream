@@ -66,7 +66,7 @@ public partial class StrikeSakikoVfx : Node2D
     private Sprite2D _bigStar = null!;
     private Sprite2D[] _smallStars = [];
 
-    /// <summary>4 帧斩击贴图（本体 vfx_attack_slash_00..03），场景不再内嵌贴图，由 <see cref="_Ready" /> 运行时读取。</summary>
+    /// <summary>4 帧斩击贴图（本体 vfx_attack_slash_00..03），由 <see cref="_Ready" /> 在运行时读取。</summary>
     [Export] private Texture2D[] _frames = [];
 
     private const string SlashTexturePathFormat =
@@ -149,7 +149,7 @@ public partial class StrikeSakikoVfx : Node2D
             GetNode<Sprite2D>("Stars/SmallStar5"),
         ];
 
-        // 必须在 _smallStars 就绪后补齐运行时贴图（场景不再内嵌游戏贴图）。
+        // 必须在 _smallStars 就绪后设置运行时贴图。
         EnsureDefaultTextures();
 
         // 只读回基准值，不写任何视觉状态，编辑器里场景保持静止。
@@ -169,8 +169,7 @@ public partial class StrikeSakikoVfx : Node2D
     }
 
     /// <summary>
-    /// 场景不再内嵌本体贴图（内容工程里没有游戏 `res://images/**`，内嵌会变成编辑器缺失引用）；
-    /// 这里按原场景的贴图对应关系在运行时补齐，预览与游戏内行为不变。
+    /// 本体贴图在运行时按场景中的对应关系加载，避免内容工程引用缺失的 `res://images/**` 资源。
     /// </summary>
     private void EnsureDefaultTextures()
     {

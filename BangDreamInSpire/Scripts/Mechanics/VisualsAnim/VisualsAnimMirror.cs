@@ -13,7 +13,7 @@ namespace BangDreamInSpire.Scripts.Mechanics.VisualsAnim;
 /// </para>
 /// <para>
 /// 同时负责受击抖动：本体的 <c>AnimShake</c> 写的是 <c>Visuals.Position</c>（隐藏中不可见），
-/// 这里改为写在克隆自己的局部位置——克隆位于移动载体之下，故抖动与位移互不覆盖。
+/// 因此把抖动写入克隆自己的局部位置；克隆位于移动载体之下，抖动与位移互不覆盖。
 /// </para>
 /// </summary>
 public partial class VisualsAnimMirror : Node

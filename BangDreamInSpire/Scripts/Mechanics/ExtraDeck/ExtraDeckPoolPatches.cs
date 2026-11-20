@@ -32,8 +32,8 @@ internal class AddExtraCardPoolToModelDbPatch : IPatchMethod
 
     public static void Postfix(ref IEnumerable<CardPoolModel> __result)
     {
-        // A-13 决策（C：不缓存）：该 getter 只在卡库 / 奖励等非每帧路径读取，保留无状态的最简实现，
-        // 避免引入「角色/卡池注册变化时失效」的额外生命周期。若将来确认它进入每帧 UI 路径，再改为缓存。
+        // 该 getter 只在卡库 / 奖励等非每帧路径读取，保持无状态可避免引入缓存失效生命周期；
+        // 若将来进入每帧 UI 路径，再评估缓存。
         var cardPoolModels = __result.ToList();
         foreach (var characterModel in ModelDb.AllCharacters)
         {

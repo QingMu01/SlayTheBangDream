@@ -42,7 +42,7 @@ public static class CombatResolutionBarrier
     /// 弱表：按战斗登记的在飞状态不能强引用 <see cref="ICombatState" />。
     /// 战斗结束事件里 <c>CombatEndedEvent.CombatState</c> 可能为 null（此时不会调用
     /// <see cref="ForceComplete" />），强引用字典会把这些状态永久留在内存里。
-    /// 弱表按对象标识（引用相等）组织，等价于此前的 <see cref="ReferenceEqualityComparer" />。
+    /// 弱表按对象标识（引用相等）组织。
     /// </summary>
     private static readonly ConditionalWeakTable<ICombatState, BarrierState> States = new();
 

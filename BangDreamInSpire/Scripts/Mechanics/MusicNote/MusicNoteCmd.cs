@@ -51,8 +51,7 @@ internal static class MusicNoteCmd
 
     /// <summary>
     /// 本体 <c>CombatStateTracker.NotifyCombatStateChanged</c> 是私有方法，这里用反射强制刷新一次状态通知。
-    /// 入口属于玩法层（音符整批结算之后），不再挂在 VFX 管理器上，避免把「能改写战斗状态」的通道
-    /// 暴露给特效层（见 review D-20）。
+    /// 入口属于玩法层（音符整批结算之后），避免向特效层暴露「能改写战斗状态」的通道。
     /// </summary>
     internal static void NotifyCombatStateChanged()
     {
@@ -102,7 +101,7 @@ internal static class MusicNoteCmd
                 "is not owned by a player; music notes can only be fired by player-owned creatures.");
         }
 
-        // shouldImmediate 此前被签名收下却未生效：立即结算必须走 SubmitImmediate，否则会静默排进动作队列。
+        // 立即结算必须走 SubmitImmediate，否则会静默排进动作队列。
         return shouldImmediate
             ? SubmitImmediate(dealer, baseCount, bounceCount, baseDamage, target, null)
             : Submit(dealer, baseCount, bounceCount, baseDamage, null, target);
