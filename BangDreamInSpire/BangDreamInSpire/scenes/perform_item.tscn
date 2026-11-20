@@ -51,7 +51,12 @@ layout_mode = 3
 anchors_preset = 0
 script = ExtResource("1_b1k58")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Holder" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+mouse_filter = 2
+
+[node name="Background" type="ColorRect" parent="Holder"]
 unique_name_in_owner = true
 material = SubResource("ShaderMaterial_background")
 instance_shader_parameters/rect_size = Vector2(165, 25)
@@ -71,7 +76,7 @@ grow_vertical = 2
 mouse_filter = 2
 color = Color(0.5669666, 0.5669666, 0.5669666, 1)
 
-[node name="MarginContainer" type="MarginContainer" parent="."]
+[node name="MarginContainer" type="MarginContainer" parent="Holder"]
 custom_minimum_size = Vector2(160, 50)
 layout_mode = 1
 anchors_preset = 6
@@ -85,7 +90,7 @@ offset_bottom = 25.0
 grow_horizontal = 0
 grow_vertical = 2
 
-[node name="Portrait" type="TextureRect" parent="MarginContainer"]
+[node name="Portrait" type="TextureRect" parent="Holder/MarginContainer"]
 unique_name_in_owner = true
 material = SubResource("ShaderMaterial_portrait")
 instance_shader_parameters/rect_size = Vector2(160, 50)
@@ -97,7 +102,7 @@ texture = ExtResource("3_l5gee")
 expand_mode = 1
 stretch_mode = 6
 
-[node name="Overlay" type="ColorRect" parent="MarginContainer"]
+[node name="Overlay" type="ColorRect" parent="Holder/MarginContainer"]
 unique_name_in_owner = true
 material = SubResource("ShaderMaterial_overlay")
 instance_shader_parameters/dot_color = Color(0.6117647, 0.6117647, 0.6117647, 0.3)
@@ -107,7 +112,7 @@ custom_minimum_size = Vector2(160, 50)
 layout_mode = 2
 mouse_filter = 2
 
-[node name="SweepLight" type="ColorRect" parent="MarginContainer"]
+[node name="SweepLight" type="ColorRect" parent="Holder/MarginContainer"]
 unique_name_in_owner = true
 material = SubResource("ShaderMaterial_sweep")
 instance_shader_parameters/rect_size = Vector2(160, 50)
@@ -117,17 +122,23 @@ layout_mode = 2
 mouse_filter = 2
 color = Color(1, 1, 1, 0.75)
 
-[node name="TitleMargin" type="MarginContainer" parent="MarginContainer"]
-layout_mode = 2
-mouse_filter = 2
-theme_override_constants/margin_left = 24
-theme_override_constants/margin_top = 4
-theme_override_constants/margin_right = 24
-theme_override_constants/margin_bottom = 4
-
-[node name="Title" type="Label" parent="MarginContainer/TitleMargin"]
+[node name="TitleHolder" type="Control" parent="Holder"]
 unique_name_in_owner = true
-layout_mode = 2
+layout_mode = 0
+offset_left = -136.0
+offset_top = -21.0
+offset_right = -24.0
+offset_bottom = 21.0
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="Holder/TitleHolder"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.65)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 0.9)
@@ -139,7 +150,7 @@ theme_override_font_sizes/font_size = 28
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="SelectionOutline" type="ColorRect" parent="."]
+[node name="SelectionOutline" type="ColorRect" parent="Holder"]
 unique_name_in_owner = true
 visible = false
 material = SubResource("ShaderMaterial_selection")

@@ -45,6 +45,10 @@ public partial class NPerformItem : NClickableControl, IPerformSlot
     private const float ItemHeight = 50f;
     private const float BackgroundWidthExtension = 5f;
     private const float TitleHorizontalPadding = 48f;
+
+    /// <summary>标题相对卡面相片的内缩（左右各 24px、上下各 4px），与旧 TitleMargin 一致。</summary>
+    private const float TitleInsetHorizontal = 24f;
+    private const float TitleInsetVertical = 4f;
     private const float PortraitSweepAlpha = 0.75f;
     private const float SelectionCandidateLighten = 0.25f;
     private const float SelectionHoveredLighten = 0.6f;
@@ -59,6 +63,8 @@ public partial class NPerformItem : NClickableControl, IPerformSlot
     private ColorRect? _cardOverlay;
     private ColorRect? _portraitSweepLight;
     private ColorRect? _selectionOutline;
+    private Control? _holder;
+    private Control? _titleHolder;
     private Label? _cardTitle;
 
     private Vector2 _backgroundSize;
@@ -139,11 +145,13 @@ public partial class NPerformItem : NClickableControl, IPerformSlot
 
     public override void _Ready()
     {
+        _holder = GetNode<Control>("%Holder");
         _background = GetNode<ColorRect>("%Background");
-        _cardContainer = GetNode<Control>("MarginContainer");
+        _cardContainer = GetNode<Control>("Holder/MarginContainer");
         _cardPortrait = GetNode<TextureRect>("%Portrait");
         _cardOverlay = GetNode<ColorRect>("%Overlay");
         _portraitSweepLight = GetNode<ColorRect>("%SweepLight");
+        _titleHolder = GetNode<Control>("%TitleHolder");
         _cardTitle = GetNode<Label>("%Title");
         _selectionOutline = GetNode<ColorRect>("%SelectionOutline");
 
@@ -592,6 +600,9 @@ public partial class NPerformItem : NClickableControl, IPerformSlot
             _selectionOutline.SetInstanceShaderParameter(RectSizeShaderParameter, itemSize);
         }
 
+        UpdateTitleHolderSize(itemWidth);
+        UpdateHangPivot();
+
         _backgroundBaseWidth = itemWidth + BackgroundWidthExtension;
         _background.CustomMinimumSize = new Vector2(_backgroundBaseWidth, _background.Size.Y);
         SetBackgroundWidth(_backgroundBaseWidth + (_isHintHighlighted ? HintHighlightExtension : 0f));
@@ -600,6 +611,47 @@ public partial class NPerformItem : NClickableControl, IPerformSlot
         UpdatePortraitShaderSize();
         UpdateOverlayShaderSize();
         UpdatePortraitSweepShaderSize();
+    }
+
+    /// <summary>
+    /// 冻结时的悬挂倾角（弧度，槽位节点本地）。正角度在视觉上是「内端垂下去」。
+    /// </summary>
+    public float HangTilt { get; private set; }
+
+    /// <summary>
+    /// 设置悬挂倾角。转的是 <c>Holder</c>（自身缩放为 1）而不是槽位根节点：
+    /// 根节点带着镜像缩放，Godot 的 <c>PivotOffset</c> 在带缩放的节点上会把整行平移
+    /// （实测镜像列位移 272px），转到无缩放的子节点上才是纯旋转。
+    /// </summary>
+    public void SetHangTilt(float radians)
+    {
+        HangTilt = radians;
+        if (_holder != null) _holder.Rotation = radians;
+    }
+
+    /// <summary>
+    /// 旋转支点 = 行的外上角，也就是冻结提线的钩点：行被吊住时绕这里垂下去，
+    /// 钩点本身不动，提线的接触点因此不需要重算。支点在 Holder 的本地坐标里（不含缩放）。
+    /// </summary>
+    private void UpdateHangPivot()
+    {
+        if (_holder == null) return;
+        _holder.PivotOffset = new Vector2(-_itemSize.X, -_itemSize.Y * 0.5f);
+    }
+
+    /// <summary>
+    /// 标题挂在 <c>TitleHolder</c>（普通 Control）下，而不是像卡面那样留在 MarginContainer 里：
+    /// Container 排布会把直接子节点的 rotation/scale 重置为 0/1，右列标题的「反向再翻一次」
+    /// 会被布局吃掉（实测每帧被写回 1），字形就一直是镜像的。挂到非 Container 下即可长稳。
+    /// </summary>
+    private void UpdateTitleHolderSize(float itemWidth)
+    {
+        if (_titleHolder == null) return;
+
+        _titleHolder.Position = new Vector2(
+            -itemWidth + TitleInsetHorizontal, -ItemHeight / 2f + TitleInsetVertical);
+        _titleHolder.Size = new Vector2(
+            itemWidth - TitleInsetHorizontal * 2f, ItemHeight - TitleInsetVertical * 2f);
     }
 
     protected override void OnFocus()

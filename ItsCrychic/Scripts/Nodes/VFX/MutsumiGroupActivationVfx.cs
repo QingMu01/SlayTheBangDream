@@ -214,7 +214,7 @@ public partial class MutsumiGroupActivationVfx : Node2D, IPerformAreaActivationV
     }
 
     /// <summary>点亮某组的行：按行的斜切平行四边形填充 + 描边（用矩形描边会让四个角戳在行外）。</summary>
-    private void DrawRowsLit(Rect2[] rows, bool mirrored, float alpha, float progress, Color color,
+    private void DrawRowsLit(PerformRow[] rows, bool mirrored, float alpha, float progress, Color color,
         bool highlight = false)
     {
         if (rows.Length == 0 || alpha <= 0.001f)
@@ -228,11 +228,12 @@ public partial class MutsumiGroupActivationVfx : Node2D, IPerformAreaActivationV
             var row = rows[i];
             if (highlight)
             {
-                PerformRowShape.Fill(this, row, mirrored, new Color(color, 0.22f * alpha), _quadBuffer);
+                PerformRowShape.Fill(this, row.Rect, mirrored, row.Tilt,
+                    new Color(color, 0.22f * alpha), _quadBuffer);
             }
 
-            PerformRowShape.Outline(this, row, mirrored, new Color(color, 0.9f * alpha), 2.2f,
-                _outlineBuffer);
+            PerformRowShape.Outline(this, row.Rect, mirrored, row.Tilt,
+                new Color(color, 0.9f * alpha), 2.2f, _outlineBuffer);
         }
     }
 
@@ -256,7 +257,7 @@ public partial class MutsumiGroupActivationVfx : Node2D, IPerformAreaActivationV
         }
     }
 
-    private void DrawSweep(Rect2[] rows, float elapsed)
+    private void DrawSweep(PerformRow[] rows, float elapsed)
     {
         const float start = LifeTime * 0.10f;
         const float end = LifeTime * 0.55f;
@@ -270,8 +271,8 @@ public partial class MutsumiGroupActivationVfx : Node2D, IPerformAreaActivationV
         var bottom = float.MinValue;
         foreach (var row in rows)
         {
-            top = Mathf.Min(top, row.Position.Y);
-            bottom = Mathf.Max(bottom, row.End.Y);
+            top = Mathf.Min(top, row.Rect.Position.Y);
+            bottom = Mathf.Max(bottom, row.Rect.End.Y);
         }
 
         var y = Mathf.Lerp(top - 6f, bottom + 6f, t);
@@ -281,8 +282,8 @@ public partial class MutsumiGroupActivationVfx : Node2D, IPerformAreaActivationV
         var right = float.MinValue;
         foreach (var row in rows)
         {
-            left = Mathf.Min(left, row.Position.X);
-            right = Mathf.Max(right, row.End.X);
+            left = Mathf.Min(left, row.Rect.Position.X);
+            right = Mathf.Max(right, row.Rect.End.X);
         }
 
         for (var i = 0; i < 3; i++)
@@ -354,23 +355,28 @@ public partial class MutsumiGroupActivationVfx : Node2D, IPerformAreaActivationV
         var bottomY = halfHitHeight - 32f - itemHeight / 2f;
 
         var states = new List<PerformActivationGroup>();
-        foreach (var (group, x, startY, step, mirrored) in new (PerformChord, float, float, float, bool)[]
+        foreach (var (group, slotBase, x, startY, step, mirrored) in
+                 new (PerformChord, int, float, float, float, bool)[]
                  {
-                     (PerformChord.C, left, topY, rowStep, false),
-                     (PerformChord.D, left, bottomY, -rowStep, false),
-                     (PerformChord.F, right, topY, rowStep, true),
-                     (PerformChord.G, right, bottomY, -rowStep, true)
+                     (PerformChord.C, 1, left, topY, rowStep, false),
+                     (PerformChord.D, 4, left, bottomY, -rowStep, false),
+                     (PerformChord.F, 7, right, topY, rowStep, true),
+                     (PerformChord.G, 10, right, bottomY, -rowStep, true)
                  })
         {
-            var rows = new Rect2[3];
+            var rows = new PerformRow[3];
             for (var i = 0; i < 3; i++)
             {
-                rows[i] = new Rect2(x, startY + step * i, itemWidth, itemHeight);
+                var slotIndex = slotBase + i;
+                var offset = PerformHangStyle.Offset(slotIndex, mirrored);
+                rows[i] = new PerformRow(
+                    new Rect2(x + offset.X, startY + step * i + offset.Y, itemWidth, itemHeight),
+                    PerformHangStyle.TiltRadians(slotIndex));
             }
 
             var badge = mirrored
-                ? new Vector2(x + itemWidth + 14f, rows[0].Position.Y + 8f)
-                : new Vector2(x - 14f, rows[0].Position.Y + 8f);
+                ? new Vector2(x + itemWidth + 14f, rows[0].Rect.Position.Y + 8f)
+                : new Vector2(x - 14f, rows[0].Rect.Position.Y + 8f);
             states.Add(new PerformActivationGroup(group, rows, badge, Vector2.Zero, mirrored));
         }
 
@@ -384,7 +390,8 @@ public partial class MutsumiGroupActivationVfx : Node2D, IPerformAreaActivationV
             var color = PerformChordColors.ColorOf(state.Group);
             foreach (var row in state.Rows)
             {
-                PerformRowShape.Fill(this, row, state.Mirrored, new Color(color, 0.18f), _quadBuffer);
+                PerformRowShape.Fill(this, row.Rect, state.Mirrored, row.Tilt,
+                    new Color(color, 0.18f), _quadBuffer);
             }
         }
     }

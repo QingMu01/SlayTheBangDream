@@ -91,17 +91,23 @@ public interface IPerformArea
 }
 
 /// <summary>
+/// 演奏区的一行：视觉矩形（容器局部坐标）与冻结时的倾斜（弧度，槽位节点本地 rotation；
+/// 左侧列为 +、右侧列视觉反向，因此特效按 <c>Mirrored</c> 取符号即可得到视觉角度）。
+/// </summary>
+public readonly record struct PerformRow(Rect2 Rect, float Tilt);
+
+/// <summary>
 /// 歌单冻结层的数据：一个分组的行布局（容器局部坐标）与是否右侧镜像。
 /// 由核心计算、内容模组的表现实现消费，避免核心引用具体角色特效类型。
 /// </summary>
-public readonly record struct PerformRowGroup(PerformChord Group, Rect2[] Rows, bool Mirrored);
+public readonly record struct PerformRowGroup(PerformChord Group, PerformRow[] Rows, bool Mirrored);
 
 /// <summary>
 /// 已激活分组的布局与端点（容器局部坐标）：行、角标中心、角色命中框中心、是否镜像。
 /// </summary>
 public readonly record struct PerformActivationGroup(
     PerformChord Group,
-    Rect2[] Rows,
+    PerformRow[] Rows,
     Vector2 BadgeCenter,
     Vector2 TargetCenter,
     bool Mirrored);

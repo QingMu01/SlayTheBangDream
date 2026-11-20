@@ -45,16 +45,11 @@ public partial class NPerformArea : Control, IPerformArea
     private static readonly Color FrozenSlotTint = new(0.82f, 0.84f, 0.92f);
 
     /// <summary>
-    /// 冻结（被提线吊住）时槽位相对布局位置的下沉量。行不能旋转（镜像与布局缓动都按位置写），
-    /// 只能靠一点平移表达「这摞行现在是被挂着的、不在它原本的格子上」。
+    /// 冻结时每行的倾角与位移由 <see cref="PerformHangStyle" /> 给出（手调的参差数值）。
+    /// 行可以转：槽位节点绕外上角（提线的钩点）旋转，布局缓动只写 position、镜像只写 scale，
+    /// 三者互不覆盖。
     /// </summary>
-    private const float HangDrop = 2f;
-
-    /// <summary>冻结时槽位向列外端挪动的距离（远离角色，和被提线拴住的外端同侧）。</summary>
-    private const float HangOutward = 3f;
-
-    /// <summary>同组相邻行的额外沉降差：一摞行看起来是分别挂着的，而不是整块平移。</summary>
-    private const float HangRowStep = 0.5f;
+    private static float GetHangTilt(int slotIndex) => PerformHangStyle.TiltRadians(slotIndex);
 
     private const float ActivatedBadgeSize = 22f;
     private const string ActivatedBadgeNamePrefix = "ActivatedGroupBadge_";
@@ -218,10 +213,12 @@ public partial class NPerformArea : Control, IPerformArea
         ApplyFrozenVisuals();
         ApplyActivatedGroupVisuals();
 
-        // 冻结会改变槽位的落位（见 GetHangOffset）：补一次布局缓动，解冻时再缓回原格。
+        // 冻结会改变槽位的落位与倾角（PerformHangStyle）。这里直接落位、不补缓动：
+        // 冻结层的提线/钩点是按槽位当时的姿态画的，缓动会让线和行脱开 0.25s，
+        // 而在 3px/3° 的量级下缓动本身也看不出「落位」，不如交给冻结层的淡入。
         if (IsInsideTree())
         {
-            _ = AnimateLayout();
+            ApplyLayoutImmediately();
         }
     }
 
@@ -845,6 +842,7 @@ public partial class NPerformArea : Control, IPerformArea
         {
             if (!_activeSlots.Contains(slotIndex)) continue;
             _items[slotIndex - 1].Position = GetItemPosition(slotIndex);
+            _items[slotIndex - 1].SetHangTilt(_isFrozen ? GetHangTilt(slotIndex) : 0f);
         }
 
         UpdateHintPosition();
@@ -861,10 +859,12 @@ public partial class NPerformArea : Control, IPerformArea
         ApplyFrozenVisuals();
         ApplyActivatedGroupVisuals();
 
-        // 冻结会改变槽位的落位（见 GetHangOffset）：补一次布局缓动，解冻时再缓回原格。
+        // 冻结会改变槽位的落位与倾角（PerformHangStyle）。这里直接落位、不补缓动：
+        // 冻结层的提线/钩点是按槽位当时的姿态画的，缓动会让线和行脱开 0.25s，
+        // 而在 3px/3° 的量级下缓动本身也看不出「落位」，不如交给冻结层的淡入。
         if (IsInsideTree())
         {
-            _ = AnimateLayout();
+            ApplyLayoutImmediately();
         }
     }
 
@@ -941,13 +941,13 @@ public partial class NPerformArea : Control, IPerformArea
         return groups;
     }
 
-    /// <summary>取某分组当前可见行的矩形（容器局部坐标）与该分组是否镜像。</summary>
-    private bool TryGetGroupRows(PerformGroupDescriptor descriptor, out Rect2[] rows, out bool mirrored)
+    /// <summary>取某分组当前可见行的矩形（容器局部坐标）、行倾斜与该分组是否镜像。</summary>
+    private bool TryGetGroupRows(PerformGroupDescriptor descriptor, out PerformRow[] rows, out bool mirrored)
     {
         rows = [];
         mirrored = IsMirroredCorner(GetCorner(descriptor.BaseSlotIndex));
 
-        var collected = new List<Rect2>(descriptor.MaxSlots);
+        var collected = new List<PerformRow>(descriptor.MaxSlots);
         for (var local = 0; local < descriptor.MaxSlots; local++)
         {
             var slotIndex = descriptor.BaseSlotIndex + local;
@@ -965,7 +965,7 @@ public partial class NPerformArea : Control, IPerformArea
             // 未镜像的行以右边缘贴住锚点、向左延展；镜像列（右侧列）经水平翻转后以左边缘贴住锚点、
             // 向右延展——方向反了会把整列的矩形投到角色身上（冻结提线、激活描边全部错位）。
             var position = item.Position + (scale.X < 0f ? Vector2.Zero : new Vector2(-size.X, 0f));
-            collected.Add(new Rect2(position, size));
+            collected.Add(new PerformRow(new Rect2(position, size), item.HangTilt));
         }
 
         if (collected.Count == 0) return false;
@@ -1380,24 +1380,9 @@ public partial class NPerformArea : Control, IPerformArea
             _ => new Vector2(approach, bottom - ItemHeight / 2f - stack)
         };
 
-        return basePosition + GetHangOffset(anchor);
-    }
-
-    /// <summary>
-    /// 冻结时槽位的「被吊住」偏移：向列外端挪一点、向下沉一点，同组越靠下的行沉得越多
-    /// （左上/右上组按 local 递增，左下/右下组反向）。解冻回零，几何仍以
-    /// <see cref="GetItemPosition" /> 为唯一真值，因此提线/激活的投喂坐标会自动跟随。
-    /// </summary>
-    private Vector2 GetHangOffset(PerformSlotAnchor anchor)
-    {
-        if (!_isFrozen) return Vector2.Zero;
-
-        var outward = IsMirroredCorner(anchor.Corner) ? 1f : -1f;
-        var sagStep = anchor.Corner is PerformSlotCorner.TopLeft or PerformSlotCorner.TopRight
-            ? anchor.Offset
-            : -anchor.Offset;
-
-        return new Vector2(outward * HangOutward, HangDrop + sagStep * HangRowStep);
+        return _isFrozen
+            ? basePosition + PerformHangStyle.Offset(slotIndex, IsMirroredCorner(anchor.Corner))
+            : basePosition;
     }
 
     private PerformSlotCorner GetCorner(int slotIndex)
@@ -1415,6 +1400,7 @@ public partial class NPerformArea : Control, IPerformArea
     private void ApplySlotScale(NPerformItem item, int slotIndex)
     {
         item.ApplyLayoutScale(_itemScale, IsMirroredCorner(GetCorner(slotIndex)));
+        item.SetHangTilt(_isFrozen ? GetHangTilt(slotIndex) : 0f);
     }
 
     /// <summary>

@@ -241,21 +241,22 @@ public partial class MutsumiPlaylistFreezeVfx : Node2D, IPerformAreaFreezeVisual
             if (group.Mirrored != mirrored) continue;
             foreach (var row in group.Rows)
             {
+                var rect = row.Rect;
                 if (!hasRows)
                 {
-                    top = row.Position.Y;
-                    bottom = row.End.Y;
-                    outer = OuterEdgeX(row, mirrored);
+                    top = rect.Position.Y;
+                    bottom = rect.End.Y;
+                    outer = OuterEdgeX(rect, mirrored);
                     hasRows = true;
                     continue;
                 }
 
-                top = Mathf.Min(top, row.Position.Y);
-                bottom = Mathf.Max(bottom, row.End.Y);
+                top = Mathf.Min(top, rect.Position.Y);
+                bottom = Mathf.Max(bottom, rect.End.Y);
                 // 行宽按卡名自适应，同列各行外缘不一定齐平：提线取最外侧，才不会压在行的斜边上。
                 outer = mirrored
-                    ? Mathf.Max(outer, OuterEdgeX(row, mirrored))
-                    : Mathf.Min(outer, OuterEdgeX(row, mirrored));
+                    ? Mathf.Max(outer, OuterEdgeX(rect, mirrored))
+                    : Mathf.Min(outer, OuterEdgeX(rect, mirrored));
             }
         }
 
@@ -293,12 +294,12 @@ public partial class MutsumiPlaylistFreezeVfx : Node2D, IPerformAreaFreezeVisual
     }
 
     /// <summary>行覆膜：按斜切四边形填一层冷色，再沿顶边描一道冷光，读作「被提起来的那条边」。</summary>
-    private void DrawRowFilm(Rect2 row, bool mirrored, float breathScale)
+    private void DrawRowFilm(PerformRow row, bool mirrored, float breathScale)
     {
-        PerformRowShape.Fill(this, row, mirrored, new Color(FilmColor, FilmAlpha * _fade * breathScale),
-            _quadBuffer);
+        PerformRowShape.Fill(this, row.Rect, mirrored, row.Tilt,
+            new Color(FilmColor, FilmAlpha * _fade * breathScale), _quadBuffer);
 
-        PerformRowShape.GetTopEdge(row, mirrored, out var from, out var to);
+        PerformRowShape.GetTopEdge(row.Rect, mirrored, row.Tilt, out var from, out var to);
         DrawLineGlow(from, to, TieColor, 1f, RimAlpha * _fade * breathScale);
     }
 
@@ -350,16 +351,25 @@ public partial class MutsumiPlaylistFreezeVfx : Node2D, IPerformAreaFreezeVisual
     /// 单行的吊线：从上方的提线斜拉到行**顶边外端**（斜切让顶边内缩，钩点要跟着内缩），
     /// 钩点打一个环结。斜拉的短吊线比水平卡扣更像「被线吊着」。
     /// </summary>
-    private void DrawRowTie(Rect2 row, bool mirrored, float wireX, float breath)
+    private void DrawRowTie(PerformRow row, bool mirrored, float wireX, float breath)
     {
-        var shift = PerformRowShape.TopShift(row);
-        var top = row.Position.Y;
-        var hookX = mirrored ? row.End.X - shift - TieInset : row.Position.X + shift + TieInset;
-        var alpha = TieAlpha * _fade * breath;
+        var rect = row.Rect;
+        var shift = PerformRowShape.TopShift(rect);
+        var top = rect.Position.Y;
+        var hook = new Vector2(
+            mirrored ? rect.End.X - shift - TieInset : rect.Position.X + shift + TieInset, top + 1f);
 
-        DrawLineGlow(new Vector2(wireX, top - TieDrop), new Vector2(hookX, top + 1f),
-            TieColor, TieWidth, alpha, cord: true);
-        DrawKnot(hookX, top + 1f, KnotAlpha * _fade * breath);
+        // 钩点跟着行一起绕外上角转：行的倾斜不改变「线系在哪里」，只是那一点跟着动。
+        var angle = PerformRowShape.VisualTilt(row.Tilt, mirrored);
+        if (Mathf.Abs(angle) > 0.0001f)
+        {
+            var pivot = PerformRowShape.HangPivot(rect, mirrored);
+            hook = pivot + (hook - pivot).Rotated(angle);
+        }
+
+        var alpha = TieAlpha * _fade * breath;
+        DrawLineGlow(new Vector2(wireX, hook.Y - TieDrop), hook, TieColor, TieWidth, alpha, cord: true);
+        DrawKnot(hook.X, hook.Y, KnotAlpha * _fade * breath);
     }
 
     /// <summary>外发光的固定三遍参数；提成静态表，避免每帧每段线都分配。</summary>
@@ -420,11 +430,6 @@ public partial class MutsumiPlaylistFreezeVfx : Node2D, IPerformAreaFreezeVisual
         const float hitboxInset = 32f;  // GetItemPosition 里命中框顶/底的内收量（槽位原点在行高一半处）
         const float halfHitWidth = 160f;
         const float halfHitHeight = 150f;
-        // 与 NPerformArea.HangDrop / HangOutward / HangRowStep 对齐：冻结时槽位整体下沉并外移，
-        // 预览必须带上这份偏移，否则 F6 里提线与游戏内的行对不上。
-        const float hangDrop = 2f;
-        const float hangOutward = 3f;
-        const float hangRowStep = 0.5f;
 
         var groups = new List<PerformRowGroup>();
         var left = -halfHitWidth - columnGap - itemWidth;
@@ -432,22 +437,24 @@ public partial class MutsumiPlaylistFreezeVfx : Node2D, IPerformAreaFreezeVisual
         var topY = -halfHitHeight + hitboxInset - itemHeight / 2f;
         var bottomY = halfHitHeight - hitboxInset - itemHeight / 2f;
 
-        foreach (var (chord, x, startY, step, mirrored) in new (PerformChord, float, float, float, bool)[]
+        foreach (var (chord, baseSlot, x, startY, step, mirrored) in
+                 new (PerformChord, int, float, float, float, bool)[]
                  {
-                     (PerformChord.C, left, topY, rowStep, false),
-                     (PerformChord.D, left, bottomY, -rowStep, false),
-                     (PerformChord.F, right, topY, rowStep, true),
-                     (PerformChord.G, right, bottomY, -rowStep, true)
+                     (PerformChord.C, 1, left, topY, rowStep, false),
+                     (PerformChord.D, 4, left, bottomY, -rowStep, false),
+                     (PerformChord.F, 7, right, topY, rowStep, true),
+                     (PerformChord.G, 10, right, bottomY, -rowStep, true)
                  })
         {
-            var outward = mirrored ? hangOutward : -hangOutward;
-            var rows = new Rect2[rowCount];
+            var rows = new PerformRow[rowCount];
             for (var i = 0; i < rowCount; i++)
             {
-                // 左上/右上组按行序向下沉，左下/右下组反向——与 GetHangOffset 的 sagStep 一致。
-                var sag = chord is PerformChord.C or PerformChord.F ? i : -i;
-                rows[i] = new Rect2(x + outward, startY + step * i + hangDrop + sag * hangRowStep,
-                    itemWidth, itemHeight);
+                // 冻结落位与倾角直接查核心那张表（PerformHangStyle），预览和游戏内才不会是两套数。
+                var slotIndex = baseSlot + i;
+                var offset = PerformHangStyle.Offset(slotIndex, mirrored);
+                rows[i] = new PerformRow(
+                    new Rect2(x + offset.X, startY + step * i + offset.Y, itemWidth, itemHeight),
+                    PerformHangStyle.TiltRadians(slotIndex));
             }
 
             groups.Add(new PerformRowGroup(chord, rows, mirrored));
@@ -464,9 +471,10 @@ public partial class MutsumiPlaylistFreezeVfx : Node2D, IPerformAreaFreezeVisual
             var color = PerformChordColors.ColorOf(group.Group);
             foreach (var row in group.Rows)
             {
-                PerformRowShape.Fill(this, row, group.Mirrored, new Color(color, 0.18f * _fade), _quadBuffer);
-                PerformRowShape.Outline(this, row, group.Mirrored, new Color(color, 0.75f * _fade), 1.5f,
-                    _outlineBuffer);
+                PerformRowShape.Fill(this, row.Rect, group.Mirrored, row.Tilt,
+                    new Color(color, 0.18f * _fade), _quadBuffer);
+                PerformRowShape.Outline(this, row.Rect, group.Mirrored, row.Tilt,
+                    new Color(color, 0.75f * _fade), 1.5f, _outlineBuffer);
             }
         }
     }

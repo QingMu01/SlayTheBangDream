@@ -22,8 +22,20 @@ public static class PerformRowShape
     /// <summary>顶边相对底边的水平错开量。</summary>
     public static float TopShift(Rect2 row) => SlantSlope * row.Size.Y;
 
-    /// <summary>写入行的四个角（左上、右上、右下、左下，顺时针）；<paramref name="buffer" /> 至少 4 项。</summary>
-    public static void GetCorners(Rect2 row, bool mirrored, Vector2[] buffer)
+    /// <summary>行的旋转支点（视觉坐标）：行的外上角，也就是冻结提线的钩点。镜像列取右端。</summary>
+    public static Vector2 HangPivot(Rect2 row, bool mirrored)
+    {
+        return new Vector2(mirrored ? row.End.X : row.Position.X, row.Position.Y);
+    }
+
+    /// <summary>行倾斜的视觉角度：槽位节点的本地 rotation 在镜像列上方向相反，这里补齐符号。</summary>
+    public static float VisualTilt(float localTilt, bool mirrored) => mirrored ? -localTilt : localTilt;
+
+    /// <summary>
+    /// 写入行的四个角（左上、右上、右下、左下，顺时针）；<paramref name="buffer" /> 至少 4 项。
+    /// <paramref name="tilt" /> 为本地 rotation（弧度），行会绕外上角旋转。
+    /// </summary>
+    public static void GetCorners(Rect2 row, bool mirrored, float tilt, Vector2[] buffer)
     {
         var shift = TopShift(row);
         var left = row.Position.X;
@@ -45,10 +57,19 @@ public static class PerformRowShape
             buffer[2] = new Vector2(right - shift, bottom);
             buffer[3] = new Vector2(left, bottom);
         }
+
+        var angle = VisualTilt(tilt, mirrored);
+        if (Mathf.Abs(angle) <= 0.0001f) return;
+
+        var pivot = HangPivot(row, mirrored);
+        for (var i = 0; i < 4; i++)
+        {
+            buffer[i] = pivot + (buffer[i] - pivot).Rotated(angle);
+        }
     }
 
-    /// <summary>顶边（被提起来的那条边）的两个端点，按斜切内缩。</summary>
-    public static void GetTopEdge(Rect2 row, bool mirrored, out Vector2 from, out Vector2 to)
+    /// <summary>顶边（被提起来的那条边）的两个端点，按斜切内缩并跟随倾斜。</summary>
+    public static void GetTopEdge(Rect2 row, bool mirrored, float tilt, out Vector2 from, out Vector2 to)
     {
         var shift = TopShift(row);
         var top = row.Position.Y;
@@ -62,24 +83,32 @@ public static class PerformRowShape
             from = new Vector2(row.Position.X + shift, top);
             to = new Vector2(row.End.X, top);
         }
+
+        var angle = VisualTilt(tilt, mirrored);
+        if (Mathf.Abs(angle) <= 0.0001f) return;
+
+        var pivot = HangPivot(row, mirrored);
+        from = pivot + (from - pivot).Rotated(angle);
+        to = pivot + (to - pivot).Rotated(angle);
     }
 
     /// <summary>填一块斜切四边形；<paramref name="buffer" /> 必须正好 4 项（<see cref="DrawColoredPolygon" /> 按整段数组画）。</summary>
-    public static void Fill(CanvasItem target, Rect2 row, bool mirrored, Color color, Vector2[] buffer)
-    {
-        if (color.A <= 0.001f) return;
-
-        GetCorners(row, mirrored, buffer);
-        target.DrawColoredPolygon(buffer, color);
-    }
-
-    /// <summary>描一圈斜切四边形；<paramref name="buffer" /> 必须正好 5 项（第 5 项为闭合点）。</summary>
-    public static void Outline(CanvasItem target, Rect2 row, bool mirrored, Color color, float width,
+    public static void Fill(CanvasItem target, Rect2 row, bool mirrored, float tilt, Color color,
         Vector2[] buffer)
     {
         if (color.A <= 0.001f) return;
 
-        GetCorners(row, mirrored, buffer);
+        GetCorners(row, mirrored, tilt, buffer);
+        target.DrawColoredPolygon(buffer, color);
+    }
+
+    /// <summary>描一圈斜切四边形；<paramref name="buffer" /> 必须正好 5 项（第 5 项为闭合点）。</summary>
+    public static void Outline(CanvasItem target, Rect2 row, bool mirrored, float tilt, Color color,
+        float width, Vector2[] buffer)
+    {
+        if (color.A <= 0.001f) return;
+
+        GetCorners(row, mirrored, tilt, buffer);
         buffer[4] = buffer[0];
         target.DrawPolyline(buffer, color, width, true);
     }
