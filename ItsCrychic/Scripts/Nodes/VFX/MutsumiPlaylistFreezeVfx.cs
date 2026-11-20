@@ -10,13 +10,21 @@ namespace ItsCrychic.Scripts.Nodes.VFX;
 /// <summary>
 /// 歌单冻结 · 提线悬停。
 /// <para>
-/// 墨缇丝形态下歌单被封：四个和弦分组各被一根主提线吊住，组横杆下再垂下三根吊线，
-/// 各自钩在该组三条播放列表行的**内端**——「这些行现在挂在别人的线上」。行本身不倾斜
-/// （行由 <c>NPerformArea</c> 的布局缓动与镜像管理，接管旋转会与缓动冲突），靠线的下垂感与吊点高光表达被悬挂。
+/// 墨缇丝形态下歌单被封：左右两列各被一根提线吊住（线走列的外侧留白），同列上下两组共用这根线，
+/// 每个分组的播放列表行再用一小段斜向吊线拴到线上、拴点打一个环结——
+/// 「这些行现在挂在别人的线上」。行本身不倾斜（行由 <c>NPerformArea</c> 的布局缓动与镜像管理，
+/// 接管旋转会与缓动冲突），靠提线/吊线的牵引、以及行顶边走的一道冷光表达被悬挂。
+/// </para>
+/// <para>
+/// 为什么不是「每组一根长线从画面上方垂下」：当前演奏区是四角布局，同列上下两组在满容量时
+/// 只隔约 5px，下组的长线会横穿上组的行，另一侧的长线也得从角色身侧跨过去。改为每列一根
+/// 外侧提线后，任何容量（1–3 行）下都不与行、角色相交。
 /// </para>
 /// <para>
 /// 坐标：全部使用 <c>ItemContainer</c> 局部坐标（与 <c>NPerformItem.Position</c> 同一空间），
 /// 由 <c>NPerformArea</c> 在布局变化后通过 <see cref="SetGroups" /> 重新投喂，因此槽位增减、演奏区重建后自动贴合。
+/// 行是斜切平行四边形（<c>parallelogram_clip.gdshader</c>，<c>slant_slope = 0.3</c>），
+/// 覆膜、钩点与顶边光都按斜边计算，不能按矩形画。
 /// </para>
 /// <para>
 /// 层级：提线 z 序低于分组激活角标。
@@ -32,45 +40,59 @@ public partial class MutsumiPlaylistFreezeVfx : Node2D, IPerformAreaFreezeVisual
 
     private const float FadeInDuration = 0.25f;
     private const float FadeOutDuration = 0.30f;
-    private const float ThreadAlpha = 0.55f;
-    private const float CrossbarAlpha = 0.70f;
-    private const float HangerAlpha = 0.40f;
-    private const float KnotAlpha = 0.45f;
-    private const float WashAlpha = 0.10f;
-    private const float ThreadWidth = 1.8f;
-    private const float HangerWidth = 1.2f;
-    private const float CrossbarWidth = 2.6f;
-    private const float CrossbarLength = 34f;
-    private const float KnotSize = 6f;
-    private const float SwayAmplitude = 1.5f;
+
+    /// <summary>列外侧那根提线的不透明度。</summary>
+    private const float WireAlpha = 0.55f;
+    private const float TieAlpha = 0.45f;
+    private const float KnotAlpha = 0.60f;
+    private const float RimAlpha = 0.12f;
+    private const float FilmAlpha = 0.06f;
+    private const float WireWidth = 1.6f;
+    private const float TieWidth = 1.2f;
+    private const float KnotSize = 3.6f;
     private const float BreathPeriod = 1.8f;
+
+    /// <summary>提线上端续出的渐隐段：读作「从上方落下来」，又不跨过行与角色。</summary>
+    private const float WireFadeAbove = 160f;
+    private const float WireFadeBelow = 14f;
+
     /// <summary>
-    /// 主线上端距组包围盒顶边的距离。计划里写的是 60px，但 60px 的短桩读不出「从上方落下来」；
-    /// 按批准的预演图（线自画面上方垂下）加长到 200px，顶端做 alpha 渐隐。
+    /// 提线与列外缘的水平间距。行在卡面相片（160 宽）之外还探出一条 165×25 的标题底色带
+    /// （约 14px），提线要落在带子外面才不会被它压住。
     /// </summary>
-    private const float ThreadTopOffset = 200f;
+    private const float WireOffset = 18f;
 
-    /// <summary>各分组主提线在行宽上的锚点比例（同列两组必须错开，否则两条线会完全重合）。</summary>
-    private static readonly Dictionary<PerformChord, float> AnchorRatios = new()
-    {
-        [PerformChord.C] = 0.18f,
-        [PerformChord.D] = 0.78f,
-        [PerformChord.F] = 0.22f,
-        [PerformChord.G] = 0.82f
-    };
+    /// <summary>吊线钩点从行外缘内缩的深度。</summary>
+    private const float TieInset = 3.5f;
 
-    private static readonly Color ThreadColor = new("#ded8f6");
-    private static readonly Color CrossbarColor = new("#f2eeff");
+    /// <summary>吊线在行顶边上方起钩的高度。</summary>
+    private const float TieDrop = 11f;
+
+    /// <summary>沿提线缓慢下滑的高光：半段长度与周期。</summary>
+    private const float ShimmerLength = 26f;
+    private const float ShimmerPeriod = 2.6f;
+
+    /// <summary>
+    /// 行的斜切量，必须与 <c>parallelogram_clip.gdshader</c> 的 <c>slant_slope</c> 一致：
+    /// 顶边相对底边水平错开 <c>slant × 行高</c>，行是平行四边形而不是矩形。
+    /// </summary>
+    private const float SlantSlope = 0.3f;
+
+    private static readonly Color WireColor = new("#ded8f6");
+    private static readonly Color TieColor = new("#f2eeff");
     private static readonly Color KnotColor = new("#efeaff");
-    private static readonly Color WashColor = new("#b9a6ff");
+    private static readonly Color FilmColor = new("#b9a6ff");
+
+    /// <summary>提线/吊线底下的暗色描边，保证浅色战斗背景上也有清晰轮廓。</summary>
+    private static readonly Color CordShadowColor = new("#0a0812");
 
     private PerformRowGroup[] _groups = [];
     private float _fade;
     private float _time;
     private Tween? _fadeTween;
-    private Texture2D? _washTexture;
     private bool _previewRows;
     private bool _hiding;
+    private int _previewGroupRows = 3;
 
     /// <summary>勾选即重播一次（自动复位，便于反复触发）。</summary>
     [Export]
@@ -88,11 +110,25 @@ public partial class MutsumiPlaylistFreezeVfx : Node2D, IPerformAreaFreezeVisual
     [Export]
     public bool LoopPreview { get; set; } = true;
 
+    /// <summary>
+    /// 预览态下每组摆几行：游戏内初始每组 1 行、上限 3 行，提线要在这三种容量下都贴得住。
+    /// 在 Inspector 里改会立即重播，用来看各容量下的挂点。
+    /// </summary>
+    [Export(PropertyHint.Range, "1,3,1")]
+    public int PreviewGroupRows
+    {
+        get => _previewGroupRows;
+        set
+        {
+            _previewGroupRows = Mathf.Clamp(value, 1, 3);
+            if (!VfxPreviewSupport.IsPreviewRun(this)) return;
+            _groups = [];
+            Replay();
+        }
+    }
+
     public override void _Ready()
     {
-        _washTexture = BangDreamPreloadManager.GetTexture2D(
-            "res://BangDreamInSpire/images/vfx/flying_music_note/glow_soft.png");
-
         // 本特效由 NPerformArea 外部驱动：只有「F6 单独运行场景」的预览才自播，
         // 游戏内必须等调用方投喂真实行坐标（否则会先用假布局闪一帧）。
         if (VfxPreviewSupport.IsPreviewRun(this))
@@ -165,7 +201,7 @@ public partial class MutsumiPlaylistFreezeVfx : Node2D, IPerformAreaFreezeVisual
     {
         if (_groups.Length == 0)
         {
-            _groups = BuildPreviewGroups();
+            _groups = BuildPreviewGroups(_previewGroupRows);
             _previewRows = true;
         }
 
@@ -183,109 +219,162 @@ public partial class MutsumiPlaylistFreezeVfx : Node2D, IPerformAreaFreezeVisual
             return;
         }
 
-        var sway = Mathf.Sin(_time * Mathf.Tau / BreathPeriod) * SwayAmplitude;
-        var breath = 1f + 0.08f * (0.5f + 0.5f * Mathf.Sin(_time * Mathf.Tau / 2.4f));
+        var breath = 0.5f + 0.5f * Mathf.Sin(_time * Mathf.Tau / BreathPeriod);
 
-        DrawWash(breath);
-
-        foreach (var group in _groups)
-        {
-            if (group.Rows.Length == 0) continue;
-
-            var ratio = AnchorRatios.TryGetValue(group.Group, out var value) ? value : 0.5f;
-            var first = group.Rows[0];
-            var top = float.MaxValue;
-            var bottom = float.MinValue;
-            foreach (var row in group.Rows)
-            {
-                top = Mathf.Min(top, row.Position.Y);
-                bottom = Mathf.Max(bottom, row.End.Y);
-            }
-
-            var anchorX = first.Position.X + first.Size.X * ratio;
-            var crossbarY = top - 16f;
-            var threadTopY = top - ThreadTopOffset;
-
-            // 主线（略带摆动，暗示被提着）；分成三段、越靠上越淡，读作从画面上方落下来
-            var alpha = ThreadAlpha * _fade * breath;
-            var segments = 3;
-            for (var seg = 0; seg < segments; seg++)
-            {
-                var t0 = seg / (float)segments;
-                var t1 = (seg + 1) / (float)segments;
-                var p0 = new Vector2(anchorX + sway * t0 * 0.4f, Mathf.Lerp(threadTopY, crossbarY, t0));
-                var p1 = new Vector2(anchorX + sway * t1, Mathf.Lerp(threadTopY, crossbarY, t1));
-                DrawLineGlow(p0, p1, ThreadColor, ThreadWidth, alpha * Mathf.Lerp(0.15f, 1f, t1));
-            }
-
-            // 横杆
-            DrawLineGlow(
-                new Vector2(anchorX + sway - CrossbarLength / 2f, crossbarY),
-                new Vector2(anchorX + sway + CrossbarLength / 2f, crossbarY),
-                CrossbarColor, CrossbarWidth, CrossbarAlpha * _fade * breath);
-
-            // 吊线 + 吊点：落在每条行的内端（靠近命中框那一侧，镜像列取右侧）
-            foreach (var row in group.Rows)
-            {
-                var hookX = group.Mirrored ? row.End.X - 12f : row.Position.X + 12f;
-                var hookY = row.Position.Y - 4f;
-                DrawLineGlow3(
-                    new Vector2(anchorX + sway, crossbarY), new Vector2(anchorX + sway, hookY),
-                    new Vector2(hookX, hookY),
-                    ThreadColor, HangerWidth, HangerAlpha * _fade * breath);
-                DrawKnot(hookX, hookY, KnotAlpha * _fade);
-            }
-
-            // 组位置的低亮度底光，避免「行自己消失了」的错觉
-            var center = new Vector2(first.Position.X + first.Size.X / 2f, (top + bottom) / 2f);
-            DrawCircle(center, 34f, new Color(ThreadColor, 0.05f * _fade));
-        }
-
+        // 预览态先把占位行画出来，让提线/吊线叠在行上，与游戏内的节点层级一致。
         if (_previewRows)
         {
             DrawPreviewRowPlaceholders();
         }
+
+        // 两列各挂一根提线：同列上下两组共用一根线，线走列的外侧留白，
+        // 不跨过任何一行、也不压到角色身上（四角布局里中间只有角色）。
+        DrawColumn(mirrored: false, shimmerPhase: 0f, breath);
+        DrawColumn(mirrored: true, shimmerPhase: 0.5f, breath);
     }
 
-    private void DrawWash(float breath)
+    /// <summary>画一列：行的覆膜与冷边、外侧提线、每行的吊线与环结。</summary>
+    private void DrawColumn(bool mirrored, float shimmerPhase, float breath)
     {
-        if (_washTexture == null || _groups.Length == 0)
-        {
-            return;
-        }
+        var hasRows = false;
+        var top = float.MaxValue;
+        var bottom = float.MinValue;
+        var outer = mirrored ? float.MinValue : float.MaxValue;
 
-        var bounds = GetBounds();
-        if (bounds.Size.X <= 0f || bounds.Size.Y <= 0f)
-        {
-            return;
-        }
-
-        var rect = bounds.Grow(40f);
-        var color = new Color(WashColor, WashAlpha * _fade * breath);
-        DrawTextureRect(_washTexture, rect, false, color);
-    }
-
-    private Rect2 GetBounds()
-    {
-        var bounds = new Rect2();
-        var first = true;
         foreach (var group in _groups)
         {
+            if (group.Mirrored != mirrored) continue;
             foreach (var row in group.Rows)
             {
-                if (first)
+                if (!hasRows)
                 {
-                    bounds = row;
-                    first = false;
+                    top = row.Position.Y;
+                    bottom = row.End.Y;
+                    outer = OuterEdgeX(row, mirrored);
+                    hasRows = true;
+                    continue;
                 }
-                else
-                {
-                    bounds = bounds.Merge(row);
-                }
+
+                top = Mathf.Min(top, row.Position.Y);
+                bottom = Mathf.Max(bottom, row.End.Y);
+                // 行宽按卡名自适应，同列各行外缘不一定齐平：提线取最外侧，才不会压在行的斜边上。
+                outer = mirrored
+                    ? Mathf.Max(outer, OuterEdgeX(row, mirrored))
+                    : Mathf.Min(outer, OuterEdgeX(row, mirrored));
             }
         }
 
-        return bounds;
+        if (!hasRows) return;
+
+        var wireX = mirrored ? outer + WireOffset : outer - WireOffset;
+        var alpha = Mathf.Lerp(0.88f, 1f, breath);
+
+        foreach (var group in _groups)
+        {
+            if (group.Mirrored != mirrored) continue;
+            foreach (var row in group.Rows)
+            {
+                DrawRowFilm(row, mirrored, alpha);
+            }
+        }
+
+        DrawWire(wireX, top, bottom, alpha, shimmerPhase);
+
+        // 吊线画在提线之后：接触点压在线上，读作「线从提线里分出来」。
+        foreach (var group in _groups)
+        {
+            if (group.Mirrored != mirrored) continue;
+            foreach (var row in group.Rows)
+            {
+                DrawRowTie(row, mirrored, wireX, alpha);
+            }
+        }
+    }
+
+    /// <summary>行在视觉上最靠外（远离角色）的那条边；行宽随卡名自适应，所以逐行取。</summary>
+    private static float OuterEdgeX(Rect2 row, bool mirrored)
+    {
+        return mirrored ? row.End.X : row.Position.X;
+    }
+
+    /// <summary>行覆膜：按斜切四边形填一层冷色，再沿顶边描一道冷光，读作「被提起来的那条边」。</summary>
+    private void DrawRowFilm(Rect2 row, bool mirrored, float breathScale)
+    {
+        FillSlantedRow(row, mirrored, new Color(FilmColor, FilmAlpha * _fade * breathScale));
+
+        var shift = SlantShift(row);
+        var top = row.Position.Y;
+        var alpha = RimAlpha * _fade * breathScale;
+        if (mirrored)
+        {
+            DrawLineGlow(new Vector2(row.Position.X, top), new Vector2(row.End.X - shift, top),
+                TieColor, 1f, alpha);
+        }
+        else
+        {
+            DrawLineGlow(new Vector2(row.Position.X + shift, top), new Vector2(row.End.X, top),
+                TieColor, 1f, alpha);
+        }
+    }
+
+    /// <summary>提线本体：上端长渐隐、中间实线、下端短渐隐，外加一段缓慢下滑的高光。</summary>
+    private void DrawWire(float x, float top, float bottom, float breath, float shimmerPhase)
+    {
+        var alpha = WireAlpha * _fade * breath;
+        if (alpha <= 0.001f) return;
+
+        var barY = top - WireFadeAbove;
+
+        // 上端：长渐隐，读作「线从画面上方垂下来」，但不跨过行、也不压角色。
+        const int fadeSteps = 6;
+        for (var i = 0; i < fadeSteps; i++)
+        {
+            var t0 = i / (float)fadeSteps;
+            var t1 = (i + 1) / (float)fadeSteps;
+            DrawLineGlow(
+                new Vector2(x, Mathf.Lerp(barY, top, t0)),
+                new Vector2(x, Mathf.Lerp(barY, top, t1)),
+                WireColor, WireWidth, alpha * Mathf.Lerp(0.03f, 0.9f, t1 * t1), cord: true);
+        }
+
+        DrawLineGlow(new Vector2(x, top), new Vector2(x, bottom), WireColor, WireWidth, alpha, cord: true);
+
+        const int tailSteps = 2;
+        for (var i = 0; i < tailSteps; i++)
+        {
+            var t0 = i / (float)tailSteps;
+            var t1 = (i + 1) / (float)tailSteps;
+            DrawLineGlow(
+                new Vector2(x, Mathf.Lerp(bottom, bottom + WireFadeBelow, t0)),
+                new Vector2(x, Mathf.Lerp(bottom, bottom + WireFadeBelow, t1)),
+                WireColor, WireWidth, alpha * Mathf.Lerp(0.55f, 0.05f, t1), cord: true);
+        }
+
+        // 缓慢下滑的高光：不改变几何，只让线「活着」，避免冻结时整块画面像截图。
+        var progress = Mathf.PosMod(_time / ShimmerPeriod + shimmerPhase, 1f);
+        var shimmerAlpha = alpha * 0.30f * Mathf.Sin(progress * Mathf.Pi);
+        if (shimmerAlpha <= 0.001f) return;
+
+        var mid = Mathf.Lerp(barY, bottom + WireFadeBelow, progress);
+        var half = ShimmerLength * 0.5f;
+        DrawLineGlow(new Vector2(x, mid - half), new Vector2(x, mid + half),
+            TieColor, WireWidth * 1.8f, shimmerAlpha);
+    }
+
+    /// <summary>
+    /// 单行的吊线：从上方的提线斜拉到行**顶边外端**（斜切让顶边内缩，钩点要跟着内缩），
+    /// 钩点打一个环结。斜拉的短吊线比水平卡扣更像「被线吊着」。
+    /// </summary>
+    private void DrawRowTie(Rect2 row, bool mirrored, float wireX, float breath)
+    {
+        var shift = SlantShift(row);
+        var top = row.Position.Y;
+        var hookX = mirrored ? row.End.X - shift - TieInset : row.Position.X + shift + TieInset;
+        var alpha = TieAlpha * _fade * breath;
+
+        DrawLineGlow(new Vector2(wireX, top - TieDrop), new Vector2(hookX, top + 1f),
+            TieColor, TieWidth, alpha, cord: true);
+        DrawKnot(hookX, top + 1f, KnotAlpha * _fade * breath);
     }
 
     /// <summary>外发光的固定三遍参数；提成静态表，避免每帧每段线都分配。</summary>
@@ -295,25 +384,21 @@ public partial class MutsumiPlaylistFreezeVfx : Node2D, IPerformAreaFreezeVisual
     ];
 
     private readonly Vector2[] _segmentBuffer = new Vector2[2];
-    private readonly Vector2[] _polylineBuffer = new Vector2[3];
-    private readonly Vector2[] _knotPolygon = new Vector2[4];
-    private readonly Vector2[] _knotOutline = new Vector2[5];
+    private readonly Vector2[] _quadBuffer = new Vector2[4];
+    private readonly Vector2[] _outlineBuffer = new Vector2[5];
 
-    private void DrawLineGlow(Vector2 from, Vector2 to, Color color, float width, float alpha)
+    /// <summary>描一条带外发光的线；<paramref name="cord" /> 为真时先垫一道暗色，浅色背景上也读得出轮廓。</summary>
+    private void DrawLineGlow(Vector2 from, Vector2 to, Color color, float width, float alpha, bool cord = false)
     {
         if (alpha <= 0.001f) return;
         _segmentBuffer[0] = from;
         _segmentBuffer[1] = to;
-        DrawLineGlowPasses(_segmentBuffer, color, width, alpha);
-    }
+        if (cord)
+        {
+            DrawPolyline(_segmentBuffer, new Color(CordShadowColor, alpha * 0.55f), width * 2.4f, true);
+        }
 
-    private void DrawLineGlow3(Vector2 a, Vector2 b, Vector2 c, Color color, float width, float alpha)
-    {
-        if (alpha <= 0.001f) return;
-        _polylineBuffer[0] = a;
-        _polylineBuffer[1] = b;
-        _polylineBuffer[2] = c;
-        DrawLineGlowPasses(_polylineBuffer, color, width, alpha);
+        DrawLineGlowPasses(_segmentBuffer, color, width, alpha);
     }
 
     private void DrawLineGlowPasses(Vector2[] points, Color color, float width, float alpha)
@@ -325,39 +410,102 @@ public partial class MutsumiPlaylistFreezeVfx : Node2D, IPerformAreaFreezeVisual
         }
     }
 
+    /// <summary>钩点的绳结：一个小环 + 环心亮点，读作「线从环里穿过去打结」，不要画成实心菱形（像箭头）。</summary>
     private void DrawKnot(float x, float y, float alpha)
     {
         if (alpha <= 0.001f) return;
 
-        _knotPolygon[0] = new Vector2(x, y - KnotSize);
-        _knotPolygon[1] = new Vector2(x + KnotSize, y);
-        _knotPolygon[2] = new Vector2(x, y + KnotSize);
-        _knotPolygon[3] = new Vector2(x - KnotSize, y);
-        DrawColoredPolygon(_knotPolygon, new Color(KnotColor, alpha));
-
-        _knotOutline[0] = _knotPolygon[0];
-        _knotOutline[1] = _knotPolygon[1];
-        _knotOutline[2] = _knotPolygon[2];
-        _knotOutline[3] = _knotPolygon[3];
-        _knotOutline[4] = _knotPolygon[0];
-        DrawPolyline(_knotOutline, new Color(KnotColor, Mathf.Min(1f, alpha * 1.2f)), 1.2f, true);
+        var center = new Vector2(x, y);
+        var color = new Color(KnotColor, Mathf.Min(1f, alpha * 1.15f));
+        DrawArc(center, KnotSize, 0f, Mathf.Tau, 12, color, 1.3f, true);
+        DrawCircle(center, KnotSize * 0.34f, new Color(KnotColor, alpha * 0.9f));
     }
 
-    /// <summary>预览态用假行：按 NPerformArea 的真实几何（112×35、行距 49、两列、右侧镜像）造 12 行。</summary>
-    private static PerformRowGroup[] BuildPreviewGroups()
+    /// <summary>
+    /// 行的斜切量：<c>parallelogram_clip.gdshader</c> 的 <c>slant_slope</c> 让顶边相对底边水平错开
+    /// <c>slant × 行高</c>；行是平行四边形而不是矩形，钩点与覆膜都要按这个形状算。
+    /// </summary>
+    private static float SlantShift(Rect2 row) => SlantSlope * row.Size.Y;
+
+    /// <summary>按行的视觉外接矩形填一块斜切四边形（镜像列方向相反）。</summary>
+    private void FillSlantedRow(Rect2 row, bool mirrored, Color color)
     {
-        const float itemWidth = 112f;
-        const float itemHeight = 35f;
-        const float rowStep = 49f;
-        const float columnGap = 10f;
+        if (color.A <= 0.001f) return;
+
+        var shift = SlantShift(row);
+        var left = row.Position.X;
+        var right = row.End.X;
+        var top = row.Position.Y;
+        var bottom = row.End.Y;
+
+        if (mirrored)
+        {
+            _quadBuffer[0] = new Vector2(left, top);
+            _quadBuffer[1] = new Vector2(right - shift, top);
+            _quadBuffer[2] = new Vector2(right, bottom);
+            _quadBuffer[3] = new Vector2(left + shift, bottom);
+        }
+        else
+        {
+            _quadBuffer[0] = new Vector2(left + shift, top);
+            _quadBuffer[1] = new Vector2(right, top);
+            _quadBuffer[2] = new Vector2(right - shift, bottom);
+            _quadBuffer[3] = new Vector2(left, bottom);
+        }
+
+        DrawColoredPolygon(_quadBuffer, color);
+    }
+
+    /// <summary>沿斜切四边形的轮廓描一圈（预览占位行用）。</summary>
+    private void DrawSlantedRowEdge(Rect2 row, bool mirrored, Color color, float width)
+    {
+        if (color.A <= 0.001f) return;
+
+        var shift = SlantShift(row);
+        var left = row.Position.X;
+        var right = row.End.X;
+        var top = row.Position.Y;
+        var bottom = row.End.Y;
+
+        if (mirrored)
+        {
+            _outlineBuffer[0] = new Vector2(left, top);
+            _outlineBuffer[1] = new Vector2(right - shift, top);
+            _outlineBuffer[2] = new Vector2(right, bottom);
+            _outlineBuffer[3] = new Vector2(left + shift, bottom);
+        }
+        else
+        {
+            _outlineBuffer[0] = new Vector2(left + shift, top);
+            _outlineBuffer[1] = new Vector2(right, top);
+            _outlineBuffer[2] = new Vector2(right - shift, bottom);
+            _outlineBuffer[3] = new Vector2(left, bottom);
+        }
+
+        _outlineBuffer[4] = _outlineBuffer[0];
+        DrawPolyline(_outlineBuffer, color, width, true);
+    }
+
+    /// <summary>
+    /// 预览态用假行：照当前四角布局复刻 <c>NPerformArea.GetItemPosition</c> 的几何
+    /// （160×50 局部 → 0.7 缩放后 112×35、行距 49、四组贴命中框四角、右侧列镜像、组间留 5px 缝）。
+    /// 改动演奏区布局时同步这里，否则 F6 预览与游戏内不是同一个形态。
+    /// </summary>
+    private static PerformRowGroup[] BuildPreviewGroups(int rowCount)
+    {
+        const float itemWidth = 112f;   // NPerformItem.MinimumItemWidth 160 × ItemScale 0.7
+        const float itemHeight = 35f;   // NPerformItem.ItemHeight 50 × ItemScale 0.7
+        const float rowStep = 49f;      // NPerformArea.ItemSpacing 70 × ItemScale 0.7
+        const float columnGap = 10f;    // NPerformArea.SlotHitboxGap
+        const float hitboxInset = 32f;  // GetItemPosition 里命中框顶/底的内收量（槽位原点在行高一半处）
         const float halfHitWidth = 160f;
         const float halfHitHeight = 150f;
 
         var groups = new List<PerformRowGroup>();
         var left = -halfHitWidth - columnGap - itemWidth;
         var right = halfHitWidth + columnGap;
-        var topY = -halfHitHeight + 32f;
-        var bottomY = halfHitHeight - 32f - itemHeight;
+        var topY = -halfHitHeight + hitboxInset - itemHeight / 2f;
+        var bottomY = halfHitHeight - hitboxInset - itemHeight / 2f;
 
         foreach (var (chord, x, startY, step, mirrored) in new (PerformChord, float, float, float, bool)[]
                  {
@@ -367,8 +515,8 @@ public partial class MutsumiPlaylistFreezeVfx : Node2D, IPerformAreaFreezeVisual
                      (PerformChord.G, right, bottomY, -rowStep, true)
                  })
         {
-            var rows = new Rect2[3];
-            for (var i = 0; i < 3; i++)
+            var rows = new Rect2[rowCount];
+            for (var i = 0; i < rowCount; i++)
             {
                 rows[i] = new Rect2(x, startY + step * i, itemWidth, itemHeight);
             }
@@ -379,7 +527,7 @@ public partial class MutsumiPlaylistFreezeVfx : Node2D, IPerformAreaFreezeVisual
         return groups.ToArray();
     }
 
-    /// <summary>预览态下把行本身也画出来（游戏内行由 NPerformArea 显示，不在这里画）。</summary>
+    /// <summary>预览态下把行本身也画出来（游戏内行由 NPerformArea 显示，不在这里画），按斜切平行四边形画。</summary>
     private void DrawPreviewRowPlaceholders()
     {
         foreach (var group in _groups)
@@ -387,8 +535,8 @@ public partial class MutsumiPlaylistFreezeVfx : Node2D, IPerformAreaFreezeVisual
             var color = PerformChordColors.ColorOf(group.Group);
             foreach (var row in group.Rows)
             {
-                DrawRect(row, new Color(color, 0.18f * _fade), true);
-                DrawRect(row, new Color(color, 0.75f * _fade), false, 1.5f);
+                FillSlantedRow(row, group.Mirrored, new Color(color, 0.18f * _fade));
+                DrawSlantedRowEdge(row, group.Mirrored, new Color(color, 0.75f * _fade), 1.5f);
             }
         }
     }

@@ -335,7 +335,7 @@ public sealed class MyMechanic : IBangDreamMechanic
 |---|---|---|
 | 单行尺寸 | `NPerformItem` 局部 **160×50**（宽度按卡名自适应，`MinimumItemWidth = 160`）；`NPerformArea.ItemScale` 默认 **0.7** → 实渲染约 **112×35** | `perform_item.tscn`、`NPerformItem.UpdateAdaptiveWidth`、`NPerformArea.ItemScale` |
 | 斜切 | `parallelogram_clip.gdshader` 的 `slant_slope = 0.3` → 上下各偏移约 `0.3 × 高 / 2`（35px 高时约 5.25px） | `shaders/parallelogram_clip.gdshader` |
-| 行内组成 | 卡面 portrait（同款斜切）+ 点阵叠加 + 渐变遮罩 + 白色标题（28px，右侧列整体水平镜像）；行右侧另有一条 165×25 的标题底色带 | `perform_item.tscn` |
+| 行内组成 | 卡面 portrait（同款斜切）+ 点阵叠加 + 渐变遮罩 + 白色标题（28px，右侧列整体水平镜像）；行**外端**另探出一条 165×25 的标题底色带（比卡面相片外扩约 14px，冻结层的外侧提线因此要放在它外面） | `perform_item.tscn` |
 | 分组与列 | 四组 × 3 行，贴命中框左右两侧成**两列**：左列 **C（上）/ D（下）**，右列 **F（上）/ G（下，镜像）**；同一列上下两组在竖直中段留约 5px 缝 | `MutsumiPerformScheme` 的 `PerformSlotCorner`、`NPerformArea.GetItemPosition` |
 | 间距 | 行距 `ItemSpacing(70) × ItemScale` ≈ **49px**；列与命中框边缘 `SlotHitboxGap = 10px`；`PerformAreaAnchor.HitboxCenter` 表示演奏区坐标原点在命中框中心 | `NPerformArea` |
 | 分组角标 | 在该组**第一行的外端**，尺寸 22px（占位实现） | `NPerformArea.TryGetGroupBadgeAnchor` |
