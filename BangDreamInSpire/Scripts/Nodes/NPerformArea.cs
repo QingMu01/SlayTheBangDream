@@ -938,8 +938,9 @@ public partial class NPerformArea : Control, IPerformArea
                 Mathf.Abs(item.LocalSize.Y * scale.Y));
             if (size.X <= 0f || size.Y <= 0f) continue;
 
-            // 右侧列带负的水平缩放：视觉矩形从锚点向左展开。
-            var position = item.Position + (scale.X < 0f ? new Vector2(-size.X, 0f) : Vector2.Zero);
+            // 未镜像的行以右边缘贴住锚点、向左延展；镜像列（右侧列）经水平翻转后以左边缘贴住锚点、
+            // 向右延展——方向反了会把整列的矩形投到角色身上（冻结提线、激活描边全部错位）。
+            var position = item.Position + (scale.X < 0f ? Vector2.Zero : new Vector2(-size.X, 0f));
             collected.Add(new Rect2(position, size));
         }
 
