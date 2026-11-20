@@ -3,6 +3,7 @@ using BangDreamInSpire.Scripts.Interfaces.Mechanics;
 using BangDreamInSpire.Scripts.Utils.Infos;
 using BangDreamInSpire.Scripts.Utils;
 using Godot;
+using ItsCrychic.Scripts.Utils;
 using MegaCrit.Sts2.Core.Helpers;
 
 namespace ItsCrychic.Scripts.Nodes.VFX;
@@ -71,12 +72,6 @@ public partial class MutsumiPlaylistFreezeVfx : Node2D, IPerformAreaFreezeVisual
     /// <summary>沿提线缓慢下滑的高光：半段长度与周期。</summary>
     private const float ShimmerLength = 26f;
     private const float ShimmerPeriod = 2.6f;
-
-    /// <summary>
-    /// 行的斜切量，必须与 <c>parallelogram_clip.gdshader</c> 的 <c>slant_slope</c> 一致：
-    /// 顶边相对底边水平错开 <c>slant × 行高</c>，行是平行四边形而不是矩形。
-    /// </summary>
-    private const float SlantSlope = 0.3f;
 
     private static readonly Color WireColor = new("#ded8f6");
     private static readonly Color TieColor = new("#f2eeff");
@@ -300,21 +295,11 @@ public partial class MutsumiPlaylistFreezeVfx : Node2D, IPerformAreaFreezeVisual
     /// <summary>行覆膜：按斜切四边形填一层冷色，再沿顶边描一道冷光，读作「被提起来的那条边」。</summary>
     private void DrawRowFilm(Rect2 row, bool mirrored, float breathScale)
     {
-        FillSlantedRow(row, mirrored, new Color(FilmColor, FilmAlpha * _fade * breathScale));
+        PerformRowShape.Fill(this, row, mirrored, new Color(FilmColor, FilmAlpha * _fade * breathScale),
+            _quadBuffer);
 
-        var shift = SlantShift(row);
-        var top = row.Position.Y;
-        var alpha = RimAlpha * _fade * breathScale;
-        if (mirrored)
-        {
-            DrawLineGlow(new Vector2(row.Position.X, top), new Vector2(row.End.X - shift, top),
-                TieColor, 1f, alpha);
-        }
-        else
-        {
-            DrawLineGlow(new Vector2(row.Position.X + shift, top), new Vector2(row.End.X, top),
-                TieColor, 1f, alpha);
-        }
+        PerformRowShape.GetTopEdge(row, mirrored, out var from, out var to);
+        DrawLineGlow(from, to, TieColor, 1f, RimAlpha * _fade * breathScale);
     }
 
     /// <summary>提线本体：上端长渐隐、中间实线、下端短渐隐，外加一段缓慢下滑的高光。</summary>
@@ -367,7 +352,7 @@ public partial class MutsumiPlaylistFreezeVfx : Node2D, IPerformAreaFreezeVisual
     /// </summary>
     private void DrawRowTie(Rect2 row, bool mirrored, float wireX, float breath)
     {
-        var shift = SlantShift(row);
+        var shift = PerformRowShape.TopShift(row);
         var top = row.Position.Y;
         var hookX = mirrored ? row.End.X - shift - TieInset : row.Position.X + shift + TieInset;
         var alpha = TieAlpha * _fade * breath;
@@ -422,71 +407,6 @@ public partial class MutsumiPlaylistFreezeVfx : Node2D, IPerformAreaFreezeVisual
     }
 
     /// <summary>
-    /// 行的斜切量：<c>parallelogram_clip.gdshader</c> 的 <c>slant_slope</c> 让顶边相对底边水平错开
-    /// <c>slant × 行高</c>；行是平行四边形而不是矩形，钩点与覆膜都要按这个形状算。
-    /// </summary>
-    private static float SlantShift(Rect2 row) => SlantSlope * row.Size.Y;
-
-    /// <summary>按行的视觉外接矩形填一块斜切四边形（镜像列方向相反）。</summary>
-    private void FillSlantedRow(Rect2 row, bool mirrored, Color color)
-    {
-        if (color.A <= 0.001f) return;
-
-        var shift = SlantShift(row);
-        var left = row.Position.X;
-        var right = row.End.X;
-        var top = row.Position.Y;
-        var bottom = row.End.Y;
-
-        if (mirrored)
-        {
-            _quadBuffer[0] = new Vector2(left, top);
-            _quadBuffer[1] = new Vector2(right - shift, top);
-            _quadBuffer[2] = new Vector2(right, bottom);
-            _quadBuffer[3] = new Vector2(left + shift, bottom);
-        }
-        else
-        {
-            _quadBuffer[0] = new Vector2(left + shift, top);
-            _quadBuffer[1] = new Vector2(right, top);
-            _quadBuffer[2] = new Vector2(right - shift, bottom);
-            _quadBuffer[3] = new Vector2(left, bottom);
-        }
-
-        DrawColoredPolygon(_quadBuffer, color);
-    }
-
-    /// <summary>沿斜切四边形的轮廓描一圈（预览占位行用）。</summary>
-    private void DrawSlantedRowEdge(Rect2 row, bool mirrored, Color color, float width)
-    {
-        if (color.A <= 0.001f) return;
-
-        var shift = SlantShift(row);
-        var left = row.Position.X;
-        var right = row.End.X;
-        var top = row.Position.Y;
-        var bottom = row.End.Y;
-
-        if (mirrored)
-        {
-            _outlineBuffer[0] = new Vector2(left, top);
-            _outlineBuffer[1] = new Vector2(right - shift, top);
-            _outlineBuffer[2] = new Vector2(right, bottom);
-            _outlineBuffer[3] = new Vector2(left + shift, bottom);
-        }
-        else
-        {
-            _outlineBuffer[0] = new Vector2(left + shift, top);
-            _outlineBuffer[1] = new Vector2(right, top);
-            _outlineBuffer[2] = new Vector2(right - shift, bottom);
-            _outlineBuffer[3] = new Vector2(left, bottom);
-        }
-
-        _outlineBuffer[4] = _outlineBuffer[0];
-        DrawPolyline(_outlineBuffer, color, width, true);
-    }
-
-    /// <summary>
     /// 预览态用假行：照当前四角布局复刻 <c>NPerformArea.GetItemPosition</c> 的几何
     /// （160×50 局部 → 0.7 缩放后 112×35、行距 49、四组贴命中框四角、右侧列镜像、组间留 5px 缝）。
     /// 改动演奏区布局时同步这里，否则 F6 预览与游戏内不是同一个形态。
@@ -535,8 +455,9 @@ public partial class MutsumiPlaylistFreezeVfx : Node2D, IPerformAreaFreezeVisual
             var color = PerformChordColors.ColorOf(group.Group);
             foreach (var row in group.Rows)
             {
-                FillSlantedRow(row, group.Mirrored, new Color(color, 0.18f * _fade));
-                DrawSlantedRowEdge(row, group.Mirrored, new Color(color, 0.75f * _fade), 1.5f);
+                PerformRowShape.Fill(this, row, group.Mirrored, new Color(color, 0.18f * _fade), _quadBuffer);
+                PerformRowShape.Outline(this, row, group.Mirrored, new Color(color, 0.75f * _fade), 1.5f,
+                    _outlineBuffer);
             }
         }
     }
