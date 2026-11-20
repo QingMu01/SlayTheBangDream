@@ -420,6 +420,11 @@ public partial class MutsumiPlaylistFreezeVfx : Node2D, IPerformAreaFreezeVisual
         const float hitboxInset = 32f;  // GetItemPosition 里命中框顶/底的内收量（槽位原点在行高一半处）
         const float halfHitWidth = 160f;
         const float halfHitHeight = 150f;
+        // 与 NPerformArea.HangDrop / HangOutward / HangRowStep 对齐：冻结时槽位整体下沉并外移，
+        // 预览必须带上这份偏移，否则 F6 里提线与游戏内的行对不上。
+        const float hangDrop = 2f;
+        const float hangOutward = 3f;
+        const float hangRowStep = 0.5f;
 
         var groups = new List<PerformRowGroup>();
         var left = -halfHitWidth - columnGap - itemWidth;
@@ -435,10 +440,14 @@ public partial class MutsumiPlaylistFreezeVfx : Node2D, IPerformAreaFreezeVisual
                      (PerformChord.G, right, bottomY, -rowStep, true)
                  })
         {
+            var outward = mirrored ? hangOutward : -hangOutward;
             var rows = new Rect2[rowCount];
             for (var i = 0; i < rowCount; i++)
             {
-                rows[i] = new Rect2(x, startY + step * i, itemWidth, itemHeight);
+                // 左上/右上组按行序向下沉，左下/右下组反向——与 GetHangOffset 的 sagStep 一致。
+                var sag = chord is PerformChord.C or PerformChord.F ? i : -i;
+                rows[i] = new Rect2(x + outward, startY + step * i + hangDrop + sag * hangRowStep,
+                    itemWidth, itemHeight);
             }
 
             groups.Add(new PerformRowGroup(chord, rows, mirrored));

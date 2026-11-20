@@ -44,6 +44,18 @@ public partial class NPerformArea : Control, IPerformArea
     /// </summary>
     private static readonly Color FrozenSlotTint = new(0.82f, 0.84f, 0.92f);
 
+    /// <summary>
+    /// 冻结（被提线吊住）时槽位相对布局位置的下沉量。行不能旋转（镜像与布局缓动都按位置写），
+    /// 只能靠一点平移表达「这摞行现在是被挂着的、不在它原本的格子上」。
+    /// </summary>
+    private const float HangDrop = 2f;
+
+    /// <summary>冻结时槽位向列外端挪动的距离（远离角色，和被提线拴住的外端同侧）。</summary>
+    private const float HangOutward = 3f;
+
+    /// <summary>同组相邻行的额外沉降差：一摞行看起来是分别挂着的，而不是整块平移。</summary>
+    private const float HangRowStep = 0.5f;
+
     private const float ActivatedBadgeSize = 22f;
     private const string ActivatedBadgeNamePrefix = "ActivatedGroupBadge_";
 
@@ -205,6 +217,12 @@ public partial class NPerformArea : Control, IPerformArea
 
         ApplyFrozenVisuals();
         ApplyActivatedGroupVisuals();
+
+        // 冻结会改变槽位的落位（见 GetHangOffset）：补一次布局缓动，解冻时再缓回原格。
+        if (IsInsideTree())
+        {
+            _ = AnimateLayout();
+        }
     }
 
     /// <summary>
@@ -842,6 +860,12 @@ public partial class NPerformArea : Control, IPerformArea
         // 槽位集合变化后重新贴一次冻结层与激活角标（新增/移除槽位会改变它们的范围）。
         ApplyFrozenVisuals();
         ApplyActivatedGroupVisuals();
+
+        // 冻结会改变槽位的落位（见 GetHangOffset）：补一次布局缓动，解冻时再缓回原格。
+        if (IsInsideTree())
+        {
+            _ = AnimateLayout();
+        }
     }
 
     /// <summary>记录槽位的原始 modulate：冻结表现是相乘冷色，必须先留底才能原样还原。</summary>
@@ -1343,7 +1367,7 @@ public partial class NPerformArea : Control, IPerformArea
         var approach = anchor.Offset * ItemApproachSpacing * _itemScale;
         var bottom = GetHitboxBottomY() - _itemContainer.Position.Y;
 
-        return anchor.Corner switch
+        var basePosition = anchor.Corner switch
         {
             PerformSlotCorner.TopLeft => new Vector2(
                 GetHitboxLeftX() - SlotHitboxGap, GetHitboxTopY() + ItemHeight / 2f + stack),
@@ -1355,6 +1379,25 @@ public partial class NPerformArea : Control, IPerformArea
                 GetHitboxRightX() + SlotHitboxGap, bottom - ItemHeight / 2f - stack),
             _ => new Vector2(approach, bottom - ItemHeight / 2f - stack)
         };
+
+        return basePosition + GetHangOffset(anchor);
+    }
+
+    /// <summary>
+    /// 冻结时槽位的「被吊住」偏移：向列外端挪一点、向下沉一点，同组越靠下的行沉得越多
+    /// （左上/右上组按 local 递增，左下/右下组反向）。解冻回零，几何仍以
+    /// <see cref="GetItemPosition" /> 为唯一真值，因此提线/激活的投喂坐标会自动跟随。
+    /// </summary>
+    private Vector2 GetHangOffset(PerformSlotAnchor anchor)
+    {
+        if (!_isFrozen) return Vector2.Zero;
+
+        var outward = IsMirroredCorner(anchor.Corner) ? 1f : -1f;
+        var sagStep = anchor.Corner is PerformSlotCorner.TopLeft or PerformSlotCorner.TopRight
+            ? anchor.Offset
+            : -anchor.Offset;
+
+        return new Vector2(outward * HangOutward, HangDrop + sagStep * HangRowStep);
     }
 
     private PerformSlotCorner GetCorner(int slotIndex)
