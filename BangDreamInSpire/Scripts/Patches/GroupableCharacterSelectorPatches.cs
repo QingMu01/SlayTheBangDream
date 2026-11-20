@@ -202,8 +202,8 @@ internal static class CharacterSelectScreenSupport
         FindField(screen, "_ascensionPanel")?.GetValue(screen) as NAscensionPanel;
 
     /// <summary>
-    /// 为每个角色分组建一个占位按钮并挂到按钮容器末尾，随后隐藏本体为 <see cref="IGroupableCharacter" /> 生成的按钮，
-    /// 再按可见按钮重排焦点环。
+    /// 为每个角色分组建一个占位按钮并插在「本体角色之后、随机按钮之前」，随后隐藏本体为
+    /// <see cref="IGroupableCharacter" /> 生成的按钮，再按可见按钮重排焦点环。
     /// </summary>
     /// <param name="buttonScene">
     /// 本体的按钮场景。标准屏有 <c>_charSelectButtonScene</c> 字段，直接透传即可；
@@ -239,7 +239,7 @@ internal static class CharacterSelectScreenSupport
             }
         }
 
-        var insertIndex = GetInsertIndex(existing);
+        var insertIndex = GetInsertIndex(container, screenDelegate, existing);
         var alreadyGroupName = new HashSet<string>();
 
         foreach (var groupableCharacter in ModelDb.AllCharacters.OfType<IGroupableCharacter>())
@@ -282,12 +282,44 @@ internal static class CharacterSelectScreenSupport
             $"Character select buttons on {screenDelegate.GetType().Name}: added {alreadyGroupName.Count} group button(s), {visibleButtons} visible in total.");
     }
 
-    private static int GetInsertIndex(List<NCharacterSelectButton> buttons)
+    /// <summary>
+    /// 本体的随机按钮（标准 / 快速屏的 <c>_randomCharacterButton</c>）或轮换按钮
+    /// （恐惧屏的 <c>_rotatingCharacterButton</c>）。名字由反射取，缺失返回 null。
+    /// </summary>
+    internal static NCharacterSelectButton? GetRandomButton(object screen) =>
+        (FindField(screen, "_randomCharacterButton") ?? FindField(screen, "_rotatingCharacterButton"))?.GetValue(screen)
+        as NCharacterSelectButton;
+
+    /// <summary>
+    /// 分组按钮的插入锚点：随机 / 轮换按钮之前（该按钮由本体固定加在所有角色按钮之后）。
+    /// <para>
+    /// **不能只按「最后一个本体角色按钮」定位**：随机 / 轮换按钮的 <c>Character</c> 既不是模组角色也不是占位角色，
+    /// 会被当成普通角色按钮，于是分组按钮落到整行最末尾（随机按钮之后）。
+    /// </para>
+    /// <para>
+    /// 恐惧屏的轮换按钮在 <c>InitCharacterButtons</c> 阶段还没 <c>Init</c>（<c>IsRandom</c> 仍为 false、
+    /// <c>Character</c> 为 null），所以先直接反射本体字段拿节点，而不是靠按钮状态判断；
+    /// 拿不到时才退回「最后一个角色按钮之后」的旧逻辑。
+    /// </para>
+    /// </summary>
+    private static int GetInsertIndex(Control container, object screen, List<NCharacterSelectButton> buttons)
     {
+        if (GetRandomButton(screen) is { } randomButton && randomButton.GetParent() == container)
+        {
+            return container.GetChildren().IndexOf(randomButton) - 1;
+        }
+
         var lastCharacterIndex = -1;
         for (var i = buttons.Count - 1; i >= 0; --i)
         {
             var button = buttons[i];
+
+            // 兜底：按状态识别随机 / 轮换按钮（InitAsRandom / InitAsRotating 都会置位），不拿它当角色。
+            if (button.IsRandom)
+            {
+                continue;
+            }
+
             // 不写死本体角色表（0.113 已新增 Fool，写死会漏项）：非模组、非占位的按钮就是本体角色。
             if (!button.IsLocked && button.Character is not IGroupableCharacter and not GroupCharacterPlaceholder)
             {
