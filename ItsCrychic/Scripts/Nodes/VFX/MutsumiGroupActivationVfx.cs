@@ -3,6 +3,7 @@ using BangDreamInSpire.Scripts.Interfaces.Mechanics;
 using BangDreamInSpire.Scripts.Utils.Infos;
 using BangDreamInSpire.Scripts.Utils;
 using Godot;
+using ItsCrychic.Scripts.Utils;
 using MegaCrit.Sts2.Core.Helpers;
 
 namespace ItsCrychic.Scripts.Nodes.VFX;
@@ -57,6 +58,8 @@ public partial class MutsumiGroupActivationVfx : Node2D, IPerformAreaActivationV
     ];
 
     private readonly Vector2[] _threadBuffer = new Vector2[3];
+    private readonly Vector2[] _quadBuffer = new Vector2[4];
+    private readonly Vector2[] _outlineBuffer = new Vector2[5];
 
     private float _time;
     private Texture2D? _ringTexture;
@@ -182,7 +185,8 @@ public partial class MutsumiGroupActivationVfx : Node2D, IPerformAreaActivationV
         foreach (var state in _active.Values)
         {
             var color = PerformChordColors.ColorOf(state.Group);
-            DrawRowsLit(state.Rows, Mathf.Lerp(RowsHoldAlpha * 0.85f, RowsHoldAlpha, breath), 1f, color);
+            DrawRowsLit(state.Rows, state.Mirrored, Mathf.Lerp(RowsHoldAlpha * 0.85f, RowsHoldAlpha, breath),
+                1f, color);
             DrawThread(state.BadgeCenter, state.TargetCenter, Mathf.Lerp(ThreadAlpha * 0.9f, ThreadAlpha, breath), 1f, color);
         }
 
@@ -201,7 +205,7 @@ public partial class MutsumiGroupActivationVfx : Node2D, IPerformAreaActivationV
         var rowsLit = Mathf.Clamp(_shotElapsed / RowsLitDuration, 0f, 1f);
         var grow = Mathf.Clamp(_shotElapsed / ThreadGrowDuration, 0f, 1f);
         var shotColor = PerformChordColors.ColorOf(shot.Group);
-        DrawRowsLit(shot.Rows, 1f, rowsLit, shotColor, highlight: true);
+        DrawRowsLit(shot.Rows, shot.Mirrored, 1f, rowsLit, shotColor, highlight: true);
         DrawThread(shot.BadgeCenter, shot.TargetCenter, grow, grow, shotColor);
         DrawSweep(shot.Rows, _shotElapsed);
         DrawRing(shot.BadgeCenter);
@@ -209,7 +213,9 @@ public partial class MutsumiGroupActivationVfx : Node2D, IPerformAreaActivationV
         DrawPulse(shot.BadgeCenter, shot.TargetCenter);
     }
 
-    private void DrawRowsLit(Rect2[] rows, float alpha, float progress, Color color, bool highlight = false)
+    /// <summary>点亮某组的行：按行的斜切平行四边形填充 + 描边（用矩形描边会让四个角戳在行外）。</summary>
+    private void DrawRowsLit(Rect2[] rows, bool mirrored, float alpha, float progress, Color color,
+        bool highlight = false)
     {
         if (rows.Length == 0 || alpha <= 0.001f)
         {
@@ -222,10 +228,11 @@ public partial class MutsumiGroupActivationVfx : Node2D, IPerformAreaActivationV
             var row = rows[i];
             if (highlight)
             {
-                DrawRect(row, new Color(color, 0.22f * alpha), true);
+                PerformRowShape.Fill(this, row, mirrored, new Color(color, 0.22f * alpha), _quadBuffer);
             }
 
-            DrawRect(row, new Color(color, 0.9f * alpha), false, 2.2f);
+            PerformRowShape.Outline(this, row, mirrored, new Color(color, 0.9f * alpha), 2.2f,
+                _outlineBuffer);
         }
     }
 
@@ -343,8 +350,8 @@ public partial class MutsumiGroupActivationVfx : Node2D, IPerformAreaActivationV
         const float halfHitHeight = 150f;
         var left = -halfHitWidth - columnGap - itemWidth;
         var right = halfHitWidth + columnGap;
-        var topY = -halfHitHeight + 32f;
-        var bottomY = halfHitHeight - 32f - itemHeight;
+        var topY = -halfHitHeight + 32f - itemHeight / 2f;
+        var bottomY = halfHitHeight - 32f - itemHeight / 2f;
 
         var states = new List<PerformActivationGroup>();
         foreach (var (group, x, startY, step, mirrored) in new (PerformChord, float, float, float, bool)[]
@@ -377,7 +384,7 @@ public partial class MutsumiGroupActivationVfx : Node2D, IPerformAreaActivationV
             var color = PerformChordColors.ColorOf(state.Group);
             foreach (var row in state.Rows)
             {
-                DrawRect(row, new Color(color, 0.18f), true);
+                PerformRowShape.Fill(this, row, state.Mirrored, new Color(color, 0.18f), _quadBuffer);
             }
         }
     }
