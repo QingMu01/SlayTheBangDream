@@ -170,7 +170,6 @@ public partial class MusicEqualizerVfx : Node2D
         {
             var barCount = _bars[i].Length;
 
-            // 尚未到达该列的上升起始时间 → 保持隐藏
             if (_elapsed < _riseStartTime[i])
             {
                 for (var j = 0; j < barCount; j++)
@@ -180,7 +179,6 @@ public partial class MusicEqualizerVfx : Node2D
 
             // 每列用不同的噪声偏移，保证列与列之间的差异
             var noiseVal = _noise!.GetNoise2D(_elapsed * 5f, i * 10.0f);
-            // noiseVal ∈ [-1, 1] → 归一化到 [0, 1]
             var normalized = Mathf.Clamp((noiseVal + 1f) * 0.5f, 0f, 1f);
             var targetHeight = normalized * barCount;
 

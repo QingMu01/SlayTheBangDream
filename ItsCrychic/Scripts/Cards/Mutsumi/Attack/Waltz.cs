@@ -12,12 +12,12 @@ namespace ItsCrychic.Scripts.Cards.Mutsumi.Attack;
 /// <summary>
 /// 华尔兹：一段脱手的角色位移演出，位移过程中反复向敌人发射音符。
 /// <para>
-/// 这是「演出 + 异步伤害」的探针卡：演出走 <see cref="VisualsAnimExtensions" />（脱手、按生物串行），
-/// 伤害走 <see cref="MusicNoteExtensions" /> 的稳定入口（异步伤害的一个实现，不阻塞出牌）。
+/// 演出通过 <see cref="VisualsAnimExtensions" /> 脱手并按生物串行，
+/// 伤害通过 <see cref="MusicNoteExtensions" /> 异步结算，不阻塞出牌。
 /// </para>
 /// <para>
-/// 与 STS1 原版《华尔兹》的差异：原版是对全体敌人直接结算的 Cleave，这里改为音符齐射（随机目标），
-/// 以便同时验证异步伤害路径。演出编排（上移 → 传送到敌方一侧上方 → 下移 → 每次命中前自转一圈 → 归位）
+/// 与 STS1 原版《华尔兹》对全体敌人直接结算的 Cleave 不同，本牌向随机目标齐射音符。
+/// 演出编排（上移 → 传送到敌方一侧上方 → 下移 → 每次命中前自转一圈 → 归位）
 /// 与 `FlipProcess`（rotateY 360°）保持一致。
 /// </para>
 /// </summary>

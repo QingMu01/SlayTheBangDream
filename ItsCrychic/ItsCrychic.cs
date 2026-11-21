@@ -42,7 +42,6 @@ public static class ItsCrychic
         var mutsumiContent = RitsuLibFramework.GetContentRegistry(CrychicConst.ModId);
         mutsumiContent.RegisterCharacter<WakabaMutsumi>();
         mutsumiContent.RegisterCharacterStarterRelic<WakabaMutsumi, Synthesizer>();
-        // 设置 Crychic 角色组图标
         CharacterGroup.Crychic.SetBandSelectIcon("res://ItsCrychic/images/charui/char_select_saki.png");
 
         // 角色选择与能量图标加入对应预载集，避免首次使用时在主线程同步加载。

@@ -200,7 +200,6 @@ public partial class MutsumiGroupActivationVfx : Node2D, IPerformAreaActivationV
             return;
         }
 
-        // 一次性：行点亮 → 扫光 → 提线长出 → 环 + 星 → 光点沿线跑回
         var shot = _shot.Value;
         var rowsLit = Mathf.Clamp(_shotElapsed / RowsLitDuration, 0f, 1f);
         var grow = Mathf.Clamp(_shotElapsed / ThreadGrowDuration, 0f, 1f);

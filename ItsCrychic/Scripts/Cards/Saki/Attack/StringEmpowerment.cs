@@ -30,7 +30,6 @@ public class StringEmpowerment() : AbstractSakikoCard(CustomCost, CustomType, Cu
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
 
-        // 下回合开始时获得能量。
         await PowerCmd.Apply<EnergyNextTurnPower>(choiceContext, Owner.Creature,
             DynamicVars.Energy.IntValue, Owner.Creature, this);
     }

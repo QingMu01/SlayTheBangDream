@@ -44,7 +44,6 @@ public class PunishmentPower : BandPowerModel
     public override async Task AfterSideTurnEnd(PlayerChoiceContext choiceContext, CombatSide side,
         IEnumerable<Creature> participants)
     {
-        // 时限为「本回合」：玩家回合结束时移除。
         if (side == CombatSide.Player)
         {
             await PowerCmd.Remove(this);

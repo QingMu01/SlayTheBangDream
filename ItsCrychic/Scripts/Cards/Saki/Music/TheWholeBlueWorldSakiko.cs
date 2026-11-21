@@ -23,7 +23,6 @@ public class TheWholeBlueWorldSakiko() : AbstractSakikoMusicCard(CustomRarity, C
             .ToList();
         if (performCards.Count == 0) return;
 
-        // 先记录丢弃数量，再丢弃并补给等量的能量与抽牌。
         var count = performCards.Count;
         await CardCmd.Discard(choiceContext, performCards);
 

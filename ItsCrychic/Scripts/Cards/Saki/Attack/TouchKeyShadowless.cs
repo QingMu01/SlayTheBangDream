@@ -35,7 +35,7 @@ public class TouchKeyShadowless() : AbstractSakikoCard(CustomCost, CustomType, C
             .Targeting(play.Target)
             .WithHitFx("vfx/vfx_attack_slash")
             .Execute(choiceContext);
-        // 获得等同于伤害值的余音
+        // 按实际伤害与溢出伤害之和获得余音。
         await SecondaryResourceCmd.Gain(Owner, BangDreamConst.LingeredResource,
             attackCommand.Results.SelectMany(r => r)
                 .Sum((Func<DamageResult, int>)(r => r.TotalDamage + r.OverkillDamage)), this);

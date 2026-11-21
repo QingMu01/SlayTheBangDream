@@ -77,10 +77,9 @@ public class ChordDesignOption(Player owner) : ModRestSiteOptionTemplate(owner)
         if (LocalContext.IsMe(Owner) && RunManager.Instance.NetService.Type != NetGameType.Replay)
         {
             var screen = NChordDesignScreen.ShowScreen(deck);
-            // 场景缺失时面板打不开：按「取消」处理，仍然同步空结果，别让远端一直等（否则会把选项卡死）
             var result = screen == null ? (ChordDesignResult?)null : await screen.SelectionFinished();
 
-            // 取消时也要同步一次空结果，否则远端会一直等在本选项上
+            // 取消或场景缺失时同步空结果，避免远端一直等待本选项。
             var indexes = result is { } chosen
                 ? new List<int> { chosen.CardIndex, (int)chosen.Chord, chosen.Additive ? 1 : 0 }
                 : new List<int>();
