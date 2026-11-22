@@ -1,8 +1,13 @@
 # 特效开发指南
 
-新增或改造一个特效时该遵守的约定。编辑器静止、三种环境共存与 `VfxPreviewSupport` 的原理见 [特效预览机制](vfx-preview-mechanism.md)。
+本文规定特效实现与验证。创作流程见 [vfx-authoring skill](../.agents/skills/vfx-authoring/SKILL.md)；预览原理见 [特效预览机制](vfx-preview-mechanism.md)。
 
-**要与用户协作、从零设计一个新特效**时，走 [vfx-authoring skill](../.agents/skills/vfx-authoring/SKILL.md)：素材侦察 → **设计提案（带图）** → 计划与契约批准 → 实现 → 录制验收。模型负责设计，用户只做审稿（选方向、定验收边界）；授权模式下无需逐项请示。本文仍是实现规范的唯一事实来源。
+## 0. 质量要求
+
+1. 先确定主体运动、峰值与收尾，再选素材。
+2. 角色意象应进入形状、运动或节奏，不能只换主题色。
+3. 删除不服务主体、节奏或角色意象的装饰层。
+4. 最终观感以真实战斗原速录像为准；单场景、静态合成与抽帧只用于辅助和诊断。
 
 ## 1. 三条铁律（改错会破坏游戏内表现）
 
@@ -82,11 +87,16 @@ tween.TweenMethod(Callable.From<float>(ApplyState), 0f, 1f, LifeTime);
 9. 由**外部管理器驱动**的特效（如 `NLingeredOrbitVfx` 由 `LingeredOrbitManager` 驱动）要特别小心：自播判断必须用 `IsPreviewRun(this)` 而非 `AutoPlayOnReady`，否则游戏内会凭空多出一份自驱动实例。同理，任何「外部未注入时的兜底行为」都要加 `IsPreviewRun` 守卫。
 10. 预览默认摆放见《特效预览机制》§3。
 11. 素材来源见 §4。
-12. **调观感必须录帧核对**（§3.1），不要只靠 `--headless` 跑通就认为完成。
+12. **调观感必须录成视频并原速观看**（§3.1），按问题抽帧定位；不要只靠 `--headless` 或静态帧就认为完成。
 
-### 3.1 录制成视频逐帧核对（调观感的唯一可靠手段）
+### 3.1 录像核对（技术诊断 + 实战验收）
 
-无头运行不能替代目视验收；调观感必须按本节录帧核对。
+无头运行不能替代目视验收。录像分两类，职责不能互相替代：
+
+- **单场景技术录像**：用下面的命令核对素材形状、层生命周期、伪影与精确时刻；裁切、慢放和机器帧校验都属于诊断工具。
+- **真实战斗原速录像**：观感的最终验收。按实际尺寸连同角色、敌人、背景与 UI 观看；连打、群攻或常驻效果还要覆盖预期的重叠/持续情况。尚未接入或拿不到实战录像时，必须明确「实战观感未验收」，不能宣布完整通过。
+
+先原速完整观看，再按问题抽帧；不要反过来用漂亮单帧证明节奏与冲击力。下方命令只负责第一类：
 
 ```bash
 # Godot 可执行文件取自 Directory.Build.props 的 <GodotExe>（单属性查询直接打印值）
@@ -108,8 +118,9 @@ ffmpeg -y -loglevel error -framerate 60 \
 要点：
 
 - `--fixed-fps 60` 让帧号与时间严格对应（`t = frame/60`），便于定位「第几秒出问题」；`--quit-after` 控制录制区间。
-- 产物是 1920×1080 全屏，**裁中心区域**再看更省事：
+- 产物是 1920×1080 全屏，定位局部伪影时可**裁中心区域**：
   `ffmpeg -i frame00000030.png -vf "crop=760:760:580:160" crop/c30.png`
+  裁切只用于诊断，不能代替实际尺寸与完整战斗画面的观感判断。
 - 判断「某元素是否按时消失」时，**裁切目视比采样亮度更可靠**——中心区域往往同时有粒子/闪光，亮度采样会被污染。
 - 本项目未设置清屏色，背景是 Godot 默认灰（约 76/255）；判断元素消失时不要按黑底预期。
 - **预览态会循环重播**（`ShouldSelfFree` 为 false、`LoopPreview` 为 true）。要核对单次播放，就把 `--quit-after` 控制在一个循环内。
@@ -121,7 +132,7 @@ ffmpeg -y -loglevel error -framerate 60 \
 
 ## 4. 素材接入（资产库导出 + 本体归属校验）
 
-素材由 Polaris MCP 工具从资产库取出（库在 MCP 服务侧，本仓库不硬编码它的路径），流程：
+素材应服务已经成立的动态草样，可来自资产库、工程已有资源、本体、程序化形状/shader 或新绘；资产库不是设计起点，也不是唯一来源。**使用 Polaris MCP 从资产库取素材时**（库在 MCP 服务侧，本仓库不硬编码它的路径），流程：
 
 1. `search_assets` 定位候选。除 `tags: ["VFX"]` / 关键词 / `kinds` 外，**优先用结构化过滤**（SQL 级，`total` 即真实命中数）：`alpha`、`fill_ratio`、`glow_range`、`edge_softness`、`dark_outline`、`layout`、`colors` + `color_min_ratio`、`sub_types`。首轮定位用 `detail: "minimal"` 省 token，再用 `render_contact_sheet` 拼图确认形态。主体级选材（`role` / `mode` / `facets` / `dimensions` / `target_px` / `tint` / `blend` / `unknown_features`）的受控取值先读 `get_selection_spec`，**不要凭记忆猜**；重点看 `risks` 与 `required_review`。
 2. `get_asset_group_preview` 读取图集的切分参数（行列数、单帧尺寸）——**这是设置 `hframes`/`vframes` 的唯一依据**，不要目测。
@@ -151,7 +162,7 @@ python .agents/skills/vfx-authoring/scripts/check_asset_origin.py <导出目录>
 
 - 本体根缺省为 `BangDreamInSpire/images`（编辑器同步目录，其 `.import` 里的 uid 就是本体 uid）；也可 `--body-root ../sts2unpack/<版本>` 指向解包源。
 - 引用本体要求编辑器工程里已同步本体资源：新克隆先跑 `tools/sync-sts2-assets.sh`。
-- **特效目录不产出 `README.md` / `SOURCES.md`**；来源凭据（库内 uuid/名称、语义名、用途、校验判定）写进 `.scratch/vfx/plans/<slug>.md`。计划稿是**过程文件**（不入库、随时可清）：批准并实现后，把契约（触发点 / 层级 / 素材 uuid 与 BODY·LOCAL 判定）回写 `docs/mechanic-authoring.md` 对应机制章节。
+- **特效目录不产出 `README.md` / `SOURCES.md`**；来源凭据（库内 uuid/名称、语义名、用途、校验判定）写进 `.scratch/vfx/plans/<slug>.md`。计划稿是**过程文件**（不入库、随时可清）：实现后把实际触发点、最终层级、素材 uuid 与 BODY·LOCAL 判定回写 `docs/mechanic-authoring.md` 对应机制章节；这里记录最终实现，不要求恢复草样阶段的层表。
 
 ### 4.2 选材与取证的实操规则
 
@@ -183,7 +194,7 @@ dotnet build BangDreamInSpire/BangDreamInSpire.csproj -c Debug \
 
 以上两条 Godot 命令加 `| grep -iE "error|script error|failed"`，**无输出即通过**。`--headless --editor` 不会把新场景的 uid 回写进 `.tscn`；没有引擎生成的场景 uid 时保留 path 引用，由编辑器保存生成后再记录，不能手写或猜测 uid。
 
-无头检查通过后，仍须按 §3.1 录帧验收观感。
+无头检查通过后，仍须按 §3.1 录制并原速观看。单场景录像负责技术诊断，真实战斗录像负责最终观感；没有真实战斗录像时，不得把「能运行」或「单场景好看」写成「实战已验收」。
 
 已知的非问题（实测确认，不要误当新缺陷）：
 

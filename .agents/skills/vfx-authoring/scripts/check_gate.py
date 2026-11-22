@@ -1,27 +1,22 @@
 #!/usr/bin/env python3
-"""计划闸门：把「用户批准过什么」变成可判定的指纹。
+"""可选计划闸门：把「用户确认过什么质量目标」变成可判定的指纹。
 
-设计原则（v2）：**只锁契约，不锁措辞。**
-指纹只覆盖计划正文里的「契约块」——素材集合、层结构、验收标准、授权包络。
-契约块以外的正文（设计意图、素材预演、决策与默认值、假设与风险、交付物）
-随便改，不会使批准失效；契约块内任何改动（换素材、改层表、改验收、改授权范围）
-都会使批准失效，必须重新确认。
+只锁用户可感知的质量契约，不锁实现手段。
+指纹只覆盖计划正文里的契约块——主体与角色意象、视觉峰值、禁止元素、实战验收标准。
+素材、层数、混合、曲线和参数放在块外，为了提高质量可自由调整，不会使批准失效。
+preauthorized 与边界清楚的局部改造不强制使用本脚本；需要正式确认时才运行。
 
 用法：
-    python check_gate.py --plan <plan.md>            # 校验，exit 0 才允许写代码
+    python check_gate.py --plan <plan.md>            # 校验质量契约指纹
     python check_gate.py --plan <plan.md> --approve --approved-by "用户原话"
-    python check_gate.py --plan <plan.md> --reopen   # 退回 draft（契约有变动时）
+    python check_gate.py --plan <plan.md> --reopen   # 质量契约变化时退回 draft
 
 契约块写法（在计划正文里，标记之间的内容参与指纹）：
 
     <!-- gate:begin -->
-    ## 2. 素材清单
+    ## 2. 质量契约
     ...
-    ## 3. 层结构
-    ...
-    ## 4. 验收标准
-    ...
-    ## 5. 授权包络
+    ## 3. 实战验收标准
     ...
     <!-- gate:end -->
 
@@ -152,7 +147,7 @@ def save(path: Path, fm_lines: list[str], body_lines: list[str]) -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="特效计划闸门（契约级指纹）")
+    parser = argparse.ArgumentParser(description="可选特效计划闸门（质量契约指纹）")
     parser.add_argument("--plan", required=True, help="plan.md 路径")
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--approve", action="store_true", help="标记为已批准并记录契约指纹")
@@ -192,7 +187,7 @@ def main() -> int:
         if not has_contract:
             print(
                 "[gate] 拒绝批准：正文里没有契约块（" + GATE_BEGIN + " … " + GATE_END + "）。\n"
-                "[gate]   契约块必须包住：素材清单 / 层结构 / 验收标准 / 授权包络。\n"
+                "[gate]   契约块只包住：质量目标 / 禁止元素 / 实战验收标准；实现细节放块外。\n"
                 "[gate]   模板见 references/plan-template.md。",
                 file=sys.stderr,
             )
@@ -250,12 +245,12 @@ def main() -> int:
         print("[gate] 拒绝：契约块在批准后被改动，原批准失效。", file=sys.stderr)
         print(f"[gate]   批准时指纹 {recorded or '(空)'}", file=sys.stderr)
         print(f"[gate]   当前指纹   {current}", file=sys.stderr)
-        print("[gate] 若改动在授权包络内，说明包络未覆盖这类变更——把包络写宽一点再批准。", file=sys.stderr)
+        print("[gate] 换素材、删层或调参数不应写入质量契约；确属主体/禁区/验收目标变化时才需重新确认。", file=sys.stderr)
         return 2
 
     print(f"[gate] 放行：契约未变，指纹 {current}")
     print(f"[gate] 批准人：{approver}")
-    print("[gate] 本脚本只校验契约指纹，不校验实现参数；范围内调参记入 tuning-log.md 即可。")
+    print("[gate] 本脚本只校验质量契约指纹，不评价成品观感；素材、层数与参数可在块外调整。")
     return 0
 
 

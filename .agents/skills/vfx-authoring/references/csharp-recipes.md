@@ -226,7 +226,7 @@ dotnet build BangDreamInSpire/BangDreamInSpire.csproj -c Debug \
   --path BangDreamInSpire --quit-after 120 "res://BangDreamInSpire/scenes/vfx/<场景>.tscn"
 ```
 
-**这两条只证明"没有报错"，不证明"看起来对"。** 调观感必须录帧——见 [SKILL.md](../SKILL.md) 的 S5，以及 `docs/vfx-authoring.md` §3.1 / §5.1 的陷阱清单。
+**这两条只证明"没有报错"，不证明"看起来对"。** 调观感必须录成视频并原速观看——见 [SKILL.md](../SKILL.md) 第 8 节，以及 `docs/vfx-authoring.md` §3.1 / §5.1 的陷阱清单。
 
 ## 9. 已知非问题
 
