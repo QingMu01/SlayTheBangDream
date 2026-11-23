@@ -34,15 +34,20 @@ public class Oscillation()
     {
         ArgumentNullException.ThrowIfNull(CombatState);
 
+        var enemies = CombatState.HittableEnemies;
+        var gainPerEnemy = QuickVar.LingeredResource.GetVar(this).IntValue;
+
         await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
             .FromCard(this, play)
             .TargetingAllOpponents(CombatState)
-            .WithAttackerFx(() => OscillationWaveVfx.Create(Owner.Creature))
-            .WithHitVfxNode(target => OscillationHitVfx.Create(target, Owner.Creature))
+            .WithAttackerFx(() => OscillationWaveVfx.Create(Owner.Creature, enemies))
+            .WithWaitBeforeHit(OscillationWaveVfx.FrontTravelSeconds * 0.85f,
+                OscillationWaveVfx.FrontTravelSeconds)
+            .WithHitVfxNode(target => OscillationHitVfx.Create(target, Owner.Creature, gainPerEnemy))
             .Execute(choiceContext);
 
         await SecondaryResourceCmd.Gain(Owner, BangDreamConst.LingeredResource,
-            QuickVar.LingeredResource.GetVar(this).IntValue * CombatState.HittableEnemies.Count, this);
+            gainPerEnemy * CombatState.HittableEnemies.Count, this);
     }
 
     protected override void OnUpgrade()

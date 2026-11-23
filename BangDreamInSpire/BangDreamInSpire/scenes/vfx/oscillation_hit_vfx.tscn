@@ -1,52 +1,259 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=15 format=3 uid="uid://d1osik73p8xca"]
 
-[ext_resource type="Script" path="res://Scripts/Nodes/VFX/OscillationHitVfx.cs" id="1_script"]
-[ext_resource type="Texture2D" path="res://BangDreamInSpire/images/vfx/star_322.png" id="2_star"]
-[ext_resource type="Texture2D" path="res://BangDreamInSpire/images/vfx/oscillation/oscillation_wave_soft.png" id="3_ringsoft"]
-[ext_resource type="Texture2D" path="res://BangDreamInSpire/images/vfx/oscillation/oscillation_ring.png" id="4_ring"]
-[ext_resource type="Texture2D" path="res://BangDreamInSpire/images/vfx/oscillation/oscillation_note.png" id="5_note"]
-[ext_resource type="Texture2D" path="res://images/packed/vfx/generic/round_glow.png" id="6_glow"]
-[ext_resource type="Material" path="res://themes/canvas_item_material_additive_shared.tres" id="7_add"]
+[ext_resource type="Script" uid="uid://l52ew6ta7aa1" path="res://Scripts/Nodes/VFX/OscillationHitVfx.cs" id="1_script"]
+[ext_resource type="Shader" uid="uid://b7j04c8wyssuq" path="res://BangDreamInSpire/shaders/oscillation_wavefront.gdshader" id="2_front"]
+[ext_resource type="Shader" uid="uid://bly1453ul86ba" path="res://BangDreamInSpire/shaders/oscillation_interference.gdshader" id="3_fringe"]
+[ext_resource type="Texture2D" uid="uid://d2srbops1xqm0" path="res://images/vfx/dot.png" id="4_dot"]
+[ext_resource type="Texture2D" uid="uid://2412o0k2j8wd" path="res://BangDreamInSpire/images/vfx/oscillation/oscillation_shard.png" id="5_shard"]
+[ext_resource type="Texture2D" uid="uid://cuaw8f1xw0rsa" path="res://BangDreamInSpire/images/vfx/whiteRing.png" id="6_ring"]
+[ext_resource type="Material" uid="uid://c4ycqv0gdxvmr" path="res://themes/canvas_item_material_additive_shared.tres" id="7_add"]
+[ext_resource type="Shader" uid="uid://dbhqufordt53h" path="res://BangDreamInSpire/shaders/oscillation_echo_orb.gdshader" id="8_orb"]
+[ext_resource type="Shader" uid="uid://cqqkmeo2y7fc2" path="res://BangDreamInSpire/shaders/oscillation_echo_trail.gdshader" id="9_trail"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_reflection"]
+shader = ExtResource("2_front")
+shader_parameter/crest_color = Color(0.46, 0.62, 1, 1)
+shader_parameter/peak_alpha = 0.68
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_front"]
+shader = ExtResource("2_front")
+shader_parameter/crest_color = Color(0.78, 0.88, 1, 1)
+shader_parameter/peak_alpha = 0.95
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_fringe"]
+shader = ExtResource("3_fringe")
+shader_parameter/line_color = Color(0.82, 0.9, 1, 1)
+shader_parameter/peak_alpha = 0.9
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_trail"]
+shader = ExtResource("9_trail")
+shader_parameter/taper_power = 3.0
+shader_parameter/tip_ratio = 0.07
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_orb"]
+shader = ExtResource("8_orb")
+shader_parameter/shell_radius = 0.42
+shader_parameter/halo_gain = 0.3
+shader_parameter/core_boost = 1.0
+shader_parameter/fill_gain = 0.15
 
 [node name="OscillationHitVfx" type="Node2D"]
 script = ExtResource("1_script")
 
-[node name="CoreGlow" type="Sprite2D" parent="."]
-z_index = 6
-material = ExtResource("7_add")
-modulate = Color(0.7, 0.8, 1, 1)
-texture = ExtResource("6_glow")
+[node name="Reflection" type="ColorRect" parent="."]
+z_index = 3
+material = SubResource("ShaderMaterial_reflection")
+instance_shader_parameters/bow = 96.0
+instance_shader_parameters/intensity = -6.29444e-08
+instance_shader_parameters/offset = 300.0
+instance_shader_parameters/quad_size = Vector2(900, 620)
+instance_shader_parameters/thickness = 76.0
+offset_left = -450.0
+offset_top = -310.0
+offset_right = 450.0
+offset_bottom = 310.0
+rotation = 3.1415927
+pivot_offset = Vector2(450, 310)
+mouse_filter = 2
 
-[node name="RingA" type="Sprite2D" parent="."]
-z_index = 4
-material = ExtResource("7_add")
-modulate = Color(0.72, 0.8, 1, 1)
-texture = ExtResource("3_ringsoft")
-
-[node name="RingB" type="Sprite2D" parent="."]
+[node name="Front" type="ColorRect" parent="."]
 z_index = 5
-material = ExtResource("7_add")
-modulate = Color(0.64, 0.74, 0.98, 1)
-texture = ExtResource("4_ring")
+material = SubResource("ShaderMaterial_front")
+instance_shader_parameters/bow = 0.0
+instance_shader_parameters/intensity = 0.0
+instance_shader_parameters/offset = -3.0432201e-07
+instance_shader_parameters/quad_size = Vector2(540, 392)
+instance_shader_parameters/thickness = 17.0
+offset_left = -270.0
+offset_top = -196.0
+offset_right = 270.0
+offset_bottom = 196.0
+pivot_offset = Vector2(270, 196)
+mouse_filter = 2
 
-[node name="Star" type="Sprite2D" parent="."]
+[node name="Fringe" type="ColorRect" parent="."]
+z_index = 7
+material = SubResource("ShaderMaterial_fringe")
+instance_shader_parameters/intensity = 0.0
+instance_shader_parameters/pulse = 0.074273586
+instance_shader_parameters/quad_size = Vector2(760, 375)
+instance_shader_parameters/spacing = 112.0
+offset_left = -380.0
+offset_top = -187.5
+offset_right = 380.0
+offset_bottom = 187.5
+pivot_offset = Vector2(380, 187.5)
+mouse_filter = 2
+
+[node name="Core" type="Sprite2D" parent="."]
+modulate = Color(0.92, 0.96, 1, 0)
 z_index = 10
 material = ExtResource("7_add")
-texture = ExtResource("2_star")
+scale = Vector2(0.837, 0.837)
+texture = ExtResource("4_dot")
+
+[node name="Shards" type="Node2D" parent="."]
+
+[node name="Shard0" type="Sprite2D" parent="Shards"]
+visible = false
+modulate = Color(0.86, 0.92, 1, 0.0062716603)
+z_index = 12
+material = ExtResource("7_add")
+position = Vector2(69.70913, -125.911964)
+rotation = -0.22689277
+scale = Vector2(0.23108357, 0.23108357)
+texture = ExtResource("5_shard")
+hframes = 2
+vframes = 2
+
+[node name="Shard1" type="Sprite2D" parent="Shards"]
+visible = false
+modulate = Color(0.8, 0.88, 1, 0.0062716603)
+z_index = 12
+material = ExtResource("7_add")
+position = Vector2(197.24115, 50.939457)
+rotation = 1.0995574
+scale = Vector2(0.1708009, 0.1708009)
+texture = ExtResource("5_shard")
+hframes = 2
+vframes = 2
+frame = 1
+
+[node name="Shard2" type="Sprite2D" parent="Shards"]
+visible = false
+modulate = Color(0.9, 0.94, 1, 0.0062716603)
+z_index = 12
+material = ExtResource("7_add")
+position = Vector2(223.35149, -18.639835)
+rotation = 0.5410521
+scale = Vector2(0.27127203, 0.27127203)
+texture = ExtResource("5_shard")
+hframes = 2
+vframes = 2
+frame = 2
+
+[node name="Shard3" type="Sprite2D" parent="Shards"]
+visible = false
+modulate = Color(0.78, 0.86, 1, 0.0062716603)
+z_index = 12
+material = ExtResource("7_add")
+position = Vector2(94.15698, 277.5559)
+rotation = 1.8675022
+scale = Vector2(0.15070668, 0.15070668)
+texture = ExtResource("5_shard")
+hframes = 2
+vframes = 2
+frame = 3
+
+[node name="Shard4" type="Sprite2D" parent="Shards"]
+visible = false
+modulate = Color(0.84, 0.9, 1, 0.0062716603)
+z_index = 12
+material = ExtResource("7_add")
+position = Vector2(281.47958, 197.02475)
+rotation = 1.3788102
+scale = Vector2(0.20094223, 0.20094223)
+texture = ExtResource("5_shard")
+hframes = 2
+vframes = 2
+frame = 1
+
+[node name="Shard5" type="Sprite2D" parent="Shards"]
+visible = false
+modulate = Color(0.9, 0.94, 1, 0.0062716603)
+z_index = 12
+material = ExtResource("7_add")
+position = Vector2(284.11188, -143.6323)
+rotation = 0.1919862
+scale = Vector2(0.2511778, 0.2511778)
+texture = ExtResource("5_shard")
+hframes = 2
+vframes = 2
 
 [node name="Notes" type="Node2D" parent="."]
 
-[node name="Note0" type="Sprite2D" parent="Notes"]
-z_index = 12
-material = ExtResource("7_add")
-modulate = Color(0.79, 0.85, 1, 1)
-scale = Vector2(0.9, 0.9)
-texture = ExtResource("5_note")
+[node name="Note0" type="Node2D" parent="Notes"]
+visible = false
+modulate = Color(1, 1, 1, 0.25111008)
+position = Vector2(-336.28958, -68.67738)
+rotation = 2.8366737
+scale = Vector2(0.79850906, 0.6751031)
 
-[node name="Note1" type="Sprite2D" parent="Notes"]
-z_index = 11
+[node name="Trail" type="ColorRect" parent="Notes/Note0"]
+z_index = 13
+material = SubResource("ShaderMaterial_trail")
+instance_shader_parameters/quad_size = Vector2(248.9, 89.08)
+instance_shader_parameters/strength = 0.78
+instance_shader_parameters/tint = Color(0.45, 0.72, 1, 1)
+offset_left = -290.82
+offset_top = -44.54
+offset_right = -41.920013
+offset_bottom = 44.54
+pivot_offset = Vector2(124.45, 44.54)
+mouse_filter = 2
+
+[node name="Orb" type="ColorRect" parent="Notes/Note0"]
+z_index = 14
+material = SubResource("ShaderMaterial_orb")
+instance_shader_parameters/core_color = Color(0.76409996, 0.79056, 0.81799996, 0.81799996)
+instance_shader_parameters/phase = 0.95982236
+instance_shader_parameters/quad_size = Vector2(262, 262)
+instance_shader_parameters/shell_color = Color(0.45, 0.72, 1, 1)
+offset_left = -131.0
+offset_top = -131.0
+offset_right = 131.0
+offset_bottom = 131.0
+pivot_offset = Vector2(131, 131)
+mouse_filter = 2
+
+[node name="Note1" type="Node2D" parent="Notes"]
+visible = false
+
+[node name="Trail" type="ColorRect" parent="Notes/Note1"]
+z_index = 13
+material = SubResource("ShaderMaterial_trail")
+offset_left = -150.0
+offset_top = -50.0
+offset_right = 150.0
+offset_bottom = 50.0
+mouse_filter = 2
+
+[node name="Orb" type="ColorRect" parent="Notes/Note1"]
+z_index = 14
+material = SubResource("ShaderMaterial_orb")
+offset_left = -115.0
+offset_top = -115.0
+offset_right = 115.0
+offset_bottom = 115.0
+mouse_filter = 2
+
+[node name="Note2" type="Node2D" parent="Notes"]
+visible = false
+
+[node name="Trail" type="ColorRect" parent="Notes/Note2"]
+z_index = 13
+material = SubResource("ShaderMaterial_trail")
+offset_left = -150.0
+offset_top = -50.0
+offset_right = 150.0
+offset_bottom = 50.0
+mouse_filter = 2
+
+[node name="Orb" type="ColorRect" parent="Notes/Note2"]
+z_index = 14
+material = SubResource("ShaderMaterial_orb")
+offset_left = -115.0
+offset_top = -115.0
+offset_right = 115.0
+offset_bottom = 115.0
+mouse_filter = 2
+
+[node name="Absorb" type="Node2D" parent="."]
+z_index = 16
+position = Vector2(-360, -60)
+
+[node name="Ring" type="Sprite2D" parent="Absorb"]
+modulate = Color(0.8, 0.9, 1, -8.305164e-08)
 material = ExtResource("7_add")
-modulate = Color(0.79, 0.85, 1, 1)
-scale = Vector2(0.78, 0.78)
-texture = ExtResource("5_note")
-position = Vector2(16, -24)
+scale = Vector2(0.2875, 0.2875)
+texture = ExtResource("6_ring")

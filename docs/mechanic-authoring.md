@@ -423,6 +423,68 @@ public sealed class MyMechanic : IBangDreamMechanic
 玻璃板/画框（实测录帧结论）。所以身印只在胸口留一枚**与槽位同尺寸的小印**，大框留在牌上——两处反馈
 靠这只小印、同一对 shader、同一套配色与节拍认亲。相关实现坑见 `docs/vfx-authoring.md` 5.1 第七条。
 
+### 12.3 卡牌专属特效：震荡（声学重构）
+
+「震荡」是祥子的初始攻击（1 费、全体、8 伤害、`余音` 关键字），命中后按「可命中敌人数 × 每敌余音」
+获得 `余音`。特效分施法 / 命中两幕，全部由**程序化 shader** 画，不新增序列帧。
+
+| 项 | 事实 | 出处 |
+|---|---|---|
+| 触发 | `Oscillation.OnPlay`：`WithAttackerFx` 放施法幕、`WithHitVfxNode` 放命中幕 | `ItsCrychic/Scripts/Cards/Saki/Attack/Oscillation.cs` |
+| 时序 | `WithWaitBeforeHit(FrontTravelSeconds×0.85, FrontTravelSeconds)`，伤害落在波前压到目标的那一刻；等待时长与 `OscillationWaveVfx.FrontTravelSeconds` **同一个常量**，改波速只改那一处 | 同上 |
+| 回波数量 | 命中幕尾段飞回演奏者的**能量球**数 = 该目标给与的 `余音` 数（`Create(target, caster, gainPerEnemy)`），抵达时接 `NLingeredOrbitVfx` 的聚集动画 | `OscillationHitVfx.Create` |
+| 基类 | 两者都是 `Node2D`，不参与结算（命中幕不阻塞，可超出伤害动画时长） | 按 §2 判定 |
+| 时长 | 施法 0.34s（波前 0.15s 抵达敌阵）；命中 0.58s（含 0.24s 回程 + 0.14s 抵达收束） | 场景脚本常量 |
+
+**声学语汇：三件事被写进形状与运动，而不只是换色**
+
+1. **疏密波**：声音是压缩与稀疏的交替。施法幕的波包由「前缘 + 3 道压缩峰」组成，只有前缘之后
+   （半径更小）才有波，前缘之外全空——波才有方向，不是光圈在放大。见 `oscillation_pressure_wave.gdshader`。
+2. **谐波衰减**：高次分音先死。传播中后峰先消失（振幅 0.72/0.46/0.24 → 0.40/0.10/0）、各峰变宽
+   （`crest_softness` 0.72→1.55）、峰间距被拉开（62/132/216 → 158/352/570px）。三件事分开调，
+   合成「一道尖前缘在跑、越跑越软」而不是等距同心环。
+3. **反射驻波**：波压到目标表面后，入射与反射在目标前方叠加成驻波——压力腹点贴表面、节线平行于表面、
+   间距 λ/2。命中幕用竖条纹演这一片驻波（`oscillation_interference.gdshader`），条纹位置不动、
+   整体亮度按拍频（响—弱—更弱）跳动；同时被压平的前缘线在表面上左右急颤、振幅指数衰减——
+   「震荡」本体就落在这一条线上。
+
+**线 ↔ 弧互换**是这张牌的角色语法（键盘/弦）：施法幕起点是一根**击弦竖线**（`blur_rain` 拉伸，
+由抖到静），声一离体就成弧；命中幕的弧压到目标又**塌回一条竖线**，碎开后再化回弧飞回演奏者。
+
+**层与时长**（场景节点名即契约）
+
+| 幕 | 层 | 作用 | 起止 |
+|---|---|---|---|
+| 施法 | `Packet`（ColorRect + 压力波包 shader） | 主体：疏密波包 | 0–0.30s |
+| 施法 | `Source/String`·`StringNear`·`StringFar`·`Core` | 声源：击弦竖线由抖到静 + 击弦核 | 0–0.16s |
+| 命中 | `Front`（`oscillation_wavefront`） | 迎面波前压入 → 压平成竖线 → 余振 | 0–0.30s |
+| 命中 | `Fringe`（`oscillation_interference`） | 反射驻波条纹（峰值所在） | 0.03–0.30s |
+| 命中 | `Core` | 接触点高压核心 | 0–0.11s |
+| 命中 | `Shards/Shard0..5`（2×2 碎晶图集） | 节线断裂的碎片 | 0.15–0.39s |
+| 命中 | `Reflection`（`oscillation_wavefront`，转 180°） | 反向反射波 | 0.13–0.38s |
+| 命中 | `Notes/Note0..2`（能量球）+ `Trail0..2`（短拖尾） | 余音回波（数量 = 该目标给与的余音） | 0.17–0.41s |
+| 命中 | `Absorb/Ring` | 抵达：环收束成一点，接环绕件聚集 | 0.41–0.55s |
+
+注意命中幕的 `_noteCount` 只决定「用前几个 Notes 槽位」，槽位本身固定 3 个（升级后每敌给 2 点余音）。
+
+**回波为什么是能量球而不是音符**：音符贴图（`icon_music_note.png`，余音环绕件同款）在实战尺寸下
+字形结构太细，读成一个歪斜的怪符号而不是「被吸回来的东西」。改成**玻璃球状的能量球 + 锥形短拖尾**，
+两层都由程序化 shader 画，且刻意保留声学身份：
+
+| 层 | shader | 画什么 | 为什么 |
+|---|---|---|---|
+| `Orb` | `oscillation_echo_orb` | 热核 + 薄壳 + 壳内填充/内环 + 壳外辉光 + 两处斜向高光 | 「被团住的声音」：薄壳是被拘住的压力波前，壳半径按 `phase` 呼吸、内环相位随飞行推进——球在响，不是一张静止贴图；两处高光给出玻璃珠的镜面感，避免糊成一团雾 |
+| `Trail` | `oscillation_echo_trail` | 沿航向二次收细、亮度按 `(1-t)^3` 衰减的锥形尾迹 | 拉伸一张光斑贴图会等宽等亮、读成一根横杠；锥形收细才有「甩出去」的方向感 |
+
+三颗球的画布边长 131/118/105px（可见球径约为它的 0.42，即 55/50/44px）、壳色三种同族蓝，读成不同分音；整颗球按航向拉伸 1.10:0.93
+给速度感，拖尾作为子节点跟随、只需在局部 -x 方向铺开。余音的身份靠蓝色系（与环绕件同族）承接，不靠字形。
+
+**素材来源**：回波球与拖尾**不用贴图**（两支 shader，随仓库入库）；`oscillation_shard.png`
+（LOCAL，Polaris `fx_301403_tex_002` uuid `9d0b74d2-b8d6-4580-a163-79ee596bd38e`，2×2 白色弧形划痕）
+作碎片；`dot.png`（击弦核心）与 `whiteRing.png`（抵达收束环）为本体 BODY 直接引用。碎晶按
+`check_asset_origin.py` 判为 LOCAL 才复制进 `images/vfx/oscillation/`；同名同目录的两个新 shader
+（`oscillation_pressure_wave` / `oscillation_wavefront` / `oscillation_interference`）随仓库入库。
+
 ## 13. 角色视觉动画时间线（`visuals_anim`）
 
 ### 13.1 分工
