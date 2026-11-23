@@ -341,6 +341,44 @@ public sealed class MyMechanic : IBangDreamMechanic
 | 分组角标 | 在该组**第一行的外端**，尺寸 22px（占位实现） | `NPerformArea.TryGetGroupBadgeAnchor` |
 | 行坐标获取 | 特效逐行定位请读 `_items[i].Position`（实时值），不要写死像素；右侧列用 `IsMirroredCorner` 判断镜像 | `NPerformArea.ApplyItemScale` / `GetItemPosition` |
 
+### 12.1 演奏反馈：元素之印（Symbol 系列）
+
+`PerformManager.PerformCard` → `PlayPerformFlashVfx` → `NPerformArea.PlayFlashVfx(card)` 是演奏反馈的
+**唯一触发点**（即兴牌入场表现结束后立即演奏，走同一条路）。这里先问卡牌要不要专属反馈：
+
+| 项 | 事实 | 出处 |
+|---|---|---|
+| 声明 | 卡牌实现 `IPerformSealCard.PerformSeal`（枚举 `PerformSealElement`：Fire / Wind / Water / Earth / Stars） | `Scripts/Interfaces/CardAugment/IPerformSealCard.cs` |
+| 元素→场景 | `PerformSealScenes.ScenePathOf(element)`，表放在 Utils 层，内容模组不持资源路径 | `Scripts/Utils/Infos/PerformSealScenes.cs` |
+| 回落 | 非元素印牌（或场景缺失）仍走通用 `perform_flash_vfx.tscn`；元素印存在时不再叠通用扫光 | `NPerformArea.TryPlaySealVfx` |
+| 预载 | 内容模组用 `BangDreamPreloadManager.AddCustomCombatAsset` 注册这五套场景（`PerformSealScenes.All`） | `ItsCrychic.cs` |
+| 布局 | `PerformSealVfx.ConfigureSlot(slotSize, slotRelativeTransform)`；横向按 `slotSize / 160` 铺开，笔粗细不缩放；**注入的变换必须带槽位自身位移**，否则会被重置到容器原点 | `Scripts/Nodes/VFX/PerformSealVfx.cs` |
+| 时长 | `LifeTime = 0.56s`（要求 ≤ 0.6s）：0.42s 各层归零，0.50s 印框收完，录帧核对 0.56s 后无残留 | 同左 |
+
+**五张共用一条时间线**（改 `PerformSealVfx` 的常量等于改整套设计语言）：墨带扫过 → 印框边缘吃光 →
+中心落印白热点（峰值 0.10s，唯一峰值）→ 元素墨迹散尽。元素差异只在三条通道上：
+**墨的运动方向 / 颗粒形态 / 节拍数**（火 2、风 1、水 3、土 1、星 3）；配色与材料取自各自卡图。
+
+| 卡 | 元素 | 场景 | 墨的运动 | 节拍 |
+|---|---|---|---|---|
+| Symbol I | 火 | `perform_seal_fire_vfx.tscn` | 向上舔 | 2 |
+| Symbol II | 风 | `perform_seal_wind_vfx.tscn` | 向两端甩 | 1 |
+| Symbol III | 水 | `perform_seal_water_vfx.tscn` | 先溅后落 | 3 |
+| Symbol IV | 自然 | `perform_seal_earth_vfx.tscn` | 斜上掠 | 1 |
+| Ether | 群星 | `perform_seal_stars_vfx.tscn` | 逐点亮、放射 | 3 |
+
+**层级**（场景节点名即契约）：`Flow`（MIX 墨带，`perform_seal_ink.gdshader`）／`Rim`（ADD 边缘吃光，
+`perform_seal_rim.gdshader`）／`Wash`（ADD 柔光）／`Core`（ADD 白热点）／`Streaks/*`
+（`PerformSealStreak`：一笔带方向的残影）／`Emitters/*`（`PerformSealEmitter`：挂在第 N 拍发射的粒团）。
+
+**为什么必须有 MIX 墨带**：槽位卡面是卡图本身，米白（风）/浅蓝（水）时加法层读不出颜色；墨带是这两张
+牌唯一的元素色来源，也让「演奏」读成一个有方向的经过动作（另见 `docs/vfx-authoring.md` 5.1 第五、六条）。
+
+**素材来源**：不新增 PNG。加法高光全部引用本体贴图（`res://images/vfx/dot.png`、`light.png`、
+`globby_spark.png`、`fire/flame_paricle_tex.png`、`fire/cinder_particle.png`、`fire/fire_base_pointy.png`、
+`shared_use/blur_diamond_vfx.png`、`packed/vfx/generic/sparkle_2.png` → BODY），四芒星主星用工程既有
+`res://BangDreamInSpire/images/vfx/star_322.png`（LOCAL）；两个 shader 为新绘、随仓库入库。
+
 ## 13. 角色视觉动画时间线（`visuals_anim`）
 
 ### 13.1 分工

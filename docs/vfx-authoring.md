@@ -216,3 +216,13 @@ dotnet build BangDreamInSpire/BangDreamInSpire.csproj -c Debug \
 **三、`CanvasItemMaterial`（ADD）+ 紫色 `modulate` 染「烘焙了颜色」的贴图会偏红。** 2D 加法混合在线性空间做乘法，粉色边 × 蓝紫 modulate 会压出偏红的灰紫。带颜色的贴图不要用 modulate 染色，改为 shader 里用**亮度重建颜色**（`glow_color * max(r,g,b)`）再 `blend_add` 输出（参考 `res://BangDreamInSpire/shaders/strike_sakiko_glow.gdshader`）。纯白/灰阶贴图可以直接 modulate。
 
 **四、辉光层若固定用主帧贴图，主帧消失后会留下一整块刀影。** 辉光层应跟随主层**逐帧换同一张序列帧**，或与主层同生命周期隐藏；否则录帧会看到「白刀按帧消失、紫色大刀还在」。
+
+**五、纯加色层在浅色背景上等于不存在。** `blend_add` 只能把画面加亮：卡面本身已经是米白/浅蓝时，
+加色高光几乎看不出颜色，只剩一点白雾。给"会落在任意底色上的槽位/UI 反馈"做特效，必须同时有
+一层 **MIX 的深色墨**（元素色压暗）与加法高光，两层才构成"深色饱和体 + 亮部"的可读结构；
+只用加法会在亮底素材上白做。判定依据是录帧，不是算式。
+
+**六、槽位驱动型特效注入的变换必须保留自身位移。** `ConfigureSlot(size, relativeTransform)` 内部会
+`Transform = relativeTransform`。若调用方传 `Transform2D.Identity`（例如把多个特效并排摆进合成预览
+场景），所有特效会被一起搬回容器原点——录出来是"整块特效消失了"，实际是位置被重置。合成预览要传
+`vfx.Transform`（带上自身摆放），游戏内则传槽位相对变换。
