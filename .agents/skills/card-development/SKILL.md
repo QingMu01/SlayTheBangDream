@@ -95,8 +95,9 @@ python .agents/skills/card-development/scripts/audit_cards.py --project-root .
 2. 运行 `python3 tools/localization.py check`，并确认所有修改过的 JSON 可解析、无重复键。
 3. 用 `rg` 搜索已删除类名、模型 ID 和本地化键，要求代码及运行时本地化无残留。
 4. 运行 `git diff --check`。
-5. 完整构建受影响项目。若项目的部署目标写入游戏目录，使用工作区内临时 `Sts2Dir` 重定向输出，并同时固定 `Sts2DataDir`；验证后移除临时目录。
-6. 将每个规格要求映射到实现证据。编译成功不能替代语义核对。
+5. 注释符合 `docs/comment-authoring.md` 第 4 节：无复述代码、分步流程、设计散文与过程痕迹。
+6. 完整构建受影响项目。若项目的部署目标写入游戏目录，使用工作区内临时 `Sts2Dir` 重定向输出，并同时固定 `Sts2DataDir`；验证后移除临时目录。
+7. 将每个规格要求映射到实现证据。编译成功不能替代语义核对。
 
 若还存在未解释的集合差异、语义疑点、构建错误或残留引用，不得宣布完成。
 

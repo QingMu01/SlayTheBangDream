@@ -11,7 +11,7 @@ SlayTheBangDream.sln          — 企划总解决方案（仓库里唯一的 .sl
 ├── ItsCrychic/               — 角色内容模组（祥子、睦、灯、立希、素世），依赖 BangDreamInSpire
 │   └── ItsCrychic.csproj
 ├── tools/                    — 构建前使用的工具（资源 uid 校验、本体资源同步、本地化校验、架构边界检查）
-├── docs/                     — 项目级规范（卡牌 / 机制 / 特效 / 清理 / 性能 / 架构决策）
+├── docs/                     — 项目级规范（卡牌 / 机制 / 特效 / 清理 / 注释 / 性能 / 架构决策）
 └── .agents/skills/           — 工作流 skill（card-development、vfx-authoring、obsolete-file-cleanup），已入库
 ```
 
@@ -89,6 +89,9 @@ C# 代码位于各项目的 `Scripts/` 目录下，Godot 资源（图片、场�
 - **命名空间**与 `Scripts/` 下目录结构完全对应，且第一段等于 mod 目录名（`BangDreamInSpire` / `ItsCrychic`）；卡图路径依赖它，写错会静默回退默认立绘（见 `docs/card-authoring.md` 第 1.1 节）。
 - **抽象类命名**：`ItsCrychic` 的角色卡 / 遗物基类用 `Abstract` 前缀（`AbstractSakikoCard` 等，见 `docs/card-authoring.md` 第 1.1 节）；`BangDreamInSpire` 的共享抽象类**不带**前缀（`BandCardModel`、`MusicCardModel`、`BandPowerModel`、`BandRelicModel`、`BandTemporaryPowerModel`、`HiddenRelic`、`BandMemberModel`）。
 - 项目全局启用 `<Nullable>enable</Nullable>`、`<LangVersion>13.0</LangVersion>`、`<ImplicitUsings>true</ImplicitUsings>`。
+- **代码注释只写「为什么」**：不复述代码与调用顺序，不写「先…再…最后」的分步流程或箭头时间线，不把设计散文
+  和工作过程痕迹（本次 / 实测 / 录帧 / 计划 § / 阶段编号）留在注释里。长设计说明写进 `docs/`，代码里留一句摘要 +
+  章节指路；同一处行内注释不超过 2 行。判定、正反例与自检三问见 `docs/comment-authoring.md`，写码后按第 4 节自查。
 - **特效基类默认继承 `Node2D`**；仅当明确需要「飞行道具」或「异步伤害」（即命中时刻要驱动玩法结算）时才继承 `NBangDreamFlyingVfx`。详见 `docs/vfx-authoring.md` 第 2 节；预览机制见 `docs/vfx-preview-mechanism.md`。
 - **新增、修改、重构卡牌**遵循 `docs/card-authoring.md`（规范与验收）；执行流程见 `.agents/skills/card-development/SKILL.md`。
 - **特效素材入库**：从资产库导出的素材，先用 `.agents/skills/vfx-authoring/scripts/check_asset_origin.py` 判定——命中本体的**不复制**、直接引用本体 uid；未命中的才复制进 `images/vfx/<特效名>/`。特效目录**不产出** `README.md` / `SOURCES.md`（来源凭据写进计划文件）。详见 `docs/vfx-authoring.md` 第 4 节。

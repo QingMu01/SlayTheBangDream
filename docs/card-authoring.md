@@ -3,7 +3,7 @@
 本文是**卡牌实现方式的唯一事实来源**：新增、修改、重构卡牌都必须满足这里的约束。
 执行流程见 [card-development skill](../.agents/skills/card-development/SKILL.md)；本文只回答「应该长什么样」。
 
-相关文档：[机制接入](mechanic-authoring.md)、[特效开发](vfx-authoring.md)。
+相关文档：[机制接入](mechanic-authoring.md)、[特效开发](vfx-authoring.md)、[注释规范](comment-authoring.md)。
 
 ## 1. 卡牌解剖
 
@@ -211,6 +211,7 @@ protected override IEnumerable<IHoverTip> CardHoverTips =>
 ### 6.2 语义可查
 
 按 [效果审计清单](../.agents/skills/card-development/references/effect-audit-checklist.md) 逐卡核对，不留未解释项。编译通过不能替代语义核对。
+注释按 [注释规范](comment-authoring.md) 第 4 节自查：效果叙事写进卡牌描述或 `docs/`，脚本里只留契约、时序与坑。
 
 ### 6.3 交付
 

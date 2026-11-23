@@ -78,6 +78,7 @@ description: 新增或改造 Slay the Spire 2 模组特效的标准工作流。�
 - 简单效果可整体录制；复杂交互或定位伪影时才用 `stage.sh` 做单层/增量对比。
 - 构建与无头运行必须通过；一次性效果按需用 `verify_frames.py` 检查残留、冻结和结束状态。
 - 每轮调参聚焦一个主要问题，只记录重要决策与最终结论。
+- 注释按 `docs/comment-authoring.md`：只留为什么、时序耦合与坑；不写分步流程、设计散文和录帧过程。
 
 ### 3.5 实战验收
 
@@ -93,4 +94,5 @@ description: 新增或改造 Slay the Spire 2 模组特效的标准工作流。�
 - 提供场景、脚本、必要贴图与 `.import`，确认真实调用点；`WithHitFx` 限制见主规范。
 - 提供原速实战 mp4；gif、关键帧和逐层对比按需附加。
 - 简述实际观感、与旧版的差异、验收范围和未完成项。
+- 设计叙事写回 `docs/`，脚本里只留一句摘要 + 指路；交付前按 `docs/comment-authoring.md` 第 4 节清一遍注释。
 - 不生成 per-effect `README.md` / `SOURCES.md`。实际触发点、最终层结构与素材来源回写 `docs/mechanic-authoring.md`；通用技术坑回写 `docs/vfx-authoring.md`。

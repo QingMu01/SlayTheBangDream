@@ -1,6 +1,6 @@
 # 特效开发指南
 
-本文规定特效实现与验证。创作流程见 [vfx-authoring skill](../.agents/skills/vfx-authoring/SKILL.md)；预览原理见 [特效预览机制](vfx-preview-mechanism.md)。
+本文规定特效实现与验证。创作流程见 [vfx-authoring skill](../.agents/skills/vfx-authoring/SKILL.md)；预览原理见 [特效预览机制](vfx-preview-mechanism.md)；代码注释遵循 [注释规范](comment-authoring.md)。
 
 ## 0. 质量要求
 
@@ -193,6 +193,8 @@ dotnet build BangDreamInSpire/BangDreamInSpire.csproj -c Debug \
 ```
 
 以上两条 Godot 命令加 `| grep -iE "error|script error|failed"`，**无输出即通过**。`--headless --editor` 不会把新场景的 uid 回写进 `.tscn`；没有引擎生成的场景 uid 时保留 path 引用，由编辑器保存生成后再记录，不能手写或猜测 uid。
+
+脚本与 shader 写完后先按 [注释规范](comment-authoring.md) 第 4 节清一遍：时间线、层的作用与设计理由写进本文或 `docs/mechanic-authoring.md`，代码里只留一句摘要、时序耦合与踩坑结论。
 
 无头检查通过后，仍须按 §3.1 录制并原速观看。单场景录像负责技术诊断，真实战斗录像负责最终观感；没有真实战斗录像时，不得把「能运行」或「单场景好看」写成「实战已验收」。
 
