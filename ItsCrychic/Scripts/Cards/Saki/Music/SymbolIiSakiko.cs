@@ -1,4 +1,6 @@
+using BangDreamInSpire.Scripts.Enums;
 using BangDreamInSpire.Scripts.Extensions;
+using BangDreamInSpire.Scripts.Interfaces.CardAugment;
 using BangDreamInSpire.Scripts.Utils;
 using BangDreamInSpire.Scripts.Utils.Infos;
 using MegaCrit.Sts2.Core.Commands;
@@ -8,8 +10,11 @@ using MegaCrit.Sts2.Core.Localization.DynamicVars;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
-public class SymbolIiSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
+public class SymbolIiSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTarget), IPerformSealCard
 {
+    /// <summary>演奏反馈用哪个元素印；与卡图主题一致（见 docs/mechanic-authoring.md 演奏特效章节）。</summary>
+    public PerformSealElement PerformSeal => PerformSealElement.Wind;
+
     private const CardRarity CustomRarity = CardRarity.Uncommon;
     private static readonly TargetType CustomTarget = PerformTargetTypes.RequestGroup;
 

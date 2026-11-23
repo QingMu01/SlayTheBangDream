@@ -3,6 +3,7 @@ using BangDreamInSpire.Scripts.Enums;
 using BangDreamInSpire.Scripts.Extensions;
 using BangDreamInSpire.Scripts.Interfaces.Mechanics;
 using BangDreamInSpire.Scripts.Utils;
+using BangDreamInSpire.Scripts.Utils.Infos;
 using ItsCrychic.Scripts.Character;
 using ItsCrychic.Scripts.Nodes.VFX;
 using ItsCrychic.Scripts.Relics.Sakiko;
@@ -53,6 +54,15 @@ public static class ItsCrychic
             "res://ItsCrychic/scenes/vfx/strike_sakiko_vfx.tscn");
         BangDreamPreloadManager.AddCustomCombatAsset("sakiko_card_trail",
             "res://BangDreamInSpire/scenes/vfx/card_trail.tscn");
+        // 元素之印的演奏反馈（Symbol 系列）随战斗资源预载；元素→场景表由核心维护。
+        foreach (var sealElement in Enum.GetValues<PerformSealElement>())
+        {
+            if (PerformSealScenes.ScenePathOf(sealElement) is { } sealScene)
+            {
+                BangDreamPreloadManager.AddCustomCombatAsset(
+                    $"sakiko_seal_{sealElement.ToString().ToLowerInvariant()}", sealScene);
+            }
+        }
         BangDreamPreloadManager.AddCustomCombatAsset("sakiko_lingered_energy_small",
             "res://BangDreamInSpire/images/sceneui/xz-energy_lingered_small.png");
         BangDreamPreloadManager.AddCustomCombatAsset("sakiko_lingered_energy_large",
