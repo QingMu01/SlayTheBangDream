@@ -1,14 +1,14 @@
 [gd_scene load_steps=15 format=3]
 
-[ext_resource type="Script" path="res://Scripts/Nodes/VFX/SurgeHitVfx.cs" id="1_script"]
-[ext_resource type="Shader" path="res://BangDreamInSpire/shaders/surge_impact_front.gdshader" id="2_front"]
-[ext_resource type="Shader" path="res://BangDreamInSpire/shaders/oscillation_interference.gdshader" id="3_fringe"]
+[ext_resource type="Script" uid="uid://gadecybvsbcm" path="res://Scripts/Nodes/VFX/SurgeHitVfx.cs" id="1_script"]
+[ext_resource type="Shader" uid="uid://cdyontp0wd133" path="res://BangDreamInSpire/shaders/surge_impact_front.gdshader" id="2_front"]
+[ext_resource type="Shader" uid="uid://bly1453ul86ba" path="res://BangDreamInSpire/shaders/oscillation_interference.gdshader" id="3_fringe"]
 [ext_resource type="Texture2D" uid="uid://d2srbops1xqm0" path="res://images/vfx/dot.png" id="4_dot"]
 [ext_resource type="Texture2D" uid="uid://2412o0k2j8wd" path="res://BangDreamInSpire/images/vfx/oscillation/oscillation_shard.png" id="5_shard"]
 [ext_resource type="Texture2D" uid="uid://cuaw8f1xw0rsa" path="res://BangDreamInSpire/images/vfx/whiteRing.png" id="6_ring"]
 [ext_resource type="Material" uid="uid://c4ycqv0gdxvmr" path="res://themes/canvas_item_material_additive_shared.tres" id="7_add"]
-[ext_resource type="Shader" path="res://BangDreamInSpire/shaders/oscillation_echo_orb.gdshader" id="8_orb"]
-[ext_resource type="Shader" path="res://BangDreamInSpire/shaders/oscillation_echo_trail.gdshader" id="9_trail"]
+[ext_resource type="Shader" uid="uid://dbhqufordt53h" path="res://BangDreamInSpire/shaders/oscillation_echo_orb.gdshader" id="8_orb"]
+[ext_resource type="Shader" uid="uid://cqqkmeo2y7fc2" path="res://BangDreamInSpire/shaders/oscillation_echo_trail.gdshader" id="9_trail"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_front"]
 shader = ExtResource("2_front")

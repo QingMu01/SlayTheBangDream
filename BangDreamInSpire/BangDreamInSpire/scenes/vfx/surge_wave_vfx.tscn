@@ -1,7 +1,7 @@
 [gd_scene load_steps=8 format=3]
 
-[ext_resource type="Script" path="res://Scripts/Nodes/VFX/SurgeWaveVfx.cs" id="1_script"]
-[ext_resource type="Shader" path="res://BangDreamInSpire/shaders/surge_pressure_wave.gdshader" id="2_wave"]
+[ext_resource type="Script" uid="uid://mql6vs58ip1w" path="res://Scripts/Nodes/VFX/SurgeWaveVfx.cs" id="1_script"]
+[ext_resource type="Shader" uid="uid://ceeeeyqx7f4hq" path="res://BangDreamInSpire/shaders/surge_pressure_wave.gdshader" id="2_wave"]
 [ext_resource type="Texture2D" uid="uid://6giey4gx2x87" path="res://images/packed/vfx/generic/blur_rain.png" id="3_rain"]
 [ext_resource type="Texture2D" uid="uid://d2srbops1xqm0" path="res://images/vfx/dot.png" id="4_dot"]
 [ext_resource type="Texture2D" uid="uid://cuaw8f1xw0rsa" path="res://BangDreamInSpire/images/vfx/whiteRing.png" id="5_ring"]
