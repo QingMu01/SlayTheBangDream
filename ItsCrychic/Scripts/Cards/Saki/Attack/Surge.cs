@@ -49,9 +49,9 @@ public class Surge() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, 
 
         var isFinal = context.HitIndex >= (int)context.TotalHitCount - 1;
         var echoCount = QuickVar.LingeredResource.GetVar(this).IntValue;
-        var previous = index > 0 ? _enemiesSnapshot[index - 1] : null;
-        var vfx = SurgeHitVfx.Create(target, Owner.Creature, previous, index, isFinal, echoCount);
-        target.GetVfxContainer().AddChildSafely(vfx);
+        var vfx = SurgeHitVfx.Create(target, Owner.Creature, PreviousLiveTarget(index), index, isFinal, echoCount);
+        // 目标已死 / 图鉴里没有战斗容器时 GetVfxContainer 会返回 null。
+        target.GetVfxContainer()?.AddChildSafely(vfx);
 
         return Task.CompletedTask;
     }
@@ -95,9 +95,16 @@ public class Surge() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, 
             return null;
 
         var index = Math.Min(rawIndex, _enemiesSnapshot.Count - 1);
-        var previous = index > 0 ? _enemiesSnapshot[index - 1] : null;
-        return SurgeWaveVfx.Create(Owner.Creature, previous, _enemiesSnapshot[index], index, hitCount, animDelay);
+        return SurgeWaveVfx.Create(Owner.Creature, PreviousLiveTarget(index), _enemiesSnapshot[index],
+            index, hitCount, animDelay);
     }
+
+    /// <summary>
+    /// 上一个敌人还活着才当"接力声源"：被这串命中打死的敌人无法把声音弹给下一个，
+    /// 那一击退回演奏者重新击发（GetCreatureNode 对已死生物返回 null，两幕都用这个判定保持一致）。
+    /// </summary>
+    private Creature? PreviousLiveTarget(int index) =>
+        index > 0 && _enemiesSnapshot[index - 1].IsAlive ? _enemiesSnapshot[index - 1] : null;
 
     protected override void OnUpgrade()
     {

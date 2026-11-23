@@ -94,7 +94,7 @@ public partial class SurgeWaveVfx : Node2D
     /// <summary>本场是第几击（0 起）：决定弦数、波前道数与色温。</summary>
     private int _index;
 
-    /// <summary>是否由上一个敌人弹出（而非从演奏者起手）。</summary>
+    /// <summary>本击是否由上一个敌人弹出。上一目标已死时会退回"演奏者重新击发"，造型与首击同档。</summary>
     private bool _relay;
 
     /// <summary>是否整张牌的最后一击：末击的弦要放得更狠。</summary>
@@ -121,6 +121,9 @@ public partial class SurgeWaveVfx : Node2D
     }
 
     [Export] public bool LoopPreview { get; set; } = true;
+
+    /// <summary>预览时强制走"重新击发"造型（上一目标已死的那种情况）。</summary>
+    [Export] public bool PreviewRestart { get; set; }
 
     /// <summary>预览时展示第几击（0 起）：调观感时直接看最重的一击。</summary>
     [Export(PropertyHint.Range, "0,3,1")]
@@ -178,8 +181,15 @@ public partial class SurgeWaveVfx : Node2D
         var targetPoint = targetNode.VfxSpawnPosition;
         var chordPoint = casterPoint + ChordAnchorOffset;
 
+        // GetCreatureNode 只查存活生物：上一目标被这一击链打死后拿不到节点，
+        // 此时没有东西能把声音弹给下一个目标，这一击改为演奏者重新击发（造型与首击同档）。
+        var previousNode = index > 0 && previousTarget != null
+            ? room.GetCreatureNode(previousTarget)
+            : null;
+        var relay = previousNode != null;
+
         Vector2 origin;
-        if (index <= 0 || previousTarget == null || room.GetCreatureNode(previousTarget) is not { } previousNode)
+        if (previousNode == null)
         {
             origin = chordPoint;
         }
@@ -192,19 +202,21 @@ public partial class SurgeWaveVfx : Node2D
         }
 
         var vfx = BangDreamPreloadManager.GetScene(ScenePath).Instantiate<SurgeWaveVfx>();
-        vfx.Configure(origin, targetPoint, chordPoint, index, totalHits,
+        vfx.Configure(origin, targetPoint, chordPoint, index, totalHits, relay,
             AttackAnimWait(attackAnimDelay), TravelSeconds);
         return vfx;
     }
 
-    /// <summary>合成预览用接缝：手工指定声源、目标、弦的世界坐标与两段时长。</summary>
+    /// <summary>合成预览用接缝：手工指定声源、目标、弦的世界坐标、是否接力与两段时长。</summary>
     public void Configure(
-        Vector2 origin, Vector2 target, Vector2 chordPoint, int index, int totalHits, float charge, float flight)
+        Vector2 origin, Vector2 target, Vector2 chordPoint, int index, int totalHits, bool relay,
+        float charge, float flight)
     {
         _origin = origin;
         _target = target;
         _chordPoint = chordPoint;
         _index = Mathf.Max(0, index);
+        _relay = relay;
         _isFinal = _index >= Mathf.Max(totalHits - 1, 0);
         _charge = Mathf.Max(0f, charge);
         _flight = Mathf.Max(0.02f, flight);
@@ -255,7 +267,6 @@ public partial class SurgeWaveVfx : Node2D
         if (!_configured)
             SetUpPreview();
 
-        _relay = _index > 0;
         GlobalPosition = _origin;
 
         var delta = _target - _origin;
@@ -265,7 +276,8 @@ public partial class SurgeWaveVfx : Node2D
         ApplyPacketGeometry();
         ApplyChordGeometry();
         _pickup.Position = Vector2.Zero;
-        _pickup.Visible = _relay;
+        // 首击没有"抽回残响"这回事；重新击发时要放一圈外扩环当记号。
+        _pickup.Visible = _relay || _index > 0;
 
         _tween = CreateTween();
         _tween.TweenMethod(Callable.From<float>(ApplyState), 0f, 1f, _charge + _flight + TailSeconds);
@@ -281,6 +293,7 @@ public partial class SurgeWaveVfx : Node2D
         _target = _chordPoint + new Vector2(PreviewDistance, -40f);
         _charge = AttackAnimWait(PreviewAnimDelay);
         _flight = TravelSeconds;
+        _relay = _index > 0 && !PreviewRestart;
         _isFinal = _index >= 3;
     }
 
@@ -437,10 +450,10 @@ public partial class SurgeWaveVfx : Node2D
             _coreBaseColor.A * beatScale * (1f - coreT) * (1f - coreT));
     }
 
-    /// <summary>回授：蓄势段里上一击的残响被抽进离体的波中。</summary>
+    /// <summary>接力：蓄势段把上一击的残响抽进离体的波；重新击发则改为在乐器上放一圈外扩环。</summary>
     private void ApplyPickup(float time)
     {
-        if (!_relay)
+        if (!_relay && _index <= 0)
             return;
 
         var span = Mathf.Max(_charge, 0.06f);
@@ -450,6 +463,17 @@ public partial class SurgeWaveVfx : Node2D
             return;
 
         var swell = Mathf.Sin(Mathf.Pi * Mathf.Min(local * 1.15f, 1f));
+        if (!_relay)
+        {
+            _pickupStripes.Visible = false;
+            _pickupRing.Scale = _ringBaseScale * Mathf.Lerp(0.30f, 1.9f, EaseOutCubic(local));
+            _pickupRing.Modulate = new Color(_ringBaseColor.R, _ringBaseColor.G, _ringBaseColor.B,
+                _ringBaseColor.A * swell * 0.55f);
+            _pickupRing.Rotation = -local * 1.2f;
+            return;
+        }
+
+        _pickupStripes.Visible = true;
         _pickupRing.Scale = _ringBaseScale * Mathf.Lerp(2.4f, 0.30f, EaseOutCubic(local));
         _pickupRing.Modulate = new Color(_ringBaseColor.R, _ringBaseColor.G, _ringBaseColor.B,
             _ringBaseColor.A * swell * 0.85f);
