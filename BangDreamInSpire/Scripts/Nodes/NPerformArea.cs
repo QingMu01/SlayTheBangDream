@@ -653,7 +653,7 @@ public partial class NPerformArea : Control, IPerformArea
         }
 
         var relativeTransform = GlobalTransform.AffineInverse() * slotTransform;
-        if (TryPlaySealVfx(card, slotSize, relativeTransform))
+        if (TryPlaySlotVfx(card, slotSize, relativeTransform))
         {
             return;
         }
@@ -664,17 +664,27 @@ public partial class NPerformArea : Control, IPerformArea
         AddVfx(vfx);
     }
 
-    /// <summary>元素印牌走专属演奏反馈；场景缺失时回落通用扫光，不吞掉演奏反馈。</summary>
-    private bool TryPlaySealVfx(CardModel card, Vector2 slotSize, Transform2D relativeTransform)
+    /// <summary>
+    /// 卡牌声明了登记键时走专属演奏反馈；键未登记、场景缺失或根节点不实现
+    /// <see cref="IPerformSlotVfx" /> 时回落通用扫光——演奏反馈不能因为表现资源缺失而消失。
+    /// </summary>
+    private bool TryPlaySlotVfx(CardModel card, Vector2 slotSize, Transform2D relativeTransform)
     {
-        if (card is not IPerformSealCard sealCard) return false;
+        if (card is not IPerformSlotVfxCard slotVfxCard) return false;
+        if (!PerformSlotVfxRegistry.TryResolve(slotVfxCard.PerformSlotVfxKey, out var scenePath)) return false;
+        if (!ResourceLoader.Exists(scenePath)) return false;
 
-        var scenePath = PerformSealScenes.ScenePathOf(sealCard.PerformSeal);
-        if (scenePath == null || !ResourceLoader.Exists(scenePath)) return false;
+        var vfxRoot = BangDreamPreloadManager.GetScene(scenePath).Instantiate();
+        if (vfxRoot is not IPerformSlotVfx slotVfx)
+        {
+            BangDreamInSpireCore.Logger.Warn(
+                $"演奏反馈场景 {scenePath} 的根节点未实现 IPerformSlotVfx，已回落通用扫光。");
+            vfxRoot.QueueFreeSafely();
+            return false;
+        }
 
-        var vfx = BangDreamPreloadManager.GetScene(scenePath).Instantiate<PerformSealVfx>();
-        vfx.ConfigureSlot(slotSize, relativeTransform);
-        AddVfx(vfx);
+        slotVfx.ConfigureSlot(slotSize, relativeTransform);
+        AddVfx(vfxRoot);
         return true;
     }
 

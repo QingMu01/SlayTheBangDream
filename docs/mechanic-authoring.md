@@ -348,10 +348,11 @@ public sealed class MyMechanic : IBangDreamMechanic
 
 | 项 | 事实 | 出处 |
 |---|---|---|
-| 声明 | 卡牌实现 `IPerformSealCard.PerformSeal`（枚举 `PerformSealElement`：Fire / Wind / Water / Earth / Stars） | `Scripts/Interfaces/CardAugment/IPerformSealCard.cs` |
-| 元素→场景 | `PerformSealScenes.ScenePathOf(element)`，表放在 Utils 层，内容模组不持资源路径 | `Scripts/Utils/Infos/PerformSealScenes.cs` |
-| 回落 | 非元素印牌（或场景缺失）仍走通用 `perform_flash_vfx.tscn`；元素印存在时不再叠通用扫光 | `NPerformArea.TryPlaySealVfx` |
-| 预载 | 内容模组用 `BangDreamPreloadManager.AddCustomCombatAsset` 注册这五套场景（`PerformSealScenes.All`） | `ItsCrychic.cs` |
+| 声明 | 卡牌实现 `IPerformSlotVfxCard.PerformSlotVfxKey`，只返回一个**登记键**（内置元素见 `PerformSlotVfxKeys`） | `Scripts/Interfaces/CardAugment/IPerformSlotVfxCard.cs` |
+| 键→场景 | `PerformSlotVfxRegistry`：`Register(key, scenePath, preload)` 登记、`TryResolve` 解析；内置五元素由 `RegisterBuiltIns()` 在演奏机制注册时自动登记 | `Scripts/Utils/Infos/PerformSlotVfxRegistry.cs` |
+| 场景契约 | 场景根节点实现 `IPerformSlotVfx.ConfigureSlot(size, transform)`；继承 `PerformSealVfx` 即自动满足 | `Scripts/Interfaces/Mechanics/IPerformSlotVfx.cs` |
+| 回落 | 键为空/未登记、场景缺失、或根节点不实现契约 → 通用 `perform_flash_vfx.tscn`（后两种情况打 Warn，不静默） | `NPerformArea.TryPlaySlotVfx` |
+| 预载 | 默认 `preload: true` 随战斗预载；内置五套由核心自动加进预载集 | 同 registry |
 | 布局 | `PerformSealVfx.ConfigureSlot(slotSize, slotRelativeTransform)`；横向按 `slotSize / 160` 铺开，笔粗细不缩放；**注入的变换必须带槽位自身位移**，否则会被重置到容器原点 | `Scripts/Nodes/VFX/PerformSealVfx.cs` |
 | 时长 | `LifeTime = 0.56s`（要求 ≤ 0.6s）：0.42s 各层归零，0.50s 印框收完，录帧核对 0.56s 后无残留 | 同左 |
 
@@ -366,6 +367,15 @@ public sealed class MyMechanic : IBangDreamMechanic
 | Symbol III | 水 | `perform_seal_water_vfx.tscn` | 先溅后落 | 3 |
 | Symbol IV | 自然 | `perform_seal_earth_vfx.tscn` | 斜上掠 | 1 |
 | Ether | 群星 | `perform_seal_stars_vfx.tscn` | 逐点亮、放射 | 3 |
+
+**接入一种新的演奏反馈**（不改核心演奏流程）：
+
+1. 场景根节点挂 `PerformSealVfx` 复用统一时间线；或自己写一个实现 `IPerformSlotVfx` 的 `Node2D`。
+2. 内容模组 `Initialize()` 里登记：`PerformSlotVfxRegistry.Register("crychic.freeze", "res://ItsCrychic/scenes/vfx/xxx.tscn");`
+   （`Register` 默认把它加进战斗预载集，避免首次演奏时在主线程同步加载。）
+3. 卡牌实现 `IPerformSlotVfxCard`：`public string? PerformSlotVfxKey => "crychic.freeze";`
+4. 键**全局唯一**（重复登记直接抛错，错误信息带出已占用的路径），建议用 `模组.用途` 形式；
+   内置元素之印的五个键（`symbol.fire` / `wind` / `water` / `earth` / `stars`）任何角色的牌都能直接复用。
 
 **层级**（场景节点名即契约）：`Flow`（MIX 墨带，`perform_seal_ink.gdshader`）／`Rim`（ADD 边缘吃光，
 `perform_seal_rim.gdshader`）／`Wash`（ADD 柔光）／`Core`（ADD 白热点）／`Streaks/*`

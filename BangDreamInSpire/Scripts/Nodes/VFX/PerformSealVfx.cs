@@ -1,4 +1,5 @@
 using BangDreamInSpire.Scripts.Extensions;
+using BangDreamInSpire.Scripts.Interfaces.Mechanics;
 using BangDreamInSpire.Scripts.Utils;
 using Godot;
 using MegaCrit.Sts2.Core.Helpers;
@@ -12,7 +13,7 @@ namespace BangDreamInSpire.Scripts.Nodes.VFX;
 /// 因此五张牌读起来是同一枚印的五种墨色，而不是五个通用光斑。
 /// </summary>
 [Tool]
-public partial class PerformSealVfx : Node2D
+public partial class PerformSealVfx : Node2D, IPerformSlotVfx
 {
     private static readonly StringName RectSizeParameter = "rect_size";
     private static readonly StringName DrawProgressParameter = "draw_progress";

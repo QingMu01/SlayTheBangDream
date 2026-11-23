@@ -1,4 +1,3 @@
-using BangDreamInSpire.Scripts.Enums;
 using BangDreamInSpire.Scripts.Interfaces.CardAugment;
 using BangDreamInSpire.Scripts.Utils;
 using BangDreamInSpire.Scripts.Utils.Infos;
@@ -10,10 +9,10 @@ using MegaCrit.Sts2.Core.Models;
 
 namespace ItsCrychic.Scripts.Cards.Saki.Music;
 
-public class EtherSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTarget), IPerformSealCard
+public class EtherSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTarget), IPerformSlotVfxCard
 {
-    /// <summary>演奏反馈用哪个元素印；与卡图主题一致（见 docs/mechanic-authoring.md 演奏特效章节）。</summary>
-    public PerformSealElement PerformSeal => PerformSealElement.Stars;
+    /// <summary>演奏反馈用哪套墨色；内置元素之印见 docs/mechanic-authoring.md 12.1。</summary>
+    public string? PerformSlotVfxKey => PerformSlotVfxKeys.SymbolStars;
 
     private const CardRarity CustomRarity = CardRarity.Uncommon;
     private static readonly TargetType CustomTarget = PerformTargetTypes.RequestGroup;
