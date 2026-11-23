@@ -27,7 +27,7 @@ instance uniform float line_sharpness = 0.55;
 
 instance uniform float intensity = 1.0;
 
-uniform vec4 line_color : source_color = vec4(0.9, 0.95, 1.0, 1.0);
+instance uniform vec4 line_color : source_color = vec4(0.9, 0.95, 1.0, 1.0);
 uniform float peak_alpha = 0.9;
 
 // 软饱和：硬 clamp 到 1 会在加色层留下等值线硬边。

@@ -487,6 +487,63 @@ public sealed class MyMechanic : IBangDreamMechanic
 `check_asset_origin.py` 判为 LOCAL 才复制进 `images/vfx/oscillation/`；同名同目录的两个新 shader
 （`oscillation_pressure_wave` / `oscillation_wavefront` / `oscillation_interference`）随仓库入库。
 
+### 12.4 卡牌专属特效：激荡（震荡的先古升格）
+
+「激荡」是 `震荡` 的先古版（`[RegisterArchaicToothTranscendence(typeof(Surge))]` + `CardRarity.Ancient`）：
+1 费、Attack、全体目标但**依次**结算——命中第 i 个可命中敌人造成 `10·2^i`（升级 `12·2^i`），
+每次命中生成 3 点 `余音`。特效要回答的问题是「凭什么每一下都翻倍」，所以**翻倍本身必须是可见的**。
+
+| 项 | 事实 | 出处 |
+|---|---|---|
+| 触发 | `Surge.OnPlay`：`WithAttackerFx` 放每击的传播幕；`BeforeAttackHit` 收窄目标、翻倍伤害、放命中幕；`AfterAttackHit` 入账 `余音` | `ItsCrychic/Scripts/Cards/Saki/Attack/Surge.cs` |
+| 时序 | `WithWaitBeforeHit(HitWaitFast, HitWaitStandard)`（0.08 / 0.12s）；波前飞行时长与这两个值**同一个常量**，命中幕落在波前抵达那一刻 | `SurgeWaveVfx.TravelSeconds` |
+| 命中幕的挂点 | **不用** `WithHitVfxNode`：多目标时它对每个存活敌人各建一次节点、且早于 hook 收窄目标，会在所有敌人身上各放一份。改为在 `BeforeAttackHit` 里按 `context.HitIndex` 只给 `_enemiesSnapshot[index]` 建一次 | 同上 |
+| 蓄势时长 | 每击的 `TriggerAnim("Attack")` 会被 `await`（普通 0.15s / 快速 0.075s），这段等待在逐击等待**之前**。施法幕把它当「蓄势」，飞行段只用逐击等待；两段相加正好等于「攻击者 VFX 创建 → 命中毒钩子」的真实间隔 | `SurgeWaveVfx.AttackAnimWait` |
+| 基类 | 两者都是 `Node2D`，不参与结算（命中幕 0.60s / 末击 0.74s，可超出伤害结算） | 按 §2 判定 |
+| 单次时长 | 三敌时逐击间隔 0.47s（0.15 动画 + 0.12 逐击 + 0.20 结算尾等待），三击约 1.6s，末击余波到 2.5s 前散尽 | 合成舞台录帧 |
+
+**翻倍的视觉语法：数量，而不是尺寸**
+
+- **波前道数 = `2^i`**：第 0/1/2/3 击分别是 1/2/4/8 道**等幅**平行波前。首击是一道带疏密尾峰的单弧
+  （与震荡同形、同族）；从第二击起，尾峰退场、换成越叠越厚的前列——「衰减」是震荡的语汇，
+  「越来越厚的压力」才是激荡的。
+- **弦数 = 已击次数（i+1）**：演奏者的每一次挥击多留一根还在响的弦（1/2/3/4 根），
+  这是**动作**的累积；翻倍由波前道数承担，两者不重复计数。
+- **命中叠层 = `2^i` 道波前一起压平**：越往后一起砸在表面上的层数越多、抖得越狠、
+  碎晶多 2 片、驻波条纹更密更亮。末击再额外加一层：波前厚 1.3×、核心 1.3×、碎晶 +3。
+- **色温只做陪衬**：阶数越高越往白走（`2^i` 的道数才是主读），不做单纯换色。
+
+**接力而不是各打各的**：激荡是「依次」结算，第二击起波前**从上一个敌人身上弹出去**（声源 = 上一个
+敌人朝目标的一侧），并在蓄势段把上一击留在它身上的驻波条纹**抽走**（`Pickup`）。如果每击都从演奏者
+出波，视觉会读成「每一击都打了全体」，与伤害语义冲突。
+
+**形状：首击是弧，接力是墙**。相邻两个敌人之间只有几十像素，球面波在这里会缩成一弯「月牙」；
+所以接力的波前用平面波（`flatness` 1.0，仅两端带一点 `bow`），首击保留球面弧（`flatness` 0.45）
+与震荡认亲。两种形状**分开求强度再交叉淡化**——直接对「纵深」做 mix 会得到一条闭合等值线，
+画面上是一个绕声源的椭圆环。
+
+**层与时长**（场景节点名即契约）
+
+| 幕 | 层 | 作用 | 起止 |
+|---|---|---|---|
+| 传播 `surge_wave_vfx.tscn` | `Packet`（`surge_pressure_wave`） | 主体：蓄势收束 → 飞行展开成 `2^i` 道波前 | 0–0.44s（蓄势 + 飞行 + 拖尾） |
+| 传播 | `Chord/String0..7` + `Chord/Core` | 声源：`i+1` 根弦被砸响、横摆衰减 | 0–0.18s |
+| 传播 | `Pickup/Ring` + `Pickup/Stripes` | 上一击的残响被抽进离体的波（仅 i>0） | 0–蓄势结束 |
+| 命中 `surge_hit_vfx.tscn` | `Front`（`surge_impact_front`） | 主体：`2^i` 道波前压平到表面（唯一峰值） | 0–0.30s |
+| 命中 | `Fringe`（`oscillation_interference`） | 反射驻波：首击沿用震荡的粗条纹，接力改为细密纹理（避免与「层数」抢读） | 0.03–0.32s（末击 0.40s） |
+| 命中 | `Core`、`Shards/Shard0..11` | 接触热核、表面压裂的碎晶 | 0–0.12s、0.13–0.41s |
+| 命中 | `Notes/Note0..2` + `Trail` | 余音回波：3 颗玻璃球，与震荡同一套 shader | 0.17–0.48s |
+| 命中 | `Through`（`surge_impact_front`） | 末击：波前穿过目标出画（波不回头） | 0.17–0.48s |
+| 命中 | `Absorb/Ring` | 抵达收束，接环绕件聚集 | 0.44–0.58s |
+
+**素材来源**：不新增 PNG。`surge_pressure_wave` / `surge_impact_front` 两支 shader 新绘随仓库入库；
+`oscillation_interference` / `oscillation_echo_orb` / `oscillation_echo_trail` 直接复用（余音与驻波必须与
+震荡同族）；`blur_rain.png`、`dot.png` 为 BODY，`whiteRing.png`、`oscillation_shard.png` 为工程既有 LOCAL。
+两张场景随战斗预载（`BangDreamPreloadManager.CombatAssets`）。
+
+**已知限制**：`FastMode = Instant`（玩家 UI 不提供，仅测试/非交互路径）下所有等待被跳过，三击会在同一帧结算，
+三套特效应按「瞬发叠击」预期；此时两段时长会压到 0.05s 尽量跟上。
+
 ## 13. 角色视觉动画时间线（`visuals_anim`）
 
 ### 13.1 分工

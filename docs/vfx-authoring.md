@@ -254,3 +254,23 @@ dotnet build BangDreamInSpire/BangDreamInSpire.csproj -c Debug \
 两条一起做才稳：① 每支 shader 都按 `min(UV.x, 1-UV.x, UV.y, 1-UV.y)` 做边缘羽化；
 ② 画布边缘不要压在主体关键位置（拖尾整块往球后推半个球径，把前缘埋进球体里）。
 定位手法：单独给该层建一个只有它自己的最小场景录一帧；单层干净就说明是层间关系而不是 shader 数学。
+
+**十一、`instance uniform` 一个 shader 最多 16 个，超了整支编译失败。** 报错只有一行
+`Too many 'instance' uniforms in shader, maximum supported is 16`，场景里表现为整层不渲染。设计常量的 uniform
+（宽度、衰减、角度、条带高度）改为普通 `uniform`、由材质给，只把逐帧/逐实例变化的留成 `instance uniform`。
+
+**十二、把两种"纵深"函数 mix 成一条，会画出闭合的等值线。** 想在一个 shader 里切换"球面弧 / 平面波"时，
+若写 `depth = mix(front_radius - radius, front_radius - centered.x, flatness)`，等值线会闭合成一个绕声源的椭圆环
+（录帧看到"凭空多出一圈光环"）。正确做法是**两种形状各算各的强度，再按 `flatness` 交叉淡化强度**；
+张角这类方向性因子也只能乘在球面那一侧，否则残留的球面分量会绕过声源。
+
+**十三、AOE 攻击的"只属于本次目标"命中幕不要用 `WithHitVfxNode`。** 多目标时它在每击对**每个存活敌人**各调用
+一次创建回调，而且发生在目标收窄之前（收窄只改伤害，节点已经建好）；用它会在所有敌人身上各放一份命中幕。
+要只给本次真正被命中的目标，就在 `IAttackHitHookListener.BeforeAttackHit` 里按 `context.HitIndex` 自己
+`target.GetVfxContainer().AddChildSafely(vfx)`——时序与 `WithHitVfxNode` 相同（都在伤害结算那一刻）。
+
+**十四、攻击牌的 `WithWaitBeforeHit` 之前还有一段"攻击动画等待"。** 每次命中都会 `await
+TriggerAnim("Attack")`（普通模式等于角色 `AttackAnimDelay`，本项目 0.15s），它发生在逐击等待**之前**；
+"攻击者 VFX 创建 → 命中毒钩子"的真实间隔 = 动画等待 + 逐击等待。想让波前抵达与伤害同一帧，
+`TravelSeconds` 必须按这两段之和算（见 `SurgeWaveVfx.AttackAnimWait`），只对逐击等待会提前 0.15s 到达。
+

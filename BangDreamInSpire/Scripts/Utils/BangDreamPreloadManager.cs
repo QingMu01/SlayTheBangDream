@@ -53,6 +53,8 @@ public static class BangDreamPreloadManager
         // 战斗资源随房间预载，避免首次使用时在主线程同步加载。
         "res://BangDreamInSpire/scenes/vfx/oscillation_wave_vfx.tscn",
         "res://BangDreamInSpire/scenes/vfx/oscillation_hit_vfx.tscn",
+        "res://BangDreamInSpire/scenes/vfx/surge_wave_vfx.tscn",
+        "res://BangDreamInSpire/scenes/vfx/surge_hit_vfx.tscn",
         "res://BangDreamInSpire/images/sceneui/music_reward.png",
         // 冻结与分组激活贴图随 run 预载。
         "res://BangDreamInSpire/images/vfx/flying_music_note/glow_soft.png",
