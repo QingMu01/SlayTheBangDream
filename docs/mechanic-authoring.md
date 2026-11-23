@@ -360,12 +360,16 @@ public sealed class MyMechanic : IBangDreamMechanic
 中心落印白热点（峰值 0.10s，唯一峰值）→ 元素墨迹散尽。元素差异只在三条通道上：
 **墨的运动方向 / 颗粒形态 / 节拍数**（火 2、风 1、水 3、土 1、星 3）；配色与材料取自各自卡图。
 
+土的「运动」是**无序簇生**而不是一次统一朝向的斜掠：每支草刃的 rotation（朝向）、spin（翻转方向）、
+`EndOffset`（落点）、`StartTime`（起跑时刻）与尺寸都刻意错开，并混入几支只抽一小截的矮株，
+读成一丛各长各的草。改土之印的数据时别把它们收敛成同一个方向——那是这张牌唯一的"生长"语汇。
+
 | 卡 | 元素 | 场景 | 墨的运动 | 节拍 |
 |---|---|---|---|---|
 | Symbol I | 火 | `perform_seal_fire_vfx.tscn` | 向上舔 | 2 |
 | Symbol II | 风 | `perform_seal_wind_vfx.tscn` | 向两端甩 | 1 |
 | Symbol III | 水 | `perform_seal_water_vfx.tscn` | 先溅后落 | 3 |
-| Symbol IV | 自然 | `perform_seal_earth_vfx.tscn` | 斜上掠 | 1 |
+| Symbol IV | 自然 | `perform_seal_earth_vfx.tscn` | 无序簇生（朝向与落点不齐） | 1 |
 | Ether | 群星 | `perform_seal_stars_vfx.tscn` | 逐点亮、放射 | 3 |
 
 **接入一种新的演奏反馈**（不改核心演奏流程）：
@@ -412,7 +416,7 @@ public sealed class MyMechanic : IBangDreamMechanic
 | Symbol I | 火 | 火舌自腰腿窜过头顶 | 腰→头顶 | 2 |
 | Symbol II | 风 | 长丝横穿身体 | 全高、头顶也有一条 | 1 |
 | Symbol III | 水 | 水珠自头顶上方滴落穿过身体 | 头顶→腰 | 3 |
-| Symbol IV | 自然 | 草刃自脚底斜上掠向肩上 | 脚→肩 | 1 |
+| Symbol IV | 自然 | 草刃自脚底各处向外抽，朝向与方向不齐 | 脚→肩上 | 1 |
 | Ether | 群星 | 星点逐亮点起、漂开 | 胸→头顶 | 3 |
 
 **为什么身上不留大印框**：槽位的斜切印框是「牌」的形；把同一个大框照搬到角色身上会读成一块罩住人的

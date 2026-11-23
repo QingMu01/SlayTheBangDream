@@ -45,12 +45,12 @@ curve = SubResource("Curve_particle_scale")
 resource_local_to_scene = true
 particle_flag_disable_z = true
 emission_shape = 3
-emission_box_extents = Vector3(130, 24, 1)
-direction = Vector3(0, 1, 0)
-spread = 40.0
-initial_velocity_min = 30.0
-initial_velocity_max = 90.0
-gravity = Vector3(0, 150, 0)
+emission_box_extents = Vector3(100, 60, 1)
+direction = Vector3(0, -1, 0)
+spread = 170.0
+initial_velocity_min = 40.0
+initial_velocity_max = 120.0
+gravity = Vector3(0, 50, 0)
 scale_min = 0.35
 scale_max = 0.7
 scale_curve = SubResource("CurveTexture_particle_scale")
@@ -60,12 +60,12 @@ alpha_curve = SubResource("CurveTexture_particle_alpha")
 resource_local_to_scene = true
 particle_flag_disable_z = true
 emission_shape = 3
-emission_box_extents = Vector3(100, 20, 1)
+emission_box_extents = Vector3(120, 40, 1)
 direction = Vector3(0, -1, 0)
-spread = 30.0
-initial_velocity_min = 40.0
-initial_velocity_max = 100.0
-gravity = Vector3(0, -40, 0)
+spread = 60.0
+initial_velocity_min = 30.0
+initial_velocity_max = 90.0
+gravity = Vector3(0, -30, 0)
 scale_min = 0.3
 scale_max = 0.6
 scale_curve = SubResource("CurveTexture_particle_scale")
@@ -124,114 +124,178 @@ texture = ExtResource("3_light")
 
 [node name="Streaks" type="Node2D" parent="."]
 
-[node name="BladeFootLeft" type="Sprite2D" parent="Streaks"]
+[node name="SproutFootLeft" type="Sprite2D" parent="Streaks"]
 material = SubResource("CanvasItemMaterial_add")
-position = Vector2(-72, 138)
-rotation = -0.5
-scale = Vector2(1.6, 2.2)
+position = Vector2(-86, 128)
+rotation = -0.95
+scale = Vector2(1.4, 1.95)
 texture = ExtResource("3_diamond")
 script = ExtResource("8_streak")
-StartTime = 0.14
-LifeTime = 0.32
-EndOffset = Vector2(70, -200)
-EndScaleMultiplier = 1.4
-SpinDegrees = -12
-PeakAlpha = 0.8
-RiseTime = 0.045
-Tint = Color(0.486275, 0.776471, 0.227451, 1)
-
-[node name="BladeFootRight" type="Sprite2D" parent="Streaks"]
-material = SubResource("CanvasItemMaterial_add")
-position = Vector2(64, 132)
-rotation = -0.62
-scale = Vector2(1.45, 2)
-texture = ExtResource("3_diamond")
-script = ExtResource("8_streak")
-StartTime = 0.14
+StartTime = 0.12
 LifeTime = 0.34
-EndOffset = Vector2(-80, -190)
+EndOffset = Vector2(-46, -196)
 EndScaleMultiplier = 1.4
-SpinDegrees = -10
+SpinDegrees = -13
 PeakAlpha = 0.8
 RiseTime = 0.045
 Tint = Color(0.486275, 0.776471, 0.227451, 1)
 
-[node name="BladeMid" type="Sprite2D" parent="Streaks"]
+[node name="SproutFootRight" type="Sprite2D" parent="Streaks"]
 material = SubResource("CanvasItemMaterial_add")
-position = Vector2(0, 72)
-rotation = -0.42
-scale = Vector2(1.3, 1.8)
+position = Vector2(78, 122)
+rotation = 0.72
+scale = Vector2(1.3, 1.82)
+texture = ExtResource("3_diamond")
+script = ExtResource("8_streak")
+StartTime = 0.13
+LifeTime = 0.34
+EndOffset = Vector2(44, -188)
+EndScaleMultiplier = 1.4
+SpinDegrees = 11
+PeakAlpha = 0.78
+RiseTime = 0.045
+Tint = Color(0.486275, 0.776471, 0.227451, 1)
+
+[node name="SproutMidLeft" type="Sprite2D" parent="Streaks"]
+material = SubResource("CanvasItemMaterial_add")
+position = Vector2(-44, 96)
+rotation = -0.55
+scale = Vector2(1.05, 1.55)
 texture = ExtResource("3_diamond")
 script = ExtResource("8_streak")
 StartTime = 0.16
-LifeTime = 0.28
-EndOffset = Vector2(-46, -180)
-EndScaleMultiplier = 1.35
-SpinDegrees = -8
+LifeTime = 0.3
+EndOffset = Vector2(-34, -210)
+EndScaleMultiplier = 1.3
+SpinDegrees = -7
 PeakAlpha = 0.7
 RiseTime = 0.045
 Tint = Color(0.486275, 0.776471, 0.227451, 1)
 
-[node name="BladeEdge" type="Sprite2D" parent="Streaks"]
+[node name="SproutMidRight" type="Sprite2D" parent="Streaks"]
 material = SubResource("CanvasItemMaterial_add")
-position = Vector2(-40, 104)
-rotation = -0.7
-scale = Vector2(1.2, 1.6)
+position = Vector2(34, 88)
+rotation = 0.38
+scale = Vector2(0.95, 1.4)
 texture = ExtResource("3_diamond")
 script = ExtResource("8_streak")
 StartTime = 0.18
-LifeTime = 0.26
-EndOffset = Vector2(56, -160)
+LifeTime = 0.3
+EndOffset = Vector2(30, -204)
 EndScaleMultiplier = 1.3
-SpinDegrees = -6
+SpinDegrees = 15
+PeakAlpha = 0.66
+RiseTime = 0.045
+Tint = Color(0.847059, 0.941176, 0.627451, 1)
+
+[node name="SproutCrossLeft" type="Sprite2D" parent="Streaks"]
+material = SubResource("CanvasItemMaterial_add")
+position = Vector2(-64, 140)
+rotation = -0.3
+scale = Vector2(0.88, 1.28)
+texture = ExtResource("3_diamond")
+script = ExtResource("8_streak")
+StartTime = 0.2
+LifeTime = 0.28
+EndOffset = Vector2(36, -176)
+EndScaleMultiplier = 1.25
+SpinDegrees = 18
 PeakAlpha = 0.6
 RiseTime = 0.045
 Tint = Color(0.847059, 0.941176, 0.627451, 1)
 
-[node name="BladeTip" type="Sprite2D" parent="Streaks"]
+[node name="SproutCrossRight" type="Sprite2D" parent="Streaks"]
 material = SubResource("CanvasItemMaterial_add")
-position = Vector2(30, -40)
-rotation = -0.3
-scale = Vector2(1, 1.4)
+position = Vector2(52, 136)
+rotation = 0.64
+scale = Vector2(0.82, 1.18)
 texture = ExtResource("3_diamond")
 script = ExtResource("8_streak")
-StartTime = 0.2
-LifeTime = 0.24
-EndOffset = Vector2(-30, -120)
+StartTime = 0.22
+LifeTime = 0.28
+EndOffset = Vector2(-32, -170)
 EndScaleMultiplier = 1.25
-SpinDegrees = -5
-PeakAlpha = 0.55
+SpinDegrees = -19
+PeakAlpha = 0.58
+RiseTime = 0.045
+Tint = Color(0.847059, 0.941176, 0.627451, 1)
+
+[node name="SproutShortLeft" type="Sprite2D" parent="Streaks"]
+material = SubResource("CanvasItemMaterial_add")
+position = Vector2(-104, 112)
+rotation = -1.02
+scale = Vector2(0.62, 0.92)
+texture = ExtResource("3_diamond")
+script = ExtResource("8_streak")
+StartTime = 0.18
+LifeTime = 0.26
+EndOffset = Vector2(-24, -104)
+EndScaleMultiplier = 1.2
+SpinDegrees = -10
+PeakAlpha = 0.52
+RiseTime = 0.045
+Tint = Color(0.847059, 0.941176, 0.627451, 1)
+
+[node name="SproutShortRight" type="Sprite2D" parent="Streaks"]
+material = SubResource("CanvasItemMaterial_add")
+position = Vector2(100, 100)
+rotation = 1.06
+scale = Vector2(0.58, 0.86)
+texture = ExtResource("3_diamond")
+script = ExtResource("8_streak")
+StartTime = 0.24
+LifeTime = 0.24
+EndOffset = Vector2(20, -96)
+EndScaleMultiplier = 1.2
+SpinDegrees = 22
+PeakAlpha = 0.5
+RiseTime = 0.045
+Tint = Color(0.847059, 0.941176, 0.627451, 1)
+
+[node name="SproutWaist" type="Sprite2D" parent="Streaks"]
+material = SubResource("CanvasItemMaterial_add")
+position = Vector2(-18, 42)
+rotation = -0.2
+scale = Vector2(0.72, 1.05)
+texture = ExtResource("3_diamond")
+script = ExtResource("8_streak")
+StartTime = 0.26
+LifeTime = 0.24
+EndOffset = Vector2(-14, -140)
+EndScaleMultiplier = 1.25
+SpinDegrees = 9
+PeakAlpha = 0.46
 RiseTime = 0.045
 Tint = Color(0.847059, 0.941176, 0.627451, 1)
 
 [node name="Emitters" type="Node2D" parent="."]
 
-[node name="SoilFall" type="GPUParticles2D" parent="Emitters"]
+[node name="SoilBurst" type="GPUParticles2D" parent="Emitters"]
 material = SubResource("CanvasItemMaterial_add")
 emitting = false
-position = Vector2(0, 110)
-amount = 29
+position = Vector2(0, 80)
+amount = 38
 texture = ExtResource("3_ember")
-lifetime = 0.26
+lifetime = 0.28
 one_shot = true
-explosiveness = 0.88
-randomness = 0.45
+explosiveness = 0.9
+randomness = 0.6
 visibility_rect = Rect2(-280, -340, 560, 560)
 process_material = SubResource("ParticleProcessMaterial_0")
 script = ExtResource("9_emitter")
 BeatIndex = 0
 Tint = Color(0.486275, 0.776471, 0.227451, 1)
 
-[node name="SoilRise" type="GPUParticles2D" parent="Emitters"]
+[node name="SoilFall" type="GPUParticles2D" parent="Emitters"]
 material = SubResource("CanvasItemMaterial_add")
 emitting = false
-position = Vector2(0, 60)
-amount = 19
+position = Vector2(0, 40)
+amount = 22
 texture = ExtResource("3_ember")
-lifetime = 0.24
+lifetime = 0.26
 one_shot = true
 explosiveness = 0.88
-randomness = 0.5
+randomness = 0.55
 visibility_rect = Rect2(-280, -340, 560, 560)
 process_material = SubResource("ParticleProcessMaterial_1")
 script = ExtResource("9_emitter")
