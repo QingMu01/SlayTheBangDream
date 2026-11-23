@@ -226,3 +226,9 @@ dotnet build BangDreamInSpire/BangDreamInSpire.csproj -c Debug \
 `Transform = relativeTransform`。若调用方传 `Transform2D.Identity`（例如把多个特效并排摆进合成预览
 场景），所有特效会被一起搬回容器原点——录出来是"整块特效消失了"，实际是位置被重置。合成预览要传
 `vfx.Transform`（带上自身摆放），游戏内则传槽位相对变换。
+
+**七、把「从画外进、到画外去」的墨带放进刚好等大的 `ColorRect` 会被硬切成横杠。** 演奏印框的墨带推进范围
+是 `-0.35 → 1.35`，刻意让墨带在画布之外进出。把同一套搬到角色尺度、又把 `rect_size` 收紧到身体高度后，
+墨带经过画布上下边缘时会被 `ColorRect` 的边界**直接切出一条硬边横杠**（录帧才看得见：像一块平移的玻璃板）。
+两种解法：把推进范围收进画布内（如 `0.18 → 0.82`，墨在腰以下聚起、头顶之上淡掉），并给两侧加横向羽化
+（`perform_seal_ink.gdshader` 的 `lateral_fade`），墨带才是笔触而不是板。

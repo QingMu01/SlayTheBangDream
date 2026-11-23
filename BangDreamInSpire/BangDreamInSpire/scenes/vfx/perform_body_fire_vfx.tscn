@@ -1,0 +1,247 @@
+[gd_scene load_steps=19 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Nodes/VFX/PerformBodyVfx.cs" id="1_root"]
+[ext_resource type="Shader" path="res://BangDreamInSpire/shaders/perform_seal_ink.gdshader" id="2b_ink"]
+[ext_resource type="Shader" path="res://BangDreamInSpire/shaders/perform_seal_rim.gdshader" id="2_rim"]
+[ext_resource type="Texture2D" uid="uid://d2srbops1xqm0" path="res://images/vfx/dot.png" id="3_dot"]
+[ext_resource type="Texture2D" uid="uid://bxa6vlqeby20" path="res://images/vfx/light.png" id="3_light"]
+[ext_resource type="Texture2D" uid="uid://dcvu5sxac5xwc" path="res://images/vfx/fire/flame_paricle_tex.png" id="3_flame"]
+[ext_resource type="Texture2D" uid="uid://b47r2blhe2i3" path="res://images/vfx/fire/cinder_particle.png" id="3_ember"]
+[ext_resource type="Script" path="res://Scripts/Nodes/VFX/PerformSealStreak.cs" id="8_streak"]
+[ext_resource type="Script" path="res://Scripts/Nodes/VFX/PerformSealEmitter.cs" id="9_emitter"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_flow"]
+shader = ExtResource("2b_ink")
+shader_parameter/vertical = true
+shader_parameter/slant_slope = 0.1
+shader_parameter/edge_softness = 0.0
+shader_parameter/front_light = 0.12
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_stamp"]
+shader = ExtResource("2_rim")
+shader_parameter/slant_slope = 0.3
+shader_parameter/edge_glow = 3.5
+shader_parameter/edge_hot = 0.26
+shader_parameter/lead_hot = 0.6
+
+[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_add"]
+blend_mode = 1
+
+[sub_resource type="Curve" id="Curve_particle_alpha"]
+_data = [Vector2(0, 0), 0.0, 0.0, 0, 0, Vector2(0.12, 1), 0.0, 0.0, 0, 0, Vector2(0.55, 0.7), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
+point_count = 4
+
+[sub_resource type="CurveTexture" id="CurveTexture_particle_alpha"]
+curve = SubResource("Curve_particle_alpha")
+
+[sub_resource type="Curve" id="Curve_particle_scale"]
+_data = [Vector2(0, 0.7), 0.0, 0.0, 0, 0, Vector2(0.25, 1), 0.0, 0.0, 0, 0, Vector2(1, 0.2), 0.0, 0.0, 0, 0]
+point_count = 3
+
+[sub_resource type="CurveTexture" id="CurveTexture_particle_scale"]
+curve = SubResource("Curve_particle_scale")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_0"]
+resource_local_to_scene = true
+particle_flag_disable_z = true
+emission_shape = 3
+emission_box_extents = Vector3(80, 40, 1)
+direction = Vector3(0, -1, 0)
+spread = 26.0
+initial_velocity_min = 90.0
+initial_velocity_max = 190.0
+gravity = Vector3(0, -70, 0)
+scale_min = 0.7
+scale_max = 1.3
+scale_curve = SubResource("CurveTexture_particle_scale")
+alpha_curve = SubResource("CurveTexture_particle_alpha")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_1"]
+resource_local_to_scene = true
+particle_flag_disable_z = true
+emission_shape = 3
+emission_box_extents = Vector3(60, 26, 1)
+direction = Vector3(0, -1, 0)
+spread = 30.0
+initial_velocity_min = 70.0
+initial_velocity_max = 150.0
+gravity = Vector3(0, -90, 0)
+scale_min = 0.5
+scale_max = 1
+scale_curve = SubResource("CurveTexture_particle_scale")
+alpha_curve = SubResource("CurveTexture_particle_alpha")
+
+[node name="PerformBodyFireVfx" type="Node2D"]
+script = ExtResource("1_root")
+BodyTint = Color(1, 0.478431, 0.14902, 1)
+CoreTint = Color(1, 0.964706, 0.878431, 1)
+AccentTint = Color(1, 0.768627, 0.415686, 1)
+DeepTint = Color(0.698039, 0.227451, 0.0705882, 1)
+Beats = PackedFloat32Array(0.14, 0.26)
+InkSize = Vector2(250, 500)
+InkCenter = Vector2(0, -15)
+StampSize = Vector2(108, 48)
+StampCenter = Vector2(0, -10)
+LifeTime = 0.56
+
+[node name="Flow" type="ColorRect" parent="."]
+material = SubResource("ShaderMaterial_flow")
+instance_shader_parameters/rect_size = Vector2(250, 500)
+instance_shader_parameters/band_position = -0.35
+instance_shader_parameters/band_width = 0.05
+instance_shader_parameters/band_softness = 0.10
+instance_shader_parameters/band_alpha = 0.0
+instance_shader_parameters/base_alpha = 0.0
+instance_shader_parameters/lateral_fade = 0.45
+offset_left = -125.0
+offset_top = -265.0
+offset_right = 125.0
+offset_bottom = 235.0
+mouse_filter = 2
+color = Color(0, 0, 0, 0)
+
+[node name="Stamp" type="ColorRect" parent="."]
+material = SubResource("ShaderMaterial_stamp")
+instance_shader_parameters/rect_size = Vector2(108, 48)
+offset_left = -54.0
+offset_top = -34.0
+offset_right = 54.0
+offset_bottom = 14.0
+mouse_filter = 2
+visible = false
+
+[node name="Wash" type="Sprite2D" parent="."]
+material = SubResource("CanvasItemMaterial_add")
+position = Vector2(0, -10)
+scale = Vector2(0.95, 1.08)
+texture = ExtResource("3_dot")
+
+[node name="Core" type="Sprite2D" parent="."]
+material = SubResource("CanvasItemMaterial_add")
+position = Vector2(0, -10)
+scale = Vector2(0.34, 0.34)
+texture = ExtResource("3_light")
+
+[node name="Streaks" type="Node2D" parent="."]
+
+[node name="LickCenter" type="Sprite2D" parent="Streaks"]
+material = SubResource("CanvasItemMaterial_add")
+position = Vector2(0, 95)
+scale = Vector2(0.4, 1)
+texture = ExtResource("3_flame")
+script = ExtResource("8_streak")
+StartTime = 0.14
+LifeTime = 0.36
+EndOffset = Vector2(0, -152)
+EndScaleMultiplier = 1.5
+SpinDegrees = -4
+PeakAlpha = 0.9
+RiseTime = 0.045
+Tint = Color(1, 0.478431, 0.14902, 1)
+
+[node name="LickLeft" type="Sprite2D" parent="Streaks"]
+material = SubResource("CanvasItemMaterial_add")
+position = Vector2(-52, 100)
+scale = Vector2(0.28, 0.72)
+texture = ExtResource("3_flame")
+script = ExtResource("8_streak")
+StartTime = 0.15
+LifeTime = 0.32
+EndOffset = Vector2(20, -128)
+EndScaleMultiplier = 1.4
+SpinDegrees = 6
+PeakAlpha = 0.8
+RiseTime = 0.045
+Tint = Color(1, 0.478431, 0.14902, 1)
+
+[node name="LickRight" type="Sprite2D" parent="Streaks"]
+material = SubResource("CanvasItemMaterial_add")
+position = Vector2(54, 102)
+scale = Vector2(0.26, 0.68)
+texture = ExtResource("3_flame")
+script = ExtResource("8_streak")
+StartTime = 0.26
+LifeTime = 0.3
+EndOffset = Vector2(-18, -118)
+EndScaleMultiplier = 1.35
+SpinDegrees = -7
+PeakAlpha = 0.75
+RiseTime = 0.045
+Tint = Color(1, 0.478431, 0.14902, 1)
+
+[node name="LickHead" type="Sprite2D" parent="Streaks"]
+material = SubResource("CanvasItemMaterial_add")
+position = Vector2(0, -118)
+scale = Vector2(0.24, 0.52)
+texture = ExtResource("3_flame")
+script = ExtResource("8_streak")
+StartTime = 0.2
+LifeTime = 0.28
+EndOffset = Vector2(0, -76)
+EndScaleMultiplier = 1.45
+SpinDegrees = 5
+PeakAlpha = 0.7
+RiseTime = 0.045
+Tint = Color(1, 0.768627, 0.415686, 1)
+
+[node name="LickInnerLeft" type="Sprite2D" parent="Streaks"]
+material = SubResource("CanvasItemMaterial_add")
+position = Vector2(-22, 84)
+scale = Vector2(0.2, 0.48)
+texture = ExtResource("3_flame")
+script = ExtResource("8_streak")
+StartTime = 0.18
+LifeTime = 0.26
+EndOffset = Vector2(-6, -140)
+EndScaleMultiplier = 1.5
+PeakAlpha = 0.62
+RiseTime = 0.045
+Tint = Color(1, 0.768627, 0.415686, 1)
+
+[node name="LickInnerRight" type="Sprite2D" parent="Streaks"]
+material = SubResource("CanvasItemMaterial_add")
+position = Vector2(24, 88)
+scale = Vector2(0.2, 0.46)
+texture = ExtResource("3_flame")
+script = ExtResource("8_streak")
+StartTime = 0.26
+LifeTime = 0.26
+EndOffset = Vector2(4, -132)
+EndScaleMultiplier = 1.45
+PeakAlpha = 0.58
+RiseTime = 0.045
+Tint = Color(1, 0.768627, 0.415686, 1)
+
+[node name="Emitters" type="Node2D" parent="."]
+
+[node name="EmberBody" type="GPUParticles2D" parent="Emitters"]
+material = SubResource("CanvasItemMaterial_add")
+emitting = false
+position = Vector2(0, 60)
+amount = 42
+texture = ExtResource("3_ember")
+lifetime = 0.32
+one_shot = true
+explosiveness = 0.9
+randomness = 0.4
+visibility_rect = Rect2(-280, -340, 560, 560)
+process_material = SubResource("ParticleProcessMaterial_0")
+script = ExtResource("9_emitter")
+BeatIndex = 0
+Tint = Color(1, 0.768627, 0.415686, 1)
+
+[node name="EmberHead" type="GPUParticles2D" parent="Emitters"]
+material = SubResource("CanvasItemMaterial_add")
+emitting = false
+position = Vector2(0, -100)
+amount = 22
+texture = ExtResource("3_ember")
+lifetime = 0.26
+one_shot = true
+explosiveness = 0.95
+randomness = 0.45
+visibility_rect = Rect2(-280, -340, 560, 560)
+process_material = SubResource("ParticleProcessMaterial_1")
+script = ExtResource("9_emitter")
+BeatIndex = 1
+Tint = Color(1, 0.768627, 0.415686, 1)

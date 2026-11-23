@@ -644,6 +644,10 @@ public partial class NPerformArea : Control, IPerformArea
     public void PlayFlashVfx(CardModel card)
     {
         if (!IsInsideTree()) return;
+
+        // 身印只认牌声明的元素键，与槽位几何无关，所以放在槽位布局判定之前。
+        PerformBodyVfx.TryPlay(card);
+
         if (!TryGetCardSlotTransform(card, out var slotTransform, out var slotSize)) return;
 
         var slot = _items.FirstOrDefault(item => item.Model == card);

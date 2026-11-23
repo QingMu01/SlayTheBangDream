@@ -389,6 +389,36 @@ public sealed class MyMechanic : IBangDreamMechanic
 `shared_use/blur_diamond_vfx.png`、`packed/vfx/generic/sparkle_2.png` → BODY），四芒星主星用工程既有
 `res://BangDreamInSpire/images/vfx/star_322.png`（LOCAL）；两个 shader 为新绘、随仓库入库。
 
+### 12.2 演奏身印（落在演奏者身上的同一枚印）
+
+槽位印框演在左侧演奏区的牌位上，身印演在**演奏者本人**身上：同一刻、同一配色、同一节拍数。
+
+| 项 | 事实 | 出处 |
+|---|---|---|
+| 触发 | 与槽位印框同一触发点——`NPerformArea.PlayFlashVfx` 在解算槽位几何**之前**调用 `PerformBodyVfx.TryPlay(card)`（身印不依赖槽位布局）。`PerformManager` 不直接引用 Nodes 层，避免撞架构规则 H3 | `Scripts/Nodes/NPerformArea.cs`、`PerformBodyVfx.TryPlay` |
+| 元素键 | 复用卡牌已声明的 `IPerformSlotVfxCard.PerformSlotVfxKey`：一个元素键同时驱动两处反馈，牌上不必再声明一次 | `PerformBodyVfx.ResolveScenePath` |
+| 锚点/定尺 | `NCreature.Hitbox` 的世界矩形（各角色 `%Bounds` 换算）：中心作节点 `GlobalPosition`，尺寸作设计基准 **320×300** 的缩放比例；节点挂 `NCombatRoom.CombatVfxContainer`（`ZIndex = -9`，在角色之上），与本体 `NPowerAppliedBuffVfx` 同一套定位方式 | `PerformBodyVfx.ConfigureBody` |
+| 时长 | `LifeTime = 0.56s`；五套场景录帧核对 0.567s 与 t=0 逐像素相同（无残留） | 五套 `perform_body_*_vfx.tscn` |
+| 缺失 | 未登记元素、战斗房间/角色节点不可用、hitbox 尺寸为 0、场景缺失 → **静默跳过**：身印是加成表现，绝不能影响演奏结算 | 同左 |
+| 预载 | `PerformBodyVfx.RegisterPreloads()` 由 `PerformAreaMechanic.RegisterContent` 调用（Nodes 层），把五套加入战斗预载集 | `Scripts/Nodes/PerformAreaMechanic.cs` |
+
+**层与时间线**：`Flow`（MIX 墨带，纵向档：自脚底升过身体、在头顶之上淡出，0.02–0.40s）／`Stamp`（ADD，
+**与槽位印框同一只 `perform_seal_rim.gdshader` 的横向档**，108×48 落在胸口，0.10–0.38s——「同一枚印按在奏者身上」）／
+`Wash`（ADD 体色柔光）／`Core`（ADD 白热点，峰值 0.14s，比槽位落印晚约 0.04s）／`Streaks`·`Emitters`
+（与槽位完全同一批脚本与素材）。元素差异仍只落在**运动方向 / 颗粒形态 / 节拍数**，且与槽位版逐条对应：
+
+| 卡 | 元素 | 身印运动 | 颗粒位置 | 节拍 |
+|---|---|---|---|---|
+| Symbol I | 火 | 火舌自腰腿窜过头顶 | 腰→头顶 | 2 |
+| Symbol II | 风 | 长丝横穿身体 | 全高、头顶也有一条 | 1 |
+| Symbol III | 水 | 水珠自头顶上方滴落穿过身体 | 头顶→腰 | 3 |
+| Symbol IV | 自然 | 草刃自脚底斜上掠向肩上 | 脚→肩 | 1 |
+| Ether | 群星 | 星点逐亮点起、漂开 | 胸→头顶 | 3 |
+
+**为什么身上不留大印框**：槽位的斜切印框是「牌」的形；把同一个大框照搬到角色身上会读成一块罩住人的
+玻璃板/画框（实测录帧结论）。所以身印只在胸口留一枚**与槽位同尺寸的小印**，大框留在牌上——两处反馈
+靠这只小印、同一对 shader、同一套配色与节拍认亲。相关实现坑见 `docs/vfx-authoring.md` 5.1 第七条。
+
 ## 13. 角色视觉动画时间线（`visuals_anim`）
 
 ### 13.1 分工

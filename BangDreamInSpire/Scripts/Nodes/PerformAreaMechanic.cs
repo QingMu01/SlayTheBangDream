@@ -1,6 +1,7 @@
 using BangDreamInSpire.Scripts.Extensions;
 using BangDreamInSpire.Scripts.Interfaces.CharacterAugment;
 using BangDreamInSpire.Scripts.Mechanics;
+using BangDreamInSpire.Scripts.Nodes.VFX;
 using Godot;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Helpers;
@@ -22,7 +23,9 @@ public sealed class PerformAreaMechanic : IBangDreamMechanic
 
     public void RegisterContent(BangDreamMechanicContext context)
     {
-        // 演奏区节点由 SubmitCombatState 按需创建，无静态内容需要注册。
+        // 演奏区节点由 SubmitCombatState 按需创建；这里只把角色身上的身印加入战斗预载，
+        // 避免首次演奏时在主线程同步加载（身印与槽位印框共用元素键）。
+        PerformBodyVfx.RegisterPreloads();
     }
 
     public void RegisterPatches(ModPatcher patcher)
