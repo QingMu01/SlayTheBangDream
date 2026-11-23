@@ -20,7 +20,7 @@ public class KamisamaBakaSakiko() : AbstractSakikoMusicCard(CustomRarity, Custom
 
     public override async Task OnPerform(PlayerChoiceContext choiceContext, CardPerform perform)
     {
-        // 排除本卡的所有实例：否则抽到第二张同名卡会直接空转。
+        // 排除所有同名卡，避免多实例时效果空转。
         var performCandidates = Owner.AttachedData().Perform.PerformPile.Cards
             .Where(card => card != this && card is not KamisamaBakaSakiko && !card.IsUpgraded &&
                            card is IPerformCard)

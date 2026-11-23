@@ -28,44 +28,22 @@ using STS2RitsuLib.Models.Capabilities;
 
 namespace BangDreamInSpire.Scripts.Nodes.Screens;
 
-/// <summary>
-/// 和弦设计面板的完成结果：把 <see cref="CardIndex" /> 指向的卡牌设为 <see cref="Chord" />。
-/// <see cref="Additive" /> 为 true 时与卡牌现有和弦取并集，否则直接覆盖。
-/// </summary>
+/// <summary>面板结果；Additive 表示与现有和弦取并集，否则覆盖。</summary>
 public readonly record struct ChordDesignResult(int CardIndex, PerformChord Chord, bool Additive);
 
-/// <summary>
-/// 火堆（休息处）「和弦设计」选项的操作面板，参考本体锻造升级面板（<c>NDeckUpgradeSelectScreen</c>）实现。
-/// <para>
-/// 对齐式布局：最上方是可点和弦（C/D/F/G），点击后整行平移、所选和弦停在中央箭头正上方；
-/// 中间是卡组卡牌行，同样是一格一张牌、选中时整行平移让那张牌对齐下方箭头（所有牌常驻行内，不增删）；
-/// 最下方是结果展示（预览卡 + 当前/结果和弦 + 可选「增加 / 覆盖」开关）。
-/// 默认状态是 C 和弦 + 第一张牌，两者都在中轴上。左侧原版取消按钮返回，右侧原版确定按钮应用。
-/// </para>
-/// <para>
-/// 卡牌行的横向滚动是本面板自绘的：本体滚动容器只支持纵向，这里用 <see cref="NChordScrollbar" />
-/// 表现「当前停在行内哪一格」，鼠标滚轮按格步进、拖拽滚动条吸附到最近的牌、键盘/手柄焦点进入某张牌
-/// 也会把整行带到它上面。
-/// </para>
-/// <para>
-/// 联机：面板只负责返回 <see cref="ChordDesignResult" />，选择同步由 <see cref="ChordDesignOption" /> 按
-/// <c>ReserveChoiceId / SyncLocalChoice / WaitForRemoteChoice</c> 完成（与 <c>ExtraPileCmd</c> 同款范式）。
-/// </para>
-/// </summary>
+/// <summary>休息处和弦设计面板，支持对齐选择、横向滚动与结果预览。
+/// 仅返回结果，联机同步由 ChordDesignOption 负责。</summary>
 public sealed partial class NChordDesignScreen : Control, IOverlayScreen
 {
-    /// <summary>选项与面板文案所在的本地化表。</summary>
     public const string LocTable = "rest_site_ui";
 
-    /// <summary>面板场景（布局在场景里编辑，代码只负责内容与交互）。</summary>
     public const string ScenePath = "res://BangDreamInSpire/scenes/screens/chord_design_screen.tscn";
 
-    /// <summary>设计分辨率（与 project.godot 的 1920×1080 一致），实际显示时整体等比缩放居中。</summary>
     private static readonly Vector2 DesignSize = new(1920f, 1080f);
 
     private const float ChipGap = 24f;
-    private const float CardStep = 234f; // 卡牌行视觉步进：216（0.72 倍宽）+ 18 间距
-    private const float CardLayerScale = 0.9f; // 行内容统一缩放：静止 0.72 倍、悬停 0.9 倍
+    private const float CardStep = 234f; // 216 宽 + 18 间距
+    private const float CardLayerScale = 0.9f; // 行内容额外缩放
     private const float ResultCardScale = 0.52f;
 
     private static readonly Color GoldColor = new("#d8bd7a");
@@ -76,7 +54,7 @@ public sealed partial class NChordDesignScreen : Control, IOverlayScreen
         ResourceLoader.Load<Font>("res://themes/fonts/jpn/noto_sans_cjkjp_medium_shared.tres");
 
     private readonly List<CardModel> _cards = new();
-    // 每张卡一个 holder，全部常驻行内；选中只改整行位置，不隐藏也不释放。
+    // 卡牌节点常驻，选择只移动整行。
     private readonly Dictionary<int, NGridCardHolder> _holders = new();
     private readonly List<NChordChip> _chips = new();
     private readonly List<PerformChord> _chordOrder = [PerformChord.C, PerformChord.D, PerformChord.F, PerformChord.G];
@@ -105,15 +83,11 @@ public sealed partial class NChordDesignScreen : Control, IOverlayScreen
     private bool _additive;
     private bool _finished;
 
-    /// <summary>
-    /// 「增加 / 覆盖」开关是否解锁。默认 false（隐藏，只按覆盖处理）；后续由事件遗物把它置 true。
-    /// </summary>
+    /// <summary>是否允许切换增加或覆盖模式。</summary>
     public static bool ModeToggleUnlocked { get; set; }
 
-    /// <summary>本次面板的完成结果；取消时保留 <see langword="null" />。</summary>
     public ChordDesignResult? Result { get; private set; }
 
-    // ── IOverlayScreen / IScreenContext ─────────────────────────────────────────────
 
     public NetScreenType ScreenType => NetScreenType.Room;
 
@@ -143,7 +117,7 @@ public sealed partial class NChordDesignScreen : Control, IOverlayScreen
     {
     }
 
-    /// <summary>打开面板并返回实例；完成后用 <see cref="SelectionFinished" /> 取结果。场景缺失时返回 <see langword="null" />。</summary>
+    /// <summary>打开面板，场景缺失返回 null。</summary>
     public static NChordDesignScreen? ShowScreen(IReadOnlyList<CardModel> cards)
     {
         if (!ResourceLoader.Exists(ScenePath)
@@ -157,10 +131,9 @@ public sealed partial class NChordDesignScreen : Control, IOverlayScreen
         return screen;
     }
 
-    /// <summary>等待玩家确定或取消；取消时结果为 <see langword="null" />。</summary>
+    /// <summary>等待确定或取消。</summary>
     public Task<ChordDesignResult?> SelectionFinished() => _completion.Task;
 
-    // ── 生命周期 ────────────────────────────────────────────────────────────────────
 
     public override void _Ready()
     {
@@ -173,7 +146,6 @@ public sealed partial class NChordDesignScreen : Control, IOverlayScreen
         _subtitleLabel = GetNode<MegaLabel>("%Subtitle");
         _chordRow = GetNode<Control>("%ChordRow");
         _band = GetNode<Control>("%CardBand");
-        // 卡牌行整体再缩 0.9：静止 0.8×0.9=0.72 倍，悬停回 1.0×0.9=0.9 倍，避免整行显得过大
         _cardLayer = new Control { Name = "CardLayer", MouseFilter = MouseFilterEnum.Pass };
         _cardLayer.Scale = new Vector2(CardLayerScale, CardLayerScale);
         _cardLayer.Size = _band.Size / CardLayerScale;
@@ -212,7 +184,6 @@ public sealed partial class NChordDesignScreen : Control, IOverlayScreen
             BangDreamInSpireCore.Logger.Warn("NChordDesignScreen: %ConfirmButton missing; confirm hotkey only.");
         }
 
-        // 默认状态：C 和弦 + 第一张牌，都停在中轴上
         _selectedChord = PerformChord.C;
         _selectedCardIndex = _cards.Count > 0 ? 0 : -1;
 
@@ -249,7 +220,6 @@ public sealed partial class NChordDesignScreen : Control, IOverlayScreen
         }
     }
 
-    // ── 场景节点初始化 ─────────────────────────────────────────────────────────────
 
     private void BuildModeToggle()
     {
@@ -283,7 +253,6 @@ public sealed partial class NChordDesignScreen : Control, IOverlayScreen
         LayoutChips(animate: false);
     }
 
-    // ── 视口缩放 ────────────────────────────────────────────────────────────────────
 
     private void ApplyViewportLayout()
     {
@@ -303,7 +272,6 @@ public sealed partial class NChordDesignScreen : Control, IOverlayScreen
         _content.Position = (viewport - DesignSize * scale) * 0.5f;
     }
 
-    // ── 和弦选择 ────────────────────────────────────────────────────────────────────
 
     private void OnChipClicked(NChordChip chip)
     {
@@ -318,17 +286,11 @@ public sealed partial class NChordDesignScreen : Control, IOverlayScreen
         RefreshConfirmState();
     }
 
-    /// <summary>
-    /// 重新摆放和弦筹码：未选中的按顺序整体居中、挨个排开；选中的那颗滑到箭头上方的槽位。
-    /// 这里只调整位置，不交换筹码彼此的顺序，视觉上就是「所有可选项整体移动」。
-    /// </summary>
-    /// <summary>
-    /// 和弦筹码始终排在同一行：选中时整行水平平移，让选中筹码的中心正好压在中央箭头上方；
-    /// 未选中时整行居中。其它筹码按原顺序左右让位，不做交换。
-    /// </summary>
+    /// <summary>重新摆放和弦筹码。</summary>
+    /// <summary>移动整行使选中筹码对齐中轴。</summary>
     private void LayoutChips(bool animate)
     {
-        const float rowTopY = 0f; // chip 的 Position 是左上角，行高恰好等于 chip 高度
+        const float rowTopY = 0f;
         _chipLayoutTween?.Kill();
         _chipLayoutTween = null;
         if (animate)
@@ -342,7 +304,6 @@ public sealed partial class NChordDesignScreen : Control, IOverlayScreen
         var count = _chips.Count;
         var totalWidth = count * NChordChip.ChipSize + Mathf.Max(0, count - 1) * ChipGap;
         var centerX = DesignSize.X * 0.5f;
-        // 选中时：选中筹码中心对齐中轴；未选中时：整行居中
         var startCenterX = selectedIndex >= 0
             ? centerX - selectedIndex * (NChordChip.ChipSize + ChipGap)
             : centerX - (totalWidth - NChordChip.ChipSize) * 0.5f;
@@ -369,9 +330,8 @@ public sealed partial class NChordDesignScreen : Control, IOverlayScreen
         _chipLayoutTween.TweenProperty(chip, "position", target, 0.22f);
     }
 
-    // ── 卡牌行（与和弦行同一套「整行平移、选中项对齐中轴」语义） ─────────────────────
 
-    /// <summary>重建卡牌 holder：所有牌常驻行内，选中只改位置，不增删。</summary>
+    /// <summary>重建常驻卡牌行。</summary>
     private void RebuildCardRow()
     {
         foreach (var holder in _holders.Values.ToList())
@@ -396,7 +356,7 @@ public sealed partial class NChordDesignScreen : Control, IOverlayScreen
                 continue;
             }
 
-            // NCard 是对象池节点：上一次面板会话里残留的自绘书签要清掉，否则复用节点时会带上旧和弦
+            // 清理对象池节点残留的旧书签。
             RemoveStaleChordBookmarks(cardNode);
 
             holder.Connect(NCardHolder.SignalName.Pressed, Callable.From<NCardHolder>(OnHolderPressed));
@@ -413,17 +373,17 @@ public sealed partial class NChordDesignScreen : Control, IOverlayScreen
         LayoutCardRow(animate: false);
     }
 
-    /// <summary>holder 原点是卡牌中心；行内以卡牌格为单位排布，整体随选中项左右平移。</summary>
+    /// <summary>以卡牌中心为原点按格排列。</summary>
     private Vector2 HolderTargetPosition(int index)
     {
-        // 目标位置先按「卡牌带的视觉像素」算，再换算回缩放后的 CardLayer 坐标系
+        // 将视觉像素换算到 CardLayer 坐标。
         var visual = new Vector2(
             _band.Size.X * 0.5f + (index - _selectedCardIndex) * CardStep,
             _band.Size.Y * 0.5f);
         return visual / CardLayerScale;
     }
 
-    /// <summary>整行卡牌水平平移：选中的那张落在中央箭头正下方，其余按原顺序左右让位。</summary>
+    /// <summary>移动整行使选中卡牌对齐中轴。</summary>
     private void LayoutCardRow(bool animate)
     {
         _cardLayoutTween?.Kill();
@@ -471,7 +431,7 @@ public sealed partial class NChordDesignScreen : Control, IOverlayScreen
         }
 
         var index = _cards.Count == 1 ? 0 : Mathf.RoundToInt(ratio * (_cards.Count - 1));
-        // 拖条也走补间，避免滑块换格时整行瞬移
+        // 滚动条与整行同步补间。
         SelectCard(index, animate: true);
     }
 
@@ -501,7 +461,7 @@ public sealed partial class NChordDesignScreen : Control, IOverlayScreen
         SelectCard(index, animate: true);
     }
 
-    /// <summary>选中一张卡：整行平移让它对齐到中轴（与和弦行同样的对齐式选择）。</summary>
+    /// <summary>选中卡牌并对齐中轴。</summary>
     private void SelectCard(int index, bool animate)
     {
         if (_finished || index < 0 || index >= _cards.Count || index == _selectedCardIndex)
@@ -529,13 +489,12 @@ public sealed partial class NChordDesignScreen : Control, IOverlayScreen
         }
     }
 
-    // ── 结果展示 ────────────────────────────────────────────────────────────────────
 
     private void RefreshResult()
     {
         if (_resultCard != null)
         {
-            // 预览书签是预览卡的子节点：回池前先摘掉，否则池化复用时会带着旧书签跑到别的界面上
+            // 回池前移除预览书签。
             RemoveStaleChordBookmarks(_resultCard);
             _resultCard.QueueFreeSafely();
             _resultCard = null;
@@ -567,14 +526,10 @@ public sealed partial class NChordDesignScreen : Control, IOverlayScreen
         _resultCard = cardNode;
         _resultCardHost.AddChildSafely(cardNode);
         cardNode.Scale = Vector2.One * ResultCardScale;
-        // NCard 的视觉内容按原点居中（CardContainer 用中心锚点），所以原点放在 host 中心即居中
         cardNode.Position = _resultCardHost.Size * 0.5f;
         cardNode.UpdateVisuals(PileType.None, CardPreviewMode.Normal);
 
-        // 预览要显示「结果和弦」而不是卡牌当前和弦：隐掉卡面自带的能力书签，
-        // 再挂一枚按显式和弦构建的书签——挂在卡面 %OverlayContainer 下，继承卡的缩放/变换，
-        // 因此和真实卡牌一样位于卡面前景之下（书签只给卡框侧边着色，不抢前景）。
-        // 只动这张预览卡节点，卡牌模型与卡组数据完全不变。
+        // 用显式和弦书签替换卡面能力书签；仅修改预览节点。
         RemoveStaleChordBookmarks(cardNode);
         var overlay = cardNode.GetNodeOrNull<Control>("%OverlayContainer");
         overlay?.GetNodeOrNull<Control>("RitsuLibCapabilityOverlays")?.Hide();
@@ -612,10 +567,7 @@ public sealed partial class NChordDesignScreen : Control, IOverlayScreen
         return groups.Count == 0 ? Loc("CHORD_DESIGN_NONE") : string.Join("、", groups.Select(group => group.ToString()));
     }
 
-    /// <summary>
-    /// 清掉池化卡牌节点上残留的自绘书签（直挂 <c>%OverlayContainer</c> 的 <see cref="NChordBookmark" />）。
-    /// 能力书签在 <c>RitsuLibCapabilityOverlays</c> 容器里、由 RitsuLib 每次重建，不在这里处理。
-    /// </summary>
+    /// <summary>移除池化卡牌上的自绘书签，保留 RitsuLib 覆盖层。</summary>
     private static void RemoveStaleChordBookmarks(NCard cardNode)
     {
         if (cardNode.GetNodeOrNull<Control>("%OverlayContainer") is not { } overlay)
@@ -646,7 +598,6 @@ public sealed partial class NChordDesignScreen : Control, IOverlayScreen
         }
     }
 
-    // ── 结束 ────────────────────────────────────────────────────────────────────────
 
     private void Confirm()
     {
@@ -676,12 +627,11 @@ public sealed partial class NChordDesignScreen : Control, IOverlayScreen
 
         _finished = true;
         Result = result;
-        // 先摘覆盖层再放行等待方：续体是同步内联执行的，Remove 必须在它之前完成。
+        // 先移除覆盖层，再完成等待续体。
         NOverlayStack.Instance?.Remove(this);
         _completion.TrySetResult(result);
     }
 
-    // ── 小工具 ──────────────────────────────────────────────────────────────────────
 
     private void GrabInitialFocus()
     {

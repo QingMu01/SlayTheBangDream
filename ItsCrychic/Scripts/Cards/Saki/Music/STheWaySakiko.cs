@@ -24,7 +24,7 @@ public class STheWaySakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTarge
     {
         ArgumentNullException.ThrowIfNull(CombatState);
 
-        // 歌单空位越多，本次伤害越高；本牌此刻已占据一个槽位。
+        // 本牌已占一个槽位，伤害按其余空位数计算。
         var manager = Owner.AttachedData().Perform;
         var emptySlots = Math.Max(0, manager.Capacity - manager.PerformPile.Cards.Count);
         var damage = DynamicVars.Damage.BaseValue + emptySlots * DynamicVars["Increase"].IntValue;

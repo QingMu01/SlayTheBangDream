@@ -1,9 +1,7 @@
 shader_type canvas_item;
 render_mode blend_mix, unshaded;
 
-// 纸面质感：暖白纸底 + 大块斑驳 + 横向纤维 + 细颗粒 + 边缘压痕，
-// 并把圆角外的区域裁掉，让叠加层能贴合 Panel 的圆角。
-// 供 character_selector / character_details_popup 的 PaperGrain 节点使用。
+// 暖白纸面叠加斑驳、纤维、颗粒与边缘压痕；圆角外 alpha 归零以贴合 Panel。
 
 uniform vec2 area_size = vec2(1420.0, 670.0);
 uniform float corner_radius : hint_range(0.0, 64.0) = 3.0;
@@ -58,11 +56,8 @@ void fragment() {
 	vec2 px = UV * area_size;
 	vec2 centered = px - area_size * 0.5;
 
-	// 大块斑驳：纤维分布不均形成的柔和深浅
 	float mottle = fbm2(px * 0.0032 * grain_scale);
-	// 横向纤维：x 方向变化极慢、y 方向变化快，形成细长纹路
 	float fiber = value_noise(vec2(px.x * 0.05, px.y * 0.92) * grain_scale);
-	// 细颗粒：两层不同频率的纸浆颗粒
 	float grain = (value_noise(px * 0.85 * grain_scale) - 0.5)
 			+ (value_noise(px * 2.15 * grain_scale + vec2(31.7, 11.3)) - 0.5) * 0.5;
 
@@ -71,15 +66,12 @@ void fragment() {
 	col = mix(col, fiber_color.rgb, fiber_strength * smoothstep(0.55, 0.88, fiber));
 	col += grain * grain_strength;
 
-	// 纸边压痕：靠近外缘略微变暗，向内快速衰减
 	float sdf = rounded_rect_sdf(centered, area_size * 0.5 - vec2(0.5), corner_radius);
 	float edge = smoothstep(-edge_width, 0.0, sdf);
 	col *= 1.0 - edge_strength * edge * edge;
-	// 最外 2px 压一道浅浅的纸边线（像裁切后的毛边）
 	float rim = 1.0 - smoothstep(0.0, 2.5, -sdf);
 	col = mix(col, rim_color.rgb, rim * rim_strength);
 
-	// 圆角外裁掉，其余保持不透明
 	float alpha = 1.0 - smoothstep(-1.0, 0.5, sdf);
 	COLOR = vec4(col, paper_color.a * alpha * opacity);
 }

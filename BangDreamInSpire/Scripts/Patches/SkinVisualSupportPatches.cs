@@ -65,23 +65,11 @@ internal class CreatureVisualsPatch : IPatchMethod
         return [new ModPatchTarget(typeof(Creature), nameof(Creature.CreateVisuals))];
     }
 
-    /// <summary>
-    /// 把「按玩家取角色视觉」的唯一入口收敛到 <see cref="Creature.CreateVisuals" />。
-    /// <para>
-    /// 直接调用 <see cref="Creature.CreateVisuals" /> 的路径也必须应用皮肤：
-    /// <c>NGameOverScreen</c> 在 <c>NCombatRoom.Instance == null</c>（战斗外死亡 / 战斗节点已释放）
-    /// 时会用 <c>player.Creature.CreateVisuals()</c> 重建角色视觉来播死亡动画。
-    /// 模组角色的 <c>AssetProfile</c> 为空，RitsuLib 会用 <c>ironclad</c> 占位补全路径，
-    /// 于是死亡动画会播在**铁甲**模型上。
-    /// </para>
-    /// <para>
-    /// <see cref="NCreature.Create" /> 内部同样是 <c>Visuals = entity.CreateVisuals()</c>，
-    /// 因此无需单独补 <c>NCreature.Create</c>（两处都补会重复实例化并泄漏一个节点）。
-    /// </para>
-    /// </summary>
+    /// <summary>统一在 Creature.CreateVisuals 应用玩家皮肤，覆盖战斗外死亡等直接调用；
+    /// 不要再补 NCreature.Create，避免重复实例。</summary>
     public static void Postfix(Creature __instance, ref NCreatureVisuals? __result)
     {
-        // TestMode 下本体返回 null（不要在这里凭空造视觉），怪物没有 Player。
+        // TestMode 或无 Player 时保留本体结果。
         if (__result == null || __instance.Player is not { } player)
         {
             return;
@@ -96,10 +84,10 @@ internal class CreatureVisualsPatch : IPatchMethod
         var placeholder = __result;
         __result = RitsuGodotNodeFactories.CreateFromScenePath<NCreatureVisuals>(path);
 
-        // 占位视觉从未入树，直接回收，避免每次创建角色都泄漏一个 creature visuals。
+        // 未入树的占位视觉直接回收。
         if (GodotObject.IsInstanceValid(placeholder))
         {
-            // 占位视觉从未入树，QueueFree 的释放时机没有保证，直接 Free。
+            // 未入树节点直接 Free，不依赖 QueueFree 时机。
             placeholder.Free();
         }
     }
@@ -126,7 +114,7 @@ internal class EnergyCounterPatch : IPatchMethod
                 Traverse.Create(energyCounter).Field("_player").SetValue(player);
                 if (__result != null && GodotObject.IsInstanceValid(__result))
                 {
-                    // 本体已实例化的占位节点从未入树，替换后立即回收。
+                    // 替换后立即回收占位节点。
                     __result.Free();
                 }
 
@@ -212,16 +200,12 @@ internal class RestSiteAnimPatch : IPatchMethod
 
         BangDreamInSpireCore.Logger.Error(
             $"Replace rest site animName transpiler failed to match. found {matches.Count} candidates.");
-        // 没有独立计数 API 时至少把失配记进时间线，开诊断时能和补丁日志对上。
+        // 失配写入诊断时间线。
         PerfTimeline.Mark("patch:rest-site-anim:unmatched", $"candidates={matches.Count}");
         return rewriter.Code;
     }
 
-    /// <summary>
-    /// 定位闭包对 <c>animName</c> 的赋值：<c>ldloc &lt;闭包&gt; ; ldloc &lt;animName&gt; ; stfld animName</c>。
-    /// 按字段名（string 类型的 <c>animName</c>）与前两条指令均为 ldloc 来判定，不依赖局部变量槽位；
-    /// 换编译器/构建配置后形态不符会走 Error 分支，而不是误改到别的指令。
-    /// </summary>
+    /// <summary>按 animName 字段与 ldloc 指令定位赋值，不依赖局部变量槽位。</summary>
     private static List<HarmonyIlMatch> FindAnimNameAssignments(IReadOnlyList<CodeInstruction> code)
     {
         var matches = new List<HarmonyIlMatch>();
@@ -267,7 +251,7 @@ internal class MerchantScenePatch : IPatchMethod
         var players = ____players.ToList();
         players.Reverse();
         var nodeContainer = ____characterContainer.GetChildren().OfType<NMerchantCharacter>().ToList();
-        // 容器与玩家数量不一致时夹取（同 FakeMerchant 路径的写法），避免 IndexOutOfRange。
+        // 容器与玩家数不一致时夹取。
         var count = Math.Min(players.Count, nodeContainer.Count);
         for (var i = 0; i < count; i++)
         {
@@ -306,17 +290,14 @@ internal class FakeMerchantScenePatch : IPatchMethod
         var players = ____players.ToList();
         players.Reverse();
 
-        // 本体在 NFakeMerchant 里挂的是 NCreatureVisuals（不是 NMerchantCharacter，后者只用于
-        // NMerchantRoom.PlayerVisuals），且逐个 MoveChildSafely(..., 0)，因此容器顺序与 _players 相反。
-        // 这里若按 NMerchantCharacter 过滤会拿到空列表，模组角色下 nodeContainer[i] 直接越界。
+        // NFakeMerchant 使用 NCreatureVisuals，容器顺序与玩家相反。
         var nodeContainer = ____characterContainer.GetChildren().OfType<NCreatureVisuals>().ToList();
         var count = Math.Min(players.Count, nodeContainer.Count);
         for (var i = 0; i < count; i++)
         {
             var currentPlayer = players[i];
 
-            // 优先换成皮肤自带的商人场景；皮肤没配 MerchantScene 时退回皮肤的 creature 视觉，
-            // 否则该事件会把模组角色显示成本体的占位模型（铁甲）。
+            // 优先使用商人皮肤，缺省回退角色视觉。
             Node? replacement = BangDreamMerchant.Create(currentPlayer);
             if (replacement == null)
             {
@@ -418,7 +399,7 @@ internal static class MusicCardSkinFrames
 
     private static SkinInfo? ResolveSkin(CardModel card, ISkinSupportCharacter origin)
     {
-        // 来源角色就在本局：用"该角色玩家"当前选择的皮肤（A 的卡被 B 拿到 → 仍用 A 的配置）。
+        // 使用来源角色玩家的皮肤。
         if (card.Owner is { RunState: RunState runState })
         {
             foreach (var player in runState.Players)
@@ -430,7 +411,7 @@ internal static class MusicCardSkinFrames
             }
         }
 
-        // 来源角色不在本局（如 Token 牌、角色未参战）→ 用该角色首个已注册皮肤兜底。
+        // 来源角色不在本局时使用首个注册皮肤。
         foreach (var skinPath in origin.CharacterSkinList)
         {
             if (SkinManager.GetSkinInfo(skinPath) is { } defaultSkin)
@@ -452,7 +433,7 @@ internal class MusicCardFramePatch : IPatchMethod
         return [new ModPatchTarget(typeof(NCard), "UpdatePortrait")];
     }
 
-    // 必须晚于 RitsuLib 的 CardVisualRefreshPatch（同一方法的 Normal 优先级 postfix 会按 asset profile 重刷默认卡框）。
+    // 必须在 RitsuLib 默认卡框刷新之后执行。
     [HarmonyPriority(Priority.Last)]
     public static void Postfix(NCard __instance, ref TextureRect? ____frame)
     {
@@ -477,7 +458,7 @@ internal class MusicCardFrameMaterialPatch : IPatchMethod
 
     public static void Postfix(CardModel __instance, ref Material __result)
     {
-        // 皮肤卡框替换了纹理时同步清空池染色材质，让"纹理"和"材质"出自同一条皮肤解析链。
+        // 替换卡框时同步清理池染色材质。
         if (MusicCardSkinFrames.TryResolveFramePath(__instance, out _))
         {
             __result = null!;
@@ -533,7 +514,7 @@ internal class TopBarPatch : IPatchMethod
         var attempted = 0;
         var applied = 0;
 
-        // 这些子节点路径是本体的场景约定（改名即静默失效）：统计一次命中率，全部未命中时只 Warn 一次。
+        // 场景路径缺失时仅告警一次。
         ApplyIcon(__instance.Hp, "HpIcon", ui.TopBarHpIcon, ref attempted, ref applied);
         ApplyIcon(__instance.Gold, "GoldIcon", ui.TopBarGoldIcon, ref attempted, ref applied);
         ApplyIcon(__instance.FloorIcon, "FloorIconPositioner/FloorInfoIcon", ui.TopBarFloorIcon, ref attempted,
@@ -653,8 +634,7 @@ internal class CardRewardPatch : IPatchMethod
             var ui = SkinManager.ResolvePlayerSkin(__instance.Player)?.SkinTemplate.Ui;
             if (ui != null)
             {
-                // 本体只在 TryGetSingleRarityInPool().HasValue 成立时才索引候选；
-                // 0 张候选（跨池异常/版本差）时直接保留本体图标，避免越界。
+                // 无候选时保留本体图标，避免越界。
                 if (____cards.Count == 0)
                 {
                     return;

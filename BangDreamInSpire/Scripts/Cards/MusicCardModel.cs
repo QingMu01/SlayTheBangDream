@@ -17,11 +17,7 @@ public abstract class MusicCardModel(
     bool showInCardLibrary = true) : BandCardModel(baseCost, RequireMusicCardType(), rarity, target, showInCardLibrary),
     IPerformCard
 {
-    /// <summary>
-    /// 读取运行时音乐卡类型。该值由 <c>PerformMechanic.RegisterContent</c> 在核心内容注册阶段写入，
-    /// 早于该阶段实例化音乐卡没有可用类型；这里把原始异常换成可读的前置条件说明，
-    /// 避免第三方 mod 只看到 “CardType.Music is not BangDreamTools.Initialized.”。
-    /// </summary>
+    /// <summary>读取注册阶段写入的音乐卡类型，过早使用时给出明确错误。</summary>
     private static CardType RequireMusicCardType()
     {
         try
@@ -36,44 +32,32 @@ public abstract class MusicCardModel(
         }
     }
 
-    /// <summary>本体 quest 卡框：Music 是运行时新增类型，没有专属卡框资源，默认值必须指向一定存在的本体资源。</summary>
+    /// <summary>使用存在的本体 quest 卡框作为默认。</summary>
     private const string DefaultFramePath = "res://images/atlases/ui_atlas.sprites/card/card_frame_quest_s.tres";
 
-    /// <summary>本体 skill 卡图边框：类型已由"音乐"铭牌单独表达，边框沿用本体 skill 资源。</summary>
+    /// <summary>沿用本体 skill 卡图边框。</summary>
     private const string DefaultPortraitBorderPath = "res://images/atlases/ui_atlas.sprites/card/card_portrait_border_skill_s.tres";
 
     private CardAssetProfile? _assetProfile;
 
-    /// <summary>
-    ///     音乐牌的默认视觉资源（<see cref="IPerformCard" /> 契约）。由本基类保证非空，具体角色需要
-    ///     专属默认卡框时再覆写；皮肤系统只负责在配置了 <c>Ui.MusicCardFrame</c> 时动态替换纹理，不参与兜底。
-    /// </summary>
+    /// <summary>默认音乐卡资源，皮肤仅按需替换卡框。</summary>
     public virtual CardAssetProfile PerformCardAssets => new()
     {
         FramePath = DefaultFramePath,
         PortraitBorderPath = DefaultPortraitBorderPath
     };
 
-    /// <summary>
-    ///     把音乐牌默认卡框并入卡牌资源描述。RitsuLib 的卡框 getter 覆盖据此拿到非空路径，
-    ///     从而完全跳过本体按 CardType 穷举的 default 分支（新增类型会在那里抛异常）。
-    /// </summary>
+    /// <summary>提供非空默认卡框，避免进入本体新增类型默认分支。</summary>
     public override CardAssetProfile AssetProfile => _assetProfile ??= base.AssetProfile with
     {
         FramePath = PerformCardAssets.FramePath,
         PortraitBorderPath = PerformCardAssets.PortraitBorderPath
     };
 
-    /// <summary>
-    ///     卡牌的来源角色。默认为 null，由卡池反查；<c>TokenCardPool</c> 等无法从卡池识别来源的牌可覆写，
-    ///     以便皮肤纹理仍按"来源角色"而不是"当前持有者"解析。
-    /// </summary>
+    /// <summary>可选来源角色，供无法从卡池反查的牌使用。</summary>
     public virtual ISkinSupportCharacter? OriginCharacter => null;
 
-    /// <summary>
-    ///     解析任意卡牌的来源角色：音乐牌优先取自身声明的 <see cref="OriginCharacter" />，否则按卡池反查。
-    ///     无法判定时返回 <see langword="null" />。
-    /// </summary>
+    /// <summary>优先使用声明的来源角色，否则按卡池反查。</summary>
     public static ISkinSupportCharacter? ResolveOriginCharacter(CardModel card)
     {
         return (card as MusicCardModel)?.OriginCharacter ?? FindCharacterByPool(card.VisualCardPool);

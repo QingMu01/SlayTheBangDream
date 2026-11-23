@@ -5,10 +5,7 @@ using MegaCrit.Sts2.Core.Logging;
 
 namespace BangDreamInSpire.Scripts.Diagnostics;
 
-/// <summary>
-/// BDS-Perf 的全局时间线与事件记录：mod 初始化埋点、游戏日志捕获、资源预加载会话、同步加载观测。
-/// 所有记录都只存在内存里（有上限），写报告时才落盘；这里的方法必须尽量便宜，且绝不抛异常。
-/// </summary>
+/// <summary>有界内存诊断时间线，记录方法必须低开销且不抛异常。</summary>
 internal static class PerfTimeline
 {
     private const int MaxMarkCount = 512;
@@ -20,7 +17,7 @@ internal static class PerfTimeline
 
     private static readonly object Gate = new();
 
-    // 这些集合只在 Start() 里创建：未启用时连类型初始化都不产生分配。
+    // 集合仅在 Start 创建。
     private static List<PerfMark> Marks = null!;
     private static Queue<PerfLogLine> RecentLogs = null!;
     private static List<SyncLoadRecord> SyncLoads = null!;
@@ -35,7 +32,7 @@ internal static class PerfTimeline
     private static string? _activePreload;
     private static long _mainMenuAtMs = -1;
 
-    // 日志里的「Asset not cached」与补丁观测到的同步加载分开计数，避免重复统计。
+    // 日志与补丁的同步加载分开计数。
     private static long _notCachedCount;
     private static long _notCachedModCount;
     private static long _syncLoadCount;
@@ -51,10 +48,10 @@ internal static class PerfTimeline
     private static int _registeredCharacters;
     private static List<string> ModWarnings = null!;
 
-    /// <summary>时间线是否已启动（未启用时为 false，所有写入操作直接短路）。</summary>
+    /// <summary>时间线是否已启动。</summary>
     private static bool IsActive => Volatile.Read(ref _state) == 2;
 
-    /// <summary>mod 开始初始化时引擎已运行的毫秒数，用于和 <c>[Startup]</c> 日志里的绝对 tick 对齐。</summary>
+    /// <summary>初始化时的引擎毫秒。</summary>
     public static long EngineOffsetMsec
     {
         get
@@ -86,7 +83,7 @@ internal static class PerfTimeline
 
     public static long MainMenuAtMs => Volatile.Read(ref _mainMenuAtMs);
 
-    /// <summary>在 mod 初始化最开头调用一次，建立相对时间零点。</summary>
+    /// <summary>建立相对时间零点。</summary>
     public static void Start()
     {
         if (Interlocked.CompareExchange(ref _state, 1, 0) != 0)
@@ -134,11 +131,10 @@ internal static class PerfTimeline
         }
         catch
         {
-            // 诊断代码绝不影响游戏。
         }
     }
 
-    /// <summary>执行一段同步代码并记录耗时（毫秒）。</summary>
+    /// <summary>记录同步代码耗时。</summary>
     public static long Measure(string label, Action action)
     {
         if (!IsActive)
@@ -179,7 +175,7 @@ internal static class PerfTimeline
         }
     }
 
-    /// <summary>由 <c>PreloadManager.LoadAssetSets</c> 补丁在注入 mod 资产后调用。</summary>
+    /// <summary>记录注入资产数量。</summary>
     public static void RecordInjectedAssets(string sessionName, int count)
     {
         if (!IsActive || string.IsNullOrEmpty(sessionName))
@@ -236,11 +232,10 @@ internal static class PerfTimeline
         }
         catch
         {
-            // 诊断代码绝不影响游戏。
         }
     }
 
-    /// <summary>每个 <c>AssetLoadingSession.Process</c> 调用结束后累计主线程耗时。</summary>
+    /// <summary>累计预加载主线程耗时。</summary>
     public static void OnSessionProcess(AssetLoadingSession session, long usec, bool completed)
     {
         if (!IsActive || session == null)
@@ -278,11 +273,10 @@ internal static class PerfTimeline
         }
         catch
         {
-            // 诊断代码绝不影响游戏。
         }
     }
 
-    /// <summary>记录一次主线程同步加载（缓存未命中）的耗时。</summary>
+    /// <summary>记录同步加载耗时。</summary>
     public static void RecordSyncLoad(string path, long usec)
     {
         if (!IsActive || string.IsNullOrEmpty(path) || usec < 0)
@@ -331,7 +325,6 @@ internal static class PerfTimeline
         }
         catch
         {
-            // 诊断代码绝不影响游戏。
         }
     }
 
@@ -339,11 +332,7 @@ internal static class PerfTimeline
 
     #region 日志捕获
 
-    /// <summary>
-    /// 订阅 <see cref="Log.LogCallback" /> 的入口。必须便宜、无分配（热路径日志很少）且绝不抛异常。
-    /// 注意：该回调运行在游戏全局日志锁内，因此本类 <c>Gate</c> 内**禁止**调用任何游戏 Logger，
-    /// 保持「Logger 锁 → Gate」单向锁序，否则会死锁。
-    /// </summary>
+    /// <summary>订阅日志回调；Gate 内禁止调用 Logger，保持 Logger 锁 → Gate 锁序。</summary>
     public static void OnGameLog(LogLevel level, string text, int skipFrames)
     {
         if (!IsActive || string.IsNullOrEmpty(text))
@@ -385,7 +374,7 @@ internal static class PerfTimeline
         }
         catch
         {
-            // 日志回调里抛异常会打断游戏日志管线，必须吞掉。
+            // 异常不得打断日志管线。
         }
     }
 
@@ -575,13 +564,12 @@ internal static class PerfTimeline
         }
         catch
         {
-            // 诊断代码绝不影响游戏。
         }
     }
 
     #endregion
 
-    /// <summary>取最近几条日志（长帧上下文用；只在长帧时调用，允许分配）。</summary>
+    /// <summary>返回最近日志。</summary>
     public static string[] GetRecentLogTail(int count)
     {
         if (!IsActive)
@@ -601,7 +589,7 @@ internal static class PerfTimeline
         }
     }
 
-    /// <summary>复制一份当前数据；写报告时只读，避免长时间持锁。</summary>
+    /// <summary>复制当前数据供报告读取。</summary>
     public static PerfTimelineSnapshot Snapshot()
     {
         if (!IsActive)
@@ -686,7 +674,6 @@ internal static class PerfTimeline
         }
         catch
         {
-            // 诊断代码绝不影响游戏。
         }
     }
 
@@ -705,7 +692,7 @@ internal static class PerfTimeline
         return (long)Math.Round((Stopwatch.GetTimestamp() - startTimestamp) * 1000.0 / Stopwatch.Frequency);
     }
 
-    /// <summary>从 <paramref name="text" /> 的 <paramref name="key" /> 后解析一个整数（允许千分位逗号）。</summary>
+    /// <summary>解析 key 后的整数。</summary>
     private static long ParseNumberAfter(string text, string key)
     {
         int index = text.IndexOf(key, StringComparison.Ordinal);
@@ -763,7 +750,7 @@ internal static class PerfTimeline
     }
 }
 
-/// <summary><see cref="PerfTimeline.Snapshot" /> 导出的只读数据副本。</summary>
+/// <summary>时间线只读快照。</summary>
 internal sealed class PerfTimelineSnapshot
 {
     public long EngineOffsetMsec;

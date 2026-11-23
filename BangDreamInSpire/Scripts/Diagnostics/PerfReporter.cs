@@ -11,15 +11,7 @@ using MegaCrit.Sts2.Core.Saves;
 
 namespace BangDreamInSpire.Scripts.Diagnostics;
 
-/// <summary>
-/// 把当前会话的诊断数据写成 Markdown（给人看）+ JSON（给脚本/作者看）两份报告。
-/// 报告写在 <c>user://logs/bangdream/</c>：该目录会被游戏本体 <c>getlogs</c> 命令无条件递归打包，
-/// 玩家无需了解文件系统就能把数据随日志一起发出来。
-/// <para>
-/// 主线程只调用 <see cref="Prepare" /> 采集数据并生成文本；<see cref="WriteFiles" /> 只做文件 IO，
-/// 自动报告会把它丢到后台线程，避免监测自己制造尖峰。
-/// </para>
-/// </summary>
+/// <summary>生成 Markdown 与 JSON 报告；Prepare 主线程采集，WriteFiles 负责 IO。</summary>
 internal static class PerfReporter
 {
     private const string Schema = "bangdream.perf.v1";
@@ -28,7 +20,7 @@ internal static class PerfReporter
 
     public static string ReportDirectory => ProjectSettings.GlobalizePath("user://logs/bangdream");
 
-    /// <summary>主线程：采集快照 + 生成报告文本。文件写入交给 <see cref="WriteFiles" />。</summary>
+    /// <summary>采集快照并生成报告文本。</summary>
     public static PerfReportPayload? Prepare(string reason, PerfConfig config, PerfFrameSampler? sampler)
     {
         PerfTimelineSnapshot timeline = PerfTimeline.Snapshot();
@@ -73,7 +65,7 @@ internal static class PerfReporter
         return payload;
     }
 
-    /// <summary>任意线程：落盘（自动报告在后台线程执行，退出/控制台报告在主线程同步执行）。</summary>
+    /// <summary>写入报告文件。</summary>
     public static void WriteFiles(PerfReportPayload payload)
     {
         lock (WriteLock)
@@ -90,7 +82,6 @@ internal static class PerfReporter
             }
             catch
             {
-                // 清理失败不影响报告本身。
             }
         }
     }
@@ -611,7 +602,7 @@ internal static class PerfReporter
         return environment;
     }
 
-    /// <summary>读一个环境变量；未设置时返回 <c>unset</c>，便于报告中区分「没有」与「没读到」。</summary>
+    /// <summary>读取环境变量，未设置时返回 unset。</summary>
     private static string EnvironmentVariable(string name)
     {
         try
@@ -625,10 +616,7 @@ internal static class PerfReporter
         }
     }
 
-    /// <summary>
-    /// 根据环境判断「XWayland」这类会改变呈现路径解释的场景，追加到报告的警告段。
-    /// 注意 Godot 的 <c>DisplayServer.GetName()</c> 返回的是 <c>X11</c>（首字母大写），比较必须忽略大小写。
-    /// </summary>
+    /// <summary>追加影响呈现路径的环境警告。</summary>
     private static List<string> CollectEnvironmentWarnings(Dictionary<string, string> environment)
     {
         var warnings = new List<string>();
@@ -649,10 +637,9 @@ internal static class PerfReporter
         }
         catch
         {
-            // 环境告警是附加信息，失败不影响报告其他部分。
         }
 
-        // GPU 计时默认关闭：无论是否启用都给出说明，避免读者把「GPU 列全 0」误读成「GPU 没花时间」。
+        // 说明 GPU 列全 0 的默认原因。
         try
         {
             environment.TryGetValue("gpu_timing_enabled", out string? gpuTiming);
@@ -672,7 +659,6 @@ internal static class PerfReporter
         }
         catch
         {
-            // GPU 计时提示是附加信息，失败不影响报告其他部分。
         }
 
         return warnings;
@@ -717,7 +703,7 @@ internal static class PerfReporter
         return mods;
     }
 
-    /// <summary>写报告时扫一次当前场景，补充「主菜单叠加层」这类只能看节点树的证据。</summary>
+    /// <summary>补充当前场景诊断。</summary>
     private static Dictionary<string, string> CollectSceneDiagnostics()
     {
         var result = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -740,7 +726,6 @@ internal static class PerfReporter
         }
         catch
         {
-            // 场景诊断失败不影响报告其他部分。
         }
 
         return result;
@@ -784,7 +769,6 @@ internal static class PerfReporter
         }
         catch
         {
-            // 忽略：不同平台可用字段可能不同。
         }
 
         return "unknown";
@@ -834,7 +818,6 @@ internal static class PerfReporter
             }
             catch
             {
-                // 单个文件删除失败不影响其他文件。
             }
         }
     }
@@ -875,7 +858,6 @@ internal static class PerfReporter
         }
         catch
         {
-            // 环境信息采集失败不影响报告生成。
         }
     }
 }

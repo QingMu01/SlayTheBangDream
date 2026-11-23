@@ -154,15 +154,7 @@ public static class BangDreamHook
             cardModel);
     }
 
-    /// <summary>
-    /// 有卡牌进入歌单、且进出结算完成时点。由角色规则（<see cref="IPerformTriggerListener" />）
-    /// 决定是否演奏该牌。
-    /// </summary>
-    /// <remarks>
-    /// 与 <see cref="DispatchCombatHooks{TListener}" /> 不同，本方法不把监听者压入
-    /// <paramref name="choiceContext" /> 的模型栈，以免改变远端展示的
-    /// <see cref="PlayerChoiceContext.LastInvolvedModel" />。
-    /// </remarks>
+    /// <summary>卡牌进入歌单并完成结算后广播；不压入模型栈，避免影响远端展示。</summary>
     public static async Task OnCardTriggeredPerform(
         PlayerChoiceContext? choiceContext,
         ICombatState combatState,
@@ -246,14 +238,7 @@ public static class BangDreamHook
         }
     }
 
-    /// <summary>
-    /// 任意单位实际获得破绽层数后广播。
-    /// </summary>
-    /// <remarks>
-    /// 与 <see cref="DispatchCombatHooks{TListener}" /> 不同，本方法不把监听者压入
-    /// <paramref name="choiceContext" /> 的模型栈（破绽广播只是通知，不需要远端展示模型），
-    /// 写法与 <see cref="OnCardTriggeredPerform" /> 一致。
-    /// </remarks>
+    /// <summary>实际获得破绽后广播，不压入模型栈。</summary>
     public static async Task AfterWeaknessBreakDiscovered(
         PlayerChoiceContext? choiceContext,
         ICombatState combatState,
@@ -266,7 +251,7 @@ public static class BangDreamHook
             listener => listener.AfterWeaknessBreakDiscovered(choiceContext, target, amount, source));
     }
 
-    /// <summary>目标破绽满层、进入弱点击破时广播。</summary>
+    /// <summary>进入弱点击破时广播。</summary>
     public static async Task AfterWeakPointBroken(
         PlayerChoiceContext? choiceContext,
         ICombatState combatState,
@@ -278,7 +263,7 @@ public static class BangDreamHook
             listener => listener.AfterWeakPointBroken(choiceContext, target, source));
     }
 
-    /// <summary>带击破效果的牌命中弱点击破目标、击破效果结算完毕后广播。</summary>
+    /// <summary>击破效果结算完毕后广播。</summary>
     public static async Task AfterWeakPointBreakTriggered(
         PlayerChoiceContext? choiceContext,
         ICombatState combatState,
@@ -309,8 +294,7 @@ public static class BangDreamHook
     {
         if (!CanDispatchCombatHooks())
         {
-            // 该分支只代表「战斗已结束 / 正在结束」——结束流程中再跑演奏区变更会二次结算，
-            // 因此跳过执行，只记一次告警。
+            // 战斗结束时跳过，避免二次结算。
             WarnPerformHookSkippedOnce(source);
             return;
         }
@@ -318,10 +302,8 @@ public static class BangDreamHook
         var netId = LocalContext.NetId;
         if (!netId.HasValue)
         {
-            // 无本地 NetId 时构造不出 HookPlayerChoiceContext，但时机本身仍安全，不能整段跳过：
-            // 用不绑定玩家的 BlockingPlayerChoiceContext 兜底执行。该上下文不产生 GameAction、
-            // 不暂停玩家选择（信号直接完成），语义即「仅执行一次」；HandlePerformAreaChange 及其内部的
-            // OnCardEnterPerformArea / OnCardTriggeredPerform 都只把上下文用于模型栈与选择信号，可直接接受。
+            // 无本地 NetId 时用 BlockingPlayerChoiceContext 兜底，
+            // 保证仅执行一次且不产生 GameAction。
             var fallbackContext = new BlockingPlayerChoiceContext();
             fallbackContext.PushModel(source);
             try
@@ -348,7 +330,7 @@ public static class BangDreamHook
     {
         if (!CanDispatchCombatHooks())
         {
-            // 与 ICombatState 重载同口径：战斗结束 / 正在结束时保持不执行，只记一次告警。
+            // 战斗结束时同样跳过并告警。
             WarnPerformHookSkippedOnce(source);
             return;
         }
@@ -382,11 +364,7 @@ public static class BangDreamHook
         return CombatManager.Instance is not { IsOverOrEnding: true, IsStarting: false };
     }
 
-    /// <summary>
-    /// 调用单个监听者并做异常隔离：异常只记 Warn 并跳过该监听者，后续监听者继续分发；
-    /// 无论成败都补发 <see cref="AbstractModel.InvokeExecutionFinished" />，避免一个第三方监听者抛错
-    /// 让「后续监听者」与「执行完成通知」一起丢失。
-    /// </summary>
+    /// <summary>隔离监听者异常并继续分发，始终补发执行完成通知。</summary>
     private static async Task ExecuteTaskThenInvokeExecutionFinished<TState>(
         AbstractModel model,
         TState state,

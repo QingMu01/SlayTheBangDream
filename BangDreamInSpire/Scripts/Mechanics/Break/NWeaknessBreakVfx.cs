@@ -9,29 +9,17 @@ using MegaCrit.Sts2.Core.Helpers;
 
 namespace BangDreamInSpire.Scripts.Mechanics.Break;
 
-/// <summary>
-/// 破绽 / 弱点击破的常驻视觉（裂纹积累）。
-/// <para>
-/// 挂在目标 <see cref="NCreature" /> 上（节点名 <see cref="NodeName" />）：
-/// 破绽 1–3 层 = 命中框上缘 n 枚菱形破绽点 + 逐层增多的细裂纹；
-/// 满 4 层进入弱点击破 = 整块碎裂贴图压在目标身上（一次性 0.75 → 持续 0.22–0.34 呼吸）+ 碎片闪光，
-/// 四点转红；退出时整体淡出后自毁。Hover 时弹出与能力同款的 tips。
-/// </para>
-/// <para>
-/// 外部只依赖 <see cref="Sync" />、<see cref="Refresh" />、<see cref="FadeOut" /> 与 <see cref="NodeName" />；
-/// 设计契约见 <c>docs/mechanic-authoring.md</c> §11。
-/// </para>
-/// </summary>
+/// <summary>目标身上的破绽与弱点击破视觉，支持刷新、淡出和 Hover 提示。</summary>
 public sealed partial class NWeaknessBreakVfx : Control
 {
-    /// <summary>挂在 creature 节点下的固定节点名，供刷新时查找复用。</summary>
+    /// <summary>固定节点名，用于复用。</summary>
     public const string NodeName = "WeaknessBreakVfx";
 
-    /// <summary>碎裂纹理（LOCAL 素材，uuid 见计划 §7.1）。</summary>
+    /// <summary>本地碎裂纹理。</summary>
     private const string CrackTexturePath =
         "res://BangDreamInSpire/images/vfx/weakness_break/weakness_break_cracks.png";
 
-    /// <summary>碎片闪光（本体资源，按 BODY 引用）。</summary>
+    /// <summary>本体碎片闪光。</summary>
     private const string ShatterTexturePath =
         "res://images/vfx/vfx_rock_shatter/vfx_rock_shatter_shine_01.png";
 
@@ -79,16 +67,11 @@ public sealed partial class NWeaknessBreakVfx : Control
     private float _previewTimer = -1f;
     private int _previewPhase = -1;
 
-    /// <summary>当前显示的破绽层数（0–4）。</summary>
     public int Stacks => _stacks;
 
-    /// <summary>当前是否显示「弱点击破」形态。</summary>
     public bool IsBroken => _broken;
 
-    /// <summary>
-    /// 把目标的视觉同步到它的实际状态：没有破绽且不在弱点击破时淡出，否则创建/刷新。
-    /// 由 Power 的生命周期与 <see cref="BreakCmd" /> 调用，重入安全。
-    /// </summary>
+    /// <summary>同步目标状态，必要时创建、刷新或淡出。</summary>
     public static void Sync(Creature? creature)
     {
         if (creature == null)
@@ -99,7 +82,7 @@ public sealed partial class NWeaknessBreakVfx : Control
         var node = NCombatRoom.Instance?.GetCreatureNode(creature);
         if (node == null || !IsInstanceValid(node))
         {
-            // 战斗节点尚未构建（或已经销毁）：等下一次状态变化时再补建，不在这里排队。
+            // 节点未构建时等待下次状态变化。
             return;
         }
 
@@ -128,8 +111,7 @@ public sealed partial class NWeaknessBreakVfx : Control
             Name = NodeName,
             _ownerNode = node,
             _creature = creature,
-            // Pass：仍然收到 MouseEntered/Exited（Hover 弹 tips），但不吞掉点击与拖拽，
-            // 避免挡住落在 creature 上缘上方的选牌/拖放输入。
+            // Pass 保留 Hover，但不拦截点击与拖拽。
             MouseFilter = MouseFilterEnum.Pass,
             FocusMode = FocusModeEnum.None,
         };
@@ -142,21 +124,21 @@ public sealed partial class NWeaknessBreakVfx : Control
         _crackTexture = BangDreamPreloadManager.GetTexture2D(CrackTexturePath);
         _shatterTexture = BangDreamPreloadManager.GetTexture2D(ShatterTexturePath);
 
-        // 碎裂贴图是黑底图：必须走加法混合，否则会盖住下层、并在画面上留下一个不透明方块。
+        // 黑底碎裂图使用加法混合。
         _crackSprite = CreateAdditiveSprite("CrackOverlay", _crackTexture);
         _shatterSprite = CreateAdditiveSprite("ShatterFlash", _shatterTexture);
 
         MouseEntered += OnMouseEntered;
         MouseExited += OnMouseExited;
 
-        // F6 单独运行场景：没有 Creature 可挂，走一条脚本时间线（1/2/3 层 → 弱点击破 → 清空）自播。
+        // F6 使用脚本时间线自播。
         if (VfxPreviewSupport.IsPreviewRun(this) && _ownerNode == null)
         {
             _previewMode = true;
             _hitboxWidth = 120f;
             _hitboxHeight = 140f;
             Size = new Vector2(_hitboxWidth, StripHeight);
-            // Control 不能被 VfxPreviewSupport.CenterForPreview 居中（它只收 Node2D），自己算。
+            // Control 需单独计算预览居中。
             Position = GetViewportRect().Size * 0.5f - new Vector2(_hitboxWidth * 0.5f, StripHeight + _hitboxHeight * 0.55f);
             _previewTimer = 0f;
         }
@@ -164,7 +146,7 @@ public sealed partial class NWeaknessBreakVfx : Control
         LayoutFromHitbox();
     }
 
-    /// <summary>建一个加法混合的贴图子节点（黑底图直接相加，不遮挡别的层）。</summary>
+    /// <summary>创建加法混合贴图节点。</summary>
     private Sprite2D? CreateAdditiveSprite(string name, Texture2D? texture)
     {
         if (texture == null) return null;
@@ -181,12 +163,12 @@ public sealed partial class NWeaknessBreakVfx : Control
         return sprite;
     }
 
-    /// <summary>把碎裂层与闪光层摆到身体中心（本节点局部坐标）。</summary>
+    /// <summary>将碎裂与闪光对齐身体中心。</summary>
     private void UpdateBrokenSprites()
     {
         if (!_broken)
         {
-            // 1–3 层只有层数点 + 细裂纹，不许出现整块碎裂图。
+            // 非弱点击破不显示整块碎裂图。
             if (_crackSprite != null) _crackSprite.Visible = false;
             if (_shatterSprite != null) _shatterSprite.Visible = false;
             return;
@@ -248,8 +230,7 @@ public sealed partial class NWeaknessBreakVfx : Control
             return;
         }
 
-        // 静止态（无脉冲 / 一次性动画已结束 / 非预览）不需要每帧重画：
-        // 多目标 AOE 挂多个节点时这是纯帧开销。
+        // 静止时跳过重绘。
         var animating = _broken || _previewMode || _enterElapsed < BrokenEnterDuration + ShatterDuration;
         if (!animating)
         {
@@ -258,7 +239,7 @@ public sealed partial class NWeaknessBreakVfx : Control
             return;
         }
 
-        // 一次性计时与脉冲在预览态同样要推进，否则预览会停在「刚进入」的那一帧。
+        // 预览也推进一次性计时与脉冲。
         if (_enterElapsed < BrokenEnterDuration + ShatterDuration)
         {
             _enterElapsed += (float)delta;
@@ -278,7 +259,7 @@ public sealed partial class NWeaknessBreakVfx : Control
         QueueRedraw();
     }
 
-    /// <summary>外部唯一刷新入口：按层数与是否弱点击破重画。进入弱点击破时重置一次性计时。</summary>
+    /// <summary>按层数刷新，进入弱点击破时重置计时。</summary>
     public void Refresh(int stacks, bool broken)
     {
         var enteringBreak = broken && !_broken;
@@ -311,7 +292,7 @@ public sealed partial class NWeaknessBreakVfx : Control
         QueueRedraw();
     }
 
-    /// <summary>外部唯一移除入口：淡出后自毁；淡出过程中被 Refresh 打断则复活。</summary>
+    /// <summary>淡出后自毁，可被刷新打断。</summary>
     public void FadeOut()
     {
         if (_fading || IsQueuedForDeletion())
@@ -354,7 +335,7 @@ public sealed partial class NWeaknessBreakVfx : Control
         _fadeTween = null;
     }
 
-    /// <summary>预览时间线：每个阶段停留 1.2s，第 4 阶段进入弱点击破，第 5 阶段清空重来。</summary>
+    /// <summary>循环预览各层数与弱点击破。</summary>
     private void AdvancePreview(double delta)
     {
         _previewTimer += (float)delta;
@@ -385,12 +366,12 @@ public sealed partial class NWeaknessBreakVfx : Control
         }
     }
 
-    /// <summary>沿命中框上缘摆放（本节点是 NCreature 的子节点，坐标即 creature 控件局部坐标）。</summary>
+    /// <summary>沿命中框上缘布局。</summary>
     private void LayoutFromHitbox()
     {
         if (_previewMode)
         {
-            // 预览态位置由 _Ready 定，不跟着命中框走。
+            // 预览位置固定，不跟随命中框。
             return;
         }
 

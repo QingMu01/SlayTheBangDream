@@ -8,10 +8,7 @@ public partial class MainMenuEnvironmentCharacter : Control
     private static string? _dayPath;
     private static string? _nightPath;
 
-    /// <summary>
-    /// 由内容模组在初始化时注册主菜单环境角色的日夜贴图（核心不写死具体角色资源）。
-    /// 可在实例创建前或之后调用；之后调用会立刻刷新当前实例。
-    /// </summary>
+    /// <summary>注册环境角色日夜贴图并刷新现有实例。</summary>
     public static void ConfigureEnvironmentTextures(string? dayPath, string? nightPath)
     {
         _dayPath = dayPath;
@@ -19,22 +16,16 @@ public partial class MainMenuEnvironmentCharacter : Control
         _current?.ApplyCharacterByLocalTime();
     }
 
-    /// <summary>
-    /// 一次点击的弹性参数。缩放字段是相对场景静止缩放（<see cref="_restingScale"/>）的倍率，
-    /// 底边固定在脚底。
-    /// 手感参考「蓝色大肥鱼 Q 弹」素材的挤压 / 回弹节奏——该素材是旋转中不断被压扁、拉长，
-    /// 2D 角色不取旋转，只复刻这组挤压与阻尼收敛。
-    /// </summary>
+    /// <summary>点击弹性参数；缩放相对场景基准，底边固定。</summary>
     private sealed record ClickProfile(
         string Name,
         Vector2 PressScale,
         float PressDuration,
         (Vector2 Scale, float Duration)[] ReleaseSteps);
 
-    /// <summary>候选手感；每次进入主菜单随机挑一组，避免每次点击都是同一种节奏。</summary>
+    /// <summary>进入主菜单时随机选择的参数组。</summary>
     private static readonly ClickProfile[] ClickProfiles =
     [
-        // 轻点：幅度最小，最不打扰
         new("轻点",
             new Vector2(1.06f, 0.93f), 0.06f,
             [
@@ -42,7 +33,6 @@ public partial class MainMenuEnvironmentCharacter : Control
                 (new Vector2(1.015f, 0.985f), 0.06f),
                 (Vector2.One, 0.07f)
             ]),
-        // 标准Q弹：一次明显过冲 + 一次小幅回摆
         new("标准Q弹",
             new Vector2(1.12f, 0.86f), 0.07f,
             [
@@ -51,7 +41,6 @@ public partial class MainMenuEnvironmentCharacter : Control
                 (new Vector2(0.985f, 1.015f), 0.05f),
                 (Vector2.One, 0.07f)
             ]),
-        // 超级Q弹：压得最扁、弹得最开，最接近素材那种胖乎乎的挤压感
         new("超级Q弹",
             new Vector2(1.20f, 0.78f), 0.09f,
             [
@@ -61,7 +50,6 @@ public partial class MainMenuEnvironmentCharacter : Control
                 (new Vector2(1.01f, 0.99f), 0.06f),
                 (Vector2.One, 0.09f)
             ]),
-        // 沉甸甸：压得慢、回弹也慢，适合表现体重
         new("沉甸甸",
             new Vector2(1.14f, 0.84f), 0.11f,
             [
@@ -69,7 +57,6 @@ public partial class MainMenuEnvironmentCharacter : Control
                 (new Vector2(1.04f, 0.97f), 0.11f),
                 (Vector2.One, 0.10f)
             ]),
-        // 急弹：总时长最短，快速连点时最跟手
         new("急弹",
             new Vector2(1.09f, 0.88f), 0.045f,
             [
@@ -79,16 +66,15 @@ public partial class MainMenuEnvironmentCharacter : Control
             ])
     ];
 
-    // 控制台调试用：强制指定一组手感（null = 每次 Ready 随机）。只存在内存里，不写盘。
+    // 控制台指定的参数组，不写盘。
     private static int? _forcedProfileIndex;
 
-    // 当前主菜单里的角色实例，控制台指令切换手感时要立刻作用到它身上
     private static MainMenuEnvironmentCharacter? _current;
 
-    /// <summary>全部参数组名，供控制台指令列出 / 按名字匹配。</summary>
+    /// <summary>控制台可用的参数组名。</summary>
     internal static string[] ClickProfileNames => [.. ClickProfiles.Select(profile => profile.Name)];
 
-    /// <summary>逐组的一行数值摘要（按下倍率/时长、松开总时长），供控制台指令列出。</summary>
+    /// <summary>控制台显示的参数摘要。</summary>
     internal static string[] ClickProfileDetails =>
     [
         .. ClickProfiles.Select(profile =>
@@ -96,13 +82,13 @@ public partial class MainMenuEnvironmentCharacter : Control
             $"，松开 {profile.ReleaseSteps.Sum(step => step.Duration):0.00}s")
     ];
 
-    /// <summary>当前强制指定的参数组序号；null 表示随机。</summary>
+    /// <summary>强制参数组序号，null 表示随机。</summary>
     internal static int? ForcedClickProfileIndex => _forcedProfileIndex;
 
-    /// <summary>当前实例正在使用的参数组名；主菜单里没有实例时为 null。</summary>
+    /// <summary>当前实例的参数组名。</summary>
     internal static string? CurrentClickProfileName => _current?._clickProfile?.Name;
 
-    /// <summary>强制指定一组手感并立刻作用到当前实例；序号越界返回 false。</summary>
+    /// <summary>指定参数组并立即应用。</summary>
     internal static bool TryForceClickProfile(int index)
     {
         if (index < 0 || index >= ClickProfiles.Length)
@@ -113,7 +99,7 @@ public partial class MainMenuEnvironmentCharacter : Control
         return true;
     }
 
-    /// <summary>取消强制指定：下次进入主菜单重新随机，当前实例也立刻换一组随机手感。</summary>
+    /// <summary>恢复随机参数组。</summary>
     internal static void ClearForcedClickProfile()
     {
         _forcedProfileIndex = null;
@@ -136,7 +122,7 @@ public partial class MainMenuEnvironmentCharacter : Control
 
         if (_characterSprite != null)
         {
-            // 动画与布局都从场景读回的静止缩放出发，不硬编码美术基准值
+            // 动画以场景静止缩放为基准。
             _restingScale = _characterSprite.Scale;
             _characterBasePosition = _characterSprite.Position;
         }
@@ -172,7 +158,7 @@ public partial class MainMenuEnvironmentCharacter : Control
         var path = IsDayTime(DateTime.Now) ? _dayPath : _nightPath;
         if (string.IsNullOrEmpty(path))
         {
-            // 贴图由内容模组注册；未注册时保留场景里的占位（通常为空），不刷警告。
+            // 未注册贴图时保留场景占位。
             return;
         }
 
@@ -186,7 +172,7 @@ public partial class MainMenuEnvironmentCharacter : Control
         ApplyFeetPivot();
     }
 
-    // 缩放原点移到脚底：底边落在节点原点，缩放变化时脚底不动
+    // 缩放原点固定在脚底。
     private void ApplyFeetPivot()
     {
         if (_characterSprite?.Texture == null)
@@ -218,7 +204,7 @@ public partial class MainMenuEnvironmentCharacter : Control
             PlayRelease();
     }
 
-    // 按下：立刻压扁，像被按进地面
+    // 按下立即压扁。
     private void PlayPress()
     {
         if (_characterSprite == null || _clickProfile == null)
@@ -230,7 +216,7 @@ public partial class MainMenuEnvironmentCharacter : Control
         AddScaleStep(_bounceTween, _characterSprite, _clickProfile.PressScale, _clickProfile.PressDuration);
     }
 
-    // 松开：过冲 → 反向挤压 → 阻尼收敛；快速连点时下一次按下会直接打断这串关键帧
+    // 松开按阻尼回弹，连点时允许打断。
     private void PlayRelease()
     {
         if (_characterSprite == null || _clickProfile == null)
@@ -244,7 +230,7 @@ public partial class MainMenuEnvironmentCharacter : Control
             AddScaleStep(_bounceTween, _characterSprite, scale, duration);
     }
 
-    // 关键帧都是"倍率"，统一乘回静止缩放；从当前 scale 起步，打断时不会跳变
+    // 关键帧使用相对倍率，从当前缩放连续过渡。
     private void AddScaleStep(Tween tween, Sprite2D sprite, Vector2 factor, float duration)
     {
         tween.TweenProperty(sprite, "scale", _restingScale * factor, duration)

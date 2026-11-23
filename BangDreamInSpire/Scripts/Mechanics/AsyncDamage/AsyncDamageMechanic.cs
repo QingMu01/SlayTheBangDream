@@ -3,10 +3,7 @@ using STS2RitsuLib.Patching.Core;
 
 namespace BangDreamInSpire.Scripts.Mechanics.AsyncDamage;
 
-/// <summary>
-/// 异步伤害机制：把「发射动画 → 命中 → 结算」拆成脱手表征与独立同步结算 Action，
-/// 使动画驱动的伤害不再阻塞动作队列。游戏内表现为音符、余音等效果的公共底座。
-/// </summary>
+/// <summary>将脱手动画与独立同步结算 Action 分离，使命中驱动伤害而不阻塞动作队列。</summary>
 public sealed class AsyncDamageMechanic : IBangDreamMechanic
 {
     public string Id => "async_damage";

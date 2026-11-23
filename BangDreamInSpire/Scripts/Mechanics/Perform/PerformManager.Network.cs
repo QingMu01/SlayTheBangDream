@@ -1,4 +1,4 @@
-// PerformManager 的网络动作部分：payload 定义、注册与本地/网络执行分支。
+// 网络动作。
 using System.Text.Json;
 using BangDreamInSpire.Scripts.Enums;
 using BangDreamInSpire.Scripts.Extensions;
@@ -20,14 +20,7 @@ namespace BangDreamInSpire.Scripts.Mechanics.Perform;
 
 public partial class PerformManager
 {
-    /// <summary>
-    /// 歌单生命周期动作的 payload。
-    /// <para>
-    /// <c>ChordMask</c> 与 <c>RequestGroupMask</c> 携带 <see cref="PerformChord" /> 的原始位掩码，
-    /// 会序列化后上线（联机两端必须一致）：PerformChord 的位值不可重排 / 不可复用，只能追加
-    /// （见枚举的 remarks）。
-    /// </para>
-    /// </summary>
+    /// <summary>歌单生命周期 payload；和弦位值原样上线，只能追加。</summary>
     private sealed record PerformNetworkActionPayload(
         PerformNetworkActionKind Kind,
         uint? CardIndex,
@@ -44,12 +37,10 @@ public partial class PerformManager
                         throw new InvalidOperationException("Invalid perform lifecycle payload."),
         static context => ExecuteNetworkPerformAction(context), GameActionType.Combat);
 
-    /// <summary>本生命周期动作的稳定操作码，供补丁识别；未注册时为 0。</summary>
+    /// <summary>生命周期动作操作码。</summary>
     internal static ulong PerformOpcode { get; private set; }
 
-    /// <summary>
-    /// 还原 payload 中携带的落位覆盖。槽位优先级高于分组，两者都为空时表示按卡牌自身规则入队。
-    /// </summary>
+    /// <summary>还原落位覆盖，槽位优先于分组。</summary>
     private static PerformEnqueueRequest ToEnqueueRequest(PerformNetworkActionPayload payload)
     {
         if (payload.RequestSlotIndex >= 1)
@@ -67,7 +58,7 @@ public partial class PerformManager
         PerformOpcode = RitsuLibManagedNetActions.Register(PerformNetworkAction);
     }
 
-    /// <summary>该 Action 是否为歌单生命周期动作（供 <c>IsGameActionPlayerDriven</c> 补丁使用）。</summary>
+    /// <summary>是否为歌单生命周期动作。</summary>
     internal static bool IsPerformLifecycleAction(GameAction action)
     {
         return PerformOpcode != 0 &&
@@ -107,7 +98,7 @@ public partial class PerformManager
             payload.Kind == PerformNetworkActionKind.Enter
                 ? PerformAreaChangeType.Added
                 : PerformAreaChangeType.Removed);
-        // 与单机回退路径保持一致：都经 hook 包装入口执行（联机侧已有 choiceContext，走接收上下文的重载）。
+        // 联机与单机回退都经 hook 包装。
         await BangDreamHook.RunPerformHookAction(
             choiceContext, card,
             context => HandlePerformAreaChange(context, change, ToEnqueueRequest(payload)));

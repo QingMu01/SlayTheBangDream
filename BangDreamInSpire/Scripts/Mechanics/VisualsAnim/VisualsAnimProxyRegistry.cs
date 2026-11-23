@@ -2,13 +2,7 @@ using MegaCrit.Sts2.Core.Entities.Creatures;
 
 namespace BangDreamInSpire.Scripts.Mechanics.VisualsAnim;
 
-/// <summary>
-/// 演出代理的注册表：生物 → <see cref="VisualsAnimProxy" />。
-/// <para>
-/// 代理按生物缓存并复用（克隆骨骼是有成本的），演出开始时显示、结束时隐藏；
-/// 战斗结束或生物离开时统一 <see cref="Clear" /> 彻底释放。
-/// </para>
-/// </summary>
+/// <summary>按生物缓存演出代理，战斗结束时统一释放。</summary>
 public static class VisualsAnimProxyRegistry
 {
     private static readonly Dictionary<Creature, VisualsAnimProxy> Proxies =
@@ -16,7 +10,7 @@ public static class VisualsAnimProxyRegistry
 
     private static readonly Lock Gate = new();
 
-    /// <summary>取一个可用的代理并进入演出态；无渲染环境返回 null。</summary>
+    /// <summary>获取代理并开始演出，无渲染时返回 null。</summary>
     public static VisualsAnimProxy? Acquire(Creature creature)
     {
         ArgumentNullException.ThrowIfNull(creature);
@@ -42,13 +36,13 @@ public static class VisualsAnimProxyRegistry
         }
     }
 
-    /// <summary>结束演出态（保留克隆供下次复用）。</summary>
+    /// <summary>结束演出并保留代理。</summary>
     public static void Release(VisualsAnimProxy? proxy)
     {
         proxy?.End();
     }
 
-    /// <summary>查询正在演出的代理，供 <c>VfxSpawnPosition</c> 重定向使用。</summary>
+    /// <summary>查询演出中的代理。</summary>
     public static bool TryGetActive(Creature? creature, out VisualsAnimProxy proxy)
     {
         proxy = null!;
@@ -67,7 +61,7 @@ public static class VisualsAnimProxyRegistry
         return false;
     }
 
-    /// <summary>彻底释放全部代理（战斗结束）。</summary>
+    /// <summary>释放全部代理。</summary>
     public static void Clear()
     {
         VisualsAnimProxy[] all;

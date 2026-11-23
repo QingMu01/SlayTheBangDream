@@ -5,16 +5,13 @@ using MegaCrit.Sts2.Core.Models;
 
 namespace BangDreamInSpire.Scripts.Mechanics.AsyncDamage;
 
-/// <summary>
-/// 表示一个已经脱手运行的表现动画。Landing 是动画抵达目标的时刻，玩法结算等待它以保证伤害与命中同拍；
-/// 动画本身不驱动玩法状态，结算始终发生在入队后的同步结算 Action 内。
-/// </summary>
+/// <summary>脱手动画句柄；玩法结算等待命中时刻，但始终由同步结算 Action 驱动。</summary>
 public sealed class AsyncDamageAnimationHandle(
     Task landing,
     Task completion,
     VfxContext? context = null)
 {
-    /// <summary>动画抵达目标的时刻。命中信号驱动此任务，使伤害在音符命中时才结算。</summary>
+    /// <summary>命中信号驱动此任务完成，玩法结算等待它。</summary>
     public Task Landing { get; } = landing ?? throw new ArgumentNullException(nameof(landing));
 
     /// <summary>动画整体结束的时刻，仅用于观察生命周期与记录异常，不驱动玩法状态。</summary>
@@ -22,17 +19,13 @@ public sealed class AsyncDamageAnimationHandle(
 
     public VfxContext? Context { get; } = context;
 
-    /// <summary>无表现时的退化句柄：立即命中，伤害即时结算。</summary>
     public static AsyncDamageAnimationHandle Immediate(VfxContext? context = null)
     {
         return new AsyncDamageAnimationHandle(Task.CompletedTask, Task.CompletedTask, context);
     }
 }
 
-/// <summary>
-/// 一批共享来源、伤害实现和目标策略的脱手异步伤害动画。
-/// 目标与伤害在发射时刻一次性锁定，飞行期间不再读取可变状态。
-/// </summary>
+/// <summary>脱手伤害批次；目标与伤害在发射时锁定，飞行期间不读取可变状态。</summary>
 public sealed record AsyncDamageBatchRequest
 {
     public required Creature Dealer { get; init; }

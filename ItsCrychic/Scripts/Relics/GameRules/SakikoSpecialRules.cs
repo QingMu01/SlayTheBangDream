@@ -99,9 +99,7 @@ public class SakikoSpecialRules : HiddenRelic, IPerformTriggerListener, ISeconda
             : Owner.AttachedData().Perform.TryInstant(cardModel, choiceContext);
     }
 
-    /// <summary>
-    /// 余音数量即目标槽位，据此演奏对应槽位；数量超出当前容量时不演奏。
-    /// </summary>
+    /// <summary>按余音数量演奏对应槽位，超出容量时不演奏。</summary>
     public Task AfterSecondaryResourceChanged(SecondaryResourceChangeContext context)
     {
         if (context.Player != Owner ||

@@ -33,7 +33,7 @@ uniform bool use_mask_size = false;
 uniform vec2 mask_size = vec2(100.0);
 
 group_uniforms shape_transition_controls;
-uniform int edges : hint_range(3, 64) = 6; // default hexagon
+uniform int edges : hint_range(3, 64) = 6;
 uniform float shape_feather : hint_range(0.0, 10.0) = 0.1;
 
 group_uniforms clock_transition_controls;
@@ -151,7 +151,6 @@ void fragment() {
 		float angle = atan(uv.y, uv.x);
 		float sector_angle = 2.0 * PI / float(edges);
 		float half_sector = sector_angle / 2.0;
-		// Define polygon sectors using the power of trigonometry
 		float d = cos(half_sector) / cos(mod(angle + half_sector, sector_angle) - half_sector);
 
 		vec2 smooth_edges = get_edges(local_progress, shape_feather);

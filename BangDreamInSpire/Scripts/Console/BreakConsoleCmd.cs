@@ -9,20 +9,7 @@ using MegaCrit.Sts2.Core.Helpers;
 
 namespace BangDreamInSpire.Scripts.Console;
 
-/// <summary>
-/// 调试命令：对战场上的单位发现破绽，用来验收常驻 VFX、弱点击破换形与到期淡出。
-/// <para>
-/// 用法：<c>break 2</c>（对全部可命中敌人各发现 2 层）、<c>break 4</c>（直接顶满进弱点击破）、
-/// <c>break clear</c>（清掉所有破绽与弱点击破状态）、<c>break self 3</c>（对自己施加，验证"任意单位"）。
-/// </para>
-/// <para>
-/// 走的是与卡牌完全相同的入口 <see cref="BreakCmd.Discover" />，因此广播、层数截断与视觉刷新都会被覆盖到。
-/// </para>
-/// <para>
-/// 仅单人 / 主机验收用：命令声明 <c>IsNetworked = false</c>，不会广播；多人局里由任一端单独执行会造成
-/// host/client 状态分歧，请只在单人或主机侧验收。
-/// </para>
-/// </summary>
+/// <summary>break [amount|clear|self amount] 调试破绽；仅单人或主机使用。</summary>
 public class BreakConsoleCmd : AbstractConsoleCmd
 {
     private const string ClearKeyword = "clear";

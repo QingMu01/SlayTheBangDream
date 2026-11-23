@@ -81,7 +81,7 @@ public partial class BangDreamCharacterSelector : Control
 
     public StartRunLobby? Lobby { get; set; }
 
-    /// <summary>当前所在屏幕的适配器；决定覆盖层插入点与是否显示进阶面板。</summary>
+    /// <summary>当前屏幕的适配器。</summary>
     internal CharacterSelectAdapter? Adapter { get; set; }
 
     private bool SupportsAscension => Adapter?.SupportsAscension ?? true;
@@ -91,7 +91,7 @@ public partial class BangDreamCharacterSelector : Control
 
     public override void _EnterTree()
     {
-        // MegaLabel 的自动缩放区间必须在子节点 _Ready 之前配好，否则 _Ready 会先按默认 8..100 算一遍字号。
+        // 在子节点 _Ready 前配置自动缩放。
         BangDreamTools.ConfigureMegaText(GetNodeOrNull<Control>("%ClassLabel"), maxFontSize: 15, minFontSize: 9);
         BangDreamTools.ConfigureMegaText(GetNodeOrNull<Control>("%HealthLabel"), maxFontSize: 28, minFontSize: 18);
         BangDreamTools.ConfigureMegaText(GetNodeOrNull<Control>("%GoldLabel"), maxFontSize: 28, minFontSize: 18);
@@ -133,7 +133,7 @@ public partial class BangDreamCharacterSelector : Control
 
         _posterRestPosition = _characterPoster.Position;
 
-        // 着色器与 StyleBox 在运行时按乐队主题色重写，先各自复制一份，避免改动共享资源。
+        // 复制主题资源后再改色，避免污染共享实例。
         if (_showBg.Material is ShaderMaterial bgMaterial)
         {
             _showBg.Material = (ShaderMaterial)bgMaterial.Duplicate();
@@ -176,7 +176,6 @@ public partial class BangDreamCharacterSelector : Control
 
     public void SelectCharacter(CharacterModel character)
     {
-        // 同步按钮状态
         foreach (var button in _buttons)
         {
             if (button.Character == character)
@@ -243,21 +242,18 @@ public partial class BangDreamCharacterSelector : Control
 
         if (_delegate != null)
         {
-            // 走屏幕的完整原生选择流程（选择音效 / 启用出航 / 写入 lobby / 取消其它按钮选中态）。
-            // 传真实成员而不是分组占位按钮——占位按钮会被 InterceptGroupButtonPatch 跳过，导致什么都没提交。
+            // 用真实成员走原生提交流程，分组占位会被补丁拦截。
             GroupableCharacterSelectorPatches.CommitCharacterSelection(_delegate, character, _sourceButton);
         }
 
-        // 弹窗同步角色数据（皮肤 / 初始卡组 / 初始遗物），关闭时也保持最新。
+        // 弹窗数据随角色切换更新。
         _detailsPopup?.SetCharacter(character, Lobby);
 
         if (_ascensionPanel != null && SupportsAscension)
         {
             var progress = SaveManager.Instance.Progress;
 
-            // 快速模式的升格是全局 0-5 级（本体 SetSingleplayerAscensionAfterCharacterChanged 对 Blitz 直接返回），
-            // 不能套角色自己的 0-10 级进度：否则会把 10 同步进 lobby，撞上本体 AscensionHelper.GetLevelForBlitz
-            // 的越界检查并抛异常。
+            // Blitz 使用全局 0–5 级，不能写入角色 0–10 进度。
             if (_ascensionPanel.GameMode == GameMode.Blitz)
             {
                 _ascensionPanel.SetMaxAscension(progress.MaxBlitzAscension);
@@ -288,7 +284,7 @@ public partial class BangDreamCharacterSelector : Control
         _sourceButton = button;
         _delegate = delegateButton;
 
-        // 恐惧模式没有进阶概念：本模组面板里的进阶选项也要一起隐藏。
+        // Dread 隐藏进阶选项。
         if (_ascensionPanel != null)
         {
             _ascensionPanel.Visible = SupportsAscension;
@@ -299,7 +295,7 @@ public partial class BangDreamCharacterSelector : Control
 
         if (_characters.Count == 0)
         {
-            // 一个分组配置错误不应让整个选人屏初始化失败（其它乐队会一起不可用）。
+            // 单个分组失败不影响其他分组。
             BangDreamInSpireCore.Logger.Warn($"Group {group} doesn't have any members; skip selector init.");
             return;
         }
@@ -312,7 +308,7 @@ public partial class BangDreamCharacterSelector : Control
                 child.QueueFreeSafely();
             }
 
-            // 注册顺序靠前的角色排在更右侧：先按注册序建好，再倒序放进 HBox。
+            // 注册靠前者排右侧，因此倒序加入。
             var wrappers = new List<Control>(_characters.Count);
             foreach (var character in _characters)
             {
@@ -336,7 +332,7 @@ public partial class BangDreamCharacterSelector : Control
                 _characterButtons.AddChildSafely(wrappers[i]);
             }
 
-            // 书签从卡片右缘顶端向左生长：人数变化时重新对齐整排。
+            // 人数变化后重排书签。
             var visibleCount = _buttons.Count(item => item.Visible);
             if (visibleCount > 0)
             {
@@ -371,10 +367,7 @@ public partial class BangDreamCharacterSelector : Control
         return new Color(color.R, color.G, color.B, alpha);
     }
 
-    /// <summary>
-    /// 立绘舞台/色卡用角色主题色，乐队色负责品牌点缀（标签、分隔线、描边、按钮），
-    /// 过亮的颜色先压暗再作为文字/描边色使用。
-    /// </summary>
+    /// <summary>应用角色与乐队主题色。</summary>
     private void ApplyAccent(Color bandColor, Color accentColor, Color memberColor)
     {
         var memberAccent = memberColor.ToAccentColor();
@@ -492,9 +485,7 @@ public partial class BangDreamCharacterSelector : Control
         _posterTween.Chain().TweenCallback(Callable.From(StartPosterFloat));
     }
 
-    /// <summary>
-    /// 立绘极轻微的呼吸浮动，让静止画面不显得是一张贴图。
-    /// </summary>
+    /// <summary>立绘轻微呼吸浮动。</summary>
     private void StartPosterFloat()
     {
         if (_characterPoster == null)
@@ -513,9 +504,7 @@ public partial class BangDreamCharacterSelector : Control
             PosterFloatDuration);
     }
 
-    /// <summary>
-    /// 信息区按顺序淡入，切换角色时比整块面板直接跳变更有节奏。
-    /// </summary>
+    /// <summary>信息区顺序淡入。</summary>
     private void PlayContentIntro()
     {
         _contentTween?.Kill();
@@ -530,9 +519,7 @@ public partial class BangDreamCharacterSelector : Control
         }
     }
 
-    /// <summary>
-    /// 乐队色舞台上的斜向扫光，切换成员时给画面一个“换幕”的瞬间。
-    /// </summary>
+    /// <summary>切换成员时播放乐队色扫光。</summary>
     private void PlayStageSweep()
     {
         if (_stageSweep?.Material is not ShaderMaterial sweepMaterial)
@@ -577,7 +564,7 @@ public partial class BangDreamCharacterSelector : Control
         if (Lobby.NetService.Type == NetGameType.Client || Lobby.Ascension == _ascensionPanel.Ascension)
             return;
 
-        // 再夹一次 lobby 上限：本体收到越界等级会直接抛异常（快速模式只有 0-5 级）。
+        // 再次夹取 lobby 上限。
         Lobby.SyncAscensionChange(Math.Min(_ascensionPanel.Ascension, Lobby.MaxAscension));
     }
 

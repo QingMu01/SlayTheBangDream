@@ -1,4 +1,4 @@
-// PerformManager 的手动落位部分：选择态的进入、刷新、消费与诊断。
+// 手动落位选择。
 using System.Diagnostics.CodeAnalysis;
 using BangDreamInSpire.Scripts.Enums;
 using BangDreamInSpire.Scripts.Interfaces.Mechanics;
@@ -12,11 +12,7 @@ namespace BangDreamInSpire.Scripts.Mechanics.Perform;
 
 public partial class PerformManager
 {
-    /// <summary>
-    /// 开始一次手动落位选择：按目标类型计算候选槽位，并让本地演奏区域进入选择态。
-    /// 非手动落位类型、手柄方向导航、无候选槽位（容量为 0 或演奏区域未就绪）、
-    /// 指定分组但只有一个可达分组时都不进入选择态，出牌按卡牌自身的入队规则处理。
-    /// </summary>
+    /// <summary>计算候选并进入本地选择；非手动目标、无候选或唯一分组时使用常规规则。</summary>
     public void BeginManualSlotSelection(CardModel cardModel)
     {
         ArgumentNullException.ThrowIfNull(cardModel);
@@ -45,7 +41,7 @@ public partial class PerformManager
             return;
         }
 
-        // 指定分组模式下只有一个可达分组时无从选择，其落位等价于常规规则，直接不进入选择态。
+        // 唯一可达分组无需选择。
         if (mode == PerformSlotSelectionMode.Group &&
             candidates.Select(candidate => candidate.Group).Distinct().Count() <= 1)
         {
@@ -60,9 +56,7 @@ public partial class PerformManager
             $"slots [{string.Join(", ", candidates.Select(candidate => candidate.SlotIndex))}]");
     }
 
-    /// <summary>
-    /// 按当前鼠标位置立即刷新一次选择指向（松手瞬间判定用）。
-    /// </summary>
+    /// <summary>立即刷新选择指向。</summary>
     public void RefreshManualSlotSelection(CardModel cardModel)
     {
         if (TryGetPerformArea(out var performArea) && performArea.SlotSelectionCard == cardModel)
@@ -71,9 +65,7 @@ public partial class PerformManager
         }
     }
 
-    /// <summary>
-    /// 该牌的手动落位选择当前是否指向候选槽位（判定前先按当前鼠标位置刷新一次指向）。
-    /// </summary>
+    /// <summary>刷新指向并返回是否有候选。</summary>
     public bool HasManualSlotCandidate(CardModel cardModel)
     {
         if (!TryGetPerformArea(out var performArea) || performArea.SlotSelectionCard != cardModel) return false;
@@ -82,7 +74,6 @@ public partial class PerformManager
         return performArea.HoveredSlotIndex > 0;
     }
 
-    /// <summary>该卡当前是否正处于手动落位选择态（未进入选择态时出牌走常规规则）。</summary>
     public bool IsManualSlotSelectionActive(CardModel cardModel)
     {
         return TryGetPerformArea(out var performArea) &&
@@ -90,10 +81,7 @@ public partial class PerformManager
                performArea.SlotSelectionCard == cardModel;
     }
 
-    /// <summary>
-    /// 结束手动落位选择并取出结果；返回 <see langword="false" /> 表示未命中任何候选槽位。
-    /// 命中时把结果写入该牌的 <see cref="PerformContext.Request" />，供入队规划与网络动作读取。
-    /// </summary>
+    /// <summary>结束选择并将命中结果写入 PerformContext.Request。</summary>
     public bool TryConsumeManualSlotSelection(CardModel cardModel, out PerformEnqueueRequest request)
     {
         request = default;
@@ -108,10 +96,7 @@ public partial class PerformManager
         return true;
     }
 
-    /// <summary>
-    /// 结束选择态与槽位高亮。<paramref name="cardModel" /> 非空时只结束该牌自己的选择：
-    /// 其他卡牌出牌收尾不应打断正在进行的落位选择。
-    /// </summary>
+    /// <summary>结束选择；指定卡牌时不打断其他选择。</summary>
     public void EndManualSlotSelection(CardModel? cardModel = null)
     {
         if (!TryGetPerformArea(out var performArea) || !performArea.IsSlotSelectionActive) return;
@@ -120,14 +105,14 @@ public partial class PerformManager
         performArea.EndSlotSelection();
     }
 
-    /// <summary>取消手动落位选择，并清空该牌尚未消费的落位请求。</summary>
+    /// <summary>取消选择并清空未消费的落位请求。</summary>
     public void CancelManualSlotSelection(CardModel cardModel)
     {
         EndManualSlotSelection(cardModel);
         CardContexts.GetOrCreate(cardModel).Request = default;
     }
 
-    /// <summary>选择态诊断文本；该牌不在选择态时返回占位说明。</summary>
+    /// <summary>返回选择诊断文本。</summary>
     public string DescribeManualSlotSelection(CardModel cardModel)
     {
         return TryGetPerformArea(out var performArea) && performArea.SlotSelectionCard == cardModel
@@ -135,11 +120,10 @@ public partial class PerformManager
             : "<no active selection for this card>";
     }
 
-    /// <summary>本角色全部已激活槽位及其所属和弦分组，作为手动选择的候选集合。</summary>
+    /// <summary>返回激活槽位与分组的候选集合。</summary>
     private List<PerformSlotCandidate> BuildSlotCandidates()
     {
-        // 分组和弦为 PerformChord.None 表示"唯一的默认分组"：其落位与常规规则等价，
-        // 且无法用和弦表达落位请求，因此多分组方案下不作为候选（留待常规规则处理）。
+        // 无和弦的默认分组不作为多分组候选。
         var skipDefaultGroup = _scheme.Groups.Count > 1;
         var candidates = new List<PerformSlotCandidate>();
         foreach (var descriptor in _scheme.Groups)
@@ -155,7 +139,7 @@ public partial class PerformManager
         return candidates;
     }
 
-    /// <summary>取当前有效的演奏区节点；未就绪或已被释放时返回 <see langword="false" />。</summary>
+    /// <summary>获取可用的演奏区节点。</summary>
     internal bool TryGetPerformArea([NotNullWhen(true)] out IPerformArea? performArea)
     {
         performArea = PerformArea;

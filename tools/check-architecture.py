@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-"""架构边界检查（构建前门禁）。
-
-规则来自耦合治理计划 P2：核心机制不得反向依赖 UI/内容层，内容模组只允许依赖稳定契约。
-
-退出码：HARD 违规 > 0 时 1；``--strict`` 时 WARN 也计为失败；否则 0。
-"""
+"""检查核心与内容模组的依赖方向；HARD 违规返回 1，--strict 下 WARN 也返回 1。"""
 
 from __future__ import annotations
 

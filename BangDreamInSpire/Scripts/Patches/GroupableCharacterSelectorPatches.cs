@@ -27,14 +27,7 @@ public class GroupableCharacterSelectorPatches : IModPatches
 {
     internal static readonly AttachedState<NCharacterSelectButton, CharacterGroup?> GroupState = new(_ => null);
 
-    /// <summary>
-    /// 每个角色选择屏各自的定制选择器。
-    /// <para>
-    /// **不能用单一静态字段**：<c>NMainMenuSubmenuStack._Ready</c> 会在启动时同时实例化
-    /// <see cref="NCharacterSelectScreen" /> 与 <see cref="NDreadScreen" />，两个屏的 <c>_Ready</c> 后置都会跑，
-    /// 单一静态会被后跑的那个覆盖，导致在某屏里操作到另一屏的节点。
-    /// </para>
-    /// </summary>
+    /// <summary>每个屏幕独立持有选择器；多个屏会在启动时同时 _Ready，静态共享会串屏。</summary>
     private static readonly ConditionalWeakTable<object, BangDreamCharacterSelector> Selectors = new();
 
     internal static BangDreamCharacterSelector? GetSelector(object? screen) =>
@@ -43,20 +36,8 @@ public class GroupableCharacterSelectorPatches : IModPatches
     internal static void SetSelector(object screen, BangDreamCharacterSelector selector) =>
         Selectors.AddOrUpdate(screen, selector);
 
-    /// <summary>
-    /// 把 <paramref name="character" /> 真正提交为当前选择。
-    /// <para>
-    /// 用本体为**真实角色**生成的按钮（分组逻辑已把它隐藏）走一遍完整的原生
-    /// <c>SelectCharacter</c>：播放选择音效、启用出航按钮、清空并重建背景、写入
-    /// <c>_lobby.SetLocalCharacter</c>，最后把其它按钮全部 <c>Deselect</c>。
-    /// </para>
-    /// <para>
-    /// 为什么必须用那个隐藏按钮而不是分组按钮：三个屏幕后续都会读
-    /// <c>_selectedButton.Character</c>（保存「上次选择的角色」以及 Dread 的
-    /// <c>SetLocalCharacter(_selectedButton.Character, …)</c>），若让它指向承载占位角色的分组按钮，
-    /// 这些地方会拿到 <see cref="GroupCharacterPlaceholder" />。
-    /// </para>
-    /// </summary>
+    /// <summary>通过真实角色的隐藏按钮执行原生提交流程；后续逻辑读取
+    /// _selectedButton.Character，不能使用分组占位按钮。</summary>
     internal static bool CommitCharacterSelection(object screen, CharacterModel character,
         NCharacterSelectButton? sourceButton)
     {
@@ -81,8 +62,7 @@ public class GroupableCharacterSelectorPatches : IModPatches
 
         if (sourceButton != null && GodotObject.IsInstanceValid(sourceButton))
         {
-            // 原生流程把选中态放在上面那个不可见按钮上，并顺手把分组按钮 Deselect 掉；
-            // 但玩家看到的是分组按钮，这里补回选中态。抑制 Init，避免再次打开/重置选择器。
+            // 恢复可见分组按钮的选中态，并抑制 Init 重置选择器。
             InitSelectorPatch.BeginSuppressInit();
             try
             {
@@ -122,24 +102,8 @@ public class GroupableCharacterSelectorPatches : IModPatches
     }
 }
 
-/// <summary>
-/// 角色选择屏的共用逻辑。
-/// <para>
-/// 本体 0.113 把角色选择屏复制成了多份：标准 <see cref="NCharacterSelectScreen" />、
-/// <see cref="NBlitzScreen" />、<see cref="NDreadScreen" />（另有 <c>NCustomRunScreen</c>，本模组不支持）。
-/// 三者都继承 <c>NSubmenu</c> 并实现 <c>ICharacterSelectButtonDelegate</c>，
-/// <c>SelectCharacter</c> / <c>InitCharacterButtons</c> / <c>_Ready</c> 同名同签名，
-/// 但**私有字段集合不同**：
-/// </para>
-/// <list type="bullet">
-/// <item>Dread 没有 <c>_infoPanel</c> 与 <c>_ascensionPanel</c>；</item>
-/// <item>Blitz / Dread 没有 <c>_charSelectButtonScene</c>（改用 <c>SceneHelper</c> + 常量路径建按钮）。</item>
-/// </list>
-/// <para>
-/// 因此这里按**实例运行时类型**反射取字段，缺失即返回 null，让同一份补丁体服务三个屏幕，
-/// 避免为每个屏复制一遍补丁逻辑（否则三份私有方法名各改一次就要维护三处）。
-/// </para>
-/// </summary>
+/// <summary>标准、Blitz、Dread 共用分组逻辑。三屏私有字段不同，
+/// 按运行时类型反射并在字段缺失时降级。</summary>
 internal static class CharacterSelectScreenSupport
 {
     private static readonly Dictionary<Type, Dictionary<string, FieldInfo?>> FieldCache = new();
@@ -179,14 +143,8 @@ internal static class CharacterSelectScreenSupport
     internal static Control? GetCharButtonContainer(object screen) =>
         FindField(screen, "_charButtonContainer")?.GetValue(screen) as Control;
 
-    /// <summary>
-    /// 把分组按钮登记进屏幕自己的按钮列表（<c>_charSelectButtons</c>）。
-    /// <para>
-    /// <c>NDreadScreen.SelectCharacter</c> 取消其它按钮选中态时遍历的是这个私有列表、而不是容器；
-    /// 分组按钮直接挂在容器里，不登记的话「选中别的角色后分组按钮仍保持高亮」。
-    /// 其它两个屏幕遍历容器，没有该字段，这里静默跳过。
-    /// </para>
-    /// </summary>
+    /// <summary>登记到 Dread 私有按钮列表，确保取消选中遍历覆盖分组按钮；
+    /// 其他屏无该字段时跳过。</summary>
     internal static void AppendToButtonList(object screen, NCharacterSelectButton button)
     {
         if (FindField(screen, "_charSelectButtons")?.GetValue(screen) is List<NCharacterSelectButton> list)
@@ -201,32 +159,15 @@ internal static class CharacterSelectScreenSupport
     internal static NAscensionPanel? GetAscensionPanel(object screen) =>
         FindField(screen, "_ascensionPanel")?.GetValue(screen) as NAscensionPanel;
 
-    /// <summary>
-    /// 为每个角色分组建一个占位按钮并插在「本体角色之后、随机按钮之前」，随后隐藏本体为
-    /// <see cref="IGroupableCharacter" /> 生成的按钮，再按可见按钮重排焦点环。
-    /// </summary>
-    /// <param name="buttonScene">
-    /// 本体的按钮场景。标准屏有 <c>_charSelectButtonScene</c> 字段，直接透传即可；
-    /// Blitz / Dread 没有该字段，传 null 时按本体的常量路径实例化。
-    /// </param>
+    /// <summary>创建分组按钮、隐藏原体按钮并重排焦点；buttonScene 为空时使用本体常量路径。</summary>
     internal static void SetupGroupButtons(Control container, ICharacterSelectButtonDelegate screenDelegate,
         PackedScene? buttonScene)
     {
-        // 先隐藏本体生成的按钮：
-        // - IGroupableCharacter：模组角色，已由分组按钮代表；
-        // - GroupCharacterPlaceholder：分组占位角色。标准屏由 RitsuLib 的可见性策略在
-        //   InitCharacterButtons 阶段过滤掉（它只识别 NCharacterSelectScreen），Blitz / Dread
-        //   不在其识别范围内，占位按钮会真的出现在界面上，这里统一兜底隐藏。
-        //
-        // **必须在插入分组按钮之前做**：分组按钮自身也是用 GroupCharacterPlaceholder 作为 Character，
-        // 若放到插入之后按 Character 类型扫描，会把刚插入的分组按钮一起隐藏掉（角色选择按钮整体消失）。
+        // 在插入前隐藏原体按钮与未识别为分组的占位按钮，避免误藏新分组按钮。
+        // GroupState 只豁免有真实分组的按钮，不能给本体占位按钮创建空条目。
         var existing = container.GetChildren().OfType<NCharacterSelectButton>().ToList();
         foreach (var button in existing)
         {
-            // 分组按钮自身也用 GroupCharacterPlaceholder 作为 Character，必须靠 GroupState 区分；
-            // 这样即便将来有人把这段挪到插入之后，也不会再把分组按钮一起隐藏。
-            // 只豁免「有分组值」的条目：本体占位按钮也曾被 GetOrCreate 写成 null 条目，
-            // 只判 ContainsKey 会把这些本体占位按钮一并豁免，导致它们在 Blitz/Dread 屏上可见且点击即崩。
             if (GroupableCharacterSelectorPatches.GroupState.TryGetValue(button, out var groupState) &&
                 groupState.HasValue)
             {
@@ -275,33 +216,19 @@ internal static class CharacterSelectScreenSupport
 
         RewireFocus(container);
 
-        // 诊断：分组按钮被误隐藏过一次（隐藏扫描放在插入之后，把同样是 Placeholder 的分组按钮一起藏了），
-        // 这里把「插入数 / 最终可见数」打进日志，便于下次直接看出按钮数量异常。
+        // 记录插入数与最终可见数，便于发现按钮异常。
         var visibleButtons = container.GetChildren().OfType<NCharacterSelectButton>().Count(b => b.Visible);
         BangDreamInSpireCore.Logger.Info(
             $"Character select buttons on {screenDelegate.GetType().Name}: added {alreadyGroupName.Count} group button(s), {visibleButtons} visible in total.");
     }
 
-    /// <summary>
-    /// 本体的随机按钮（标准 / 快速屏的 <c>_randomCharacterButton</c>）或轮换按钮
-    /// （恐惧屏的 <c>_rotatingCharacterButton</c>）。名字由反射取，缺失返回 null。
-    /// </summary>
+    /// <summary>反射获取随机或轮换按钮，缺失返回 null。</summary>
     internal static NCharacterSelectButton? GetRandomButton(object screen) =>
         (FindField(screen, "_randomCharacterButton") ?? FindField(screen, "_rotatingCharacterButton"))?.GetValue(screen)
         as NCharacterSelectButton;
 
-    /// <summary>
-    /// 分组按钮的插入锚点：随机 / 轮换按钮之前（该按钮由本体固定加在所有角色按钮之后）。
-    /// <para>
-    /// **不能只按「最后一个本体角色按钮」定位**：随机 / 轮换按钮的 <c>Character</c> 既不是模组角色也不是占位角色，
-    /// 会被当成普通角色按钮，于是分组按钮落到整行最末尾（随机按钮之后）。
-    /// </para>
-    /// <para>
-    /// 恐惧屏的轮换按钮在 <c>InitCharacterButtons</c> 阶段还没 <c>Init</c>（<c>IsRandom</c> 仍为 false、
-    /// <c>Character</c> 为 null），所以先直接反射本体字段拿节点，而不是靠按钮状态判断；
-    /// 拿不到时才退回「最后一个角色按钮之后」。
-    /// </para>
-    /// </summary>
+    /// <summary>优先定位随机或轮换按钮作为插入锚点；Dread 尚未 Init 时直接读字段，
+    /// 失败则退回最后角色按钮之后。</summary>
     private static int GetInsertIndex(Control container, object screen, List<NCharacterSelectButton> buttons)
     {
         if (GetRandomButton(screen) is { } randomButton && randomButton.GetParent() == container)
@@ -314,13 +241,13 @@ internal static class CharacterSelectScreenSupport
         {
             var button = buttons[i];
 
-            // 兜底：按状态识别随机 / 轮换按钮（InitAsRandom / InitAsRotating 都会置位），不拿它当角色。
+            // 用状态标记排除随机或轮换按钮。
             if (button.IsRandom)
             {
                 continue;
             }
 
-            // 不写死本体角色表（0.113 已新增 Fool，写死会漏项）：非模组、非占位的按钮就是本体角色。
+            // 不写死本体角色表，避免漏掉新角色。
             if (!button.IsLocked && button.Character is not IGroupableCharacter and not GroupCharacterPlaceholder)
             {
                 lastCharacterIndex = i;
@@ -331,7 +258,7 @@ internal static class CharacterSelectScreenSupport
         return lastCharacterIndex;
     }
 
-    /// <summary>按可见按钮重排四向焦点环（本体原逻辑的等价重放）。</summary>
+    /// <summary>按可见按钮重排四向焦点。</summary>
     internal static void RewireFocus(Control container)
     {
         var visible = container.GetChildren().OfType<NCharacterSelectButton>()
@@ -369,7 +296,6 @@ internal class HiddenUiPatch : IPatchMethod
 
     public static void Postfix(object __instance, NCharacterSelectButton charSelectButton)
     {
-        // 选中分组占位按钮 = 分组视图；选中真实角色 = 本体角色详情视图。
         CharacterSelectAdapter.Apply(__instance, charSelectButton.Character is GroupCharacterPlaceholder);
     }
 }
@@ -396,10 +322,9 @@ internal class SetupGroupableCharacterSelectorPatch : IPatchMethod
             return;
         }
 
-        // 先做本屏特有的输入 / 层级处理（快速屏的装饰大字等）。
         adapter.Prepare(screen);
 
-        // 覆盖层按背景容器的位置与尺寸摆放：选择器场景的舞台坐标就是按它设计的。
+        // 覆盖层使用背景容器的位置与尺寸。
         var customControl = new Control { Name = "BangDreamSelectorHost" };
         if (adapter.GetBackground(__instance) is { } background)
         {
@@ -407,7 +332,6 @@ internal class SetupGroupableCharacterSelectorPatch : IPatchMethod
             customControl.Size = new Vector2(background.Size.X, background.Size.Y);
         }
 
-        // 插入点由适配器决定：标准 / 快速插在背景之后，恐惧插在 SubViewportContainer 之后。
         adapter.InsertOverlay(screen, customControl);
 
         var characterSelector = PreloadKey.CharacterSelector.GetScene().Instantiate<BangDreamCharacterSelector>();
@@ -418,7 +342,7 @@ internal class SetupGroupableCharacterSelectorPatch : IPatchMethod
 
         GroupableCharacterSelectorPatches.SetSelector(__instance, characterSelector);
 
-        // 一行诊断：实机排查时能直接确认覆盖层插到了哪一层、该屏是否支持进阶。
+        // 记录覆盖层父级与进阶支持。
         BangDreamInSpireCore.Logger.Info(
             $"[GroupSelect] {adapter.ModeName}屏覆盖层: index={customControl.GetIndex()}/{screen.GetChildCount()}, " +
             $"rect=({customControl.Position.X:F0},{customControl.Position.Y:F0}," +
@@ -443,10 +367,7 @@ internal class SetupGroupableCharacterSelectButtonPatch : IPatchMethod
     }
 }
 
-/// <summary>
-/// Blitz / Dread 的角色选择屏各有一份自己的 <c>InitCharacterButtons</c>（私有，且不通过
-/// <c>_charSelectButtonScene</c> 字段建按钮）。此处复用同一套分组逻辑，按钮场景按本体的常量路径实例化。
-/// </summary>
+/// <summary>Blitz / Dread 复用分组逻辑，按本体常量路径创建按钮。</summary>
 internal class SetupGroupableCharacterSelectButtonForModeScreensPatch : IPatchMethod
 {
     public static string PatchId => "on_init_mode_select_screen_setup_group_button";
@@ -482,7 +403,7 @@ internal class InitSelectorPatch : IPatchMethod
 
     private static int _suppressInitDepth;
 
-    /// <summary>在 <c>Select()</c> 期间抑制选择器初始化（用于以编程方式恢复按钮选中态）。</summary>
+    /// <summary>在 Select 期间抑制选择器初始化。</summary>
     internal static void BeginSuppressInit() => _suppressInitDepth++;
 
     internal static void EndSuppressInit() => _suppressInitDepth = Math.Max(0, _suppressInitDepth - 1);
@@ -497,8 +418,7 @@ internal class InitSelectorPatch : IPatchMethod
 
         if (!____isSelected && IsSupportedScreen(____delegate) && ____character is GroupCharacterPlaceholder)
         {
-            // 只读取、不用 GetOrCreate：在本体占位按钮上创建条目会把它标记成「分组按钮」，
-            // 让隐藏逻辑误以为它是我们插入的按钮而放行。
+            // 只读取，避免把本体占位按钮标记为分组按钮。
             if (GroupableCharacterSelectorPatches.GroupState.TryGetValue(__instance, out var characterGroup) &&
                 characterGroup.HasValue)
             {
@@ -507,8 +427,7 @@ internal class InitSelectorPatch : IPatchMethod
             }
             else
             {
-                // 本体占位按钮（没有对应分组）：不初始化，交给后续隐藏逻辑藏掉。
-                // 不能抛异常 —— 一抛就会打断整个角色选择屏。
+                // 无分组条目时跳过初始化，由后续逻辑隐藏。
                 BangDreamInSpireCore.Logger.Warn(
                     $"Placeholder character button {__instance.Name} has no character group; skipping init.");
             }
@@ -539,7 +458,6 @@ internal class SelectGroupButtonIconPatch : IPatchMethod
     {
         if (__instance.Character is GroupCharacterPlaceholder)
         {
-            // 同上：只读取，避免给本体占位按钮留下 null 条目。
             if (GroupableCharacterSelectorPatches.GroupState.TryGetValue(__instance, out var characterGroup) &&
                 characterGroup.HasValue)
             {
@@ -580,7 +498,7 @@ internal class AscensionPanelHostModePatch : IPatchMethod
 {
     public static string PatchId => "bang_dream_style_ascension_panel_setup_host_mode";
 
-    // Dread 屏没有飞升面板，故只挂标准屏与 Blitz 屏。
+    // Dread 无进阶面板。
     public static ModPatchTarget[] GetTargets()
     {
         return
@@ -593,7 +511,6 @@ internal class AscensionPanelHostModePatch : IPatchMethod
 
     public static void Postfix(object __instance, StartRunLobby ____lobby)
     {
-        // 进阶面板只属于有进阶概念的屏（标准 / 快速）；恐惧屏由适配器声明不适用。
         if (CharacterSelectAdapter.For(__instance) is not { SupportsAscension: true } ||
             GroupableCharacterSelectorPatches.GetSelector(__instance) is not { } selector)
         {
@@ -621,7 +538,6 @@ internal class AscensionPanelMultiplayerModePatch : IPatchMethod
 
     public static void Postfix(object __instance, StartRunLobby ____lobby)
     {
-        // 进阶面板只属于有进阶概念的屏（标准 / 快速）；恐惧屏由适配器声明不适用。
         if (CharacterSelectAdapter.For(__instance) is not { SupportsAscension: true } ||
             GroupableCharacterSelectorPatches.GetSelector(__instance) is not { } selector)
         {
@@ -648,7 +564,6 @@ internal class AscensionPanelSingleplayerModePatch : IPatchMethod
 
     public static void Postfix(object __instance, StartRunLobby ____lobby)
     {
-        // 进阶面板只属于有进阶概念的屏（标准 / 快速）；恐惧屏由适配器声明不适用。
         if (CharacterSelectAdapter.For(__instance) is not { SupportsAscension: true } ||
             GroupableCharacterSelectorPatches.GetSelector(__instance) is not { } selector)
         {

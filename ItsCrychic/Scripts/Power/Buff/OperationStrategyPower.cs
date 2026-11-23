@@ -11,10 +11,7 @@ using MegaCrit.Sts2.Core.Models;
 
 namespace ItsCrychic.Scripts.Power.Buff;
 
-/// <summary>
-/// 运营策略：回合开始时，将你上个回合最后演奏过的音乐牌复制一张加入手牌。
-/// 新加入的音乐牌沿用原牌的目标类型（Saki 的音乐牌均为任意槽位），因此本回合打出时可自由选择歌单槽位。
-/// </summary>
+/// <summary>回合开始复制上回合最后演奏的音乐牌，保留原目标类型。</summary>
 public class OperationStrategyPower : BandPowerModel, IPerformHookListener
 {
     private CardModel? _lastPerformedMusicCard;

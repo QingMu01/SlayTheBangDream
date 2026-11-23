@@ -17,17 +17,12 @@ namespace BangDreamInSpire.Scripts.Mechanics.Lingered;
 [RegisterSingleton]
 public sealed class LingeredResourcesRule() : HookedSingletonModel(HookType.Combat), ISecondaryResourceHookListener
 {
-    /// <summary>
-    /// 余音的上限是**硬上限**：任何提升上限的效果对余音无效（<c>GetMax</c> 只能把它压得更低）。
-    /// 溢出转换（<c>while (&gt;= HardMaxAmount)</c>）与兜底扣减（<see cref="EffectiveMax" />）共用这一口径，
-    /// 不允许出现「转换按 7、扣减按动态上限」两套上限。
-    /// </summary>
+    /// <summary>余音硬上限规则，转换与扣减共用同一上限。</summary>
     public const int HardMaxAmount = 7;
 
     private readonly ConditionalWeakTable<Player, SemaphoreSlim> _overflowLocks = new();
     private readonly AsyncLocal<IReadOnlySet<Player>?> _normalizingPlayers = new();
 
-    // 休止机制触发判定
     public override async Task AfterCardPlayed(PlayerChoiceContext context, CardPlay cardPlay)
     {
         if (cardPlay.Card is not ISubsideCard subsideCard) return;
@@ -42,10 +37,9 @@ public sealed class LingeredResourcesRule() : HookedSingletonModel(HookType.Comb
         await Cmd.CustomScaledWait(0.1f, 0.2f);
     }
 
-    // 自动生成余音资源唯一渠道
     public override async Task AfterCardPlayedLate(PlayerChoiceContext choiceContext, CardPlay cardPlay)
     {
-        // 余音为祥子专属：未声明余音能力的角色既不生成余音，也不参与余音溢出归一化。
+        // 未声明余音能力的角色不生成或归一化余音。
         if (cardPlay.Card.Owner.Character is not ILingeredResourceCharacter { AutoGenerateSubsideResource: true }) return;
         var canGenerateRes = true;
         if (cardPlay.Card is ISubsideCard subsideCard)
@@ -64,7 +58,6 @@ public sealed class LingeredResourcesRule() : HookedSingletonModel(HookType.Comb
         }
     }
 
-    // 机制判定
     public async Task AfterSecondaryResourceChanged(SecondaryResourceChangeContext context)
     {
         if (!context.Definition.Id.Equals(BangDreamConst.LingeredResource)) return;
@@ -83,7 +76,7 @@ public sealed class LingeredResourcesRule() : HookedSingletonModel(HookType.Comb
                 var topCardInPile = BangDreamConst.ExtraDraw.GetPile(context.Player).Cards.FirstOrDefault();
                 if (topCardInPile != null)
                 {
-                    // 统一入口：带「插曲」附魔的牌改为进入手牌。
+                    // 插曲附魔牌改为进入手牌。
                     await InsertSongRules.MoveIntoPerformArea(topCardInPile);
                     await Cmd.CustomScaledWait(0.05f, 0.1f);
                 }
@@ -112,12 +105,7 @@ public sealed class LingeredResourcesRule() : HookedSingletonModel(HookType.Comb
         }
     }
 
-    /// <summary>
-    /// 余音扣减使用的上限：<c>min(动态上限, <see cref="HardMaxAmount" />)</c>。
-    /// 7 是硬上限，因此动态上限只可能把扣减阈值压低（例如某个效果临时降上限），永远不能抬高；
-    /// 取 min 而不是直接用 <see cref="HardMaxAmount" />，是为了让「上限被压低」时仍能把余音压回上限内。
-    /// 扣减量恒为 <c>max(0, current - max) ≤ current</c>，不会把余音扣成负数。
-    /// </summary>
+    /// <summary>扣减上限取动态上限与 HardMaxAmount 的较小值，且不会扣成负数。</summary>
     private static int EffectiveMax(Player player)
     {
         var dynamicMax = SecondaryResourceCmd.GetMax(player, BangDreamConst.LingeredResource) ?? HardMaxAmount;

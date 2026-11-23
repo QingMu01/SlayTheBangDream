@@ -8,16 +8,9 @@ using MegaCrit.Sts2.Core.ControllerInput;
 
 namespace BangDreamInSpire.Scripts.Nodes.Controls;
 
-/// <summary>
-/// 和弦设计面板里的单和弦筹码（C / D / F / G）。
-/// <para>
-/// 自绘圆角方块：填充与描边取 <see cref="PerformChordColors" /> 的角色色，选中时描边更亮更粗；
-/// 文本用 <see cref="MegaLabel" />（CJK 字体替换只对 mega_text 生效）。点击发 <see cref="Clicked" />。
-/// </para>
-/// </summary>
+/// <summary>自绘和弦筹码，点击时发出 Clicked。</summary>
 public partial class NChordChip : Control
 {
-    /// <summary>筹码边长（设计分辨率 1920×1080 下的像素）。</summary>
     public const float ChipSize = 88f;
 
     private const int CornerRadius = 16;
@@ -31,7 +24,7 @@ public partial class NChordChip : Control
     private bool _selected;
     private bool _hovered;
 
-    /// <summary>玩家点击该筹码时触发。</summary>
+    /// <summary>点击筹码时触发。</summary>
     public event Action<NChordChip>? Clicked;
 
     public NChordChip(PerformChord chord)
@@ -53,7 +46,7 @@ public partial class NChordChip : Control
             VerticalAlignment = VerticalAlignment.Center,
             AutoSizeEnabled = false,
             MouseFilter = MouseFilterEnum.Ignore,
-            // 铺满整个筹码，文字才会居中；Label 不设尺寸时只按文字最小尺寸排在左上角
+            // Label 铺满筹码以居中。
             Position = Vector2.Zero,
             Size = new Vector2(ChipSize, ChipSize)
         };
@@ -70,7 +63,6 @@ public partial class NChordChip : Control
         FocusExited += OnMouseExited;
     }
 
-    /// <summary>该筹码代表的和弦。</summary>
     public PerformChord Chord => _chord;
 
     public bool IsSelected => _selected;
@@ -81,7 +73,7 @@ public partial class NChordChip : Control
         QueueRedraw();
     }
 
-    /// <summary>设置选中态：选中后筹码会移动到「已选槽位」上方，描边随之加亮。</summary>
+    /// <summary>设置选中态。</summary>
     public void SetSelected(bool selected)
     {
         if (_selected == selected)
@@ -160,7 +152,7 @@ public partial class NChordChip : Control
             return;
         }
 
-        // 只响应 select：confirm 是「确定」按钮的全局热键，筹码不能抢它
+        // 不抢全局确定键。
         if (@event.IsActionPressed(MegaInput.select))
         {
             Clicked?.Invoke(this);

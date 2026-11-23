@@ -26,7 +26,7 @@ public class GeorgetteMeGeorgetteYouSakiko() : AbstractSakikoMusicCard(CustomRar
     {
         ArgumentNullException.ThrowIfNull(CombatState);
 
-        // 奏响：基础版对所有敌人，升级版改为随机单体。由其他牌触发时（_isRepeatingPerformance）始终随机单体。
+        // 基础版对全体；升级版及由其他牌触发时对随机单体。
         if (IsUpgraded || _isRepeatingPerformance)
         {
             var target = Owner.RunState.Rng.CombatTargets.NextItem(CombatState.HittableEnemies);

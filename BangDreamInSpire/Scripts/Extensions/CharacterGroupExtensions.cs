@@ -8,9 +8,7 @@ public static class CharacterGroupExtensions
 {
     private static readonly Lock AsyncLock = new();
 
-    /// <summary>
-    /// 乐队成员选择页默认配置
-    /// </summary>
+    /// <summary>默认选择页配置。</summary>
     private static readonly Dictionary<CharacterGroup, GroupInfo> BandInfo = new()
     {
         [CharacterGroup.PoppinParty] = new GroupInfo("Poppin'Party", new Color("#FF3377")),
@@ -28,16 +26,11 @@ public static class CharacterGroupExtensions
         [CharacterGroup.Crychic] = new GroupInfo("Crychic", new Color("#8CD3D4"))
     };
 
-    /// <summary>
-    /// 乐队分组选择按钮图标
-    /// string: iconPath, string: iconLockedPath
-    /// </summary>
+    /// <summary>分组按钮图标。</summary>
     private static readonly Dictionary<CharacterGroup, string> BandSelectIcon = new();
 
 
-    /// <summary>
-    /// 获取分组信息，在角色选择页确定主题颜色
-    /// </summary>
+    /// <summary>返回分组主题样式。</summary>
     public static GroupInfo GetGroupInfo(this CharacterGroup group)
     {
         if (BandInfo.TryGetValue(group, out var info))
@@ -45,14 +38,12 @@ public static class CharacterGroupExtensions
             return info;
         }
 
-        // 第三方角色 mod 可能新增枚举值：回落默认样式并告警，不要在选人屏 Postfix 里抛异常。
+        // 未知枚举回退默认样式并告警。
         BangDreamInSpireCore.Logger.Warn($"Unknown character group: {group}; falling back to default style.");
         return new GroupInfo(group.ToString(), new Color("#8CD3D4"));
     }
 
-    /// <summary>
-    /// 获取分组选择按钮图标
-    /// </summary>
+    /// <summary>返回分组按钮图标。</summary>
     public static string? GetGroupSelectIcon(this CharacterGroup group)
     {
         lock (AsyncLock)
@@ -61,11 +52,7 @@ public static class CharacterGroupExtensions
         }
     }
     
-    /// <summary>
-    /// 设置分组选择按钮图标
-    /// </summary>
-    /// <param name="group">分组枚举</param>
-    /// <param name="iconPath">图标路径</param>
+    /// <summary>设置分组按钮图标。</summary>
     public static void SetBandSelectIcon(this CharacterGroup group, string iconPath)
     {
         lock (AsyncLock)

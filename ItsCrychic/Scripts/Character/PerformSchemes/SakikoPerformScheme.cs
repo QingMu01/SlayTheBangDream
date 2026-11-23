@@ -10,16 +10,11 @@ using STS2RitsuLib.Combat.SecondaryResources;
 
 namespace ItsCrychic.Scripts.Character.PerformSchemes;
 
-/// <summary>
-/// 祥子的演奏方案：单一分组、容量上限 7、初始 3。
-/// 槽位自命中框底边向上竖排、并逐格朝玩家靠近；槽位提示显示当前余音数量。
-/// </summary>
+/// <summary>单分组演奏方案；槽位沿命中框底边向上排列，提示显示余音数。</summary>
 public sealed class SakikoPerformScheme : IPerformScheme
 {
-    /// <summary>默认容量。</summary>
     public const int DefaultCapacity = 3;
 
-    /// <summary>容量上限。</summary>
     public const int CapacityLimit = 7;
 
     private static readonly PerformGroupDescriptor[] GroupDescriptors =
@@ -50,9 +45,7 @@ public sealed class SakikoPerformScheme : IPerformScheme
             : new PerformSlotAnchor(PerformSlotCorner.BottomCenter, slotIndex - 1);
     }
 
-    /// <summary>
-    /// 祥子按卡牌性质配色：即兴卡与演奏卡各一色，空槽位或非演奏卡用默认色。
-    /// </summary>
+    /// <inheritdoc />
     public Color GetSlotColor(int slotIndex, CardModel? card)
     {
         return card is IPerformCard performCard

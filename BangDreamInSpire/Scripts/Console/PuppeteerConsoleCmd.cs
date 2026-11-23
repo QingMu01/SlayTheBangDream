@@ -11,20 +11,7 @@ using MegaCrit.Sts2.Core.Helpers;
 
 namespace BangDreamInSpire.Scripts.Console;
 
-/// <summary>
-/// 调试命令：傀儡师形态与歌单冻结的验收入口。
-/// <para>
-/// 用法：
-/// <c>puppet state</c> 打印双生命池 / 形态 / 激活位；
-/// <c>puppet kill</c> 直接击杀当前登场形态（小睦形态会切墨缇丝，墨缇丝形态会真的败北，慎用）；
-/// <c>puppet activate CDFG</c> 手动激活分组（走与"试图演奏"相同的入口，四组齐了会复活小睦）；
-/// <c>puppet freeze</c> / <c>puppet unfreeze</c> 单独验收冻结表现。
-/// </para>
-/// <para>
-/// 仅单人 / 主机验收用：命令声明 <c>IsNetworked = false</c>，不会广播；多人局里由任一端单独执行会造成
-/// host/client 状态分歧，请只在单人或主机侧验收。
-/// </para>
-/// </summary>
+/// <summary>puppet [state|kill|activate|freeze|unfreeze] 调试形态；仅单人或主机使用。</summary>
 public class PuppeteerConsoleCmd : AbstractConsoleCmd
 {
     public override string CmdName => "puppet";

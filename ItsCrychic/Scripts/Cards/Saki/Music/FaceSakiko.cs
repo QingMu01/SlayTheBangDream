@@ -22,7 +22,7 @@ public class FaceSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
     {
         ArgumentNullException.ThrowIfNull(CombatState);
 
-        // 目标类型是落位槽位，伤害目标取随机可命中敌人。
+        // 落位目标与伤害目标独立，后者随机选取敌人。
         var target = Owner.RunState.Rng.CombatTargets.NextItem(CombatState.HittableEnemies);
         if (target != null)
         {
@@ -33,7 +33,7 @@ public class FaceSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTarget)
                 .Execute(choiceContext);
         }
 
-        // 将本牌的一张复制品加入曲库；本牌此刻位于歌单（战斗牌堆），满足 CreateClone 前提。
+        // 本牌在歌单，满足 CreateClone 的战斗牌堆前提。
         var clone = CreateClone();
         await CardPileCmd.AddGeneratedCardToCombat(clone, BangDreamConst.ExtraDraw, Owner);
     }

@@ -12,12 +12,7 @@ using STS2RitsuLib.Interop.AutoRegistration;
 
 namespace ItsCrychic.Scripts.Relics.GameRules;
 
-/// <summary>
-/// 睦的演奏触发规则：打出带和弦的卡牌后，激活该和弦对应分组中音乐牌的奏响。
-/// 和弦由卡牌奖励随机赋予（<c>ChordCapability</c>，随卡牌实例存档），
-/// 只负责激活奏响，不影响卡牌入组（入组由 <c>PerformTargetTypes.RequestGroup</c>
-/// 或方案默认分组决定）。
-/// </summary>
+/// <summary>打出带和弦的卡牌时奏响对应分组，不改变入组规则。</summary>
 [RegisterRelic(typeof(DeprecatedRelicPool))]
 public class MutsumiSpecialRules : HiddenRelic, IPerformTriggerListener
 {
@@ -31,10 +26,7 @@ public class MutsumiSpecialRules : HiddenRelic, IPerformTriggerListener
         return Task.CompletedTask;
     }
 
-    /// <summary>
-    /// 睦的休息处多出「和弦设计」：打开和弦面板，给卡组里的一张牌指定和弦。
-    /// 只给睦，其他角色不注入（注入后返回 true 表示本规则处理了选项修改）。
-    /// </summary>
+    /// <summary>为睦注入休息处「和弦设计」选项。</summary>
     public override bool TryModifyRestSiteOptions(Player player, ICollection<RestSiteOption> options)
     {
         if (player.Character is WakabaMutsumi)

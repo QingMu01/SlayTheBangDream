@@ -27,7 +27,6 @@ public class AveMujicaSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTar
     {
         ArgumentNullException.ThrowIfNull(Owner.PlayerCombatState);
 
-        // 只随机强化手牌中的一张基础牌。
         var basics = Owner.PlayerCombatState.Hand.Cards
             .Where(card => card.Rarity == CardRarity.Basic)
             .ToList();
@@ -54,7 +53,7 @@ public class AveMujicaSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTar
 
     public override Task AfterCardEnteredCombat(CardModel card)
     {
-        // 新战斗开始时清掉上一场残留的强化记录（歌单清理被冻结跳过时不会走 Leave 回调）。
+        // 冻结可能跳过 Leave 回调，新战斗必须复位强化记录。
         if (card == this)
         {
             _affectedCards.Clear();

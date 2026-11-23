@@ -38,7 +38,6 @@ internal class InjectModAssetSetsPatch : IPatchMethod
             return;
         }
 
-        // 性能报告用：记录这次预加载会话里 mod 注入了多少资源。
         PerfTimeline.RecordInjectedAssets(name, modAssets.Count);
         assetSets = [.. assetSets, modAssets];
     }

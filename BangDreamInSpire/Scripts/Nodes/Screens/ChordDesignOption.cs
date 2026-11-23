@@ -19,21 +19,12 @@ using STS2RitsuLib.Scaffolding.Content;
 
 namespace BangDreamInSpire.Scripts.Nodes.Screens;
 
-/// <summary>
-/// 火堆（休息处）选项「和弦设计」：打开 <see cref="NChordDesignScreen" />，给卡组里的一张牌设置和弦。
-/// <para>
-/// 只在实现了对应规则的角色休息处出现（具体角色规则由内容模组提供）。
-/// 联机时 <see cref="RestSiteOption.OnSelect" /> 会在每个 peer 上执行，因此这里按
-/// <c>ReserveChoiceId / SyncLocalChoice / WaitForRemoteChoice</c> 把本地玩家的选择同步给其他 peer，
-/// 再在全部 peer 上以相同参数修改卡牌（与 <c>ExtraPileCmd</c> 同款范式）。
-/// </para>
-/// </summary>
+/// <summary>休息处和弦设计选项；本地选择同步到各端后统一修改卡牌。</summary>
 public class ChordDesignOption(Player owner) : ModRestSiteOptionTemplate(owner)
 {
-    /// <summary>选项 / 面板本地化表（与本体休息处文案同表，mod 的 rest_site_ui.json 会被合并进来）。</summary>
     private const string LocTable = "rest_site_ui";
 
-    /// <summary>本体 <c>NCard.ReloadOverlay</c> 是私有方法，改完和弦后借它手动重建卡面覆盖层。</summary>
+    /// <summary>反射重建卡面覆盖层。</summary>
     private static readonly Action<NCard>? ReloadOverlay = AccessTools.DeclaredMethod(typeof(NCard), "ReloadOverlay")
         is { } method
         ? AccessTools.MethodDelegate<Action<NCard>>(method)
@@ -43,9 +34,7 @@ public class ChordDesignOption(Player owner) : ModRestSiteOptionTemplate(owner)
 
     public override string CustomIconPath => "res://BangDreamInSpire/images/sceneui/music_draw.png";
 
-    // 休息处选项在进房时生成，NRestSiteButton 只在创建 / Reload 时读一次 IsEnabled 与 Description，
-    // 期间卡组不会变化（选中后由 NRestSiteRoom.DisableOptions 整体禁用）。
-    // 因此两者都首次访问求值并缓存；LocString 只在 enabled / disabled 两个 key 间切换，构造一次即可。
+    // IsEnabled 与 Description 首次求值后缓存。
     private bool? _isEnabled;
     private LocString? _description;
 
@@ -56,10 +45,10 @@ public class ChordDesignOption(Player owner) : ModRestSiteOptionTemplate(owner)
 
     public override bool IsEnabled => _isEnabled ??= Owner.Deck.Cards.Count > 0;
 
-    /// <summary>选中并应用后的那张牌；<see cref="DoLocalPostSelectVfx" /> 用它播放「展示 → 飞入卡组」。</summary>
+    /// <summary>当前修改的卡牌。</summary>
     private CardModel? _appliedCard;
 
-    /// <summary>预载升级式展示/飞行的场景（本体 <see cref="NCardUpgradeVfx" /> 的资产清单）。</summary>
+    /// <summary>升级展示与飞行场景。</summary>
     public override IEnumerable<string> AssetPaths => base.AssetPaths.Concat(NCardUpgradeVfx.AssetPaths);
 
     public override async Task<bool> OnSelect()
@@ -111,7 +100,7 @@ public class ChordDesignOption(Player owner) : ModRestSiteOptionTemplate(owner)
         return true;
     }
 
-    /// <summary>把和弦写到卡牌上；<paramref name="additive" /> 为 true 时与卡牌现有和弦取并集。</summary>
+    /// <summary>设置和弦，additive 表示取并集。</summary>
     private static void Apply(CardModel card, PerformChord chord, bool additive)
     {
         if (additive && card.TryGetCapability<ChordCapability>(out var existing))
@@ -121,18 +110,14 @@ public class ChordDesignOption(Player owner) : ModRestSiteOptionTemplate(owner)
 
         card.GetOrCreateCapability<ChordCapability>().SetChord(chord);
 
-        // 卡面书签只在 NCard.ReloadOverlay 后重建；休息处没有手牌，这里防御性地对可能的卡面实例刷新一次
+        // 对已有卡面刷新覆盖层。
         if (NCard.FindOnTable(card) is { } cardNode)
         {
             ReloadOverlay?.Invoke(cardNode);
         }
     }
 
-    /// <summary>
-    /// 与升级卡牌同样的收尾：先在屏幕中央放大展示这张牌（书签已是新和弦），停留片刻后飞入卡组图标。
-    /// 展示与飞行都由本体 <see cref="NCardUpgradeVfx" /> 负责（它内部再调 <c>NCardFlyVfx</c>），
-    /// 这里只等展示段结束，把飞行留给后场继续播放。
-    /// </summary>
+    /// <summary>播放升级式展示与飞入卡组动画。</summary>
     public override async Task DoLocalPostSelectVfx(CancellationToken ct = default)
     {
         if (_appliedCard is not { } card)
@@ -143,7 +128,7 @@ public class ChordDesignOption(Player owner) : ModRestSiteOptionTemplate(owner)
             NRun.Instance?.GlobalUi.CardPreviewContainer.AddChildSafely(vfx);
         }
 
-        // NCardUpgradeVfx：0.25s 放大 + 1.75s 展示，之后起飞；对齐到「展示将结束、飞行刚开始」的时刻
+        // 对齐展示结束与飞行开始。
         await Cmd.CustomScaledWait(1.4f, 1.9f, ignoreCombatEnd: false, ct);
     }
 

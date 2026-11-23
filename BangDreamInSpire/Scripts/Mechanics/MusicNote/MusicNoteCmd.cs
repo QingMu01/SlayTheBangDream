@@ -39,20 +39,17 @@ internal static class MusicNoteCmd
             static context => ExecuteNetworkRequest(context),
             GameActionType.Combat);
 
-    /// <summary>本体 <c>CombatStateTracker.NotifyCombatStateChanged</c> 是私有方法，反射句柄见下。</summary>
+    /// <summary>私有状态通知方法句柄。</summary>
     private static readonly MethodInfo? StateChangedNotifier =
         AccessTools.Method(typeof(CombatStateTracker), "NotifyCombatStateChanged");
 
-    /// <summary>在模组初始化阶段注册描述符，确保接收远端 Action 前本地已具备解码信息。</summary>
+    /// <summary>注册网络动作描述符。</summary>
     internal static void InitializeNetwork()
     {
         RitsuLibManagedNetActions.Register(NetworkAction);
     }
 
-    /// <summary>
-    /// 本体 <c>CombatStateTracker.NotifyCombatStateChanged</c> 是私有方法，这里用反射强制刷新一次状态通知。
-    /// 入口属于玩法层（音符整批结算之后），避免向特效层暴露「能改写战斗状态」的通道。
-    /// </summary>
+    /// <summary>在玩法层反射刷新战斗状态。</summary>
     internal static void NotifyCombatStateChanged()
     {
         if (CombatManager.Instance.IsInProgress)
@@ -83,13 +80,7 @@ internal static class MusicNoteCmd
             : Submit(source.Owner.Creature, baseCount, bounceCount, baseDamage, null, target, source);
     }
 
-    /// <summary>从任意生物发射音符。</summary>
-    /// <remarks>
-    /// <paramref name="dealer" /> 必须是玩家拥有的生物：动作队列的归属端与 <c>NetId</c> 都取自
-    /// <see cref="Creature.Player" />，非玩家 dealer 没有归属端，请求只会被网络层拒绝或退化成
-    /// 各端各自的本地直执行（跨端结算不一致）。因此这里明确拒绝，而不是让它在 <see cref="Submit" />
-    /// 里以「RunState 为 null」的形式报一个看不懂的参数异常。
-    /// </remarks>
+    /// <summary>从玩家拥有的生物发射音符；非玩家 dealer 无网络归属端，直接拒绝。</summary>
     public static Task CustomShot(Creature dealer, int baseCount, int bounceCount = 0, decimal baseDamage = 1m,
         Creature? target = null, bool shouldImmediate = false)
     {
@@ -138,10 +129,7 @@ internal static class MusicNoteCmd
         return Execute(dealer, payload, visualDealer, target, source);
     }
 
-    /// <summary>
-    /// 不经动作队列、直接在调用方的同步上下文内发射，并等待整批结算完成。
-    /// 仅可用于所有端都会以相同顺序执行的上下文（hook / 同步 Action 内部）。
-    /// </summary>
+    /// <summary>在同步上下文直接发射并等待整批结算。</summary>
     private static async Task SubmitImmediate(Creature dealer, int count, int bounceCount, decimal baseDamage,
         Creature? target, AbstractModel? source)
     {

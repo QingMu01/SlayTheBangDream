@@ -15,18 +15,13 @@ using MegaCrit.Sts2.Core.Rooms;
 
 namespace BangDreamInSpire.Scripts.Mechanics.ExtraDeck;
 
-/// <summary>
-/// 额外卡组商人管理器（小祥商人）：为商人房间附加商人按钮与自定义库存。
-/// 第一区域售卖额外卡池音乐牌（入额外卡组），第二区域售卖无色牌（入主卡组），
-/// 第三区域为附魔/贴纸施工占位，第四区域提供额外卡组删牌服务。
-/// 未实现额外卡池的角色打开时，第一、四区域显示未开放。
-/// </summary>
+/// <summary>管理额外卡组商人按钮、库存与删牌服务；不支持的角色显示未开放。</summary>
 internal static class ExtraCardMerchantManager
 {
     public const string InventoryScenePath =
         "res://BangDreamInSpire/scenes/merchant/extra_card_merchant_inventory.tscn";
 
-    /// <summary>商人角色按钮场景由内容模组按角色提供，库代码不写死具体角色资源。</summary>
+    /// <summary>商人按钮场景由内容模组提供。</summary>
     private const string MerchantButtonSceneFileName = "merchant_character_button";
 
     private const string NotOpenLocKey = "BANG_DREAM_IN_SPIRE_EXTRA_CARD_MERCHANT_NOT_OPEN";
@@ -65,10 +60,7 @@ internal static class ExtraCardMerchantManager
             Callable.From<NMerchantButton>(_ => OnMerchantOpened(room, merchantButton, binding)));
     }
 
-    /// <summary>
-    /// 取本局玩家的商人按钮场景：优先角色自己提供的路径；未提供时回落到任意已注册角色的场景
-    /// （多人局里非额外卡组角色也要能看到锁定的商人格），都没有则返回空串。
-    /// </summary>
+    /// <summary>优先使用角色商人场景，缺省回退任意注册场景。</summary>
     private static string ResolveMerchantButtonScenePath(Player player)
     {
         if (player.Character is IExtraDeckSupportCharacter { MerchantCharacterButtonScenePath: { Length: > 0 } ownPath })
@@ -112,8 +104,7 @@ internal static class ExtraCardMerchantManager
         inventoryNode.GetNode<Label>("%NotOpenZone1Label").Text = notOpenText;
         inventoryNode.GetNode<Label>("%NotOpenZone4Label").Text = notOpenText;
 
-        // MerchantInventory 的全参构造保存无色牌条目列表的引用，
-        // 因此可在构造库存后通过 Populate 逐项追加。
+        // 构造保存列表引用，可在之后 Populate。
         var colorlessEntries = new List<MerchantCardEntry>();
         var inventory = new MerchantInventory(
             player,
@@ -141,8 +132,7 @@ internal static class ExtraCardMerchantManager
         }
 
         inventoryNode.Initialize(inventory, MerchantRoom.Dialogue);
-        // 音乐牌与删牌条目刻意不进 inventory.AllEntries（库存列表只收原版条目类型），
-        // 靠 BindSlots 手工绑到场景槽位；因此下面的购买刷新要单独遍历这两组条目。
+        // 专用条目手工绑定并单独刷新，不进入 AllEntries。
         BindSlots(inventoryNode, musicEntries, removalEntry, supportsExtraCardPool);
 
         void OnAnyPurchaseCompleted(PurchaseStatus _, MerchantEntry __)
@@ -195,8 +185,7 @@ internal static class ExtraCardMerchantManager
         var removalSlot = inventoryNode.GetNodeOrNull<NExtraDeckRemovalSlot>("%ExtraDeckRemoval");
         if (supportsExtraCardPool)
         {
-            // 只有真的会 Fill 的槽位才 Initialize：基类 Initialize 会订阅 Player.GoldChanged
-            // 并连接悬停信号，而「Initialize 了但从未 Fill」的槽位在 UpdateVisual 里没有条目可读。
+            // 仅初始化会 Fill 的槽位，避免空条目更新。
             foreach (var musicSlot in musicSlots)
             {
                 musicSlot.Initialize(inventoryNode);

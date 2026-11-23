@@ -55,7 +55,6 @@ public class RisingTone() : AbstractSakikoCard(CustomCost, CustomType, CustomRar
 
     protected override void OnUpgrade()
     {
-        // 升级后休止所需余音：2 → 1。
         this.SecondaryCosts().Set(BangDreamConst.LingeredResource, 1);
     }
 }

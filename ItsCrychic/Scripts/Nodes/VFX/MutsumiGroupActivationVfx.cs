@@ -8,28 +8,17 @@ using MegaCrit.Sts2.Core.Helpers;
 
 namespace ItsCrychic.Scripts.Nodes.VFX;
 
-/// <summary>
-/// 分组激活 · 提线收紧。
-/// <para>
-/// 墨缇丝「演奏」不发动效果，而是把一个和弦分组点亮：该组三条播放列表行同时亮起描边，
-/// 并从这个分组角标拉出一根绷紧的提线指向角色本人，激活瞬间有一个光点沿线跑回去——
-/// 四组齐备时四根线同闪一次，为「小睦被拉回场上」做前置铺垫。
-/// </para>
-/// <para>
-/// 一次性部分 LIFE = 0.40s；常驻部分（行描边 + 提线）持续到解冻或战斗结束。
-/// </para>
-/// </summary>
+/// <summary>分组激活时点亮行并连接角色；一次性动画 0.40s，
+/// 常驻层持续到解冻或战斗结束。</summary>
 [Tool]
 public partial class MutsumiGroupActivationVfx : Node2D, IPerformAreaActivationVisual
 {
-    /// <summary>挂在 <c>ItemContainer</c> 下的固定节点名前缀（实际节点为 <c>GroupActivationVfx</c>）。</summary>
     public const string NodeName = "GroupActivationVfx";
 
     public Node2D View => this;
 
     public float OneShotLifeTime => OneShotLifeTimeSeconds;
 
-    /// <summary>一次性激活表现的时长；<c>NPerformArea</c> 通过接口属性读取。</summary>
     public const float OneShotLifeTimeSeconds = 0.40f;
 
     private const float LifeTime = OneShotLifeTimeSeconds;
@@ -51,7 +40,7 @@ public partial class MutsumiGroupActivationVfx : Node2D, IPerformAreaActivationV
     private readonly Dictionary<PerformChord, PerformActivationGroup> _active = [];
     private PerformActivationGroup? _shot;
     private float _shotElapsed;
-    /// <summary>吊线外发光的固定三遍参数；提成静态表，避免每帧每条线都分配。</summary>
+    /// <summary>静态发光参数，避免逐帧分配。</summary>
     private static readonly (float Width, float Scale)[] GlowPasses =
     [
         (8f, 0.10f), (4f, 0.20f), (2f, 1f)
@@ -67,7 +56,6 @@ public partial class MutsumiGroupActivationVfx : Node2D, IPerformAreaActivationV
     private Texture2D? _glintTexture;
     private bool _previewRows;
 
-    /// <summary>勾选即重播一次（自动复位，便于反复触发）。</summary>
     [Export]
     public bool Play
     {
@@ -79,7 +67,6 @@ public partial class MutsumiGroupActivationVfx : Node2D, IPerformAreaActivationV
         }
     }
 
-    /// <summary>预览态下循环播放。</summary>
     [Export]
     public bool LoopPreview { get; set; } = true;
 
@@ -132,7 +119,7 @@ public partial class MutsumiGroupActivationVfx : Node2D, IPerformAreaActivationV
         }
     }
 
-    /// <summary>投喂全部已激活分组（幂等：每次变化整体重建常驻层）。</summary>
+    /// <summary>整体重建已激活分组的常驻层。</summary>
     public void SetActive(IReadOnlyList<PerformActivationGroup> states)
     {
         _active.Clear();
@@ -144,7 +131,6 @@ public partial class MutsumiGroupActivationVfx : Node2D, IPerformAreaActivationV
         QueueRedraw();
     }
 
-    /// <summary>播放某个分组的一次性激活表现（0.40s）。</summary>
     public void PlayOneShot(PerformActivationGroup state)
     {
         _shot = state;
@@ -152,7 +138,6 @@ public partial class MutsumiGroupActivationVfx : Node2D, IPerformAreaActivationV
         QueueRedraw();
     }
 
-    /// <summary>清空常驻层（解冻 / 复活）。</summary>
     public void Clear()
     {
         _active.Clear();
@@ -161,7 +146,6 @@ public partial class MutsumiGroupActivationVfx : Node2D, IPerformAreaActivationV
         QueueRedraw();
     }
 
-    /// <summary>预览用：F6 单独运行场景时造四组假行，C/G 常驻点亮，一次性在两者间轮播。</summary>
     public void Replay()
     {
         VfxPreviewSupport.CenterForPreview(this);
@@ -181,7 +165,6 @@ public partial class MutsumiGroupActivationVfx : Node2D, IPerformAreaActivationV
     {
         var breath = 0.5f + 0.5f * Mathf.Sin(_time * Mathf.Tau / BreathPeriod);
 
-        // 常驻：行描边 + 提线
         foreach (var state in _active.Values)
         {
             var color = PerformChordColors.ColorOf(state.Group);
@@ -212,7 +195,7 @@ public partial class MutsumiGroupActivationVfx : Node2D, IPerformAreaActivationV
         DrawPulse(shot.BadgeCenter, shot.TargetCenter);
     }
 
-    /// <summary>点亮某组的行：按行的斜切平行四边形填充 + 描边（用矩形描边会让四个角戳在行外）。</summary>
+    /// <summary>按斜切四边形绘制行，避免矩形角越界。</summary>
     private void DrawRowsLit(PerformRow[] rows, bool mirrored, float alpha, float progress, Color color,
         bool highlight = false)
     {
@@ -245,7 +228,6 @@ public partial class MutsumiGroupActivationVfx : Node2D, IPerformAreaActivationV
 
         var end = from.Lerp(to, progress);
         var mid = from.Lerp(to, 0.5f);
-        // 轻微下垂：中点向重力方向偏移 2px，读作「绷紧但仍有重量」
         mid += new Vector2(0f, 2f);
         _threadBuffer[0] = from;
         _threadBuffer[1] = mid;

@@ -11,25 +11,12 @@ using STS2RitsuLib.Models;
 
 namespace BangDreamInSpire.Scripts.Mechanics.Break;
 
-/// <summary>
-/// 击破触发规则（与祥子「余音 / 休止」同构的单例模型）。
-/// <para>
-/// 每张牌出牌期间维护一张「命中集合」：<see cref="BeforeCardPlayed" /> 压栈并先记入
-/// <see cref="CardPlay.Target" />（覆盖纯指向牌），出牌结算过程中通过
-/// <see cref="AfterDamageReceived" /> / <see cref="AfterPowerAmountChanged" /> 按
-/// <c>cardSource</c> 归属把被命中的目标补进来（覆盖随机 / AOE / 非伤害效果）。
-/// 随后在 <see cref="AfterCardPlayedLate" />（此时「发现破绽 → 弱点击破」已经结算完）出栈，
-/// 对集合里每一个处于弱点击破的目标触发 <see cref="IWeaknessBreakCard.OnWeakPointBreak" /> 并广播。
-/// </para>
-/// <para>
-/// 嵌套出牌用帧栈区分：内层出牌推自己的帧、用 <see cref="CardPlay" /> 精确出栈，
-/// 因此外层牌的效果触发内层出牌时，两边各结算各自的命中集合。
-/// </para>
-/// </summary>
+/// <summary>按出牌帧栈收集命中目标，AfterCardPlayedLate 对仍处于弱点击破的目标触发击破；
+/// 嵌套出牌独立结算。</summary>
 [RegisterSingleton]
 public sealed class BreakRules : HookedSingletonModel
 {
-    /// <summary>命中集合帧栈的硬上限：出牌被异常中断（拥有者死亡、战斗结束）时防止无限累积。</summary>
+    /// <summary>帧栈上限，防止异常中断导致累积。</summary>
     private const int FrameStackHardLimit = 64;
 
     private List<CardHitFrame> _frames = [];
@@ -38,7 +25,6 @@ public sealed class BreakRules : HookedSingletonModel
     {
     }
 
-    /// <summary>一次出牌对应的命中集合。</summary>
     private sealed class CardHitFrame(CardModel card, CardPlay play)
     {
         public CardModel Card { get; } = card;
@@ -53,11 +39,11 @@ public sealed class BreakRules : HookedSingletonModel
     protected override void DeepCloneFields()
     {
         base.DeepCloneFields();
-        // 帧栈是纯运行时状态：每局实例各持一份，不随规范模型浅拷贝共享。
+        // 帧栈不随规范模型浅拷贝共享。
         _frames = [];
     }
 
-    /// <summary>战斗开始时清空上一场可能残留的帧（出牌被中断时不会走到出栈）。</summary>
+    /// <summary>战斗开始时清空残留帧。</summary>
     public override Task BeforeCombatStart()
     {
         _frames.Clear();
@@ -72,7 +58,7 @@ public sealed class BreakRules : HookedSingletonModel
             _frames.RemoveAt(0);
         }
 
-        // 纯指向牌：目标一定能被记录，即便这张牌没有伤害、也没有施加能力。
+        // 纯指向牌始终记录目标。
         RecordTarget(cardPlay.Card, cardPlay.Target);
         return Task.CompletedTask;
     }
@@ -80,7 +66,7 @@ public sealed class BreakRules : HookedSingletonModel
     public override Task AfterDamageReceived(PlayerChoiceContext choiceContext, Creature target, DamageResult result,
         ValueProp props, Creature? dealer, CardModel? cardSource)
     {
-        // 随机 / AOE 伤害：每个被命中的目标各自回调一次，按 cardSource 归属到当前出牌。
+        // 按 cardSource 归属伤害目标。
         RecordTarget(cardSource, target);
         return Task.CompletedTask;
     }
@@ -88,9 +74,7 @@ public sealed class BreakRules : HookedSingletonModel
     public override Task AfterPowerAmountChanged(PlayerChoiceContext choiceContext, PowerModel power, decimal amount,
         Creature? applier, CardModel? cardSource)
     {
-        // 非伤害类命中（施加易伤/虚弱、发现破绽等）：能力目标即被命中目标。
-        // 排除「这张牌给牌主自己上的增益」——那是自身效果、不是「目标被选中」；
-        // 显式指向自己时由 BeforeCardPlayed 里的 CardPlay.Target 记录，不会漏。
+        // 能力目标也计入命中；自身增益不算，除非显式指向自己。
         if (power.Owner is { } owner && !ReferenceEquals(owner, cardSource?.Owner?.Creature))
         {
             RecordTarget(cardSource, owner);
@@ -113,11 +97,7 @@ public sealed class BreakRules : HookedSingletonModel
             return;
         }
 
-        // 触发条件 = 「本牌命中的目标**此刻仍处于弱点击破**」，不是「本牌造成了这次击破」。
-        // 这是有意语义（决策 B-08）：队友或前一张牌刚把目标打进弱点击破，本牌命中该目标同样触发「击破：」。
-        // 因此这里**不**按击破来源过滤，只校验目标仍然持有 WeakPointBreakPower；改动此处等于改玩法语义，
-        // 需要同步 docs/mechanic-authoring.md §11 与「击破」关键字文案。
-        // 逐个目标触发：AOE 命中多个弱点击破目标时各自结算一次；同一张牌对同一目标只触发一次。
+        // 只要求目标当前处于弱点击破，不要求本牌造成击破；每个目标至多触发一次。
         foreach (var target in frame.Targets)
         {
             if (target.IsDead || target.GetPower<WeakPointBreakPower>() == null)
@@ -141,7 +121,7 @@ public sealed class BreakRules : HookedSingletonModel
             return;
         }
 
-        // 从栈顶向下找「这张牌」的帧：内层出牌命中记到内层帧，外层记到外层帧。
+        // 从栈顶匹配当前出牌帧，区分嵌套结算。
         for (var i = _frames.Count - 1; i >= 0; i--)
         {
             if (!ReferenceEquals(_frames[i].Card, cardSource))

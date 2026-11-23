@@ -6,5 +6,4 @@ namespace BangDreamInSpire.Scripts.Powers;
 [RegisterPower(Inherit = true)]
 public abstract class BandTemporaryPowerModel : ModTemporaryPowerTemplate
 {
-    // protected abstract PowerAssetProfile CardAssetProfile { get; }
 }

@@ -11,7 +11,7 @@ public class AnglesSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTarget
     private const CardRarity CustomRarity = CardRarity.Rare;
     private static readonly TargetType CustomTarget = PerformTargetTypes.RequestGroup;
 
-    // 稀有度选择优先级：只取当前存在的最高档，档内再随机。
+    // 取存在的最高稀有度，档内随机。
     private static readonly CardRarity[] RarityPriority =
     [
         CardRarity.Rare,
@@ -28,7 +28,6 @@ public class AnglesSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTarget
     {
         ArgumentNullException.ThrowIfNull(CombatState);
 
-        // 仅从玩家牌组中的攻击牌选择。
         var deckCards = PileType.Deck.GetPile(Owner).Cards
             .Where(card => card.Type == CardType.Attack)
             .ToList();
@@ -37,7 +36,7 @@ public class AnglesSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTarget
         var candidates = RarityPriority
             .Select(rarity => deckCards.Where(card => card.Rarity == rarity).ToList())
             .FirstOrDefault(cards => cards.Count > 0);
-        // 优先级表之外的稀有度（如 Ancient/Event）兜底参与随机。
+        // 未列入优先级的稀有度参与兜底随机。
         candidates ??= deckCards;
 
         var selectedCard = Owner.RunState.Rng.CombatCardSelection.NextItem(candidates);

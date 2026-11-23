@@ -3,14 +3,7 @@ using Godot;
 
 namespace BangDreamInSpire.Scripts.Nodes.Controls;
 
-/// <summary>
-/// 和弦设计面板卡牌行的横向滚动条（本体 <c>NScrollbar</c> 只有纵向，横向条是本面板自绘的）。
-/// <para>
-/// 只负责「外观 + 交互」：拖拽/点击时把位置换算成 <c>0..1</c> 的比例经 <see cref="Scrolled" /> 抛出，
-/// 由面板决定如何滚动卡牌行；面板反过来用 <see cref="SetState" /> 把当前比例与可视比例写回来。
-/// 两条限制：<see cref="MinThumbWidth" /> 保证内容再多也能抓住；比例恒在 <c>0..1</c> 内。
-/// </para>
-/// </summary>
+/// <summary>横向滚动条，报告 0..1 位置并保持最小滑块宽度。</summary>
 public partial class NChordScrollbar : Control
 {
     private const float TrackHeight = 10f;
@@ -24,7 +17,7 @@ public partial class NChordScrollbar : Control
     private bool _dragging;
     private bool _hovered;
 
-    /// <summary>用户把滑块拖到新位置时触发，参数为 <c>0..1</c> 的比例。</summary>
+    /// <summary>位置变化时触发。</summary>
     public event Action<float>? Scrolled;
 
     public float Ratio => _ratio;
@@ -38,7 +31,7 @@ public partial class NChordScrollbar : Control
         MouseExited += () => { _hovered = false; QueueRedraw(); };
     }
 
-    /// <summary>写回状态：<paramref name="ratio" /> 为滚动比例，<paramref name="pageFraction" /> 为可视区占内容的比例。</summary>
+    /// <summary>更新滚动比例与可视比例。</summary>
     public void SetState(float ratio, float pageFraction)
     {
         var newPage = Mathf.Clamp(pageFraction, 0.04f, 1f);

@@ -10,23 +10,12 @@ using STS2RitsuLib.Models.Capabilities;
 
 namespace BangDreamInSpire.Scripts.Console;
 
-/// <summary>
-/// 调试命令：给手牌设置演奏和弦，用来预览卡牌右边缘和弦书签的堆叠效果。
-/// <para>
-/// 用法：<c>chord CDF</c>（和弦字母任意组合）、<c>chord 13</c>（位掩码，C=1/D=2/F=4/G=8）、
-/// <c>chord none</c>（清空）。卡牌书签由能力的卡面覆盖层绘制，只在
-/// <c>NCard.ReloadOverlay</c> 之后重建，因此改完和弦要手动触发一次覆盖层刷新。
-/// </para>
-/// <para>
-/// 仅单人 / 主机验收用：命令声明 <c>IsNetworked = false</c>，不会广播；多人局里由任一端单独执行会造成
-/// host/client 状态分歧，请只在单人或主机侧验收。
-/// </para>
-/// </summary>
+/// <summary>chord [letters|mask|none] 设置手牌和弦并刷新书签；仅单人或主机使用。</summary>
 public class ChordConsoleCmd : AbstractConsoleCmd
 {
     private const string NoneKeyword = "none";
 
-    /// <summary>本体 <c>NCard.ReloadOverlay</c> 是私有方法，这里委派成委托调用它重建能力覆盖层。</summary>
+    /// <summary>反射重建卡面覆盖层。</summary>
     private static readonly Action<NCard>? ReloadOverlay = AccessTools.DeclaredMethod(typeof(NCard), "ReloadOverlay")
         is { } method
         ? AccessTools.MethodDelegate<Action<NCard>>(method)
@@ -77,7 +66,7 @@ public class ChordConsoleCmd : AbstractConsoleCmd
         return new CmdResult(true, $"手牌 {cards.Count} 张已设为 {chord}。");
     }
 
-    /// <summary>解析和弦参数：字母组合、位掩码整数或 <c>none</c>。</summary>
+    /// <summary>解析字母、位掩码或 none。</summary>
     private static bool TryParseChord(string text, out PerformChord chord)
     {
         chord = PerformChord.None;

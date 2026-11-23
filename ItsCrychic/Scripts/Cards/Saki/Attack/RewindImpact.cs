@@ -28,7 +28,6 @@ public class RewindImpact()
     protected override IEnumerable<DynamicVar> CardVars =>
     [
         QuickVar.Damage.Create(14),
-        // 余音数值走动态变量，避免 .subside 文案里写死 18 与实现各改一半。
         QuickVar.LingeredResource.Create(18)
     ];
 

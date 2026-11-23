@@ -23,7 +23,7 @@ public partial class MusicNoteFlyingVfx : NBangDreamFlyingVfx
     private Tween? _tween;
     private float _trajectoryVariation = 0.7f;
 
-    /// <summary>场景中精灵的原始缩放/着色，重播时恢复到该基准（两个场景基准不同）。</summary>
+    /// <summary>场景美术基准，用于重播复位。</summary>
     private Vector2 _spriteBaseScale = Vector2.One;
     private Color _spriteBaseModulate = Colors.White;
 
@@ -62,19 +62,15 @@ public partial class MusicNoteFlyingVfx : NBangDreamFlyingVfx
         }
     }
 
-    /// <summary>
-    /// 预览是否采用自动计算的演示航程（视口 x 1/4 → 3/4、y 中点），无需手填下面两个偏移。
-    /// 关闭后再按 <see cref="PreviewStart" />/<see cref="PreviewEnd" /> 作相对偏移。
-    /// </summary>
+    /// <summary>预览自动使用演示航程。</summary>
     [Export] public bool AutoPreviewSpan { get; set; } = true;
 
-    /// <summary>预览飞行起点（相对节点初始位置的偏移）；<see cref="AutoPreviewSpan" /> 开启时忽略。</summary>
+    /// <summary>手动预览起点。</summary>
     [Export] public Vector2 PreviewStart { get; set; } = new(-500f, 0f);
 
-    /// <summary>预览飞行终点（相对节点初始位置的偏移）；<see cref="AutoPreviewSpan" /> 开启时忽略。</summary>
+    /// <summary>手动预览终点。</summary>
     [Export] public Vector2 PreviewEnd { get; set; } = new(0f, 0f);
 
-    /// <summary>勾选即重播一次（自动复位，便于反复触发）。</summary>
     [Export]
     public bool Play
     {
@@ -86,7 +82,6 @@ public partial class MusicNoteFlyingVfx : NBangDreamFlyingVfx
         }
     }
 
-    /// <summary>预览态下播放结束后自动重播。</summary>
     [Export] public bool LoopPreview { get; set; } = true;
 
     internal void SetTrajectoryLane(int laneIndex, int laneCount, float groupDirection)
@@ -111,9 +106,7 @@ public partial class MusicNoteFlyingVfx : NBangDreamFlyingVfx
             InitializePath();
     }
 
-    /// <summary>
-    /// 重置并重新播放一次飞行。游戏内由 _Ready 触发，预览时也可手动/循环触发。
-    /// </summary>
+    /// <summary>重置并播放飞行。</summary>
     public void Replay()
     {
         if (!IsNodeReady() || _sprites == null)
@@ -137,7 +130,7 @@ public partial class MusicNoteFlyingVfx : NBangDreamFlyingVfx
         }
         else if (VfxPreviewSupport.IsPreviewRun(this))
         {
-            // 仅「F6 单独预览」且无外部路径时，走自动演示航程，避免飞在视口角落。
+            // 无外部路径的 F6 预览使用演示航程。
             var (start, end) = VfxPreviewSupport.PreviewTravelSpan(this);
             if (!AutoPreviewSpan)
             {
@@ -147,9 +140,9 @@ public partial class MusicNoteFlyingVfx : NBangDreamFlyingVfx
 
             SetPath(start, end);
         }
-        // 游戏内若外部未提供路径，保持原行为：不移动，仅广播 Spawn。
+        // 游戏内无路径时仅广播 Spawn。
 
-        // 与原始实现一致：路径就绪后再广播 Spawn。
+        // 路径就绪后广播 Spawn。
         EmitSpawnSignal();
     }
 
@@ -189,7 +182,7 @@ public partial class MusicNoteFlyingVfx : NBangDreamFlyingVfx
             Replay();
     }
 
-    /// <summary>随机化精灵帧与飞行扰动，与游戏内原始随机化行为一致（不含信号广播）。</summary>
+    /// <summary>随机化精灵帧与飞行扰动。</summary>
     private void RandomizeFlight()
     {
         if (_sprites == null)
@@ -265,14 +258,7 @@ public partial class MusicNoteFlyingVfx : NBangDreamFlyingVfx
         return 2f * (1f - progress) * (control - start) + 2f * progress * (end - control);
     }
 
-    /// <summary>
-    /// 命中帧：先广播命中三段，再等淡出补间结束广播 Finish。
-    /// <para>
-    /// 不 <c>await ToSignal(_tween, Finished)</c>：节点/补间被释放时 await 的续体不会恢复，
-    /// <c>finally</c> 里的 <c>EmitFinishSignal()</c> 会丢。补间正常结束时通过 <c>Finished</c> 回调收口；
-    /// 节点被释放时补间一并被杀，由 <c>BangDreamVfxManager</c> 的 <c>TreeExited</c> 兜底完成句柄，不产生挂起。
-    /// </para>
-    /// </summary>
+    /// <summary>命中后通过 Finished 回调收尾；节点释放时由 TreeExited 完成句柄，避免 await 挂起。</summary>
     private void OnReachedEnd()
     {
         try
@@ -308,7 +294,7 @@ public partial class MusicNoteFlyingVfx : NBangDreamFlyingVfx
 
             EmitFinishSignal();
 
-            // 预览态不自毁，按需循环重播以便反复打磨。
+            // 预览保留节点供循环重播。
             if (previewing && LoopPreview)
                 Replay();
         }
@@ -318,7 +304,7 @@ public partial class MusicNoteFlyingVfx : NBangDreamFlyingVfx
         }
     }
 
-    /// <summary>仅在「F6 单独运行预览」中改动飞行参数时立即重播；编辑器里编辑场景不重播。</summary>
+    /// <summary>预览参数变化时立即重播。</summary>
     private void ReplayIfPreviewing()
     {
         if (IsNodeReady() && VfxPreviewSupport.IsPreviewRun(this))

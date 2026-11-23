@@ -21,9 +21,7 @@ public partial class MusicEqualizerVfx : Node2D
 
     private float[] _currentHeight = null!;
 
-    /// <summary>
-    /// 每列开始上升的时间（从中心向外延迟，形成波浪感）
-    /// </summary>
+    /// <summary>各列上升延迟。</summary>
     private float[] _riseStartTime = null!;
 
     private bool _active;
@@ -71,7 +69,6 @@ public partial class MusicEqualizerVfx : Node2D
         set => _fallSpeed = value;
     }
 
-    /// <summary>勾选即重播一次（自动复位，便于反复触发）。</summary>
     [Export]
     public bool Play
     {
@@ -83,7 +80,6 @@ public partial class MusicEqualizerVfx : Node2D
         }
     }
 
-    /// <summary>预览态下播放结束后自动重播。</summary>
     [Export] public bool LoopPreview { get; set; } = true;
 
     public override void _Ready()
@@ -94,8 +90,7 @@ public partial class MusicEqualizerVfx : Node2D
         if (_staffRingVfx.Material is ShaderMaterial material)
             _ringMaterial = material;
 
-        // 收集所有 Bar 引用。编辑器里保持作者摆放的可见性，便于摆位设计；
-        // 真正播放时（Replay）会自行隐藏并在逐帧中按高度显示。
+        // 编辑器保留摆放，播放时按高度显示。
         var columnCount = _columns!.GetChildCount();
         _bars = new Sprite2D[columnCount][];
         var hideBars = !Engine.IsEditorHint();
@@ -118,7 +113,7 @@ public partial class MusicEqualizerVfx : Node2D
         _currentHeight = new float[columnCount];
         _riseStartTime = new float[columnCount];
 
-        // 从中心列向外依次延迟，形成波浪式冲起的视觉效果
+        // 从中心向外延迟。
         var center = (columnCount - 1) / 2.0f;
         for (var i = 0; i < columnCount; i++)
         {
@@ -133,16 +128,15 @@ public partial class MusicEqualizerVfx : Node2D
             Replay();
     }
 
-    /// <summary>重置并重新播放一次特效。游戏内由 _Ready 触发，预览时也可手动/循环触发。</summary>
     public void Replay()
     {
-        // Inspector 的 Play 可能在 _Ready 之前被勾选：节点未就绪时直接忽略。
+        // 节点未就绪时忽略 Play。
         if (!IsNodeReady() || _columns == null) return;
 
         _elapsed = 0f;
         _active = true;
 
-        // 预览时摆到视口中心，游戏内位置由调用方决定。
+        // 预览居中；游戏内位置由调用方决定。
         VfxPreviewSupport.CenterForPreview(this);
 
         Array.Clear(_currentHeight, 0, _currentHeight.Length);
@@ -165,7 +159,6 @@ public partial class MusicEqualizerVfx : Node2D
         var dt = (float)delta;
         _elapsed += dt;
 
-        // ── 均衡器 Bar 增长与回落 ──
         for (var i = 0; i < _bars.Length; i++)
         {
             var barCount = _bars[i].Length;
@@ -177,12 +170,12 @@ public partial class MusicEqualizerVfx : Node2D
                 continue;
             }
 
-            // 每列用不同的噪声偏移，保证列与列之间的差异
+            // 各列使用不同噪声偏移。
             var noiseVal = _noise!.GetNoise2D(_elapsed * 5f, i * 10.0f);
             var normalized = Mathf.Clamp((noiseVal + 1f) * 0.5f, 0f, 1f);
             var targetHeight = normalized * barCount;
 
-            // 刚启动时：以 RiseSpeed 快速从底部冲上去
+            // 启动阶段快速上升。
             if (_elapsed - _riseStartTime[i] < 0.2f)
             {
                 _currentHeight[i] += RiseSpeed * dt;
@@ -191,7 +184,7 @@ public partial class MusicEqualizerVfx : Node2D
             }
             else
             {
-                // 正常运行：噪声超过当前高度时瞬间跳到新值（不插值），否则线性回落
+                // 上升直接取值，下降线性回落。
                 if (targetHeight > _currentHeight[i])
                     _currentHeight[i] = targetHeight;
                 else
@@ -222,7 +215,6 @@ public partial class MusicEqualizerVfx : Node2D
             }
         }
 
-        // ── 淡出（Lifetime 前最后 1 秒）──
         var remaining = Lifetime - _elapsed;
         if (remaining is < 1.0f and >= 0f)
         {
@@ -246,10 +238,7 @@ public partial class MusicEqualizerVfx : Node2D
             Replay();
     }
 
-    /// <summary>
-    /// 编辑器里写「实例级」着色参数，避免逐帧改动场景共享的 ShaderMaterial 而把场景标记为已修改；
-    /// 游戏内写共享材质参数。
-    /// </summary>
+    /// <summary>编辑器写实例参数，游戏内写共享材质参数。</summary>
     private void SetBrightness(float value)
     {
         if (Engine.IsEditorHint())
@@ -258,7 +247,7 @@ public partial class MusicEqualizerVfx : Node2D
             _ringMaterial?.SetShaderParameter("brightness", value);
     }
 
-    /// <summary>重建噪声参数，使频率/倍频程的改动即时生效。</summary>
+    /// <summary>重建噪声参数。</summary>
     private void ApplyNoise()
     {
         if (_noise == null)

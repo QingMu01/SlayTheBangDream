@@ -3,13 +3,7 @@ using Godot;
 
 namespace BangDreamInSpire.Scripts.Utils.Infos;
 
-/// <summary>
-/// 演奏和弦的配色表：卡牌书签（<c>NChordBookmark</c>）与演奏区槽位共用同一份，避免两处颜色各写一遍而漂移。
-/// <para>
-/// 每个和弦对应一名队友的角色色（C→祥子、D→素世、F→灯、G→立希）。核心模组不能引用角色模组，
-/// 因此颜色值以本表为唯一来源，角色模组的 <c>CrychicMemberEnum</c> 反向引用本表。
-/// </para>
-/// </summary>
+/// <summary>书签与槽位共用的和弦配色，内容模组反向引用本表。</summary>
 public static class PerformChordColors
 {
     private static readonly Dictionary<PerformChord, Color> Colors = new()
@@ -20,10 +14,10 @@ public static class PerformChordColors
         [PerformChord.G] = new("#7777AA") // 立希
     };
 
-    /// <summary>无和弦、多和弦掩码或未知和弦时的回退色。</summary>
+    /// <summary>无法确定单和弦时的回退色。</summary>
     public static readonly Color Fallback = new("#9d9d9d");
 
-    /// <summary>取单个和弦的配色；<see cref="PerformChord.None" /> 或复合掩码返回 <see cref="Fallback" />。</summary>
+    /// <summary>返回单和弦配色，其他情况使用回退色。</summary>
     public static Color ColorOf(PerformChord chord)
     {
         return Colors.TryGetValue(chord, out var color) ? color : Fallback;

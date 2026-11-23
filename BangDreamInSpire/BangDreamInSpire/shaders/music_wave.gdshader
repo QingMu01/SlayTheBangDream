@@ -1,20 +1,18 @@
 shader_type canvas_item;
 render_mode blend_add;
 
-// 流畅弹性扭曲着色器
-
 uniform sampler2D viewport_texture : source_color, filter_linear;
 
-uniform float speed : hint_range(0.1, 5.0) = 1.0;          // 流动速度
-uniform float intensity : hint_range(0.0, 0.15) = 0.035;   // 扭曲强度
+uniform float speed : hint_range(0.1, 5.0) = 1.0;
+uniform float intensity : hint_range(0.0, 0.15) = 0.035;
 
-uniform float wobble_freq : hint_range(0.5, 8.0) = 3.0;    // 抖动频率（越高波纹越密）
-uniform float twist_amount : hint_range(0.0, 1.0) = 0.4;   // 扭转幅度
-uniform float breathe_amount : hint_range(0.0, 1.0) = 0.3; // 呼吸膨胀幅度
+uniform float wobble_freq : hint_range(0.5, 8.0) = 3.0;
+uniform float twist_amount : hint_range(0.0, 1.0) = 0.4;
+uniform float breathe_amount : hint_range(0.0, 1.0) = 0.3;
 
-uniform float hue_shift : hint_range(0.0, 1.0) = 0.0;      // 色相偏移（0~1 对应色环一圈）
-uniform float saturation : hint_range(0.0, 2.0) = 1.0;     // 饱和度（1.0 为原始）
-uniform float brightness : hint_range(0.0, 2.0) = 1.0;     // 明度（1.0 为原始）
+uniform float hue_shift : hint_range(0.0, 1.0) = 0.0; // 0~1 对应色环一圈
+uniform float saturation : hint_range(0.0, 2.0) = 1.0;
+uniform float brightness : hint_range(0.0, 2.0) = 1.0;
 
 vec3 rgb2hsv(vec3 c) {
 	vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);

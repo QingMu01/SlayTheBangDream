@@ -18,17 +18,13 @@ using STS2RitsuLib.Combat.SecondaryResources;
 
 namespace BangDreamInSpire.Scripts.Nodes;
 
-/// <summary>
-/// 歌单演奏区域节点。槽位数量与布局拓扑由角色的演奏方案提供，本节点只负责
-/// 像素换算、可见性与缓动。
-/// </summary>
+/// <summary>按角色演奏方案管理歌单槽位、布局与交互表现。</summary>
 public partial class NPerformArea : Control, IPerformArea
 {
     private const float ItemHeight = 64f;
     private const float ItemSpacing = 70f;
     private const float ItemApproachSpacing = 25f;
 
-    /// <summary>四角槽位与命中框边界之间的水平间距。</summary>
     private const float SlotHitboxGap = 10f;
 
     private const float LayoutDuration = 0.25f;
@@ -38,23 +34,15 @@ public partial class NPerformArea : Control, IPerformArea
     private const float HintFadeDuration = 0.12f;
     private const float HintVerticalOffset = 5f;
 
-    /// <summary>
-    /// 冻结时槽位的冷色相乘系数。正式冻结特效（提线悬停）只负责线/覆膜，
-    /// 槽位本身仅做与预演一致的轻微降亮（预演里行底色约为平时的 0.74）。
-    /// </summary>
+    /// <summary>冻结时槽位的降亮系数。</summary>
     private static readonly Color FrozenSlotTint = new(0.82f, 0.84f, 0.92f);
 
-    /// <summary>
-    /// 冻结时每行的倾角与位移由 <see cref="PerformHangStyle" /> 给出（手调的参差数值）。
-    /// 行可以转：槽位节点绕外上角（提线的钩点）旋转，布局缓动只写 position、镜像只写 scale，
-    /// 三者互不覆盖。
-    /// </summary>
+    /// <summary>冻结姿态共用 PerformHangStyle；旋转、位移与镜像分离。</summary>
     private static float GetHangTilt(int slotIndex) => PerformHangStyle.TiltRadians(slotIndex);
 
     private const float ActivatedBadgeSize = 22f;
     private const string ActivatedBadgeNamePrefix = "ActivatedGroupBadge_";
 
-    /// <summary>手动选择时槽位命中框额外放宽的边距（像素）。</summary>
     private const float SlotSelectionHitPadding = 8f;
 
     private float _itemScale = 0.7f;
@@ -103,14 +91,7 @@ public partial class NPerformArea : Control, IPerformArea
     private bool _isApplyingLayout;
     private bool _subscribedToResourceChanged;
 
-    // ── 歌单冻结 / 分组激活（占位表现） ──────────────────────────────────────────
-    //
-    // 冻结 / 分组激活的表现由内容模组通过 PerformAreaVisuals 注册；核心只算布局并投喂数据，
-    // 不持有任何具体角色特效类型。
-    //   * 冻结层：PlaylistFreezeVfx（ItemContainer 下），按分组行布局画提线。
-    //   * 分组激活层：GroupActivationVfx，行描边 + 角标提线 + 一次性扫光/环/光点；
-    //     角标本身仍是本类的 ActivatedGroupBadge_<和弦名>（ColorRect + Label）。
-    // 外部只依赖 SetFrozen(bool) / SetActivatedGroups(PerformChord)；刷新入口是 ApplyItemVisibility。
+    // 核心只计算布局；冻结与激活表现由内容模组通过 PerformAreaVisuals 注册。
     private IPerformAreaFreezeVisual? _freezeVfx;
     private IPerformAreaActivationVisual? _activationVfx;
     private bool _isFrozen;
@@ -142,9 +123,7 @@ public partial class NPerformArea : Control, IPerformArea
         return area;
     }
 
-    /// <summary>
-    /// 绑定角色的演奏方案。必须在 <see cref="SyncSlots" /> 之前调用。
-    /// </summary>
+    /// <summary>绑定演奏方案，必须在 SyncSlots 前调用。</summary>
     public void SubmitScheme(IPerformScheme scheme)
     {
         _scheme = scheme;
@@ -186,7 +165,7 @@ public partial class NPerformArea : Control, IPerformArea
             return;
         }
 
-        // 同一节点重复 SubmitChanged（重连/复活/后续重构）时不能叠加回调。
+        // 重连或复活时避免重复订阅。
         if (_subscribedToResourceChanged)
         {
             return;
@@ -196,10 +175,7 @@ public partial class NPerformArea : Control, IPerformArea
         _subscribedToResourceChanged = true;
     }
 
-    /// <summary>
-    /// 设置歌单冻结表现：槽位降饱和 + 一层冷色覆盖。
-    /// 解冻时同时清空分组激活位（激活只在冻结期间有意义）。
-    /// </summary>
+    /// <summary>切换冻结表现；解冻时清空分组激活。</summary>
     public void SetFrozen(bool frozen)
     {
         if (_isFrozen == frozen) return;
@@ -214,19 +190,14 @@ public partial class NPerformArea : Control, IPerformArea
         ApplyFrozenVisuals();
         ApplyActivatedGroupVisuals();
 
-        // 冻结会改变槽位的落位与倾角（PerformHangStyle）。这里直接落位、不补缓动：
-        // 冻结层的提线/钩点是按槽位当时的姿态画的，缓动会让线和行脱开 0.25s，
-        // 而在 3px/3° 的量级下缓动本身也看不出「落位」，不如交给冻结层的淡入。
+        // 冻结几何直接落位，避免提线与槽位在缓动期间脱离。
         if (IsInsideTree())
         {
             ApplyLayoutImmediately();
         }
     }
 
-    /// <summary>
-    /// 写回已激活的分组（位掩码）：点亮这些分组的行与角标、拉起提线；
-    /// 新点亮的分组播一次「提线收紧」。
-    /// </summary>
+    /// <summary>更新激活分组，并为新增组播放激活表现。</summary>
     public void SetActivatedGroups(PerformChord groups)
     {
         if (_activatedGroups == groups) return;
@@ -235,7 +206,7 @@ public partial class NPerformArea : Control, IPerformArea
         _activatedGroups = groups;
         if (groups == PerformChord.None)
         {
-            // 激活位被整体清空（解冻/复活）：丢弃尚未播出的排队项，避免给已熄灭的分组补播。
+            // 清空激活时丢弃待播项。
             _pendingActivationShots.Clear();
         }
 
@@ -243,27 +214,19 @@ public partial class NPerformArea : Control, IPerformArea
         PlayGroupActivationOneShot(newlyActivated);
     }
 
-    /// <summary>该演奏区域当前是否处于手动落位选择态。</summary>
     public bool IsSlotSelectionActive => _slotSelectionCard != null;
 
-    /// <summary>正在等待玩家指定落位的卡牌；未处于选择态时为 <see langword="null" />。</summary>
     public CardModel? SlotSelectionCard => _slotSelectionCard;
 
-    /// <summary>当前指向的槽位索引；未指向任何候选槽位时为 0。</summary>
     public int HoveredSlotIndex => _slotSelectionHoveredSlot;
 
-    /// <summary>
-    /// 进入手动落位选择态：高亮候选槽位，并在后续帧中按鼠标位置更新指向。
-    /// </summary>
-    /// <param name="cardModel">等待指定落位的卡牌。</param>
-    /// <param name="mode">选择模式：指定槽位或指定分组。</param>
-    /// <param name="candidates">候选槽位及其所属分组，按槽位索引升序。</param>
+    /// <summary>进入手动落位选择并高亮候选槽位。</summary>
     public void BeginSlotSelection(
         CardModel cardModel,
         PerformSlotSelectionMode mode,
         IReadOnlyList<PerformSlotCandidate> candidates)
     {
-        // BeginDrag 与 TargetSelection 都可能进入同一次选择，避免重复播放入场提示。
+        // 防止 BeginDrag 与 TargetSelection 重复提示。
         if (_slotSelectionCard == cardModel && _slotSelectionMode == mode &&
             _slotSelectionCandidates.SequenceEqual(candidates))
         {
@@ -282,9 +245,7 @@ public partial class NPerformArea : Control, IPerformArea
         ShowSelectionPrompt();
     }
 
-    /// <summary>
-    /// 立即按当前鼠标位置刷新一次指向（用于松手瞬间等需要精确判定的时点）。
-    /// </summary>
+    /// <summary>立即按鼠标位置刷新指向。</summary>
     public void RefreshSlotSelection()
     {
         if (_slotSelectionCard == null) return;
@@ -292,9 +253,7 @@ public partial class NPerformArea : Control, IPerformArea
         UpdateSlotSelection(force: true);
     }
 
-    /// <summary>
-    /// 取当前指向的落位结果并结束选择。未指向任何候选槽位时返回空请求。
-    /// </summary>
+    /// <summary>返回当前落位结果并结束选择。</summary>
     public PerformEnqueueRequest TryConsumeSlotSelection()
     {
         var request = BuildSelectedRequest();
@@ -302,7 +261,6 @@ public partial class NPerformArea : Control, IPerformArea
         return request;
     }
 
-    /// <summary>结束选择态并复位槽位高亮。</summary>
     public void EndSlotSelection()
     {
         _slotSelectionCard = null;
@@ -324,16 +282,13 @@ public partial class NPerformArea : Control, IPerformArea
         UpdateSelectionPromptPosition();
     }
 
-    /// <summary>按鼠标位置刷新指向的候选槽位；<paramref name="force" /> 用于进入选择态时立即建立高亮。</summary>
+    /// <summary>刷新候选指向；force 用于立即建立高亮。</summary>
     private void UpdateSlotSelection(bool force)
     {
         RefreshHoveredSlot(force);
     }
 
-    /// <summary>
-    /// 鼠标指针进入某个槽位。以 Godot 自身的鼠标拾取为准（不受缩放/镜像/父级变换影响），
-    /// 手算命中作为其失效时的兜底。
-    /// </summary>
+    /// <summary>记录 Godot 鼠标拾取，手算命中仅作兜底。</summary>
     internal void NotifySlotPointerEntered(NPerformItem item)
     {
         if (_slotSelectionCard == null) return;
@@ -345,7 +300,6 @@ public partial class NPerformArea : Control, IPerformArea
         RefreshHoveredSlot(force: true);
     }
 
-    /// <summary>鼠标指针离开某个槽位。</summary>
     internal void NotifySlotPointerExited(NPerformItem item)
     {
         if (_slotSelectionCard == null) return;
@@ -355,9 +309,7 @@ public partial class NPerformArea : Control, IPerformArea
         RefreshHoveredSlot(force: true);
     }
 
-    /// <summary>
-    /// 重新确定指向的槽位：鼠标拾取优先，其次手算命中；两者都未命中时再用视口坐标兜底判定。
-    /// </summary>
+    /// <summary>依次使用鼠标拾取、手算命中与视口坐标判定。</summary>
     private void RefreshHoveredSlot(bool force = false)
     {
         var hovered = _slotSelectionPointerSlot;
@@ -368,7 +320,7 @@ public partial class NPerformArea : Control, IPerformArea
 
         if (hovered <= 0)
         {
-            // 兜底：若演奏区节点与鼠标的坐标空间不一致（父级缩放/相机位移等），用视口坐标再判一次。
+            // 坐标空间不一致时用视口坐标兜底。
             var viewportMouse = GetViewport().GetMousePosition();
             if (!viewportMouse.IsEqualApprox(GetGlobalMousePosition()))
             {
@@ -381,7 +333,7 @@ public partial class NPerformArea : Control, IPerformArea
         _slotSelectionHoveredSlot = hovered;
         ApplySlotSelectionVisuals();
 
-        // 复用原版目标指示箭头：指向候选槽位时高亮，离开时恢复。
+        // 指向候选槽位时高亮原版箭头。
         PerformTargetingArrow.SetHighlighted(hovered > 0);
     }
 
@@ -391,7 +343,6 @@ public partial class NPerformArea : Control, IPerformArea
                _slotSelectionCandidates.Any(candidate => candidate.SlotIndex == slotIndex);
     }
 
-    /// <summary>选择态诊断文本：鼠标位置、指针/手算指向的槽位、各候选槽位的命中几何。</summary>
     public string DescribeSlotSelection()
     {
         var mouse = GetGlobalMousePosition();
@@ -412,7 +363,7 @@ public partial class NPerformArea : Control, IPerformArea
                $"[{string.Join("; ", geometry)}]";
     }
 
-    /// <summary>后绘制的槽位优先命中；非激活槽位不参与。</summary>
+    /// <summary>后绘制槽位优先，忽略未激活槽位。</summary>
     private int HitTestCandidateSlot(Vector2 globalPoint)
     {
         for (var index = _slotSelectionCandidates.Count - 1; index >= 0; index--)
@@ -440,9 +391,7 @@ public partial class NPerformArea : Control, IPerformArea
         return PerformEnqueueRequest.ForGroup(candidate.Group);
     }
 
-    /// <summary>
-    /// 刷新高亮：指定分组模式下，指向的槽位会让同组全部候选槽位一并高亮（其余只有候选高亮）。
-    /// </summary>
+    /// <summary>刷新候选高亮，分组模式同时高亮同组候选。</summary>
     private void ApplySlotSelectionVisuals()
     {
         var highlightsGroup = _slotSelectionMode == PerformSlotSelectionMode.Group && _slotSelectionHoveredSlot > 0;
@@ -509,7 +458,7 @@ public partial class NPerformArea : Control, IPerformArea
         _selectionDetail.Text = detail.GetFormattedText();
     }
 
-    /// <summary>提示置于候选槽位整体上方，随布局与父级缩放更新，文字不随左右槽位镜像。</summary>
+    /// <summary>在候选槽位上方显示不镜像的操作提示。</summary>
     private void UpdateSelectionPromptPosition()
     {
         if (_selectionPrompt == null) return;
@@ -534,7 +483,7 @@ public partial class NPerformArea : Control, IPerformArea
             bounds.Value.GetCenter().X - _selectionPrompt.Size.X / 2f,
             bounds.Value.Position.Y - _selectionPrompt.Size.Y - 18f);
 
-        // 角色靠近屏幕边缘或槽位较多时，保证操作提示仍完整可读。
+        // 屏幕边缘也须完整显示提示。
         var viewport = GetViewport().GetVisibleRect().Grow(-12f);
         var canvasInverse = GetGlobalTransformWithCanvas().AffineInverse();
         var visible = new Rect2(canvasInverse * viewport.Position, Vector2.Zero)
@@ -584,10 +533,7 @@ public partial class NPerformArea : Control, IPerformArea
         _pendingArrivalBounces.Clear();
     }
 
-    /// <summary>
-    /// 同步演奏区域的总槽位数与已激活槽位集合。总槽位数决定节点数量，
-    /// 激活集合决定哪些槽位可见并参与布局。
-    /// </summary>
+    /// <summary>同步槽位总数、激活集合与布局。</summary>
     public void SyncSlots(int totalSlotCount, IReadOnlyCollection<int> activeSlots)
     {
         var nextSlotCount = Math.Max(0, totalSlotCount);
@@ -597,7 +543,6 @@ public partial class NPerformArea : Control, IPerformArea
         _slotCount = nextSlotCount;
         Visible = _slotCount > 0 && nextActiveSlots.Count > 0;
 
-        // 槽位由 EnsureSlotCount 在运行时按 _slotCount 创建；这里只重算已有槽位的镜像缩放。
         ApplyItemScale();
 
         if (!changed) return;
@@ -672,10 +617,7 @@ public partial class NPerformArea : Control, IPerformArea
         return TryGetCardSlotLayout(cardModel, out center, out _);
     }
 
-    /// <summary>
-    /// 取卡牌所属槽位的显示中心与未缩放尺寸（尺寸供特效按槽位大小铺开）。
-    /// 槽位已被移除时，沿用移除前的完整布局，避免长卡名特效回退到基准宽度。
-    /// </summary>
+    /// <summary>返回槽位中心与未缩放尺寸；移除后沿用最后布局。</summary>
     public bool TryGetCardSlotLayout(CardModel cardModel, out Vector2 center, out Vector2 size)
     {
         var found = TryGetCardSlotTransform(cardModel, out var transform, out size);
@@ -683,7 +625,6 @@ public partial class NPerformArea : Control, IPerformArea
         return found;
     }
 
-    /// <summary>槽位整体的移动与新增槽位动画尚未完成。</summary>
     public bool IsSlotLayoutPlaying => (_layoutTween?.Tween.IsRunning() ?? false) ||
                                        (_slotEntranceTween?.Tween.IsRunning() ?? false);
 
@@ -716,7 +657,7 @@ public partial class NPerformArea : Control, IPerformArea
         AddVfx(vfx);
     }
 
-    /// <summary>获取以槽位中心为原点的全局变换，保留父级缩放及左右镜像。</summary>
+    /// <summary>返回保留父级缩放与镜像的槽位中心变换。</summary>
     public bool TryGetCardSlotTransform(CardModel cardModel, out Transform2D transform, out Vector2 size)
     {
         transform = Transform2D.Identity;
@@ -754,9 +695,7 @@ public partial class NPerformArea : Control, IPerformArea
         return layout;
     }
 
-    /// <summary>
-    /// 逻辑层批量调整槽位后，通知现有 item 平滑移动到新的顺序。
-    /// </summary>
+    /// <summary>批量调整后平滑重排现有槽位。</summary>
     public void RefreshItemLayout()
     {
         ReassignItemsToSlots();
@@ -766,7 +705,7 @@ public partial class NPerformArea : Control, IPerformArea
 
     private async Task ApplySlotSync()
     {
-        // 布局链在 _ExitTree 后仍可能被 await 续到：对已退树/已释放的槽位建 tween 只会写脏。
+        // 退树后不再为槽位创建补间。
         if (_isExiting || !IsInsideTree())
         {
             return;
@@ -827,7 +766,7 @@ public partial class NPerformArea : Control, IPerformArea
                 _layoutTween = null;
             }
 
-            // 槽位布局是逐帧缓动的，冻结覆盖层要在移动结束后再贴一次范围。
+            // 移动结束后重贴冻结层。
             if (_isFrozen) ApplyFrozenVisuals();
         };
 
@@ -838,14 +777,8 @@ public partial class NPerformArea : Control, IPerformArea
     {
         if (_itemContainer == null || _isApplyingLayout) return;
 
-        // 先落位、再刷显隐与冻结层/角标：视觉层要按落位之后的几何重新贴。
-        // 冻结会改变槽位的落位与倾角（PerformHangStyle），直接落位不补缓动：
-        // 冻结层的提线/钩点是按槽位当时的姿态画的，缓动会让线和行脱开 0.25s，
-        // 而在 3px/3° 的量级下缓动本身也看不出「落位」，不如交给冻结层的淡入。
-        //
-        // _isApplyingLayout 是防重入保险：本方法与被它调用的刷新方法互相调用过一次，
-        // 结果是每个槽位创建时无限递归、栈溢出 SIGSEGV（0.113.1 实机，见 commit e5d9ff7 之后的崩溃）。
-        // 重入时外层那次已经会把活干完，直接返回即可。
+        // 先落位再刷新视觉几何；冻结姿态直接应用，避免提线与槽位缓动脱节。
+        // _isApplyingLayout 防止与刷新方法相互调用而递归。
         _isApplyingLayout = true;
         try
         {
@@ -859,7 +792,6 @@ public partial class NPerformArea : Control, IPerformArea
         }
     }
 
-    /// <summary>把激活槽位直接落到目标 <c>position</c> 与悬挂倾角（不缓动）。</summary>
     private void ApplySlotPositions()
     {
         for (var slotIndex = 1; slotIndex <= _items.Count; slotIndex++)
@@ -872,12 +804,7 @@ public partial class NPerformArea : Control, IPerformArea
         }
     }
 
-    /// <summary>刷新槽位显隐，并在槽位集合变化后重贴冻结层与激活角标。</summary>
-    /// <remarks>
-    /// 这里只刷表现，**不得**回头调用 <see cref="ApplyLayoutImmediately" />：两者互相调用会无限递归，
-    /// 并在战斗开始时的首次布局中导致栈溢出。
-    /// 需要「先落位再贴视觉」的调用方直接调 <see cref="ApplyLayoutImmediately" />。
-    /// </remarks>
+    /// <summary>刷新槽位显隐与视觉层；不得回调 ApplyLayoutImmediately 以免递归。</summary>
     private void ApplyItemVisibility()
     {
         for (var index = 0; index < _items.Count; index++)
@@ -885,12 +812,11 @@ public partial class NPerformArea : Control, IPerformArea
             _items[index].Visible = _activeSlots.Contains(index + 1);
         }
 
-        // 槽位集合变化后重新贴一次冻结层与激活角标（新增/移除槽位会改变它们的范围）。
         ApplyFrozenVisuals();
         ApplyActivatedGroupVisuals();
     }
 
-    /// <summary>记录槽位的原始 modulate：冻结表现是相乘冷色，必须先留底才能原样还原。</summary>
+    /// <summary>记录原始 modulate 供解冻恢复。</summary>
     private void CaptureSlotModulate(NPerformItem item)
     {
         _slotBaseModulate.TryAdd(item, item.Modulate);
@@ -902,10 +828,7 @@ public partial class NPerformArea : Control, IPerformArea
         return _slotBaseModulate[item];
     }
 
-    /// <summary>
-    /// 冻结表现：槽位轻微降亮 + 内容模组注册的「提线悬停」层。
-    /// 行坐标实时投喂，因此槽位增删、演奏区重建后提线会自动贴合。
-    /// </summary>
+    /// <summary>应用降亮并向内容模组提供冻结行布局。</summary>
     private void ApplyFrozenVisuals()
     {
         foreach (var item in _items)
@@ -948,7 +871,6 @@ public partial class NPerformArea : Control, IPerformArea
         _freezeVfx.SetGroups(groups);
     }
 
-    /// <summary>收集冻结特效需要的分组行布局（容器局部坐标，与 <see cref="NPerformItem.Position" /> 同空间）。</summary>
     private List<PerformRowGroup> BuildFreezeGroups()
     {
         var groups = new List<PerformRowGroup>();
@@ -963,7 +885,7 @@ public partial class NPerformArea : Control, IPerformArea
         return groups;
     }
 
-    /// <summary>取某分组当前可见行的矩形（容器局部坐标）、行倾斜与该分组是否镜像。</summary>
+    /// <summary>返回分组行范围、倾角与镜像信息。</summary>
     private bool TryGetGroupRows(PerformGroupDescriptor descriptor, out PerformRow[] rows, out bool mirrored)
     {
         rows = [];
@@ -984,8 +906,7 @@ public partial class NPerformArea : Control, IPerformArea
                 Mathf.Abs(item.LocalSize.Y * scale.Y));
             if (size.X <= 0f || size.Y <= 0f) continue;
 
-            // 未镜像的行以右边缘贴住锚点、向左延展；镜像列（右侧列）经水平翻转后以左边缘贴住锚点、
-            // 向右延展——方向反了会把整列的矩形投到角色身上（冻结提线、激活描边全部错位）。
+            // 镜像列的延展方向相反，避免矩形投到角色身上。
             var position = item.Position + (scale.X < 0f ? Vector2.Zero : new Vector2(-size.X, 0f));
             collected.Add(new PerformRow(new Rect2(position, size), item.HangTilt));
         }
@@ -996,7 +917,7 @@ public partial class NPerformArea : Control, IPerformArea
         return true;
     }
 
-    /// <summary>角色命中框中心（容器局部坐标），分组激活的提线终点。</summary>
+    /// <summary>返回激活提线终点的容器局部坐标。</summary>
     private Vector2 GetPerformTargetCenter()
     {
         return new Vector2(
@@ -1004,9 +925,7 @@ public partial class NPerformArea : Control, IPerformArea
             (GetHitboxTopY() + GetHitboxBottomY()) * 0.5f);
     }
 
-    /// <summary>
-    /// 分组激活表现：点亮角标（占位色块）+ 内容模组注册的行描边 / 提线层。
-    /// </summary>
+    /// <summary>更新角标与内容模组激活层。</summary>
     private void ApplyActivatedGroupVisuals()
     {
         if (_itemContainer == null) return;
@@ -1018,11 +937,10 @@ public partial class NPerformArea : Control, IPerformArea
         }
         else if (_activationVfx != null && GodotObject.IsInstanceValid(_activationVfx.View))
         {
-            // 解冻 / 复活后清空：必须主动清一次，否则常驻提线与行描边会留在场上。
+            // 解冻或复活时清除常驻激活表现。
             _activationVfx.Clear();
         }
 
-        // 被点亮的分组按需创建角标并贴到该分组首个已激活槽位的外侧。
         foreach (var group in _activatedGroups.EnumerateGroups())
         {
             if (!TryGetGroupBadgeAnchor(group, out var position))
@@ -1083,7 +1001,7 @@ public partial class NPerformArea : Control, IPerformArea
         }
     }
 
-    /// <summary>已激活分组的完整布局：行、角标位置、角色命中框中心与镜像标记。</summary>
+    /// <summary>返回激活层所需的行、角标与角色坐标。</summary>
     private List<PerformActivationGroup> BuildActivationStates()
     {
         var states = new List<PerformActivationGroup>();
@@ -1103,11 +1021,7 @@ public partial class NPerformArea : Control, IPerformArea
         return states;
     }
 
-    /// <summary>
-    /// 为新点亮的分组排队播一次性「提线收紧」。一次性表现是单通道（VFX 内只持一个 <c>_shot</c>），
-    /// 所以多组同时点亮时按表现实现给出的 <see cref="IPerformAreaActivationVisual.OneShotLifeTime" /> 节拍串行播放，
-    /// 而不是让后一组静默覆盖前一组。
-    /// </summary>
+    /// <summary>按 OneShotLifeTime 串行播放新增分组，避免单通道表现互相覆盖。</summary>
     private void PlayGroupActivationOneShot(PerformChord newlyActivated)
     {
         if (newlyActivated == PerformChord.None || _scheme == null) return;
@@ -1142,7 +1056,6 @@ public partial class NPerformArea : Control, IPerformArea
 
         if (_activationShotTimer == null)
         {
-            // 计时器挂在演奏区下，随节点退树一起释放，不会在节点已释放后回调。
             _activationShotTimer = new Godot.Timer { OneShot = true };
             _activationShotTimer.Timeout += OnActivationShotTimeout;
             AddChild(_activationShotTimer);
@@ -1175,7 +1088,7 @@ public partial class NPerformArea : Control, IPerformArea
         return _activationVfx;
     }
 
-    /// <summary>分组角标挂在该分组首个已激活槽位的外侧。</summary>
+    /// <summary>将角标放在分组首个激活槽位外侧。</summary>
     private bool TryGetGroupBadgeAnchor(PerformChord group, out Vector2 position)
     {
         position = Vector2.Zero;
@@ -1218,7 +1131,7 @@ public partial class NPerformArea : Control, IPerformArea
             var slot = NPerformItem.Create(this);
             slot.Position = GetItemPosition(slotIndex);
             ApplySlotScale(slot, slotIndex);
-            // 先留底 modulate：新槽位可能在冻结期间创建，冻结表现是相乘冷色。
+            // 新槽位先记录原始 modulate，供冻结恢复。
             CaptureSlotModulate(slot);
             _items.Add(slot);
             _itemContainer.AddChild(slot);
@@ -1240,7 +1153,7 @@ public partial class NPerformArea : Control, IPerformArea
             _pendingEntranceSlots.Remove(slot);
             _slotBaseModulate.Remove(slot);
             slot.Visible = false;
-            // 与 RemoveItem 一致：先解掉模型引用，避免 QueueFree 前仍短暂持有「有模型无槽位」的卡。
+            // 先解除模型引用再释放槽位。
             slot.Model = null;
             slot.QueueFree();
         }
@@ -1264,7 +1177,7 @@ public partial class NPerformArea : Control, IPerformArea
             var targetPosition = GetItemPosition(slotIndex);
             var targetAlpha = slot.Modulate.A;
             _enteringSlots.Add(new SlotEntranceState(slot, targetPosition, targetAlpha));
-            // 自命中框外侧滑入：左侧槽位自左、右侧槽位自右。
+            // 从命中框外侧滑入。
             var outward = IsMirroredCorner(GetCorner(slotIndex)) ? Vector2.Right : Vector2.Left;
             slot.Position = targetPosition + outward * SlotEntranceHorizontalOffset;
             SetItemAlpha(slot, 0f);
@@ -1369,16 +1282,8 @@ public partial class NPerformArea : Control, IPerformArea
         }
     }
 
-    /// <summary>
-    /// 计算全局槽位的像素位置。拓扑来自角色的演奏方案，像素换算留在本节点。
-    /// </summary>
-    /// <remarks>
-    /// 返回的是槽位节点的原点。物品原点（未镜像时）位于物品右边缘中点、物品向左延展，
-    /// 因此命中框左侧的槽位以右边缘贴住命中框左边界；右侧的槽位经水平镜像后原点位于
-    /// 物品左边缘中点、以左边缘贴住命中框右边界。两侧因此呈镜像对称，且
-    /// <see cref="SlotHitboxGap" /> 间距与物品的自适应宽度无关。
-    /// 四角槽位不使用水平靠近偏移，否则会破坏该间距。
-    /// </remarks>
+    /// <summary>计算槽位原点。未镜像物品以右缘贴锚点，镜像物品以左缘贴锚点，
+    /// 间距不随卡名宽度变化。</summary>
     private Vector2 GetItemPosition(int slotIndex)
     {
         if (_itemContainer == null) return Vector2.Zero;
@@ -1413,7 +1318,7 @@ public partial class NPerformArea : Control, IPerformArea
                 new PerformSlotAnchor(PerformSlotCorner.BottomCenter, slotIndex - 1)).Corner;
     }
 
-    /// <summary>命中框右侧的槽位以水平镜像排布，使其与左侧槽位互为镜像。</summary>
+    /// <summary>右侧槽位水平镜像。</summary>
     private static bool IsMirroredCorner(PerformSlotCorner corner)
     {
         return corner is PerformSlotCorner.TopRight or PerformSlotCorner.BottomRight;
@@ -1425,9 +1330,7 @@ public partial class NPerformArea : Control, IPerformArea
         item.SetHangTilt(_isFrozen ? GetHangTilt(slotIndex) : 0f);
     }
 
-    /// <summary>
-    /// 取指定槽位的显示颜色，配色依据由角色的演奏方案决定。
-    /// </summary>
+    /// <summary>按演奏方案返回槽位颜色。</summary>
     internal Color GetSlotColor(NPerformItem item, CardModel? card)
     {
         var slotIndex = _items.IndexOf(item) + 1;
@@ -1444,9 +1347,7 @@ public partial class NPerformArea : Control, IPerformArea
             : (GetGlobalTransform().AffineInverse() * creatureNode.GetBottomOfHitbox()).Y;
     }
 
-    /// <summary>
-    /// 把命中框角点的全局坐标换算到 <see cref="_itemContainer" /> 的本地坐标。
-    /// </summary>
+    /// <summary>将命中框角点转换为容器局部坐标。</summary>
     private Vector2 ToContainerPoint(Vector2 hitboxGlobalPoint)
     {
         if (_itemContainer == null) return Vector2.Zero;

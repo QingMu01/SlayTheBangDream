@@ -29,7 +29,6 @@ public class WonderfulWorldSakiko() : AbstractSakikoMusicCard(CustomRarity, Cust
     {
         for (var i = 0; i < DynamicVars.Cards.IntValue; i++)
         {
-            // 曲库即 ExtraDraw 牌堆；打出后音乐牌会自行落位到歌单。
             var candidates = BangDreamConst.ExtraDraw.GetPile(Owner).Cards.ToList();
             var selectedCard = Owner.RunState.Rng.CombatCardSelection.NextItem(candidates);
             if (selectedCard == null) return;

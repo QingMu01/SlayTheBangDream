@@ -1,10 +1,9 @@
 shader_type canvas_item;
 render_mode blend_mix;
 
-// 祥子「打击」的粉边重上色：白刀芯保持不变，只把有色边缘映射到 blue-violet。
-// 原版 vfx_attack_slash 的粉边是烘死在贴图里的，直接 modulate 乘蓝紫会发灰发脏；
-// 这里按饱和度区分「白色刀芯」与「有色边缘」，只对边缘换色。
-uniform vec3 rim_color : source_color = vec3(0.541176, 0.498039, 0.815686); // #8A7FD0
+// 按饱和度保留白色刀芯，仅将贴图内烘焙的粉边换为蓝紫；
+// 直接 modulate 乘蓝紫会让刀芯和粉边发灰。
+uniform vec3 rim_color : source_color = vec3(0.541176, 0.498039, 0.815686);
 uniform float saturation_threshold : hint_range(0.0, 0.5) = 0.10;
 uniform float saturation_softness : hint_range(0.01, 0.4) = 0.12;
 uniform float rim_boost : hint_range(0.5, 1.5) = 1.0;

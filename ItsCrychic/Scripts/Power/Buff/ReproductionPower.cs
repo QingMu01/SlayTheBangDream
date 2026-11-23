@@ -9,10 +9,7 @@ using MegaCrit.Sts2.Core.ValueProps;
 
 namespace ItsCrychic.Scripts.Power.Buff;
 
-/// <summary>
-/// 再生产：本回合每造成过一次伤害，在回合结束时恢复1点生命。
-/// 只统计「次数」，不按伤害量累计；回合结束时统一结算并移除自身。
-/// </summary>
+/// <summary>回合结束按本回合造成伤害的次数回血，随后移除。</summary>
 public class ReproductionPower : BandPowerModel
 {
     private int _damageInstanceCount;

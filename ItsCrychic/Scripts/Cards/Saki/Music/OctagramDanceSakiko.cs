@@ -25,7 +25,7 @@ public class OctagramDanceSakiko() : AbstractSakikoMusicCard(CustomRarity, Custo
 
         var manager = Owner.AttachedData().Perform;
         var slotIndex = manager.GetSlotIndex(this);
-        // 同一槽位出现两张牌是异常态；ToDictionary 会直接抛，这里按首次出现保留即可。
+        // 异常重复槽位只取首张，避免 ToDictionary 抛异常。
         var cardsBySlot = new Dictionary<int, CardModel>();
         foreach (var card in manager.PerformPile.Cards)
         {
@@ -38,7 +38,6 @@ public class OctagramDanceSakiko() : AbstractSakikoMusicCard(CustomRarity, Custo
             }
         }
 
-        // 相邻位为同名牌时沿该方向继续寻找最近的非同名牌
         var adjacentCards = new List<CardModel>();
         foreach (var step in new[] { -1, 1 })
         {

@@ -12,14 +12,7 @@ using MegaCrit.Sts2.Core.Runs;
 
 namespace BangDreamInSpire.Scripts.Mechanics.ExtraDeck;
 
-/// <summary>
-/// 小祥商人售卖的音乐牌：从角色额外卡池中抽卡，购买后加入额外卡组。
-/// </summary>
-/// <remarks>
-/// 本组条目**刻意不进入 <c>MerchantInventory.AllEntries</c>**：库存的五个列表只收原版条目类型，
-/// 音乐牌由商店场景的 <c>%MusicCards</c> 槽位经 <c>ExtraCardMerchantManager.BindSlots</c> 手工绑定，
-/// 购买后的刷新也由管理器单独通知。不要为了「统一」把条目塞进库存列表——那会打乱槽位绑定与刷新顺序。
-/// </remarks>
+/// <summary>商人音乐牌条目；由专用槽位绑定，不进入 MerchantInventory.AllEntries。</summary>
 public sealed class MusicCardMerchantEntry(
     Player player,
     CardPoolModel cardPool,
@@ -102,7 +95,7 @@ public sealed class MusicCardMerchantEntry(
 
     protected override void RestockAfterPurchase(MerchantInventory? inventory)
     {
-        // inventory 是 MerchantEntry 抽象契约的一部分，本条目不在库存列表里，用不上。
+        // 条目不在库存列表，此属性不使用。
         Populate();
     }
 }

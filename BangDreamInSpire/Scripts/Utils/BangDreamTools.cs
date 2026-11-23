@@ -10,11 +10,7 @@ namespace BangDreamInSpire.Scripts.Utils;
 
 public static class BangDreamTools
 {
-    /// <summary>
-    /// 配置 MegaLabel / MegaRichTextLabel 的自动缩放区间。
-    /// 注意：不要把这些导出属性写进 .tscn —— 在编辑器里保存场景时 C# 导出属性会被写成 null，
-    /// 因此统一在父节点的 _EnterTree 中、子节点 _Ready 之前用代码配置。
-    /// </summary>
+    /// <summary>须在父节点 _EnterTree 中配置；写入 .tscn 的 C# 导出属性会在编辑器保存时变成 null。</summary>
     public static void ConfigureMegaText(Control? control, int maxFontSize, int minFontSize, bool autoSize = true)
     {
         switch (control)
@@ -91,18 +87,13 @@ public static class BangDreamTools
         storage = value;
     }
 
-    /// <summary>
-    /// 把乐队/角色主题色压到可以承载白字或作为细线的对比度：过亮的颜色（如 Crychic 的浅青）整体压暗。
-    /// </summary>
+    /// <summary>压暗过亮主题色，确保白字和细线的对比度。</summary>
     public static Color ToAccentColor(this Color color)
     {
         var luminance = GetLuminance(color);
         return luminance > 0.55f ? color.Darkened(0.45f) : color;
     }
 
-    /// <summary>
-    /// 返回能压在该背景色上阅读的文字色：亮底配深字，暗底配白字。
-    /// </summary>
     public static Color GetReadableTextColor(this Color background)
     {
         return GetLuminance(background) > 0.55f

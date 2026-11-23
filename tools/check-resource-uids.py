@@ -1,35 +1,14 @@
 #!/usr/bin/env python3
-"""校验 Godot 场景/资源里 ext_resource 声明的 uid 与磁盘 sidecar 是否一致。
+"""校验 ext_resource 的 uid 与资源自身声明是否一致，作为打包前门禁。
 
-背景
-----
-场景里 `[ext_resource uid="uid://..." path="res://..."]` 的 uid 必须和该资源
-自己的 uid 来源一致：
+导入资源读取 X.import；脚本等着读取 X.uid 或文件头 uid。目标缺失默认只警告，
+--strict-missing 将其视为错误；uid 不一致始终返回 1；无 path 的引用不校验。
 
-  - 被导入的资源（图片、Spine 的 .atlas/.skel ……）：`X.import` 里的 `uid=`
-  - 脚本/着色器/场景/tres：`X.uid` 同目录 sidecar，或 `X.tscn/.tres` 文件头 `uid=`
+用法：
+    python3 tools/check-resource-uids.py [--project BangDreamInSpire]
+    python3 tools/check-resource-uids.py [--strict-missing] [--json]
 
-不一致时，引擎加载会按 text path 兜底并打印
-`ext_resource, invalid UID: ... - using text path instead`。美术资产不进仓库
-（见 AGENTS.md「三类资源目录」），若恢复美术时漏了 `.import`，`--import`
-会重新生成随机 uid，把这类漂移一次性刷出来 —— 本脚本就是给 `dotnet publish`
-打包加的那道闸（见 Directory.Build.targets 的 ExportPck）。
-
-判据
-----
-- 目标文件不存在：视为「资源缺失」（常见于未同步打法/未取得美术的本机），默认只警告，
-  不影响退出码；加 `--strict-missing` 才当错误。
-- 目标存在但 uid 不一致：一律是错误，退出码 1。
-- 只写 uid 不写 path 的引用不参与校验（当前仓库实测为 0 条）。
-
-用法
-----
-    python3 tools/check-resource-uids.py                 # 自动发现仓库内所有 Godot 工程
-    python3 tools/check-resource-uids.py --project BangDreamInSpire
-    python3 tools/check-resource-uids.py --strict-missing
-    python3 tools/check-resource-uids.py --json
-
-退出码：0 = 无 uid 漂移；1 = 有漂移（或 strict 下资源缺失）；2 = 参数/环境错误。
+退出码：0 = 通过；1 = 校验失败；2 = 参数或环境错误。
 """
 
 from __future__ import annotations

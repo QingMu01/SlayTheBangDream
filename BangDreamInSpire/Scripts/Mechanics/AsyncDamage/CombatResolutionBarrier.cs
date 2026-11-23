@@ -3,24 +3,14 @@ using MegaCrit.Sts2.Core.Combat;
 
 namespace BangDreamInSpire.Scripts.Mechanics.AsyncDamage;
 
-/// <summary>
-/// 追踪一场战斗中尚未结算完成的异步伤害批次，阻止战斗在它们全部落地前进入回合结束阶段。
-/// 每个批次在发射时 <see cref="Acquire" /> 一个租赁，在批次内全部音符（含弹跳）结算完毕时释放；
-/// 战斗结束时由机制统一 <see cref="ForceComplete" />，避免租赁悬挂。
-/// </summary>
+/// <summary>跟踪未完成的异步伤害，回合结束前等待全部批次完成。</summary>
 public static class CombatResolutionBarrier
 {
     private sealed class BarrierState
     {
         public int LeaseCount { get; set; }
 
-        /// <summary>
-        /// 刻意**不带** <see cref="TaskCreationOptions.RunContinuationsAsynchronously" />：
-        /// 等待方是本体回合结束流程（<c>WaitForAsyncDamageResolutionPatch</c>），
-        /// 它必须在主线程继续执行。带该标志会把续体甩到线程池，随后触碰 Godot 节点即崩。
-        /// 由 <see cref="Release" /> / <see cref="ForceComplete" /> 保证 <c>TrySetResult</c>
-        /// 都在锁外调用，因此同步内联续体不会造成锁重入。
-        /// </summary>
+        /// <summary>续体在主线程内联执行；TrySetResult 在锁外调用，避免重入。</summary>
         public TaskCompletionSource<bool> Completion { get; } = new();
     }
 
@@ -38,15 +28,10 @@ public static class CombatResolutionBarrier
 
     private static readonly Lock BarrierLock = new();
 
-    /// <summary>
-    /// 弱表：按战斗登记的在飞状态不能强引用 <see cref="ICombatState" />。
-    /// 战斗结束事件里 <c>CombatEndedEvent.CombatState</c> 可能为 null（此时不会调用
-    /// <see cref="ForceComplete" />），强引用字典会把这些状态永久留在内存里。
-    /// 弱表按对象标识（引用相等）组织。
-    /// </summary>
+    /// <summary>按对象标识弱引用战斗状态，避免延长生命周期。</summary>
     private static readonly ConditionalWeakTable<ICombatState, BarrierState> States = new();
 
-    /// <summary>为指定战斗登记一项尚未完成的异步结算。返回的租赁必须在结算结束时释放。</summary>
+    /// <summary>登记异步结算并返回结束时释放的租赁。</summary>
     public static IDisposable Acquire(ICombatState combatState)
     {
         ArgumentNullException.ThrowIfNull(combatState);
@@ -60,7 +45,7 @@ public static class CombatResolutionBarrier
         return new BarrierLease(combatState);
     }
 
-    /// <summary>等待指定战斗的全部异步结算完成。</summary>
+    /// <summary>等待指定战斗结算完成。</summary>
     public static Task WaitAsync(ICombatState combatState, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(combatState);
@@ -79,7 +64,7 @@ public static class CombatResolutionBarrier
             : completion;
     }
 
-    /// <summary>战斗结束时强制清空该战斗的等待，防止已释放的结算永远阻塞回合推进。</summary>
+    /// <summary>战斗结束时强制完成等待。</summary>
     public static void ForceComplete(ICombatState combatState)
     {
         ArgumentNullException.ThrowIfNull(combatState);

@@ -3,27 +3,16 @@ using BangDreamInSpire.Scripts.Interfaces.CharacterAugment;
 
 namespace BangDreamInSpire.Scripts.Mechanics.Perform;
 
-/// <summary>
-/// 容量变更结果。
-/// </summary>
 public enum PerformCapacityChangeResult
 {
-    /// <summary>变更已生效。</summary>
     Applied,
 
-    /// <summary>未发生变更（变化量为零，或指定了方案中不存在的分组）。</summary>
     Ignored,
 
-    /// <summary>目标分组已达容量上限，变更被拒绝。</summary>
     RejectedAtMax
 }
 
-/// <summary>
-/// 每玩家、每场战斗的演奏容量状态，由 <see cref="IPerformScheme" /> 的分组定义初始化。
-/// 战斗开始时整体重建，因此角色级方案不会残留上一场的容量。
-/// 全局槽位索引按分组划分固定块：分组 <c>g</c> 的容量为 <c>c</c> 时占用
-/// <c>[BaseSlotIndex, BaseSlotIndex + c - 1]</c>，块之间不移动。
-/// </summary>
+/// <summary>每玩家每场战斗的容量状态；全局槽位按分组固定块划分，索引不随容量移动。</summary>
 public sealed class PerformCapacityState(IPerformScheme scheme)
 {
     private readonly Dictionary<PerformChord, int> _capacityByGroup = BuildCapacityByGroup(scheme);
@@ -34,47 +23,39 @@ public sealed class PerformCapacityState(IPerformScheme scheme)
     private Dictionary<PerformChord, PerformGroupDescriptor> GroupByChord =>
         _groupByChord ??= BuildGroupIndex(scheme);
 
-    /// <summary>全部分组的容量上限之和。</summary>
     public int TotalSlotCount => scheme.TotalSlotCount;
 
-    /// <summary>当前已激活的槽位总数。</summary>
     public int ActiveSlotCount => _capacityByGroup.Values.Sum();
 
-    /// <summary>全部已激活的全局槽位索引，升序。</summary>
+    /// <summary>升序的已激活全局槽位。</summary>
     public IReadOnlyList<int> ActiveSlots => _allActiveSlots ??= BuildActiveSlots(null);
 
-    /// <summary>取指定分组的当前容量；分组不存在时为 0。</summary>
+    /// <summary>读取分组容量，未知分组为 0。</summary>
     public int GetCapacity(PerformChord group)
     {
         return _capacityByGroup.GetValueOrDefault(group);
     }
 
-    /// <summary>取指定分组的容量上限；分组不存在时为 0。</summary>
+    /// <summary>读取分组容量上限，未知分组为 0。</summary>
     public int GetMaxSlots(PerformChord group)
     {
         return GroupByChord.TryGetValue(group, out var descriptor) ? descriptor.MaxSlots : 0;
     }
 
-    /// <summary>判断全局槽位索引当前是否有效（处于某分组块内且未超出该分组容量）。</summary>
+    /// <summary>槽位是否落在某分组的激活容量内。</summary>
     public bool IsValidSlot(int slotIndex)
     {
         return TryResolveSlot(slotIndex, out var descriptor, out var localOrdinal) &&
                localOrdinal < GetCapacity(descriptor.Chord);
     }
 
-    /// <summary>
-    /// 取指定掩码覆盖的已激活槽位索引，升序。传入 <see cref="PerformChord.None" /> 时返回全部分组。
-    /// </summary>
+    /// <summary>返回掩码覆盖的激活槽位，空掩码表示全部。</summary>
     public IReadOnlyList<int> GetActiveSlots(PerformChord mask)
     {
         return mask == PerformChord.None ? ActiveSlots : BuildActiveSlots(mask);
     }
 
-    /// <summary>
-    /// 解析未指定分组时的默认分组：方案的 <see cref="IPerformScheme.DefaultGroup" />；
-    /// 该分组不在方案内时退化为首个分组。
-    /// 卡牌和弦不参与入组判定（和弦只用于激活奏响），因此本方法不需要卡牌参数。
-    /// </summary>
+    /// <summary>返回方案默认分组，失效时回退首个分组。</summary>
     public PerformChord ResolveDefaultGroup()
     {
         return _capacityByGroup.ContainsKey(scheme.DefaultGroup)
@@ -82,19 +63,14 @@ public sealed class PerformCapacityState(IPerformScheme scheme)
             : _capacityByGroup.Keys.FirstOrDefault();
     }
 
-    /// <summary>
-    /// 判断全局槽位索引是否属于掩码覆盖的分组；掩码为 <see cref="PerformChord.None" /> 时覆盖全部分组。
-    /// 与容量无关：槽位落在分组块内即命中（该槽位是否已激活另由 <see cref="IsValidSlot" /> 判断）。
-    /// </summary>
+    /// <summary>槽位是否属于掩码分组，与当前容量无关。</summary>
     public bool IsSlotInMask(int slotIndex, PerformChord mask)
     {
         return TryResolveSlot(slotIndex, out var descriptor, out _) &&
                (mask == PerformChord.None || mask.HasFlag(descriptor.Chord));
     }
 
-    /// <summary>
-    /// 增加容量。未指定分组时对全部分组生效。
-    /// </summary>
+    /// <summary>增加容量，空掩码表示全部分组。</summary>
     public PerformCapacityChangeResult Add(int amount, PerformChord? group = null)
     {
         if (amount <= 0)
@@ -111,9 +87,7 @@ public sealed class PerformCapacityState(IPerformScheme scheme)
         return ApplyDelta(amount, targets) ? PerformCapacityChangeResult.Applied : PerformCapacityChangeResult.RejectedAtMax;
     }
 
-    /// <summary>
-    /// 减少容量。未指定分组时对全部分组生效。
-    /// </summary>
+    /// <summary>减少容量，空掩码表示全部分组。</summary>
     public bool Reduce(int amount, PerformChord? group = null)
     {
         if (amount <= 0)
@@ -124,11 +98,7 @@ public sealed class PerformCapacityState(IPerformScheme scheme)
         return ApplyDelta(-amount, ResolveTargetGroups(group));
     }
 
-    /// <summary>
-    /// 以 <see cref="PerformGroupDescriptor.Chord" /> 为键建立分组索引。和弦是分组的身份
-    /// （见 <see cref="IPerformScheme.Groups" /> 的唯一性约束），重复时直接报出冲突的和弦，
-    /// 而不是让 <c>ToDictionary</c> 抛一条没有上下文的 <see cref="ArgumentException" />。
-    /// </summary>
+    /// <summary>按和弦索引分组，重复时报告冲突。</summary>
     private static Dictionary<PerformChord, PerformGroupDescriptor> BuildGroupIndex(IPerformScheme scheme)
     {
         var byChord = new Dictionary<PerformChord, PerformGroupDescriptor>();

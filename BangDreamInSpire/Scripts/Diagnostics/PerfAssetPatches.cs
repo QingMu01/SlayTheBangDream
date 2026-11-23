@@ -5,10 +5,7 @@ using STS2RitsuLib.Patching.Models;
 
 namespace BangDreamInSpire.Scripts.Diagnostics;
 
-/// <summary>
-/// 只观测、不改变行为的资源加载探针：记录每个预加载会话的主线程耗时、以及主线程同步加载（缓存未命中）的单次耗时。
-/// 所有补丁都是 optional（失败只是少一点数据，不影响游戏与 mod 功能）。
-/// </summary>
+/// <summary>只观测资源加载耗时；所有补丁均为可选，失败不影响游戏功能。</summary>
 public sealed class PerfAssetPatches : IModPatches
 {
     public static void AddTo(ModPatcher patcher)
@@ -19,7 +16,6 @@ public sealed class PerfAssetPatches : IModPatches
     }
 }
 
-/// <summary>记录预加载会话的名字与请求资源数（对应 <c>AssetCache.CreateSession</c>）。</summary>
 internal sealed class PerfAssetSessionCreatedPatch : IPatchMethod
 {
     public static string PatchId => "bds_perf_asset_session_created";
@@ -53,7 +49,6 @@ internal sealed class PerfAssetSessionCreatedPatch : IPatchMethod
     }
 }
 
-/// <summary>累计每个预加载会话在 <c>Process</c> 里占用的主线程时间。</summary>
 internal sealed class PerfAssetSessionProcessPatch : IPatchMethod
 {
     public static string PatchId => "bds_perf_asset_session_process";
@@ -79,7 +74,6 @@ internal sealed class PerfAssetSessionProcessPatch : IPatchMethod
     }
 }
 
-/// <summary>记录主线程同步加载（<c>AssetCache.LoadAsset</c>，即日志里的 \"Asset not cached\" 路径）的单次耗时。</summary>
 internal sealed class PerfAssetSyncLoadPatch : IPatchMethod
 {
     public static string PatchId => "bds_perf_asset_sync_load";

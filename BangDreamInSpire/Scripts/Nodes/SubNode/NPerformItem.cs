@@ -12,18 +12,13 @@ using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 
 namespace BangDreamInSpire.Scripts.Nodes.SubNode;
 
-/// <summary>
-/// 槽位在手动落位选择中的高亮状态。
-/// </summary>
 public enum PerformSlotSelectionState
 {
-    /// <summary>未参与选择。</summary>
     None,
 
-    /// <summary>候选槽位。</summary>
     Candidate,
 
-    /// <summary>当前指向的槽位（指定分组时同组槽位同等高亮）。</summary>
+    /// <summary>当前指向，分组模式同组高亮。</summary>
     Hovered
 }
 
@@ -46,7 +41,7 @@ public partial class NPerformItem : NClickableControl, IPerformSlot
     private const float BackgroundWidthExtension = 5f;
     private const float TitleHorizontalPadding = 48f;
 
-    /// <summary>标题相对卡面相片的内缩（左右各 24px、上下各 4px），与旧 TitleMargin 一致。</summary>
+    /// <summary>标题相对卡面相片的内缩。</summary>
     private const float TitleInsetHorizontal = 24f;
     private const float TitleInsetVertical = 4f;
     private const float PortraitSweepAlpha = 0.75f;
@@ -123,10 +118,9 @@ public partial class NPerformItem : NClickableControl, IPerformSlot
 
     public PerformContext? Context { get; set; }
 
-    /// <summary>槽位未缩放的显示尺寸（宽度按卡名自适应，高度固定），供特效按槽位大小铺开。</summary>
+    /// <summary>未缩放槽位尺寸，宽度随卡名调整。</summary>
     public Vector2 LocalSize => _itemSize;
 
-    /// <summary>卡图揭示、飞牌等待与入场弹跳尚未完成。</summary>
     public bool IsArrivalVisualPlaying => _isWaitingForCardArrival || _isPortraitRevealPending ||
                                           _isCardEnterBouncePending ||
                                           (_portraitRevealTween?.IsRunning() ?? false) ||
@@ -222,23 +216,20 @@ public partial class NPerformItem : NClickableControl, IPerformSlot
         return GetGlobalTransform() * GetContainerLocalCenter();
     }
 
-    /// <summary>槽位根节点内，卡片容器中心的局部坐标。</summary>
+    /// <summary>卡片容器中心的槽位局部坐标。</summary>
     private Vector2 GetContainerLocalCenter()
     {
-        // Container 子节点的尺寸要到下一次布局才更新；即兴演奏会在设牌的同一帧读取中心。
+        // 同帧读取前强制更新 Container 尺寸。
         return _cardContainerBasePosition + _itemSize / 2f;
     }
 
-    /// <summary>绑定所属演奏区域。场景内置的槽位实例不经 <see cref="Create" />，需在就绪后补绑。</summary>
+    /// <summary>绑定所属演奏区，场景内置实例在就绪后补绑。</summary>
     internal void AttachToArea(NPerformArea area)
     {
         _parent = area;
     }
 
-    /// <summary>
-    /// 设置手动落位选择的高亮状态。与余音槽位提示（<see cref="SetHintHighlighted" />）互不干扰：
-    /// 选择高亮只叠加在槽位配色上，由 <see cref="ApplySlotColor" /> 统一呈现。
-    /// </summary>
+    /// <summary>设置选择高亮，与余音提示独立叠加。</summary>
     public void SetSelectionState(PerformSlotSelectionState state)
     {
         if (_selectionState == state) return;
@@ -248,7 +239,7 @@ public partial class NPerformItem : NClickableControl, IPerformSlot
         UpdateSelectionOutline();
     }
 
-    /// <summary>候选槽位显示呼吸描边，指向时稳定加亮；独立叠层不改变槽位布局与命中框。</summary>
+    /// <summary>候选呼吸描边，指向稳定加亮。</summary>
     private void UpdateSelectionOutline()
     {
         if (_selectionOutline == null) return;
@@ -272,27 +263,19 @@ public partial class NPerformItem : NClickableControl, IPerformSlot
             _selectionOutline.GetInstanceShaderParameter("hovered").AsSingle(), hovered, 0.12f);
     }
 
-    /// <summary>
-    /// 手动落位选择的命中测试。槽位根节点自身尺寸为 0，且命中框右侧的槽位带负的水平缩放，
-    /// 因此不能使用 <c>GetGlobalRect</c>，改为按"卡片容器的全局中心 + 缩放后的尺寸"判定。
-    /// </summary>
-    /// <param name="globalPoint">待判定的全局坐标（通常为鼠标位置）。</param>
-    /// <param name="padding">额外放宽的命中边距（像素）。</param>
+    /// <summary>按卡片容器全局中心与缩放尺寸命中测试，兼容零尺寸根节点和镜像。</summary>
     public bool TryHitTest(Vector2 globalPoint, float padding = 0f)
     {
         return TryHitTest(globalPoint, padding, out _, out _);
     }
 
-    /// <summary>
-    /// 同 <see cref="TryHitTest(Vector2, float)" />，并回带本次判定使用的中心与半尺寸（用于诊断日志）。
-    /// </summary>
+    /// <summary>命中测试并返回使用的中心与半尺寸。</summary>
     public bool TryHitTest(Vector2 globalPoint, float padding, out Vector2 center, out Vector2 halfSize)
     {
         var transform = GetGlobalTransform();
         center = _cardContainer == null ? transform.Origin : transform * GetContainerLocalCenter();
 
-        // 半尺寸按全局变换的基向量长度换算：父级（演奏区/命中框）的缩放一并计入，
-        // 只用本节点的 Scale 会在父级带缩放时把命中框算得过小。
+        // 半尺寸按全局基向量计算，包含父级缩放。
         var localHalf = _cardContainer == null
             ? Vector2.Zero
             : _cardContainer.Size * 0.5f + Vector2.One * padding;
@@ -304,22 +287,17 @@ public partial class NPerformItem : NClickableControl, IPerformSlot
         return Mathf.Abs(delta.X) <= halfSize.X && Mathf.Abs(delta.Y) <= halfSize.Y;
     }
 
-    /// <summary>鼠标指针进入本槽位（供手动落位选择使用）。</summary>
     private void OnPointerEntered()
     {
         _parent?.NotifySlotPointerEntered(this);
     }
 
-    /// <summary>鼠标指针离开本槽位（供手动落位选择使用）。</summary>
     private void OnPointerExited()
     {
         _parent?.NotifySlotPointerExited(this);
     }
 
-    /// <summary>
-    /// 应用槽位缩放与水平镜像。演奏区域位于命中框右侧时使用镜像，使左右两侧的槽位
-    /// 互为镜像（节点的负水平缩放会一并翻转形状、揭示方向与弹跳方向）。
-    /// </summary>
+    /// <summary>应用槽位缩放与水平镜像。</summary>
     public void ApplyLayoutScale(float itemScale, bool mirrored)
     {
         _isMirrored = mirrored;
@@ -327,9 +305,7 @@ public partial class NPerformItem : NClickableControl, IPerformSlot
         ApplyTitleMirror();
     }
 
-    /// <summary>
-    /// 抵消镜像对标题文字的影响：文字所在节点再翻转一次，使其保持正读。
-    /// </summary>
+    /// <summary>再次翻转标题以保持正读。</summary>
     private void ApplyTitleMirror()
     {
         if (_cardTitle == null) return;
@@ -378,7 +354,7 @@ public partial class NPerformItem : NClickableControl, IPerformSlot
         SetPortraitRevealProgress(0f);
     }
 
-    /// <summary>本次入场已用演奏特效反馈，保留卡图揭示与弹跳，关闭重复的入场扫光。</summary>
+    /// <summary>跳过与演奏反馈重复的入场扫光。</summary>
     public void SuppressPortraitSweep()
     {
         _suppressPortraitSweep = true;
@@ -531,9 +507,7 @@ public partial class NPerformItem : NClickableControl, IPerformSlot
         ApplySlotColor();
     }
 
-    /// <summary>
-    /// 重新按演奏方案取色。演奏区域在绑定方案后调用，用于修正早于方案绑定就已就绪的槽位。
-    /// </summary>
+    /// <summary>按演奏方案重新取色。</summary>
     public void RefreshSlotColor()
     {
         ApplySlotColor();
@@ -543,7 +517,7 @@ public partial class NPerformItem : NClickableControl, IPerformSlot
     {
         if (_background == null) return;
 
-        // 槽位配色由角色的演奏方案决定，本节点只负责呈现；选择高亮叠加在其上。
+        // 选择高亮叠加在方案配色上。
         _background.Modulate = ApplySelectionTint(_parent?.GetSlotColor(this, Model) ?? DefaultColor);
 
         var dotColor = _background.Modulate;
@@ -558,7 +532,6 @@ public partial class NPerformItem : NClickableControl, IPerformSlot
         }
     }
 
-    /// <summary>把手动选择的高亮叠加到槽位配色上。</summary>
     private Color ApplySelectionTint(Color color)
     {
         return _selectionState switch
@@ -613,37 +586,24 @@ public partial class NPerformItem : NClickableControl, IPerformSlot
         UpdatePortraitSweepShaderSize();
     }
 
-    /// <summary>
-    /// 冻结时的悬挂倾角（弧度，槽位节点本地）。正角度在视觉上是「内端垂下去」。
-    /// </summary>
+    /// <summary>冻结悬挂倾角。</summary>
     public float HangTilt { get; private set; }
 
-    /// <summary>
-    /// 设置悬挂倾角。转的是 <c>Holder</c>（自身缩放为 1）而不是槽位根节点：
-    /// 根节点带着镜像缩放，Godot 的 <c>PivotOffset</c> 在带缩放的节点上会把整行平移；
-    /// 旋转无缩放的子节点才是纯旋转。
-    /// </summary>
+    /// <summary>旋转无缩放的 Holder，避免镜像根节点的 PivotOffset 引起平移。</summary>
     public void SetHangTilt(float radians)
     {
         HangTilt = radians;
         if (_holder != null) _holder.Rotation = radians;
     }
 
-    /// <summary>
-    /// 旋转支点 = 行的外上角，也就是冻结提线的钩点：行被吊住时绕这里垂下去，
-    /// 钩点本身不动，提线的接触点因此不需要重算。支点在 Holder 的本地坐标里（不含缩放）。
-    /// </summary>
+    /// <summary>支点为 Holder 本地坐标的外上角。</summary>
     private void UpdateHangPivot()
     {
         if (_holder == null) return;
         _holder.PivotOffset = new Vector2(-_itemSize.X, -_itemSize.Y * 0.5f);
     }
 
-    /// <summary>
-    /// 标题挂在 <c>TitleHolder</c>（普通 Control）下，而不是像卡面那样留在 MarginContainer 里：
-    /// Container 排布会把直接子节点的 rotation/scale 重置为 0/1，清除右列标题的反向翻转，
-    /// 使字形保持镜像；挂到非 Container 下可避免布局覆盖。
-    /// </summary>
+    /// <summary>标题放在普通 Control 下，避免 Container 重置反向翻转。</summary>
     private void UpdateTitleHolderSize(float itemWidth)
     {
         if (_titleHolder == null) return;
@@ -680,7 +640,7 @@ public partial class NPerformItem : NClickableControl, IPerformSlot
 
     protected override void OnUnfocus()
     {
-        // 捕获当前实例：_card 可能在 tween 完成前被换掉，字段读法会摘掉另一张预览卡。
+        // 捕获当前卡，避免 tween 完成后读到替换实例。
         var card = _card;
         if (!card.IsValid()) return;
 

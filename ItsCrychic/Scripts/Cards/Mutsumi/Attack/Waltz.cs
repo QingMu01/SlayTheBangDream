@@ -10,16 +10,7 @@ using STS2RitsuLib.Cards.DynamicVars;
 namespace ItsCrychic.Scripts.Cards.Mutsumi.Attack;
 
 /// <summary>
-/// 华尔兹：一段脱手的角色位移演出，位移过程中反复向敌人发射音符。
-/// <para>
-/// 演出通过 <see cref="VisualsAnimExtensions" /> 脱手并按生物串行，
-/// 伤害通过 <see cref="MusicNoteExtensions" /> 异步结算，不阻塞出牌。
-/// </para>
-/// <para>
-/// 与 STS1 原版《华尔兹》对全体敌人直接结算的 Cleave 不同，本牌向随机目标齐射音符。
-/// 演出编排（上移 → 传送到敌方一侧上方 → 下移 → 每次命中前自转一圈 → 归位）
-/// 与 `FlipProcess`（rotateY 360°）保持一致。
-/// </para>
+/// 脱手位移并向随机敌人异步发射音符；伤害不阻塞出牌，演出按生物串行。
 /// </summary>
 public class Waltz() : AbstractMutsumiCard(CustomCost, CustomType, CustomRarity, CustomTarget)
 {
@@ -57,16 +48,15 @@ public class Waltz() : AbstractMutsumiCard(CustomCost, CustomType, CustomRarity,
 
         for (var i = 0; i < repeat; i++)
         {
-            // STS1 原版每次命中前是 FlipProcess（rotateY 转一圈），不是左右翻面。
+            // 对应 STS1 FlipProcess（rotateY 转一圈），不是左右翻面。
             steps.Add(VisualsAnimExtensions.Spin(1, 0.5f));
             steps.Add(VisualsAnimExtensions.Callback(async _ => await this.ShootMusicNotes(1, 0, damage)));
         }
 
-        // 先缓动归位，再强制对齐到基准位置与基准朝向（避免残留偏移）。
+        // 归位后强制重置位置与朝向，避免残留偏移。
         steps.Add(VisualsAnimExtensions.Move(Vector2.Zero, 0.5f));
         steps.Add(VisualsAnimExtensions.Reset());
 
-        // 脱手：演出在动作队列之外推进，出牌动作立即结束，玩家可以继续出牌。
         Owner.Creature.PlayVisualsAnim([.. steps]);
 
         return Task.CompletedTask;

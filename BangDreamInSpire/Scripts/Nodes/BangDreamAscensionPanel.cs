@@ -47,19 +47,19 @@ public partial class BangDreamAscensionPanel : Control
 
     private MultiplayerUiMode _mode = MultiplayerUiMode.Singleplayer;
 
-    /// <summary>是否已向全局热键栈压过本面板的 Tab 绑定（决定退树时要不要摘除）。</summary>
+    /// <summary>是否已注册 Tab 热键。</summary>
     private bool _hotkeysPushed;
 
     private Tween? _tween;
 
     public int Ascension { get; private set; }
 
-    /// <summary>该面板当前对应的游戏模式：标准 / 快速 / Dread 的升格上限与文案都不同。</summary>
+    /// <summary>当前游戏模式。</summary>
     public GameMode GameMode => _gameMode;
 
     public override void _EnterTree()
     {
-        // 见 BangDreamTools.ConfigureMegaText：Mega 导出属性写在 tscn 里会被编辑器保存时置空。
+        // Mega 导出属性须由代码配置。
         BangDreamTools.ConfigureMegaText(
             GetNodeOrNull<Control>("HBoxContainer/AscensionIconContainer/AscensionIcon/AscensionLevel"),
             maxFontSize: 26, minFontSize: 16);
@@ -132,14 +132,7 @@ public partial class BangDreamAscensionPanel : Control
         }
     }
 
-    /// <summary>
-    /// 按当前游戏模式套用存档里的升格进度。
-    /// <para>
-    /// 快速模式（Blitz）只有全局的 0-5 级升格，且单人局也照样生效；标准模式才是按角色记的 0-10 级。
-    /// 两者混用会让本体 <c>AscensionHelper.GetLevelForBlitz</c> 收到越界等级抛
-    /// <c>InvalidOperationException</c>，把整个快速选择屏打断。
-    /// </para>
-    /// </summary>
+    /// <summary>应用当前模式进度；Blitz 使用全局 0–5，标准按角色 0–10。</summary>
     private void ApplySavedAscension(bool multiplayer)
     {
         var progress = SaveManager.Instance.Progress;
@@ -153,7 +146,7 @@ public partial class BangDreamAscensionPanel : Control
 
         if (!multiplayer)
         {
-            // 标准单人局不显示升格：是否可用由本体在选角色时按角色进度决定。
+            // 标准单人是否可用由本体决定。
             SetMaxAscension(0);
             SetAscensionLevel(0);
             return;
@@ -179,7 +172,7 @@ public partial class BangDreamAscensionPanel : Control
         _ascensionLevel?.AddThemeColorOverride(FontOutlineTheme, RedLabelOutline);
     }
 
-    /// <summary>向全局热键栈压入本面板的 Tab 绑定（转调升/降档）。</summary>
+    /// <summary>注册 Tab 升降档热键。</summary>
     private void PushHotkeys()
     {
         NHotkeyManager.Instance?.PushHotkeyPressedBinding(TabLeftHotkey, DecrementAscension);
@@ -187,11 +180,7 @@ public partial class BangDreamAscensionPanel : Control
         _hotkeysPushed = true;
     }
 
-    /// <summary>
-    /// 退树时摘除热键绑定。必须做：<c>NHotkeyManager</c> 的命中处理只执行
-    /// **最高优先级**那一条绑定并 <c>SetInputAsHandled</c>，本面板压入的绑定若一直留着，
-    /// 会永久压住原版 Tab 查牌堆/弃牌堆的绑定，且每次按键都会对已释放节点回调。
-    /// </summary>
+    /// <summary>退树时移除热键，避免覆盖原版并回调已释放节点。</summary>
     public override void _ExitTree()
     {
         base._ExitTree();
@@ -210,8 +199,7 @@ public partial class BangDreamAscensionPanel : Control
 
     public void SetAscensionLevel(int ascension)
     {
-        // 等级始终夹在 [0, _maxAscension]：快速模式上限是 5，越界会让本体的
-        // AscensionHelper.GetTitle 抛 InvalidOperationException 并打断整个选择屏。
+        // 等级始终限制在当前模式上限。
         ascension = Math.Clamp(ascension, 0, _maxAscension);
 
         if (Ascension != ascension)
@@ -279,7 +267,7 @@ public partial class BangDreamAscensionPanel : Control
     {
         if (_gameMode == GameMode.Blitz)
         {
-            // 快速模式的升格是全局的 0-5 级，与标准模式的按角色 0-10 级互不相通；这里兜住任何越界的调用方。
+            // Blitz 上限独立为 5。
             maxAscension = Math.Min(maxAscension, SaveManager.Instance.Progress.MaxBlitzAscension);
         }
 

@@ -10,10 +10,7 @@ using STS2RitsuLib.Combat.SecondaryResources;
 
 namespace ItsCrychic.Scripts.Power.Buff;
 
-/// <summary>
-/// 终达繁星：每次失去余音后，下一次发射音符造成的伤害增加当前能力层数点。
-/// 加成在下一次音符批次结算后清空。
-/// </summary>
+/// <summary>失去余音后强化下一批音符，结算后清空加成。</summary>
 public class AdAstraPower : BandPowerModel, ISecondaryResourceHookListener, IMusicNoteModifyHookListener,
     IMusicNoteShotHookListener
 {

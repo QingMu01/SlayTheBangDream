@@ -27,7 +27,6 @@ public static class ItsCrychic
         RitsuLibFramework.EnsureGodotScriptsRegistered(executingAssembly, Logger);
         ModTypeDiscoveryHub.RegisterModAssembly(CrychicConst.ModId, executingAssembly);
 
-        // 注册祥子相关内容
         var sakikoContent = RitsuLibFramework.GetContentRegistry(CrychicConst.ModId);
         sakikoContent.RegisterCharacter<TogawaSakiko>();
         sakikoContent.RegisterCharacterStarterRelic<TogawaSakiko, Synthesizer>();
@@ -38,7 +37,6 @@ public static class ItsCrychic
             IconOutlinePath = "res://ItsCrychic/images/relics/big/CookieSakiko.png"
         });
 
-        // 注册睦相关内容
         var mutsumiContent = RitsuLibFramework.GetContentRegistry(CrychicConst.ModId);
         mutsumiContent.RegisterCharacter<WakabaMutsumi>();
         mutsumiContent.RegisterCharacterStarterRelic<WakabaMutsumi, Synthesizer>();
@@ -62,12 +60,12 @@ public static class ItsCrychic
         BangDreamPreloadManager.AddCustomCommonAsset("sakiko_night",
             "res://ItsCrychic/images/sceneui/sakiko_night.png");
 
-        // 主菜单环境角色的日夜贴图（核心不写死具体角色资源）。
+        // 主菜单日夜贴图由内容模组配置，核心不引用角色资源。
         BangDreamInSpire.Scripts.Nodes.MainMenu.MainMenuEnvironmentCharacter.ConfigureEnvironmentTextures(
             "res://ItsCrychic/images/sceneui/sakiko_day.png",
             "res://ItsCrychic/images/sceneui/sakiko_night.png");
 
-        // 演奏区冻结 / 分组激活表现由内容模组实现；核心只提供数据与注册入口。
+        // 演奏区冻结与分组激活由内容模组实现，核心仅提供数据与注册入口。
         PerformAreaVisuals.RegisterFreezeVisual(static () => new MutsumiPlaylistFreezeVfx
         {
             Name = MutsumiPlaylistFreezeVfx.NodeName,

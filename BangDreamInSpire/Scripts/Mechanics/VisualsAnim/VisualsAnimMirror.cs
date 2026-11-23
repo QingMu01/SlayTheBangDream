@@ -3,19 +3,7 @@ using MegaCrit.Sts2.Core.Nodes.Combat;
 
 namespace BangDreamInSpire.Scripts.Mechanics.VisualsAnim;
 
-/// <summary>
-/// 让克隆骨架**跟随本体骨架当前帧**的驱动器。
-/// <para>
-/// 本体的 <c>CreatureAnimator</c> 绑定在 <see cref="NCreature.Visuals" /> 的骨架上（<c>NCreature._spineAnimator</c>），
-/// 而 <c>SetAnimationTrigger</c> 只转发给它。演出期间原体被隐藏但仍在推进，
-/// 所以只要逐帧把它的动画名、循环标记与轨道时间镜像到克隆，攻击 / 施法 / 受击 / 死亡 / 待机全部自然同步，
-/// 不需要再造一套状态机。
-/// </para>
-/// <para>
-/// 同时负责受击抖动：本体的 <c>AnimShake</c> 写的是 <c>Visuals.Position</c>（隐藏中不可见），
-/// 因此把抖动写入克隆自己的局部位置；克隆位于移动载体之下，抖动与位移互不覆盖。
-/// </para>
-/// </summary>
+/// <summary>逐帧同步本体骨架与克隆，并将受击抖动写入克隆局部坐标。</summary>
 public partial class VisualsAnimMirror : Node
 {
     private const float ShakeAmplitude = 10f;
@@ -26,7 +14,7 @@ public partial class VisualsAnimMirror : Node
     private string? _lastAnimation;
     private float _shakeElapsed = -1f;
 
-    /// <summary>仅当代理处于演出态时推进镜像；其余时间不耗帧。</summary>
+    /// <summary>仅演出时推进。</summary>
     internal bool Active
     {
         get => IsProcessing();
@@ -42,7 +30,7 @@ public partial class VisualsAnimMirror : Node
 
     internal void StartShake()
     {
-        // 与原体 AnimShake 的守卫一致：正在抖动或正在播受击动画时不重开。
+        // 已在抖动或受击动画中时不重开。
         if (_shakeElapsed >= 0f)
             return;
 
@@ -52,7 +40,7 @@ public partial class VisualsAnimMirror : Node
         _shakeElapsed = 0f;
     }
 
-    /// <summary>重新开始时清掉同步状态，让下一次推进重新对齐本体。</summary>
+    /// <summary>重置同步状态。</summary>
     internal void ResetState()
     {
         _lastAnimation = null;
@@ -74,7 +62,7 @@ public partial class VisualsAnimMirror : Node
         MirrorShake((float)delta);
     }
 
-    /// <summary>把本体当前轨道状态镜像到克隆。动画切换时才重设动画，其余帧只对齐轨道时间。</summary>
+    /// <summary>同步动画与轨道时间。</summary>
     private void MirrorAnimation()
     {
         var sourceAnim = _source!.SpineAnimation;
@@ -100,7 +88,7 @@ public partial class VisualsAnimMirror : Node
         cloneTrack?.SetTrackTime(sourceTrack.GetTrackTime());
     }
 
-    /// <summary>复刻本体的受击抖动曲线（横向 10px、1 秒、Cubic 缓出）。</summary>
+    /// <summary>复刻受击抖动曲线。</summary>
     private void MirrorShake(float delta)
     {
         if (_shakeElapsed < 0f)

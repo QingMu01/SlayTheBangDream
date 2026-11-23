@@ -40,8 +40,7 @@ public class Surge() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity, 
             if (_enemiesSnapshot.Count == 0)
                 return;
 
-            // 命中段数可能被外部效果抬高（原版遗物 Thumbscrew 对多段攻击 +1 段），
-            // 而快照只有敌人数量那么长；不夹取就会在末段越界抛 ArgumentOutOfRangeException。
+            // 外部效果可增加命中段数，索引必须夹取以避免超出敌人快照。
             var index = Math.Min(context.HitIndex, _enemiesSnapshot.Count - 1);
             context.Targets = new List<Creature> { _enemiesSnapshot[index] };
             context.Damage *= (int)Math.Pow(2, index);

@@ -5,17 +5,11 @@ using STS2RitsuLib.Interop.AutoRegistration;
 
 namespace BangDreamInSpire.Scripts.Enchantments;
 
-/// <summary>
-/// 插曲：只能给音乐牌附魔。
-/// <list type="bullet">
-/// <item>该牌从【曲库】移入【歌单】时，改为进入手牌（<see cref="InsertSongRules.MoveIntoPerformArea" />）；</item>
-/// <item>打出该牌时可自由选择歌单槽位（等价于任意槽位，<see cref="InsertSongRules.ResolveSlotSelectionMode" />）。</item>
-/// </list>
-/// </summary>
+/// <summary>插曲：音乐牌从曲库进入歌单时改为进手牌，打出可任选槽位。</summary>
 [RegisterEnchantment]
 public sealed class InsertSong : EnchantmentModel, IInsertSongEnchantment
 {
-    /// <summary>限定只能给音乐牌（演奏牌）附魔。</summary>
+    /// <summary>是否可附魔到音乐牌。</summary>
     public override bool CanEnchant(CardModel card)
     {
         return base.CanEnchant(card) && card is IPerformCard;

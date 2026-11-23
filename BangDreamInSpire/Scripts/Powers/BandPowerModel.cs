@@ -11,8 +11,6 @@ public abstract class BandPowerModel : ModPowerTemplate
     protected sealed override IEnumerable<IHoverTip> AdditionalHoverTips => PowerHoverTips;
     protected sealed override IEnumerable<DynamicVar> CanonicalVars => PowerVars;
 
-    // protected virtual PowerAssetProfile CardAssetProfile { get; }
-
     protected virtual IEnumerable<IHoverTip> PowerHoverTips => [];
     protected virtual IEnumerable<DynamicVar> PowerVars => [];
 }

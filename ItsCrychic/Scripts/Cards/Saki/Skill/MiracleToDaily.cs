@@ -47,7 +47,6 @@ public class MiracleToDaily() : AbstractSakikoCard(CustomCost, CustomType, Custo
 
         if (IsUpgraded)
         {
-            // 升级版：丢弃歌单内的所有牌，再向歌单加入等量的随机即兴音乐牌。
             if (performCards.Count == 0) return;
 
             await CardCmd.Discard(choiceContext, performCards);
@@ -65,7 +64,6 @@ public class MiracleToDaily() : AbstractSakikoCard(CustomCost, CustomType, Custo
             return;
         }
 
-        // 基础版：歌单内每张牌原地变化为一张随机即兴音乐牌，保留原槽位。
         foreach (var originalCard in performCards)
         {
             var candidate = Owner.RunState.Rng.CombatCardGeneration.NextItem(candidates);

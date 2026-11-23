@@ -10,9 +10,7 @@ using MegaCrit.Sts2.Core.ValueProps;
 
 namespace ItsCrychic.Scripts.Power.Debuff;
 
-/// <summary>
-///     惩戒：本回合内，目标每次受到攻击就失去生命（格挡不豁免）；玩家回合结束时移除。
-/// </summary>
+/// <summary>本回合受攻击时额外失去生命，格挡不豁免；玩家回合结束时移除。</summary>
 public class PunishmentPower : BandPowerModel
 {
     private bool _isTriggering;
@@ -24,7 +22,6 @@ public class PunishmentPower : BandPowerModel
     public override async Task AfterDamageReceived(PlayerChoiceContext choiceContext, Creature target,
         DamageResult result, ValueProp props, Creature? dealer, CardModel? cardSource)
     {
-        // 被攻击命中即触发，不要求未被格挡。
         if (target == Owner && !_isTriggering && props.IsPoweredAttack())
         {
             _isTriggering = true;

@@ -7,20 +7,13 @@ using Logger = MegaCrit.Sts2.Core.Logging.Logger;
 
 namespace BangDreamInSpire.Scripts.Diagnostics;
 
-/// <summary>
-/// BDS-Perf 的总装配：读取 RitsuLib 设置页的开关、订阅生命周期事件、挂帧采样器、按需写报告。
-/// 默认关闭且只在初始化时判断一次：关闭状态下不订阅日志、不注册补丁、不挂采样节点，
-/// 因此对性能与内存零影响；在设置页打开后需要重启游戏才会开始检测。
-/// </summary>
+/// <summary>按需装配性能诊断，默认关闭；设置变更需重启。</summary>
 internal static class PerfSession
 {
-    /// <summary>长帧阈值（毫秒）。</summary>
     public const int FrameSpikeThresholdMs = 50;
 
-    /// <summary>周期检查间隔（秒）；只有检测到异常长帧时才真正落盘。</summary>
     public const int PeriodicReportSeconds = 180;
 
-    /// <summary>保留的历史报告份数。</summary>
     public const int RetainReports = 6;
 
     private static readonly object Gate = new();
@@ -43,10 +36,7 @@ internal static class PerfSession
 
     public static string? LastReportPath => Volatile.Read(ref _lastReportPath);
 
-    /// <summary>
-    /// 在 <c>BangDreamInSpireCore.Initialize</c> 的最开头调用。
-    /// <paramref name="config" /> 是 RitsuLib 数据槽里的设置实例；关闭时直接返回，不安装任何东西。
-    /// </summary>
+    /// <summary>初始化诊断；关闭时不安装任何监听或补丁。</summary>
     public static void Initialize(Logger logger, PerfConfig config)
     {
         if (Interlocked.Exchange(ref _initialized, 1) == 1)
@@ -114,7 +104,7 @@ internal static class PerfSession
         Sub(RitsuLibFramework.SubscribeLifecycle<GameTreeEnteredEvent>(e =>
         {
             PerfTimeline.Mark("game:tree-entered");
-            // 比 GameReady 更早挂上采样器；replay 保证晚订阅也能立刻拿到 NGame。
+            // 尽早挂采样器，replay 用于晚订阅。
             AttachSampler(e.Game);
         }));
 
@@ -150,7 +140,7 @@ internal static class PerfSession
             }
             catch
             {
-                // 某些战斗没有 Encounter（测试/特殊房间），保持默认值。
+                // 无 Encounter 时保持默认值。
             }
 
             PerfTimeline.SetPhase($"combat:{encounter}");
@@ -197,11 +187,7 @@ internal static class PerfSession
         }
     }
 
-    /// <summary>
-    /// 写一份性能报告。返回 markdown 路径；失败或正在写时返回上一次的路径。
-    /// <paramref name="sync" /> 为 false 时，主线程只采集数据并序列化，写盘丢到后台串行队列，
-    /// 避免监测自己在启动/掉帧时刻制造磁盘尖峰。退出/控制台路径使用同步写，确保拿到文件。
-    /// </summary>
+    /// <summary>生成报告；异步模式后台写盘，同步模式用于退出与控制台。</summary>
     public static string? Dump(string reason, bool sync = false)
     {
         if (!_config.Enabled)
@@ -222,7 +208,7 @@ internal static class PerfSession
                 return LastReportPath;
             }
 
-            // 后台写盘线程与报告读取方都会读这个路径：用 Volatile 把写/读的可见性写成显式约定。
+            // 用 Volatile 保证后台可见性。
             Volatile.Write(ref _lastReportPath, payload.MarkdownPath);
             if (sync)
             {
@@ -259,7 +245,7 @@ internal static class PerfSession
                     }
                     catch
                     {
-                        // 后台写盘失败不应影响游戏；latest 会在下一次报告时覆盖。
+                        // 后台写盘失败不影响游戏。
                     }
                 },
                 CancellationToken.None,
@@ -273,14 +259,7 @@ internal static class PerfSession
         Sampler = null;
     }
 
-    /// <summary>
-    /// 解除 BDS-Perf 持有的日志回调与生命周期订阅（每个进程只应调用一次）。
-    /// <para>
-    /// 目前没有调用点：两个 mod 都不支持卸载/热重载，进程退出时由 Godot 直接销毁，订阅随进程一起消失。
-    /// 这里把依赖写成显式约定——将来若支持 mod 卸载或热重载，必须在卸载前调用本方法，
-    /// 否则会重复订阅（日志回调被调用多次、生命周期事件被重复处理）。
-    /// </para>
-    /// </summary>
+    /// <summary>解除诊断订阅，供未来卸载或热重载使用。</summary>
     public static void Shutdown()
     {
         try
@@ -310,7 +289,7 @@ internal static class PerfSession
         }
     }
 
-    /// <summary>退出/同步写盘前等待后台写队列排空，避免旧 payload 覆盖 perf-latest。</summary>
+    /// <summary>等待后台写队列排空。</summary>
     public static void FlushPendingWrites(int timeoutMs = 2000)
     {
         Task chain;
@@ -325,7 +304,7 @@ internal static class PerfSession
         }
         catch
         {
-            // 等待超时也不阻塞退出；timestamped 报告不会丢。
+            // 超时不阻塞退出。
         }
     }
 

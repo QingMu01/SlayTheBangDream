@@ -11,7 +11,7 @@ public partial class PerformFlashVfx : Node2D
     private static readonly StringName RevealProgressShaderParameter = "reveal_progress";
     private static readonly StringName RectSizeShaderParameter = "rect_size";
 
-    /// <summary>场景基准槽位尺寸（与 SweepLight 的 160×50 一致）；实际槽位更宽时按此比值横向铺开。</summary>
+    /// <summary>场景基准槽位尺寸。</summary>
     private static readonly Vector2 DesignSlotSize = new(160f, 50f);
 
     private const float SweepDuration = 0.45f;
@@ -34,7 +34,7 @@ public partial class PerformFlashVfx : Node2D
     private Transform2D _slotTransform = Transform2D.Identity;
     private Vector2 _slotFit = Vector2.One;
 
-    // 基准值来自场景；所有运动按同一时间线求值，重播不会积累位移或缩放。
+    // 所有运动按同一时间线求值，场景基准用于重播复位。
     private sealed record Accent(
         Sprite2D Sprite,
         Vector2 Position,
@@ -43,7 +43,6 @@ public partial class PerformFlashVfx : Node2D
         Color Modulate,
         float Delay);
 
-    /// <summary>闪光主题色。游戏内由调用方按卡槽颜色注入，预览时可直接在 Inspector 里调。</summary>
     [Export]
     public Color FlashColor
     {
@@ -55,10 +54,7 @@ public partial class PerformFlashVfx : Node2D
         }
     }
 
-    /// <summary>
-    /// 槽位未缩放的显示尺寸（缺省 160×50，即场景基准）。特效据此把扫光、星芒与光尘按槽位铺开；
-    /// 游戏内由演奏区注入，预览时可在 Inspector 里改大以核对宽槽位下的表现。
-    /// </summary>
+    /// <summary>槽位未缩放尺寸，驱动横向铺开。</summary>
     [Export]
     public Vector2 SlotSize
     {
@@ -72,7 +68,6 @@ public partial class PerformFlashVfx : Node2D
         }
     }
 
-    /// <summary>勾选即重播一次（自动复位，便于反复触发）。</summary>
     [Export]
     public bool Play
     {
@@ -84,7 +79,6 @@ public partial class PerformFlashVfx : Node2D
         }
     }
 
-    /// <summary>预览态下播放结束后自动重播。</summary>
     [Export]
     public bool LoopPreview { get; set; } = true;
 
@@ -106,9 +100,7 @@ public partial class PerformFlashVfx : Node2D
             Replay();
     }
 
-    /// <summary>
-    /// 游戏内由演奏区注入未缩放尺寸与相对于演奏区的变换（含中心、缩放与镜像）。
-    /// </summary>
+    /// <summary>注入槽位尺寸与相对变换。</summary>
     public void ConfigureSlot(Vector2 slotSize, Transform2D slotTransform)
     {
         _slotSize = slotSize is { X: > 0f, Y: > 0f } ? slotSize : DesignSlotSize;
@@ -122,13 +114,10 @@ public partial class PerformFlashVfx : Node2D
             .Select(sprite => new Accent(sprite, sprite.Position, sprite.Scale, sprite.Rotation, sprite.Modulate, 0f))
     ];
 
-    /// <summary>
-    /// 按槽位大小铺开：扫光矩形与光尘发射盒随槽位拉宽，星芒/晶片的横向位置等比外扩，
-    /// 亮起时刻按新几何重算。元素自身的笔触大小保持不变，避免宽槽位下被横向拉扁。
-    /// </summary>
+    /// <summary>按槽位宽度调整几何，保持元素笔触尺寸。</summary>
     private void ApplySlotFit()
     {
-        // 编辑器里不写任何运行期状态，保留场景作者的摆放。
+        // 编辑器保留场景摆放。
         if (Engine.IsEditorHint())
             return;
 
@@ -140,14 +129,14 @@ public partial class PerformFlashVfx : Node2D
         {
             _sweepLight.Position = -_slotSize * 0.5f;
             _sweepLight.Size = _slotSize;
-            // 扫光着色器以 rect_size 为几何基准（斜边、带宽、前沿行程都在其中换算），必须同步。
+            // 同步扫光着色器的 rect_size。
             _sweepLight.SetInstanceShaderParameter(RectSizeShaderParameter, _slotSize);
         }
 
         if (_glowDust != null)
         {
             _glowDust.VisibilityRect = ScaleRect(_dustBaseVisibilityRect, _slotFit);
-            // 发射盒拉宽后单位面积粒子数会变稀，按同一比值补足数量以维持密度。
+            // 按宽度补足粒子数量以保持密度。
             var amount = Mathf.Max(1, Mathf.RoundToInt(_dustBaseAmount * _slotFit.X * _slotFit.Y));
             if (_glowDust.Amount != amount)
                 _glowDust.Amount = amount;
@@ -165,20 +154,14 @@ public partial class PerformFlashVfx : Node2D
 
     private static Rect2 ScaleRect(Rect2 rect, Vector2 factor) => new(rect.Position * factor, rect.Size * factor);
 
-    /// <summary>
-    /// 按扫光的 Sine/InOut 前沿反解每个亮点的亮起时刻。几何随槽位变化后必须重算，
-    /// 否则宽槽位下两侧元素会与扫光前沿错位。
-    /// </summary>
+    /// <summary>按扫光前沿计算亮点时刻。</summary>
     private void RefreshAccentDelays()
     {
         _glints = [.. _glints.Select(accent => accent with { Delay = ResolveSweepDelay(accent.Position) })];
         _shards = [.. _shards.Select(accent => accent with { Delay = ResolveSweepDelay(accent.Position) })];
     }
 
-    /// <summary>
-    /// 反解某个亮点（场景基准坐标）被扫光前沿扫到的时刻：斜边、带宽与柔边从材质读取，
-    /// 亮点位置按当前槽位铺开后的坐标参与换算。
-    /// </summary>
+    /// <summary>反解单个亮点被扫到的时刻。</summary>
     private float ResolveSweepDelay(Vector2 designPosition)
     {
         if (_sweepLight == null)
@@ -197,7 +180,6 @@ public partial class PerformFlashVfx : Node2D
         return SweepDuration * Mathf.Acos(1f - 2f * progress) / Mathf.Pi;
     }
 
-    /// <summary>重置并重新播放一次特效。</summary>
     public void Replay()
     {
         if (_sweepLight == null)
@@ -235,13 +217,13 @@ public partial class PerformFlashVfx : Node2D
         var age = elapsed - accent.Delay;
         var progress = Mathf.Clamp(age / lifetime, 0f, 1f);
         var drift = 1f - Mathf.Pow(1f - progress, 2f);
-        // 发射位置随槽位铺开；上浮距离使用场景基准，避免长卡名让晶片飞出 UI。
+        // 发射位置随槽位铺开，上浮距离保持基准。
         var anchor = accent.Position * _slotFit;
         var side = accent.Position.X < 0f ? -1f : 1f;
         var lift = isShard ? 24f + Mathf.Abs(accent.Position.X) * 0.22f : 10f;
         var offset = new Vector2(side * (isShard ? 14f : 7f), -lift) * drift;
 
-        // 短促弹亮后再淡出。晶片绕纵轴翻面，星芒只轻摆。
+        // 晶片翻面，星芒轻摆。
         var fadeIn = Mathf.Clamp(age / (isShard ? 0.055f : 0.035f), 0f, 1f);
         var fadeOut = 1f - Mathf.SmoothStep(0.25f, 1f, progress);
         var alpha = fadeIn * fadeOut;
@@ -278,7 +260,7 @@ public partial class PerformFlashVfx : Node2D
             return;
 
         _sweepLight.SetInstanceShaderParameter(RevealProgressShaderParameter, Mathf.Clamp(progress, 0f, 1f));
-        // 前沿出界后关闭绘制，避免斜边留下极细的抗锯齿残光。
+        // 前沿出界后停止绘制。
         _sweepLight.Visible = _sweepBaseVisible && progress < 1f;
     }
 
@@ -291,7 +273,7 @@ public partial class PerformFlashVfx : Node2D
             _sweepLight.Color = sweepColor;
         }
 
-        // 用实例着色，运行时和编辑器都不会修改场景共享的材质。
+        // 使用实例着色避免修改共享材质。
         var tint = new Color(_flashColor.R, _flashColor.G, _flashColor.B);
         foreach (var accent in _glints)
             accent.Sprite.SelfModulate = tint.Lightened(0.72f);

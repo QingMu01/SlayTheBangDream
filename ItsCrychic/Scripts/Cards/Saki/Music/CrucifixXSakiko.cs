@@ -26,7 +26,6 @@ public class CrucifixXSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTar
 
     public override async Task OnPerform(PlayerChoiceContext choiceContext, CardPerform perform)
     {
-        // 作用在拥有者自身：本回合内攻击伤害与音符伤害提高。
         await PowerCmd.Apply<CrucifixXPower>(choiceContext, Owner.Creature,
             QuickVar.Buff.GetVar(this).BaseValue, Owner.Creature, this);
     }

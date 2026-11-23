@@ -6,10 +6,7 @@ using MegaCrit.Sts2.Core.Entities.Players;
 
 namespace BangDreamInSpire.Scripts.Console;
 
-/// <summary>
-/// 主菜单角色点击动画的调试指令：查看 / 切换手感参数组。
-/// 只改本次运行的内存状态，不写盘——重启即回到随机。
-/// </summary>
+/// <summary>切换仅本次运行生效的点击动画参数组，重启后恢复随机。</summary>
 public sealed class ClickProfileConsoleCmd : AbstractConsoleCmd
 {
     private const string RandomKeyword = "random";

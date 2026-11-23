@@ -13,18 +13,14 @@ public static class BangDreamConst
 
     private static CardType? _musicCardType;
 
-    /// <summary>
-    ///     音乐牌使用的运行时卡牌类型。本体 <see cref="CardType" /> 是封闭枚举、无法从模组扩展，
-    ///     因此在 PerformMechanic 内容注册阶段用 RitsuLib 的动态枚举工具取一个与本体/其它模组都不冲突的
-    ///     确定性值；所有对 CardType 的展示/兼容处理都必须认识这个值。
-    /// </summary>
+    /// <summary>运行时 Music 卡类型，在内容注册阶段确定性分配。</summary>
     public static CardType MusicCardType
     {
         get => _musicCardType ?? throw new InvalidOperationException("CardType.Music is not BangDreamTools.Initialized.");
         internal set => BangDreamTools.Init(ref _musicCardType, value, nameof(MusicCardType));
     }
 
-    /// <summary>安全判定卡牌类型是否为 Music；未初始化时返回 false 而不抛异常（渲染/本地化早期调用可安全使用）。</summary>
+    /// <summary>安全判断是否为 Music，未初始化时返回 false。</summary>
     public static bool IsMusicCardType(CardType cardType)
     {
         return _musicCardType == cardType;
@@ -38,7 +34,7 @@ public static class BangDreamConst
         internal set => BangDreamTools.Init(ref _playerSkin, value, nameof(PlayerSkin));
     }
 
-    /// <summary>未初始化时安全返回 null 的皮肤 run 数据，供菜单/卡牌库等非跑局场景使用。</summary>
+    /// <summary>非跑局场景可安全读取的皮肤数据。</summary>
     internal static PlayerRunSavedData<PlayerSkinData>? PlayerSkinOrNull => _playerSkin;
 
     private static PlayerRunSavedData<ExtraCardMerchantData>? _extraCardMerchant;
@@ -164,7 +160,7 @@ public static class BangDreamConst
 
     private static CardKeyword? _weaknessBreak;
 
-    /// <summary>关键字「破绽」：累计满层进入弱点击破。</summary>
+    /// <summary>破绽关键字。</summary>
     public static CardKeyword WeaknessBreak
     {
         get => _weaknessBreak ?? throw new InvalidOperationException(
@@ -174,7 +170,7 @@ public static class BangDreamConst
 
     private static CardKeyword? _weakPointBreak;
 
-    /// <summary>关键字「弱点击破」：期间不能再被发现破绽，被带击破效果的牌命中时触发击破。</summary>
+    /// <summary>弱点击破关键字。</summary>
     public static CardKeyword WeakPointBreak
     {
         get => _weakPointBreak ?? throw new InvalidOperationException(
@@ -184,7 +180,7 @@ public static class BangDreamConst
 
     private static CardKeyword? _breakEffect;
 
-    /// <summary>关键字「击破」：卡牌文案里的「击破：……」句式。</summary>
+    /// <summary>击破关键字。</summary>
     public static CardKeyword BreakEffect
     {
         get => _breakEffect ?? throw new InvalidOperationException(

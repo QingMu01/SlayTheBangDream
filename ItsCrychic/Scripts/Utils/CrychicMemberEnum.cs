@@ -15,11 +15,7 @@ public enum CrychicMemberEnum
 
 public static class MemberEnumExtensions
 {
-    /// <summary>
-    /// 各成员的角色色。其中 C/D/F/G 四个和弦色以核心模组的
-    /// <see cref="PerformChordColors" /> 为唯一来源（和弦书签与演奏槽位共用），
-    /// 避免卡面书签与角色色各写一份而漂移。
-    /// </summary>
+    /// <summary>角色配色；和弦色统一来自 <see cref="PerformChordColors" />。</summary>
     private static readonly Dictionary<CrychicMemberEnum, MemberInfo> MemberInfo = new()
     {
         [CrychicMemberEnum.Sakiko] = new MemberInfo("TogawaSakiko", "Sakiko Togawa",

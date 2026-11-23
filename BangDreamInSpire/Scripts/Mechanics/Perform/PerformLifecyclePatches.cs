@@ -4,10 +4,7 @@ using STS2RitsuLib.Patching.Models;
 
 namespace BangDreamInSpire.Scripts.Mechanics.Perform;
 
-/// <summary>
-/// 把歌单生命周期动作视为非玩家驱动：它在卡牌入堆时由机器发射，需在回合结束阶段照常执行，
-/// 否则会被 <c>StartCancellingAllPlayerDrivenCombatActions</c> 取消，令卡牌留在歌单却永不分配槽位。
-/// </summary>
+/// <summary>歌单生命周期动作必须标记为非玩家驱动，否则回合结束清理会取消它，使卡牌永不分配槽位。</summary>
 internal class PerformLifecycleNotPlayerDrivenPatch : IPatchMethod
 {
     public static string PatchId => "perform_lifecycle_not_player_driven";

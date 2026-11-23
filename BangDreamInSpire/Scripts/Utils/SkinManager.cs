@@ -23,20 +23,8 @@ public static class SkinManager
         return SkinsMap.GetValueOrDefault(path);
     }
 
-    /// <summary>
-    /// 解析某个玩家当前应使用的皮肤（<see cref="SkinInfo" />）。
-    /// <para>
-    /// 优先取玩家当前选中的皮肤；若尚未选过皮肤（<c>SkinPath</c> 为空，例如从未打开过皮肤选择器），
-    /// 回落到该角色注册的第一个皮肤。
-    /// </para>
-    /// <para>
-    /// **这是「按玩家」解析皮肤的唯一入口**。模组的皮肤是 per-player 的（<c>PlayerRunSavedData</c> 按
-    /// <c>NetId</c> 索引），而 RitsuLib 的资产覆盖（<c>IModCharacterAssetOverrides.AssetProfile</c> /
-    /// <c>CustomVisualsPath</c> / <c>WorldProceduralVisuals</c>）是 **per-CharacterModel** 的静态属性，
-    /// 无法表达「同一角色、不同玩家、不同皮肤」。因此**不要**用那些接口来承载皮肤，
-    /// 否则多人下同角色的两个玩家会拿到同一份视觉。
-    /// </para>
-    /// </summary>
+    /// <summary>按玩家解析当前皮肤，未选择时使用首个注册皮肤。皮肤按 NetId 区分，
+    /// 不能用 CharacterModel 静态资产接口替代。</summary>
     public static SkinInfo? ResolvePlayerSkin(Player player)
     {
         if (player.Character is not ISkinSupportCharacter skinSupportCharacter)
@@ -50,7 +38,7 @@ public static class SkinManager
             return selected;
         }
 
-        // 回落不依赖跑局数据（只读角色模型上的 CharacterSkinList），因此菜单 / 选角阶段同样可用。
+        // 菜单阶段也可读取角色注册皮肤。
         foreach (var skinPath in skinSupportCharacter.CharacterSkinList)
         {
             var fallback = GetSkinInfo(skinPath);
@@ -59,7 +47,7 @@ public static class SkinManager
                 continue;
             }
 
-            // 本方法被十几处 UI/视觉入口每帧或每次创建调用，回落日志按玩家去重，避免刷屏。
+            // 回落日志按玩家去重。
             WarnOnce(player.NetId, "fallback",
                 $"Player {player.NetId} 尚未选择皮肤，回落到首个皮肤：{skinPath}");
             return fallback;
@@ -86,9 +74,7 @@ public static class SkinManager
         BangDreamInSpireCore.Logger.Warn(message);
     }
 
-    /// <summary>
-    /// 取玩家已选皮肤。跑局数据尚未注册（菜单 / 选角阶段）或读取失败时返回 null，不向调用方抛。
-    /// </summary>
+    /// <summary>读取已选皮肤，数据未注册或失败时返回 null。</summary>
     private static SkinInfo? TryGetSelectedSkin(Player player)
     {
         try
@@ -102,16 +88,7 @@ public static class SkinManager
         }
     }
 
-    /// <summary>
-    /// 解析某个玩家当前应使用的角色视觉场景（<see cref="SkinTemplate.MultiplayerVisual" /> 的
-    /// <c>VisualScene</c>），供所有「按玩家取角色视觉」的入口共用。
-    /// <para>
-    /// 这一步回落是必要的：模组角色的 <c>AssetProfile</c> 为空，RitsuLib 的
-    /// <c>CharacterAssetProfiles.Resolve</c> 会用 <c>PlaceholderCharacterId</c>（默认
-    /// <c>ironclad</c>）补全路径，因此 <c>CharacterModel.CreateVisuals()</c> 在拿不到皮肤时会
-    /// 返回**铁甲**的 creature visuals，而不是报错。
-    /// </para>
-    /// </summary>
+    /// <summary>解析玩家视觉场景；无皮肤时显式回退，避免 RitsuLib 使用 ironclad 占位。</summary>
     public static string? ResolvePlayerVisualScene(Player player)
     {
         return ResolvePlayerSkin(player)?.SkinTemplate.MultiplayerVisual.VisualScene;

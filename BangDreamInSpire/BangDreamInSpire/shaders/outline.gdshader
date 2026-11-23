@@ -1,22 +1,14 @@
 shader_type canvas_item;
 
-// 基于 alpha 边缘检测的 2D 纹理描边 shader
-
-// 描边颜色
 instance uniform vec4 outline_color : source_color = vec4(1.0, 1.0, 1.0, 1.0);
-// 描边宽度（像素）
 uniform float outline_width : hint_range(0.0, 64.0, 0.5) = 3.0;
-// 描边强度倍率（1.0 为 outline_color 原始透明度）
 uniform float outline_intensity : hint_range(0.0, 2.0, 0.05) = 1.0;
-// 实体判定阈值：alpha 高于此值视为实体像素
 uniform float alpha_threshold : hint_range(0.0, 1.0, 0.01) = 0.5;
-// 边缘过渡软度（0 = 硬边，越大过渡越柔和，不稀释描边强度）
 uniform float softness : hint_range(0.0, 0.5, 0.01) = 0.02;
-// 采样方向数（8~64，越大越圆滑，性能越低）
 uniform int sample_count : hint_range(8, 64, 4) = 24;
-// 同心采样层数（宽度较大时建议加大，避免边缘出现缺口）
+// 较大描边宽度需增加层数，避免边缘缺口
 uniform int ring_count : hint_range(1, 8, 1) = 3;
-// 描边模式：0 = 外部，1 = 内部，2 = 内外
+// 0 = 外部，1 = 内部，2 = 内外
 uniform int outline_mode : hint_enum("Outer", "Inner", "Both") = 0;
 
 void fragment() {
@@ -69,9 +61,7 @@ void fragment() {
 		inner_alpha
 	);
 
-	// 外描边：周围有实体像素而自身透明
 	float outer_edge = outer_solid * (1.0 - center_solid);
-	// 内描边：自身为实体而周围存在透明像素
 	float inner_edge = center_solid * (1.0 - inner_solid);
 
 	float edge = 0.0;

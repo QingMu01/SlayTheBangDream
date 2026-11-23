@@ -67,7 +67,6 @@ public class Pulverise() : AbstractSakikoCard(CustomCost, CustomType, CustomRari
 
     protected override void OnUpgrade()
     {
-        // 升级后休止所需余音减少 1 点。
         this.SecondaryCosts().Set(BangDreamConst.LingeredResource, 3);
     }
 }

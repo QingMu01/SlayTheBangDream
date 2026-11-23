@@ -1,59 +1,19 @@
 #!/usr/bin/env python3
-"""模组本地化表的校验、骨架生成与术语表抽取（多语言）。
+"""校验本地化表、生成语言骨架并抽取术语表。
 
-背景
-----
-游戏按**本体表文件名**遍历，把 `res://{mod.id}/localization/{lang}/{file}` 并入同名表
-（游戏 `src/Core/Localization/LocManager.cs:409-480`、`src/Core/Modding/ModManager.cs` 的
-`GetModdedLocTables`）。由此有两条硬约束：
+游戏只加载与本体同名的表，未知文件名会被静默忽略；其他语言也不会回退到模组的
+zhs 表，因此各语言必须保持完整键集合。校验 JSON 结构、重复键、参考语言键集合、
+占位符签名与 BBCode 配对；换行差异和 BOM 仅警告。占位符比较变量名及括号参数，
+不比较需要翻译的展示文本。参考语言与译文的空值必须一致，刻意的空串不得补写。
 
-1. 文件名必须命中本体那 46 张表名，否则**整文件被静默忽略**，游戏里一条都不生效。
-2. 非英语语言只回退到**本体 eng 表**，mod 的键在两边都没有；`LocTable.GetRawText` 此时抛
-   `LocException`，而 `LocManager.SmartFormat` 的 try/catch 在它之后，所以缺键不会被兜底成
-   「显示键名」，而是走异常路径。**只提供 zhs 时，其他 15 种语言的玩家看到的不是中文，是报错。**
+用法：
+    python3 tools/localization.py check [--lang eng --lang jpn] [--strict-warnings]
+    python3 tools/localization.py stub --lang eng [--dry-run]
+    python3 tools/localization.py glossary --lang eng [--out PATH]
 
-翻译本身由 agent 完成，本工具负责机器能判定的那部分：结构没被翻译改坏。
-
-判据
-----
-- 表名不在本体 46 张表内：错误（整文件失效）。
-- JSON 解析失败 / 根不是对象 / 值不是字符串 / 同文件重复键：错误。
-- UTF-8 BOM：警告（`json.load` 默认会崩，游戏侧也不该赌）。
-- 键集合与参考语言（默认 `zhs`）不一致：错误。缺失与多余分开报。
-- `{...}` 占位符不一致：错误。占位符名由代码注入（`{Damage:diff()}`、`{Amount}`、
-  `{IfUpgraded:show:A|B}`），改名即运行时取不到。比对的是**签名**＝变量名 + 括号参数，
-  不比对裸文本参数：`{IfUpgraded:show:演奏|}` 的 `show:` 之后是展示文本，必须翻译；
-  `{Energy:energyIcons(1)}` 的 `(1)` 是语义参数，必须保留。占位符内部可以嵌 `[gold]`
-  与换行，按花括号配对解析，不做正则截断。
-- `[gold]` / `[blue]` / `[sine]` / `[color=#7799cc]` 等 BBCode 标签不配对，或开闭集合与参考
-  不一致：错误。
-- 换行数量与参考不一致：警告（卡面排版会变，但不致命）。
-- 参考语言为空串、译文却填了内容（或反之）：错误。仓库里 38 个空值是刻意的哨兵
-  （`PROMPT_EMPTY`、`EMPTY_LOC_STRING`、音乐牌的 `.description`、待写的 `.flavor`），
-  翻译不得自行补全。
-
-用法
-----
-    # 校验全部模组、全部语言（参考语言 zhs）
-    python3 tools/localization.py check
-
-    # 只看某几种语言 / 换参考语言
-    python3 tools/localization.py check --lang eng --lang jpn
-    python3 tools/localization.py check --reference zhs --strict-warnings
-
-    # 给新语言铺骨架：键齐全、值留空，等 agent 填
-    python3 tools/localization.py stub --lang eng --dry-run
-    python3 tools/localization.py stub --lang eng
-
-    # 从本体平行表抽中→英术语表（供翻译时对齐用词）
-    python3 tools/localization.py glossary --lang eng
-    python3 tools/localization.py glossary --lang eng --out .scratch/localization/glossary.eng.json
-
-本体表名与术语表来源默认从 `../sts2unpack/<版本>/localization` 解析（取最高版本目录），
-可用 `--base-locales` 或环境变量 `STS2_UNPACKED` 覆盖；找不到时 `check` 退回内置表名表，
-`glossary` 报错退出。
-
-退出码：0 = 通过；1 = 有错误（或 strict 下有警告）；2 = 参数/环境错误。
+本体资源默认取自 ../sts2unpack 的最高版本目录，可用 --base-locales 或
+STS2_UNPACKED 覆盖；check 找不到时退回内置表名，glossary 则报错。
+退出码：0 = 通过；1 = 有错误（strict 下含警告）；2 = 参数或环境错误。
 """
 
 from __future__ import annotations

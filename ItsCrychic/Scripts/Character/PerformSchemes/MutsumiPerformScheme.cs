@@ -7,17 +7,10 @@ using MegaCrit.Sts2.Core.Models;
 
 namespace ItsCrychic.Scripts.Character.PerformSchemes;
 
-/// <summary>
-/// 睦的演奏方案：C/D/F/G 四个和弦分组，每组容量上限 3、初始 1。
-/// 四组分别锚定在角色命中框的左上 / 左下 / 右上 / 右下，槽位颜色由所属和弦分组决定，
-/// 不使用槽位提示。
-/// 卡牌和弦不参与入组判定（和弦只用于激活奏响）：音乐牌默认进入 C 组，需要进入其他分组时
-/// 由卡牌的 <c>PerformTargetTypes.RequestGroup</c> 手动指定；打出带和弦的卡牌时，
-/// 其全部和弦分组一起奏响。
-/// </summary>
+/// <summary>四角和弦演奏方案，无槽位提示。音乐牌默认进入 C 组，
+/// 其他分组由 RequestGroup 指定；卡牌和弦只决定奏响的分组，不影响入组。</summary>
 public sealed class MutsumiPerformScheme : IPerformScheme
 {
-    /// <summary>单组合容量上限。</summary>
     public const int GroupCapacityLimit = 3;
 
     private static readonly PerformGroupDescriptor[] GroupDescriptors =
@@ -28,7 +21,7 @@ public sealed class MutsumiPerformScheme : IPerformScheme
         new(PerformChord.G, 1 + GroupCapacityLimit * 3, GroupCapacityLimit, 1)
     ];
 
-    /// <summary>和弦分组四角锚点，槽位配色统一取 <see cref="PerformChordColors" />。</summary>
+    /// <summary>四角锚点与和弦配色。</summary>
     private static readonly Dictionary<PerformChord, PerformSlotCorner> GroupCorners = new()
     {
         [PerformChord.C] = PerformSlotCorner.TopLeft,
@@ -65,10 +58,7 @@ public sealed class MutsumiPerformScheme : IPerformScheme
         return new PerformSlotAnchor(GroupCorners[group.Chord], slotIndex - group.BaseSlotIndex);
     }
 
-    /// <summary>
-    /// 睦的槽位颜色固定由所属和弦分组决定，与该槽位内是否有牌无关，
-    /// 因此四个角能直接以颜色标示各自的和弦。
-    /// </summary>
+    /// <inheritdoc />
     public Color GetSlotColor(int slotIndex, CardModel? card)
     {
         var descriptor = FindDescriptor(slotIndex);

@@ -12,7 +12,7 @@ public class SophieSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTarget
     private const CardRarity CustomRarity = CardRarity.Uncommon;
     private static readonly TargetType CustomTarget = PerformTargetTypes.RequestGroup;
 
-    // 升级后获得即兴：入场时也会结算一次。
+    // 升级的即兴在入场时也结算。
     public override bool IsInstant => IsUpgraded;
 
     protected override IEnumerable<DynamicVar> CardVars =>

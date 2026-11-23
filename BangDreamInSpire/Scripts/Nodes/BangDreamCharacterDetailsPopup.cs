@@ -15,10 +15,7 @@ using STS2RitsuLib.Scaffolding.Characters;
 
 namespace BangDreamInSpire.Scripts.Nodes;
 
-/// <summary>
-/// 角色详情弹窗：皮肤样式 / 初始卡组（缩小卡）/ 初始遗物。
-/// 由 <see cref="BangDreamCharacterSelector" /> 在切换角色时灌入数据，点击 DETAILS 打开。
-/// </summary>
+/// <summary>展示角色皮肤、初始卡组与遗物。</summary>
 public partial class BangDreamCharacterDetailsPopup : Control
 {
     [Signal]
@@ -34,24 +31,21 @@ public partial class BangDreamCharacterDetailsPopup : Control
     private static readonly FontVariation? NotoMedium =
         ResourceLoader.Load<FontVariation>("res://themes/fonts/jpn/noto_sans_cjkjp_medium_shared.tres");
 
-    // 标题级字体（中文思源宋体 Bold）：与正文的黑体拉开对比，遗物名等小标题都用它。
+    // 标题字体与正文区分。
     private static readonly FontVariation? TitleFont =
         ResourceLoader.Load<FontVariation>("res://themes/fonts/zhs/source_han_serif_sc_bold_shared.tres");
 
     private const float PanelOpenScale = 0.96f;
 
-    // 卡牌预览用游戏标准卡节点（NCard，本体尺寸 300x422）统一缩小到网格单元格大小；
-    // 悬停时放大回标准比例。NCard 根节点的局部原点就是卡面中心，所以统一以 Scale 缩放即可。
-    // 卡牌单元格的基准尺寸；实际尺寸与列数由张数和可用空间动态决定（见 ApplyCardLayout）。
+    // 预览使用 NCard，按单元格缩放，悬停放回标准比例。
     private static readonly Vector2 CardCellBaseSize = new(110f, 155f);
     private const float CardGap = 12f;
     private const int MaxCardColumns = 6;
     private const float MinCardWidth = 96f;
-    // 卡牌区的高度预算：行数决定实际占用，缩放以此为上限，避免撑掉下方遗物区。
+    // 限制卡牌区高度，保留遗物区。
     private const float CardAreaMaxHeight = 358f;
 
-    // 面板高度按内容收缩：右栏内容自 y=112 起依次是「小标题 24 + 间距 8 + 卡牌区 + 间距 8 + 小标题 24 + 间距 8 + 遗物区」，
-    // 左栏（皮肤选择器）从 y=166 起；取两栏较长者加底部留白，再在父容器内垂直居中，避免面板下半部大片空白。
+    // 面板高度取左右栏内容最大值并居中。
     private const float PanelContentTop = 112f;
     private const float SectionLabelHeight = 24f;
     private const float SectionGap = 8f;
@@ -84,12 +78,12 @@ public partial class BangDreamCharacterDetailsPopup : Control
     private VBoxContainer? _cardsRow;
     private VBoxContainer? _relicsBox;
 
-    // 卡牌区响应式布局：列数/行数与单元格缩放每次重建时按张数/可用空间重算。
+    // 重建时计算卡牌布局。
     private readonly List<Control> _cardCells = new();
     private Vector2 _cardCellSize = CardCellBaseSize;
     private Vector2 _cardPreviewScale = Vector2.One * (CardCellBaseSize.X / NCard.defaultSize.X);
 
-    // 右栏两段的实际内容高度，重建时记录，供面板高度自适应使用。
+    // 记录两栏内容高度。
     private float _cardsAreaHeight = CardCellBaseSize.Y;
     private float _relicsAreaHeight = RelicTileHeight;
 
@@ -131,9 +125,7 @@ public partial class BangDreamCharacterDetailsPopup : Control
         _panel.Modulate = new Color(1f, 1f, 1f, 0f);
     }
 
-    /// <summary>
-    /// 切换角色时刷新弹窗数据（弹窗可以是关闭状态，打开时即是最新内容）。
-    /// </summary>
+    /// <summary>刷新角色数据，支持关闭状态下更新。</summary>
     public void SetCharacter(CharacterModel character, StartRunLobby? lobby)
     {
         _character = character;
@@ -184,10 +176,7 @@ public partial class BangDreamCharacterDetailsPopup : Control
         RefreshContent();
     }
 
-    /// <summary>
-    /// 名字左侧的头像：优先用角色声明的 <see cref="IModCharacterAssetOverrides.CustomIconPath" /> 图标场景，
-    /// 没配时回退到乐队 logo。
-    /// </summary>
+    /// <summary>优先使用角色图标，缺省回退乐队 Logo。</summary>
     private void ApplyEmblem(CharacterModel character)
     {
         if (_emblem == null)
@@ -216,10 +205,7 @@ public partial class BangDreamCharacterDetailsPopup : Control
         _emblem.Visible = _emblem.Texture != null;
     }
 
-    /// <summary>
-    /// 顶部标题区对齐：罗马字与标题左对齐；班级胶囊与乐队名按标题中心线垂直居中，
-    /// 胶囊宽度跟随班级文字实际宽度，避免不同角色的班级名溢出固定宽度。
-    /// </summary>
+    /// <summary>对齐标题并按班级文字调整胶囊宽度。</summary>
     private void AlignHeader()
     {
         if (_title == null)
@@ -376,7 +362,7 @@ public partial class BangDreamCharacterDetailsPopup : Control
         IEnumerable<RelicModel> relicSource = skinInfo != null
             ? skinInfo.GetStartingRelics()
             : _character.StartingRelics;
-        // 隐藏遗物（如“角色专属规则”这类只做逻辑的遗物）不出现在详情页。
+        // 隐藏遗物不展示。
         var relics = relicSource.Where(RitsuLibFramework.IsRelicVisible).ToList();
         var extraDeck = skinInfo?.GetStartingExtraDeck().ToList() ?? [];
 
@@ -385,10 +371,7 @@ public partial class BangDreamCharacterDetailsPopup : Control
         FitPanelHeight();
     }
 
-    /// <summary>
-    /// 面板高度按左右两栏的内容收缩并垂直居中：固定 1160x650 的旧高度会让单行卡牌/单个遗物的皮肤剩下一大片空白。
-    /// 内容高度直接由两栏已知段落的高度相加（不依赖同帧的布局结果），面板宽度保持不变。
-    /// </summary>
+    /// <summary>按左右栏内容调整高度并居中。</summary>
     private void FitPanelHeight()
     {
         if (_panel == null)
@@ -399,7 +382,7 @@ public partial class BangDreamCharacterDetailsPopup : Control
         var cardsContentBottom = PanelContentTop + SectionLabelHeight + SectionGap + _cardsAreaHeight;
         var relicsContentBottom = cardsContentBottom + SectionGap + SectionLabelHeight + SectionGap + _relicsAreaHeight;
 
-        // 左栏高度取皮肤选择器的组合最小高度（spine 容器 + 皮肤名 + 序号行），取不到时用场景里的经验值。
+        // 左栏高度取皮肤选择器最小高度。
         var skinSelectorHeight = _skinSelector?.GetChildOrNull<Control>(0)?.GetCombinedMinimumSize().Y
             ?? SkinColumnFallbackHeight;
         var skinContentBottom = SkinColumnTop + skinSelectorHeight;
@@ -414,7 +397,7 @@ public partial class BangDreamCharacterDetailsPopup : Control
         _panel.Position = new Vector2(_panel.Position.X, top);
         _panel.Size = new Vector2(_panel.Size.X, height);
 
-        // 纸张噪点着色器把面板尺寸当 uniform 用，改高后要同步，否则纹理会被拉伸。
+        // 面板尺寸同步给纸纹着色器。
         if (_panel.GetNodeOrNull<ColorRect>("%PaperGrain")?.Material is ShaderMaterial paperMaterial)
         {
             paperMaterial.SetShaderParameter("area_size", _panel.Size);
@@ -423,9 +406,7 @@ public partial class BangDreamCharacterDetailsPopup : Control
 
     private readonly record struct CardEntry(CardModel Card, int Count, bool IsExtra);
 
-    /// <summary>
-    /// 初始卡组与额外卡组合并展示：按「卡牌 id + 是否升级」去重计数，额外卡组来源的卡在右上角打标。
-    /// </summary>
+    /// <summary>合并初始与额外卡组，按 ID 与升级状态去重。</summary>
     private void RebuildCards(IReadOnlyList<CardModel> deck, IReadOnlyList<CardModel> extraDeck)
     {
         if (_cardsRow == null)
@@ -474,11 +455,7 @@ public partial class BangDreamCharacterDetailsPopup : Control
         }
     }
 
-    /// <summary>
-    /// 按卡牌数量与可用空间计算响应式布局：最多 <see cref="MaxCardColumns" /> 列（6 张可单行放下），
-    /// 超过则按行数均衡分列（7→4+3、8→4+4、10→5+5、11→6+5），卡片再按可用宽高等比缩放；
-    /// 每一行都是居中的 <c>HBoxContainer</c>，所以末行不满时也水平居中，不会靠左留空。
-    /// </summary>
+    /// <summary>按卡牌数与空间计算行列和缩放，末行居中。</summary>
     private (int Columns, int Rows) ApplyCardLayout(int count)
     {
         var columnWidth = _cardsRow?.GetParent<Control>()?.Size.X ?? 668f;
@@ -552,8 +529,7 @@ public partial class BangDreamCharacterDetailsPopup : Control
             cardNode.Scale = _cardPreviewScale;
             cell.AddChild(cardNode);
 
-            // 悬停放大后卡牌会超出单元格；用一块透明"命中垫"接管放大期间的鼠标，
-            // 否则指针一离开单元格就会立刻缩回、来回闪烁。
+            // 透明命中垫避免悬停放大时来回闪烁。
             var hoverPad = new Control
             {
                 Name = HoverPadName,
@@ -562,11 +538,11 @@ public partial class BangDreamCharacterDetailsPopup : Control
             };
             cell.AddChild(hoverPad);
 
-            // 单元格尺寸由 GridContainer 决定，布局完成后再把卡牌中心对准单元格中心。
+            // 布局后将卡牌对齐单元格中心。
             cell.Resized += () => cardNode.Position = cell.Size * 0.5f;
             cell.MouseEntered += () => SetCardHovered(cell, cardNode, hoverPad, true);
             hoverPad.MouseExited += () => SetCardHovered(cell, cardNode, hoverPad, false);
-            // NCard._Ready 内的 Reload 在节点未就绪时会提前返回，需要显式刷新一次标题/描述。
+            // 节点未就绪时需显式刷新卡牌内容。
             Callable.From(() =>
             {
                 try
@@ -582,7 +558,7 @@ public partial class BangDreamCharacterDetailsPopup : Control
         }
         else
         {
-            // 卡节点池不可用（如 TestMode）时退回手绘小卡，避免空窗。
+            // 节点池不可用时使用手绘小卡。
             cell.AddChild(BuildMiniCard(entry.Card));
         }
 
@@ -602,8 +578,7 @@ public partial class BangDreamCharacterDetailsPopup : Control
     private void SetCardHovered(Control cell, NCard cardNode, Control hoverPad, bool hovered)
     {
         cell.ZIndex = hovered ? CardHoverZIndex : 0;
-        // 卡片按行分装在各自 HBox 里，跨行不是兄弟节点；悬停时抬整行的层级，
-        // 否则上排放大的卡会被下排的卡盖住。
+        // 悬停时提升整行层级，避免下排遮挡放大卡。
         if (cell.GetParent() is Control row)
         {
             row.ZIndex = hovered ? 1 : 0;
@@ -710,11 +685,7 @@ public partial class BangDreamCharacterDetailsPopup : Control
         return label;
     }
 
-    /// <summary>
-    /// 详情页里的音乐牌预览跟随当前展示的皮肤：皮肤配置了 <c>Ui.MusicCardFrame</c> 时替换卡框；
-    /// 否则保留 <c>IPerformCard.PerformCardAssets</c> 提供的默认卡框（预览卡是 canonical 卡，
-    /// 走不到皮肤 patch 的 mutable/owner 判定）。
-    /// </summary>
+    /// <summary>按当前皮肤替换音乐卡框，未配置时使用默认卡框。</summary>
     private void ApplyMusicCardFrame(NCard cardNode, CardModel card)
     {
         if (!BangDreamConst.IsMusicCardType(card.Type))
@@ -740,9 +711,7 @@ public partial class BangDreamCharacterDetailsPopup : Control
         frame.Material = null;
     }
 
-    /// <summary>
-    /// 清空卡牌区：NCard 是池化节点，必须先交还给 NodePool 再销毁承载它的行/单元格。
-    /// </summary>
+    /// <summary>先将池化卡牌归还 NodePool，再移除布局。</summary>
     private void ClearCardGrid()
     {
         foreach (var tween in _cardHoverTweens.Values)
@@ -782,10 +751,7 @@ public partial class BangDreamCharacterDetailsPopup : Control
         }
     }
 
-    /// <summary>
-    /// 关闭弹窗时若指针正停在卡片上，<c>MouseExited</c> 不会触发；这里统一把悬停状态复位，
-    /// 避免下次打开时残留一张放大卡或一层看不见的命中垫。
-    /// </summary>
+    /// <summary>关闭时复位悬停，避免残留放大卡与命中垫。</summary>
     private void ResetCardHover()
     {
         foreach (var tween in _cardHoverTweens.Values)
@@ -839,7 +805,7 @@ public partial class BangDreamCharacterDetailsPopup : Control
             return;
         }
 
-        // 初始遗物通常只有 1~2 个：并排铺满整行，避免右侧一大片空白；更多时退回纵向列表。
+        // 少量遗物横向排列，更多时纵向列表。
         if (relics.Count <= 2)
         {
             var row = new HBoxContainer
@@ -869,9 +835,7 @@ public partial class BangDreamCharacterDetailsPopup : Control
         _relicsAreaHeight = relics.Count * 56f + (relics.Count - 1) * 10f;
     }
 
-    /// <summary>
-    /// 横向遗物条目（1~2 个遗物时并排展示）：图标在左、名称与描述在右，条目按栏宽等分。
-    /// </summary>
+    /// <summary>创建横向遗物条目。</summary>
     private Control BuildRelicTile(RelicModel relic)
     {
         var tile = new HBoxContainer
@@ -1055,7 +1019,7 @@ public partial class BangDreamCharacterDetailsPopup : Control
         };
         textBox.AddThemeConstantOverride("separation", 2);
 
-        // 遗物名属于标题层：用普通 Label 保留展示字体（MegaLabel 会在 _Ready 按语言替换成正文黑体）。
+        // 普通 Label 保留标题字体。
         var title = new Label
         {
             Text = relic.Title.GetFormattedText(),

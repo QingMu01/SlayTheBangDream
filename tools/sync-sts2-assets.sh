@@ -1,57 +1,28 @@
 #!/usr/bin/env bash
 #
-# sync-sts2-assets.sh —— 把《杀戮尖塔 2》本体的解包资源同步进模组工程。
-#
-# 背景：模组的场景/主题会引用本体资源（如 res://images/...、res://themes/...、
-# res://addons/mega_text/MegaLabel.cs）。这些路径在【运行时】由游戏本体的 pck
-# 提供，模组 pck 不打包它们（见 export_presets.cfg 的 exclude_filter）；但【编辑器】
-# 预览/编辑时工程里必须真实存在这些文件，否则场景会显示资源丢失、保存时可能丢引用。
-# 本脚本负责把统一解包源里的这些目录同步进工程。
+# 同步本体解包资源供 Godot 编辑器解析 res:// 引用；运行时仍由本体 pck 提供，
+# 模组 pck 不打包这些文件。
 #
 # 用法：
-#   tools/sync-sts2-assets.sh                        # 同步到 BangDreamInSpire
-#   tools/sync-sts2-assets.sh -n                     # dry-run，只打印会做什么
-#   tools/sync-sts2-assets.sh --check                # 只检查源是否可用，不落盘
-#   tools/sync-sts2-assets.sh -s /path/to/unpack     # 指定解包源
-#   tools/sync-sts2-assets.sh --version 0.112.0      # 指定版本目录
+#   tools/sync-sts2-assets.sh [-n|--check] [项目 ...]
+#   tools/sync-sts2-assets.sh -s /path/to/unpack [--version 0.112.0]
 #   tools/sync-sts2-assets.sh BangDreamInSpire ItsCrychic
 #
-# 源解析顺序：-s/--source > $STS2_UNPACKED > 仓库同级的 ../sts2unpack。
-# 源可以是两种结构：
-#   A) 直接是解包根：<源>/{addons,animations,fonts,images,materials,models,scenes,
-#      shaders,themes}/...
-#   B) 按版本分目录：<源>/0.111.0/...、<源>/0.112.0/...  —— 游戏更新后新增一个
-#      版本目录即可，脚本会自动选**版本号最大**的那个（可用 --version 固定）。
+# 解包源优先级：-s/--source > $STS2_UNPACKED > ../sts2unpack。源可为解包根，
+# 也可按版本分目录；后者默认选最高版本，可用 --version 固定。
 #
-# 同步清单（GAME_DIRS）只取编辑器真正需要的内容：
-#   addons/mega_text  本体场景大量使用 MegaLabel，模组会读/引用这些场景
-#   animations fonts images materials models scenes shaders themes  本体资源
-# 其余 addons 不同步：
-#   addons/spine   解包工具把可执行文件旁的 runtime 库改名填进了 editor/debug 槽位
-#                  （那份"editor"库没有导入器），且会与 bin/ 里官方 editor 构建的
-#                  Spine 扩展重复注册 → Spine 继续用 bin/ 那份
-#   addons/fmod、addons/sentry、atlas_generator、dev_tools、megacontentcreator
-#                  本体自用的扩展/编辑器插件，模组用不到，加载只会有插件噪声
+# 只同步 GAME_DIRS 中的编辑器资源。其他 addons 会跳过：spine 的解包 editor
+# 库不完整且会与 bin/ 官方扩展重复注册；fmod/sentry 等是模组不需要的本体插件。
 #
-# 如需额外同步或跳过某个子路径，用 STS2_SYNC_SKIP（空格分隔，覆盖默认值）：
+# STS2_SYNC_SKIP 以空格指定额外跳过路径；设为空串可禁用默认跳过：
 #   STS2_SYNC_SKIP="addons/mega_text/ThemeConstants.cs" tools/sync-sts2-assets.sh
-#   STS2_SYNC_SKIP="" tools/sync-sts2-assets.sh        # 不跳过任何东西
 #
-# 同步方式为 `cp -a --reflink=auto`：btrfs/XFS 上与源共享数据块（几乎不占额外
-# 空间，实测 120MB → 0MB），其它文件系统自动退化为普通复制。
+# 使用 cp -a --reflink=auto，支持时共享数据块，否则普通复制。不要用软链接或
+# bind mount：Godot 不扫描目录软链接，且编辑器写入 .import 会污染源目录。
 #
-# 【不要】用软链接或 bind mount 指向 Steam 安装目录：
-#   1) Godot 编辑器不扫描目录软链接（实测），资源等于不存在；
-#   2) 编辑器会往源目录写 .import，与 Steam 文件校验互相干扰，反而不稳。
-#
-# 【重要】源里必须带原版 .import 文件（uid 与本体一致）：工程里数十处按 uid://
-# 引用本体资源，若让 Godot 重新导入生成新 uid，编辑器会刷
-# "invalid UID ... using text path instead" 警告。源缺少 .import 时脚本会告警。
-#
-# 同步 addons 需要工程侧三项配套设置（脚本会检查并在缺失时告警，但不代改）：
-#   1) <工程>.csproj 有 <Compile Remove="addons/**"/>（否则 addons 下的 .cs 会被编译）
-#   2) export_presets.cfg 的 exclude_filter 含 addons/*（否则会被打进模组 pck）
-#   3) .gitignore 含 addons 规则（否则 git status 刷出上千个文件）
+# 源必须保留原版 .import，确保 uid 与本体一致；缺失时脚本会告警。同步 addons
+# 还要求 csproj 排除 addons/** 编译、export_presets.cfg 排除 addons/* 打包，
+# 并由 .gitignore 忽略 addons；脚本只检查这些设置，不代改。
 #
 set -euo pipefail
 

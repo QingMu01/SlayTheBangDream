@@ -42,9 +42,8 @@ public class SheetMusicSakiko() : AbstractSakikoMusicCard(CustomRarity, CustomTa
         await PowerCmd.Apply<DexterityPower>(choiceContext, Owner.Creature, amount,
             Owner.Creature, this);
 
-        // 「被卡牌效果演奏时消耗」是条件性消耗，无法用 Exhaust 关键字表达；
-        // 折中做法是写进 .instant 文案（docs/card-authoring.md 允许的例外），
-        // 关键字说明仍由 CardHoverTips 的 FromKeyword(Exhaust) 提供，二者需保持口径一致。
+        // 条件性消耗无法由 Exhaust 表达，因此写入 .instant 文案；
+        // FromKeyword(Exhaust) 的说明需与其保持一致。
         if (!perform.IsAutoPerform)
         {
             await CardCmd.Exhaust(choiceContext, this);

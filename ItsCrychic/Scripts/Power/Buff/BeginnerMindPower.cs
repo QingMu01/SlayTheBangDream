@@ -6,10 +6,7 @@ using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 
 namespace ItsCrychic.Scripts.Power.Buff;
 
-/// <summary>
-/// 初心：回合开始时，失去1点歌单容量。
-/// 容量由 <c>PerformManager.ReduceCapacity</c> 统一结算，超出新容量的演奏牌会被挤回手牌（沿用其原有语义）。
-/// </summary>
+/// <summary>回合开始减少歌单容量；超出容量的牌由 PerformManager 退回手牌。</summary>
 public class BeginnerMindPower : BandPowerModel
 {
     public override PowerType Type => PowerType.Buff;

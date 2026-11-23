@@ -4,16 +4,9 @@ using MegaCrit.Sts2.addons.mega_text;
 
 namespace BangDreamInSpire.Scripts.Nodes.Controls;
 
-/// <summary>
-/// 和弦设计面板结果栏右侧的「增加 / 覆盖」开关（默认覆盖）。
-/// <para>
-/// 面板在未解锁时直接不给这个节点加进树（或用 <see cref="Visible" /> 隐藏），解锁逻辑由面板侧开关控制；
-/// 本控件只负责自绘胶囊 + 滑块 + 两个文字标签，点击后切换并抛 <see cref="Toggled" />。
-/// </para>
-/// </summary>
+/// <summary>增加或覆盖开关，仅负责显示与切换。</summary>
 public partial class NChordModeToggle : Control
 {
-    /// <summary>控件建议尺寸。</summary>
     public static readonly Vector2 ToggleSize = new(320f, 56f);
 
     private const float KnobInset = 6f;
@@ -28,7 +21,7 @@ public partial class NChordModeToggle : Control
     private readonly MegaLabel _overwriteLabel;
     private bool _additive;
 
-    /// <summary>开关状态变化时触发；参数 true 表示「增加」，false 表示「覆盖」。</summary>
+    /// <summary>切换时触发，true 表示增加。</summary>
     public event Action<bool>? Toggled;
 
     public NChordModeToggle(string addText, string overwriteText)
@@ -46,7 +39,7 @@ public partial class NChordModeToggle : Control
         RefreshTextColors();
     }
 
-    /// <summary>true = 增加（与卡牌现有和弦取并集），false = 覆盖（直接替换）。</summary>
+    /// <summary>true 表示增加，false 表示覆盖。</summary>
     public bool IsAdditive => _additive;
 
     public override void _Ready()
@@ -123,7 +116,7 @@ public partial class NChordModeToggle : Control
             HorizontalAlignment = alignment,
             VerticalAlignment = VerticalAlignment.Center,
             MouseFilter = MouseFilterEnum.Ignore,
-            // 两个标签分别贴胶囊左右两端，滑块在两端时都不会压到文字
+            // 标签避开两端滑块。
             Position = new Vector2(alignment == HorizontalAlignment.Left ? 56f : ToggleSize.X - 56f - 90f, 0f),
             Size = new Vector2(90f, ToggleSize.Y)
         };

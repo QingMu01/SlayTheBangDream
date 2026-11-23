@@ -1,104 +1,56 @@
 shader_type canvas_item;
 
-// =============================================
-// 高级图像滤镜 - Photoshop / Animate / CSS3 Filter 合集
-// =============================================
-
-// === 基础 ===
-// 整体透明度
 uniform float opacity : hint_range(0.0, 1.0) = 1.0;
 
-// === 发光 / 晕染 (Glow & Bloom) ===
-// 启用发光
 uniform bool enable_glow = false;
-// 发光强度
 uniform float glow_intensity : hint_range(0.0, 5.0) = 1.0;
-// 发光半径（像素）
 uniform float glow_radius : hint_range(0.0, 64.0) = 8.0;
-// 发光颜色
 uniform vec4 glow_color : source_color = vec4(1.0, 0.8, 0.4, 1.0);
-// 发光阈值（低于此亮度不发光）
 uniform float glow_threshold : hint_range(0.0, 1.0) = 0.2;
-// 发光柔和度
 uniform float glow_softness : hint_range(0.0, 2.0) = 1.0;
-// 晕染(Bloom) - 让亮部向周围扩散
 uniform float bloom_intensity : hint_range(0.0, 3.0) = 0.0;
 uniform float bloom_radius : hint_range(0.0, 32.0) = 4.0;
 
-// === 模糊 (Blur) ===
-// 启用模糊
 uniform bool enable_blur = false;
-// 模糊半径
 uniform float blur_radius : hint_range(0.0, 20.0) = 2.0;
-// 高斯模糊方向 (0=双向, 1=水平, 2=垂直)
+// 0=双向，1=水平，2=垂直
 uniform int blur_direction : hint_range(0, 2) = 0;
-// 运动模糊角度
 uniform float motion_blur_angle : hint_range(0.0, 360.0) = 0.0;
-// 运动模糊距离
 uniform float motion_blur_distance : hint_range(0.0, 20.0) = 0.0;
 
-// === 锐化 (Sharpen) ===
 uniform bool enable_sharpen = false;
 uniform float sharpen_amount : hint_range(0.0, 3.0) = 1.0;
 uniform float sharpen_radius : hint_range(0.5, 3.0) = 1.0;
 
-// === 扭曲 (Distortion) ===
-// 启用扭曲
 uniform bool enable_distortion = false;
-// 波纹扭曲强度
 uniform float ripple_intensity : hint_range(0.0, 0.1) = 0.0;
-// 波纹频率
 uniform float ripple_frequency : hint_range(0.0, 50.0) = 10.0;
-// 波纹速度
 uniform float ripple_speed : hint_range(-10.0, 10.0) = 1.0;
-// 漩涡扭曲强度
 uniform float swirl_intensity : hint_range(0.0, 2.0) = 0.0;
-// 漩涡中心偏移
 uniform vec2 swirl_center = vec2(0.5, 0.5);
-// 镜头畸变（鱼眼/桶形）
 uniform float lens_distort : hint_range(-1.0, 1.0) = 0.0;
-// 色差偏移（RGB分离）
 uniform float chromatic_aberration : hint_range(0.0, 0.05) = 0.0;
 
-// === 色调 / 颜色调整 (Color Adjustment) ===
-// 色相旋转（度）
 uniform float hue_shift : hint_range(-180.0, 180.0) = 0.0;
-// 饱和度
 uniform float saturation : hint_range(0.0, 2.0) = 1.0;
-// 亮度
 uniform float brightness : hint_range(-1.0, 1.0) = 0.0;
-// 对比度
 uniform float contrast : hint_range(0.0, 2.0) = 1.0;
-// 颜色叠加 (Color Overlay)
 uniform bool enable_color_overlay = false;
 uniform vec4 overlay_color : source_color = vec4(1.0, 0.0, 0.0, 0.5);
 uniform int overlay_blend_mode : hint_range(0, 5) = 0; // 0=正常,1=正片叠底,2=滤色,3=叠加,4=柔光,5=颜色加深
-// 渐变映射
 uniform bool enable_gradient_map = false;
 uniform vec4 gradient_color1 : source_color = vec4(0.0, 0.0, 0.0, 1.0);
 uniform vec4 gradient_color2 : source_color = vec4(1.0, 1.0, 1.0, 1.0);
 
-// === 特殊效果 ===
-// 描边/边缘检测
 uniform bool enable_outline = false;
 uniform float outline_width : hint_range(0.0, 8.0) = 2.0;
 uniform vec4 outline_color : source_color = vec4(0.0, 0.0, 0.0, 1.0);
-// 像素化
 uniform float pixelate_size : hint_range(0.0, 64.0) = 0.0;
-// 反相
 uniform bool invert_colors = false;
-// 灰度
 uniform bool grayscale = false;
-// _sepia 复古
 uniform bool sepia = false;
-// 阈值/二值化
 uniform float threshold_level : hint_range(0.0, 1.0) = 0.0;
 
-// =============================================
-// 工具函数
-// =============================================
-
-// RGB -> HSV
 vec3 rgb2hsv(vec3 c) {
 	vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
 	vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
@@ -108,32 +60,27 @@ vec3 rgb2hsv(vec3 c) {
 	return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
 }
 
-// HSV -> RGB
 vec3 hsv2rgb(vec3 c) {
 	vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
 	vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
 	return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
 }
 
-// 混合模式
 vec3 blend(vec3 base, vec3 blend, int mode) {
-	if (mode == 1) return base * blend; // Multiply
-	if (mode == 2) return 1.0 - (1.0 - base) * (1.0 - blend); // Screen
+	if (mode == 1) return base * blend;
+	if (mode == 2) return 1.0 - (1.0 - base) * (1.0 - blend);
 	if (mode == 3) {
-		// Overlay
 		return mix(2.0 * base * blend, 1.0 - 2.0 * (1.0 - base) * (1.0 - blend), step(0.5, base));
 	}
 	if (mode == 4) {
-		// Soft Light
 		return mix(2.0 * base * blend + base * base * (1.0 - 2.0 * blend),
 			sqrt(base) * (2.0 * blend - 1.0) + 2.0 * base * (1.0 - blend),
 			step(0.5, blend));
 	}
-	if (mode == 5) return 1.0 - (1.0 - blend) / (base + 0.001); // Color Burn
-	return blend; // Normal
+	if (mode == 5) return 1.0 - (1.0 - blend) / (base + 0.001);
+	return blend;
 }
 
-// 高质量高斯模糊
 vec4 gaussian_blur(sampler2D tex, vec2 uv, vec2 pixel_size, float radius, int direction) {
 	if (radius <= 0.0) return texture(tex, uv);
 
@@ -157,11 +104,9 @@ vec4 gaussian_blur(sampler2D tex, vec2 uv, vec2 pixel_size, float radius, int di
 	return color / total_weight;
 }
 
-// 双向高斯模糊
 vec4 gaussian_blur_2d(sampler2D tex, vec2 uv, vec2 pixel_size, float radius) {
 	if (radius <= 0.0) return texture(tex, uv);
 
-	// 分两步模拟：先水平后垂直
 	vec4 horizontal = vec4(0.0);
 	float total_weight = 0.0;
 	int samples = int(min(radius * 2.0 + 1.0, 32.0));
@@ -187,7 +132,6 @@ vec4 gaussian_blur_2d(sampler2D tex, vec2 uv, vec2 pixel_size, float radius) {
 	return (horizontal + vertical) * 0.5;
 }
 
-// 运动模糊
 vec4 motion_blur(sampler2D tex, vec2 uv, vec2 pixel_size, float distance, float angle_deg) {
 	if (distance <= 0.0) return texture(tex, uv);
 
@@ -203,7 +147,6 @@ vec4 motion_blur(sampler2D tex, vec2 uv, vec2 pixel_size, float distance, float 
 	return color / float(samples);
 }
 
-// 多采样发光
 vec4 get_glow(sampler2D tex, vec2 uv, vec2 pixel_size, float radius, float threshold, float intensity, vec4 glow_col, float softness) {
 	if (radius <= 0.0 || intensity <= 0.0) return vec4(0.0);
 
@@ -232,14 +175,12 @@ vec4 get_glow(sampler2D tex, vec2 uv, vec2 pixel_size, float radius, float thres
 	return glow * glow_col;
 }
 
-// 锐化
 vec4 sharpen(sampler2D tex, vec2 uv, vec2 pixel_size, float amount, float radius) {
 	vec4 center = texture(tex, uv);
 	vec4 blurred = gaussian_blur_2d(tex, uv, pixel_size, radius);
 	return center + (center - blurred) * amount;
 }
 
-// 边缘检测/描边
 vec4 outline(sampler2D tex, vec2 uv, vec2 pixel_size, float width, vec4 line_color) {
 	float alpha = 0.0;
 	int steps = 8;
@@ -255,16 +196,13 @@ vec4 outline(sampler2D tex, vec2 uv, vec2 pixel_size, float width, vec4 line_col
 	return vec4(line_color.rgb, alpha * line_color.a);
 }
 
-// 扭曲UV
 vec2 distort_uv(vec2 uv) {
 	vec2 distorted = uv;
 
-	// 像素化
 	if (pixelate_size > 0.0) {
 		distorted = floor(distorted * pixelate_size) / pixelate_size;
 	}
 
-	// 漩涡
 	if (swirl_intensity > 0.0) {
 		vec2 center = swirl_center;
 		vec2 delta = distorted - center;
@@ -275,14 +213,12 @@ vec2 distort_uv(vec2 uv) {
 		distorted = center + vec2(cos(angle), sin(angle)) * dist;
 	}
 
-	// 波纹
 	if (ripple_intensity > 0.0) {
 		float ripple = sin(distorted.x * ripple_frequency + TIME * ripple_speed)
 				* cos(distorted.y * ripple_frequency + TIME * ripple_speed);
 		distorted += vec2(cos(ripple * 3.14159), sin(ripple * 3.14159)) * ripple_intensity;
 	}
 
-	// 镜头畸变
 	if (lens_distort != 0.0) {
 		vec2 center = vec2(0.5, 0.5);
 		vec2 delta = distorted - center;
@@ -294,9 +230,7 @@ vec2 distort_uv(vec2 uv) {
 	return distorted;
 }
 
-// 颜色调整
 vec3 adjust_color(vec3 color) {
-	// HSV调整
 	vec3 hsv = rgb2hsv(color);
 	hsv.x += hue_shift / 360.0;
 	hsv.x = fract(hsv.x);
@@ -304,19 +238,15 @@ vec3 adjust_color(vec3 color) {
 	hsv.z += brightness;
 	color = hsv2rgb(hsv);
 
-	// 对比度
 	color = (color - 0.5) * contrast + 0.5;
 
-	// 反相
 	if (invert_colors) color = 1.0 - color;
 
-	// 灰度
 	if (grayscale) {
 		float lum = dot(color, vec3(0.299, 0.587, 0.114));
 		color = vec3(lum);
 	}
 
-	// 复古
 	if (sepia) {
 		color = vec3(
 			dot(color, vec3(0.393, 0.769, 0.189)),
@@ -325,13 +255,11 @@ vec3 adjust_color(vec3 color) {
 		);
 	}
 
-	// 阈值
 	if (threshold_level > 0.0) {
 		float lum = dot(color, vec3(0.299, 0.587, 0.114));
 		color = vec3(step(threshold_level, lum));
 	}
 
-	// 渐变映射
 	if (enable_gradient_map) {
 		float lum = dot(clamp(color, 0.0, 1.0), vec3(0.299, 0.587, 0.114));
 		color = mix(gradient_color1.rgb, gradient_color2.rgb, lum);
@@ -340,18 +268,12 @@ vec3 adjust_color(vec3 color) {
 	return color;
 }
 
-// =============================================
-// Main
-// =============================================
-
 void fragment() {
 	vec2 pixel_size = TEXTURE_PIXEL_SIZE;
 	vec2 uv = UV;
 
-	// 1. 扭曲UV
 	vec2 distorted_uv = distort_uv(uv);
 
-	// 2. 色差分离采样
 	vec4 tex_color;
 	if (chromatic_aberration > 0.0 && enable_distortion) {
 		float r = texture(TEXTURE, distorted_uv + vec2(chromatic_aberration, 0.0)).r;
@@ -363,19 +285,16 @@ void fragment() {
 		tex_color = texture(TEXTURE, distorted_uv);
 	}
 
-	// 3. 发光
 	vec4 glow = vec4(0.0);
 	if (enable_glow) {
 		glow = get_glow(TEXTURE, distorted_uv, pixel_size, glow_radius, glow_threshold, glow_intensity, glow_color, glow_softness);
 	}
 
-	// 4. Bloom
 	vec4 bloom = vec4(0.0);
 	if (bloom_intensity > 0.0) {
 		bloom = get_glow(TEXTURE, distorted_uv, pixel_size, bloom_radius, 0.3, bloom_intensity, vec4(1.0), 0.5);
 	}
 
-	// 5. 模糊
 	vec4 blur = vec4(0.0);
 	if (enable_blur) {
 		if (motion_blur_distance > 0.0) {
@@ -387,42 +306,34 @@ void fragment() {
 		}
 	}
 
-	// 6. 锐化
 	vec4 sharpened = vec4(0.0);
 	if (enable_sharpen) {
 		sharpened = sharpen(TEXTURE, distorted_uv, pixel_size, sharpen_amount, sharpen_radius);
 	}
 
-	// 合成基础颜色
 	vec4 base_color = tex_color;
 	if (enable_blur) base_color = mix(base_color, blur, 0.8);
 	if (enable_sharpen) base_color = sharpened;
 
-	// 7. 颜色调整
 	base_color.rgb = adjust_color(base_color.rgb);
 
-	// 8. 颜色叠加
 	if (enable_color_overlay) {
 		base_color.rgb = blend(base_color.rgb, overlay_color.rgb, overlay_blend_mode);
 		base_color.a *= overlay_color.a;
 	}
 
-	// 9. 描边
 	vec4 outline_col = vec4(0.0);
 	if (enable_outline) {
 		outline_col = outline(TEXTURE, distorted_uv, pixel_size, outline_width, outline_color);
 	}
 
-	// 最终合成
 	vec3 final_rgb = base_color.rgb + glow.rgb + bloom.rgb;
 	float final_alpha = max(base_color.a, outline_col.a);
 
-	// 描边混合
 	if (outline_col.a > 0.0) {
 		final_rgb = mix(final_rgb, outline_col.rgb, outline_col.a);
 	}
 
-	// 应用透明度
 	final_alpha *= opacity;
 
 	COLOR = vec4(final_rgb, final_alpha);

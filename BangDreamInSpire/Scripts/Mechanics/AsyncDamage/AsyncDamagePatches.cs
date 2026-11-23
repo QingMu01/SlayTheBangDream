@@ -15,15 +15,7 @@ public class AsyncDamagePatches : IModPatches
     }
 }
 
-/// <summary>
-/// 回合结束前等待全部在飞异步伤害落地结算，避免音符伤害随回合切换被丢弃。
-/// <para>
-/// <b>覆盖边界</b>：本体只在「玩家结束回合」的转场里调用
-/// <c>WaitUntilQueueIsEmptyOrWaitingOnNonPlayerDrivenAction</c>，因此等待只覆盖这一处；
-/// 敌方回合结束、强制结束战斗等其它转场**不会**等在飞伤害（见 docs/mechanic-authoring.md §7.4）。
-/// 不要顺手新增补丁目标来扩大覆盖范围——多等一个转场就是多一次跨端同步等待，属于产品语义决策。
-/// </para>
-/// </summary>
+/// <summary>玩家结束回合前等待在飞伤害；不扩大其他转场的同步等待范围。</summary>
 internal class WaitForAsyncDamageResolutionPatch : IPatchMethod
 {
     public static string PatchId => "wait_for_async_damage_before_ending_turn";
@@ -32,7 +24,7 @@ internal class WaitForAsyncDamageResolutionPatch : IPatchMethod
     {
         return
         [
-            // 唯一等待点：玩家结束回合转场。其它转场不在覆盖范围内（见类注释与文档 §7.4）。
+            // 唯一等待点为玩家结束回合。
             new ModPatchTarget(typeof(CombatManager), "WaitUntilQueueIsEmptyOrWaitingOnNonPlayerDrivenAction")
         ];
     }
@@ -44,10 +36,7 @@ internal class WaitForAsyncDamageResolutionPatch : IPatchMethod
             __result = WaitForResolutionAsync(__result, combatState);
     }
 
-    /// <summary>
-    /// 屏障等待的看门狗上限。异步伤害正常应在 1-2 秒内落地；超过该值说明表现层卡住或命中信号丢失。
-    /// 继续等会让**所有玩家**的回合结束永久阻塞，因此超时后强制放行并记录。
-    /// </summary>
+    /// <summary>屏障等待上限，超时强制放行并记录。</summary>
     private const int ResolutionTimeoutMs = 5000;
 
     private static async Task WaitForResolutionAsync(Task originalQueueWait, ICombatState combatState)
@@ -70,10 +59,7 @@ internal class WaitForAsyncDamageResolutionPatch : IPatchMethod
     }
 }
 
-/// <summary>
-/// 把异步伤害的结算动作视为非玩家驱动：它是机器在命中时刻发射的，需在回合结束阶段照常执行，
-/// 否则会被 <c>StartCancellingAllPlayerDrivenCombatActions</c> 取消，令回合结束屏障与结算互相死锁。
-/// </summary>
+/// <summary>结算动作按非玩家驱动处理，避免回合结束时取消。</summary>
 internal class AsyncResolveNotPlayerDrivenPatch : IPatchMethod
 {
     public static string PatchId => "async_damage_resolve_not_player_driven";

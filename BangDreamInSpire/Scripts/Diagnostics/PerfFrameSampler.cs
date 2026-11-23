@@ -2,11 +2,7 @@ using Godot;
 
 namespace BangDreamInSpire.Scripts.Diagnostics;
 
-/// <summary>
-/// 挂在 <c>NGame</c> 下的帧采样节点：每帧记录一次 <c>Time.GetTicksUsec</c> 差值（零分配），
-/// 每秒聚合一次 FPS/内存/对象/分配/节点新增，并只在长帧发生时收集「卡住前后」的上下文。
-/// 采样器本身不做字符串拼接、不写日志、不调用 GC.Collect；写报告由 <see cref="PerfSession" /> 决定是否放到后台线程。
-/// </summary>
+/// <summary>零分配逐帧采样、每秒聚合，长帧时保留前后上下文；报告由 PerfSession 写出。</summary>
 public partial class PerfFrameSampler : Node
 {
     private const int FrameCapacity = 4096;
@@ -16,10 +12,7 @@ public partial class PerfFrameSampler : Node
     private const long StartupReportDelayUsec = 20_000_000;
     private const long SuspendedFrameUsec = 2_000_000;
 
-    /// <summary>
-    /// GPU 计时是否已成功启用（供报告 environment 段的 <c>gpu_timing_enabled</c> 使用）。
-    /// 默认关闭；只有设置环境变量 <c>BDS_PERF_GPU_TIMING=1</c> 且根视口测量开启成功时才为 <c>true</c>。
-    /// </summary>
+    /// <summary>根视口 GPU 计时是否成功启用。</summary>
     internal static bool GpuTimingEnabled { get; private set; }
 
     private readonly int[] _frameUs = new int[FrameCapacity];
@@ -64,7 +57,6 @@ public partial class PerfFrameSampler : Node
     private int _cachedViewportNodes;
     private int _cachedCanvasGroupNodes;
 
-    // GPU 计时默认关闭（测量本身有开销）：只有 BDS_PERF_GPU_TIMING=1 时才初始化并逐帧读取。
     private bool _gpuTimingEnabled;
     private Rid _rootViewportRid;
     private double _lastGpuMs;
@@ -104,7 +96,6 @@ public partial class PerfFrameSampler : Node
         _gc2AtLastSecond = GC.CollectionCount(2);
         _refreshRateHz = ReadRefreshRateHz();
 
-        // GPU 计时默认关闭（见 SetupGpuTiming）；未启用时下面 _Process 里只多一次布尔判断。
         SetupGpuTiming();
 
         try
@@ -114,7 +105,6 @@ public partial class PerfFrameSampler : Node
         }
         catch
         {
-            // 连接失败只影响渲染/呈现拆分。
         }
         try
         {
@@ -123,17 +113,15 @@ public partial class PerfFrameSampler : Node
         }
         catch
         {
-            // 基线读取失败只会让第一秒的 Δ 偏大。
         }
 
         try
         {
-            // 节点新增计数是「场景实例化批次」的低成本代理（比 patch PackedScene.Instantiate 风险低）。
+            // 以节点新增近似场景实例化成本。
             GetTree().NodeAdded += OnNodeAdded;
         }
         catch
         {
-            // 信号连接失败只影响节点新增计数。
         }
 
         SetProcess(true);
@@ -151,7 +139,7 @@ public partial class PerfFrameSampler : Node
 
         if (!IsWindowFocused())
         {
-            // 窗口失焦时游戏会把帧率压到 30fps，这些帧不属于玩家感知的“卡”，必须排除。
+            // 排除失焦限帧。
             long nowBackground = (long)Time.GetTicksUsec();
             if (_backgroundSinceUsec == 0)
             {
@@ -186,7 +174,7 @@ public partial class PerfFrameSampler : Node
 
         if (usec > SuspendedFrameUsec)
         {
-            // 最小化/挂起后的超大间隔不是真实卡顿，重置窗口避免污染统计。
+            // 挂起后重置采样窗口。
             ResetSecondWindow(now);
             UpdateContext();
             return;
@@ -212,9 +200,7 @@ public partial class PerfFrameSampler : Node
         _renderSubmitUs = preDraw > 0 && postDraw >= preDraw ? postDraw - preDraw : 0;
         _presentWaitUs = postDraw > 0 && now >= postDraw ? now - postDraw : 0;
 
-        // 帧 setup 是 CPU 侧读数（单位 ms），任何平台都不需要开启测量即可读；GPU 时间则要显式开测量，
-        // 见下方 SetupGpuTiming / ReadGpuRenderTimeMs。这里每帧读一次用于本秒平均，长帧快照里再换算成 µs。
-        // 取不到（-1/NaN/异常）时按 0 处理，不污染平均。
+        // CPU setup 无需开启测量，失败按 0；原始单位为 ms。
         _lastFrameSetupCpuMs = ReadFrameSetupCpuMs();
         if (_lastFrameSetupCpuMs >= 0)
         {
@@ -226,8 +212,7 @@ public partial class PerfFrameSampler : Node
             _lastFrameSetupCpuMs = 0;
         }
 
-        // GPU 计时默认关闭（测量本身有开销）：开启时每帧读一次根视口上一帧的 GPU 时间，
-        // 并累计当秒的平均/最大值；异常/负值/NaN 由读取函数统一归 0，不会抛进渲染循环。
+        // GPU 测量默认关闭，失败按 0。
         if (_gpuTimingEnabled)
         {
             _lastGpuMs = ReadGpuRenderTimeMs(_rootViewportRid);
@@ -311,7 +296,6 @@ public partial class PerfFrameSampler : Node
             }
             catch
             {
-                // 视口可能已随场景销毁；关闭失败不影响退出流程。
             }
 
             _gpuTimingEnabled = false;
@@ -324,7 +308,6 @@ public partial class PerfFrameSampler : Node
         }
         catch
         {
-            // 忽略。
         }
 
         try
@@ -334,27 +317,24 @@ public partial class PerfFrameSampler : Node
         }
         catch
         {
-            // 忽略。
         }
 
         try
         {
-            // 先排空后台写队列，再同步写退出报告，确保 perf-latest 是最后一份。
-            // 退出路径最多等 300ms：写链卡住时不该让游戏关闭多停 2 秒。
+        // 后排空写队列并同步退出报告，最多等待 300ms。
             PerfSession.FlushPendingWrites(timeoutMs: 300);
             PerfSession.Dump("exit", sync: true);
         }
         catch
         {
-            // 退出阶段任何异常都不该影响游戏关闭。
-        }
+            }
         finally
         {
             PerfSession.OnSamplerExit();
         }
     }
 
-    /// <summary>导出帧统计快照（仅在写报告时调用，允许少量分配）。</summary>
+    /// <summary>导出写报告用的帧快照。</summary>
     internal PerfFrameSnapshot Snapshot()
     {
         var snapshot = new PerfFrameSnapshot
@@ -372,8 +352,7 @@ public partial class PerfFrameSampler : Node
         snapshot.WindowFrames = (int)Math.Min(int.MaxValue, _histogramFrames);
         if (_histogramFrames > 0)
         {
-            // HistogramPercentile 返回的是直方图桶号，而桶号本身就是「毫秒」（见 _Process 里的 usec/1000），
-            // 此处结果已是毫秒，不能再除以 1000。
+            // 桶号已经是毫秒，不能再除以 1000。
             snapshot.P50Ms = HistogramPercentile(50);
             snapshot.P95Ms = HistogramPercentile(95);
             snapshot.P99Ms = HistogramPercentile(99);
@@ -437,7 +416,6 @@ public partial class PerfFrameSampler : Node
         }
         catch
         {
-            // 采样上下文失败不影响记录时长本身。
         }
 
         int gc0 = 0;
@@ -449,7 +427,6 @@ public partial class PerfFrameSampler : Node
         }
         catch
         {
-            // 忽略。
         }
 
         var spike = new FrameSpike
@@ -539,11 +516,9 @@ public partial class PerfFrameSampler : Node
         }
         catch
         {
-            // 忽略。
         }
 
-        // 场景树遍历放在 1Hz 聚合里（不做逐帧成本）：SubViewport/CanvasGroup/WorldEnvironment 的数量
-        // 能解释「同样帧数更贵」的渲染路径差异，也用于长帧快照引用上一秒的缓存值。
+        // 每秒统计渲染节点，供长帧引用上一秒缓存。
         CountSceneNodes(out int viewportNodes, out int canvasGroupNodes, out int worldEnvironmentNodes);
         _cachedViewportNodes = viewportNodes;
         _cachedCanvasGroupNodes = canvasGroupNodes;
@@ -553,7 +528,7 @@ public partial class PerfFrameSampler : Node
             ? 0
             : _secondFrameSetupMsSum / _secondFrameSetupSamples;
 
-        // GPU 计时未启用时采样数为 0，平均值/最大值都保持 0，与 task-1 版本的行为一致。
+        // 未启用 GPU 时采样值保持 0。
         double gpuRenderTimeMsAvg = _secondGpuSamples == 0 ? 0 : _secondGpuMsSum / _secondGpuSamples;
 
         var sample = new SecondSample
@@ -756,11 +731,7 @@ public partial class PerfFrameSampler : Node
         }
     }
 
-    /// <summary>
-    /// 读取帧 setup 的 CPU 耗时（毫秒）。GodotSharp.xml：该 API 返回的是<b>毫秒</b>，
-    /// 与 viewport 无关、不需要开启 render time 测量；部分平台/驱动可能返回 -1 或非有限值，
-    /// 这里统一返回 -1 表示「无数据」，由调用方决定按 0 处理还是跳过平均。
-    /// </summary>
+    /// <summary>读取 CPU setup 毫秒；无数据返回 -1。</summary>
     private static double ReadFrameSetupCpuMs()
     {
         try
@@ -774,10 +745,7 @@ public partial class PerfFrameSampler : Node
         }
     }
 
-    /// <summary>
-    /// 当前屏幕刷新率（Hz）。GodotSharp.xml：屏幕无效或取不到时返回 -1.0；
-    /// 这里回落到 60Hz，保证 <see cref="PresentPeriods" /> 不会除零或给出荒谬周期数。
-    /// </summary>
+    /// <summary>读取刷新率，失败回退 60Hz。</summary>
     private static double ReadRefreshRateHz()
     {
         try
@@ -791,10 +759,7 @@ public partial class PerfFrameSampler : Node
         }
     }
 
-    /// <summary>
-    /// 把 Present 等待时长折算成「等了几次刷新周期」：≈1 是正常 vsync 等待，
-    /// 明显 &gt;2 说明卡在呈现/合成路径（GPU 队列、合成器、驱动），而不是本帧逻辑慢。
-    /// </summary>
+    /// <summary>将 Present 等待折算为刷新周期数。</summary>
     private static double PresentPeriods(long presentWaitUs, double refreshRateHz)
     {
         if (presentWaitUs <= 0 || !double.IsFinite(refreshRateHz) || refreshRateHz <= 0)
@@ -805,12 +770,7 @@ public partial class PerfFrameSampler : Node
         return presentWaitUs * refreshRateHz / 1_000_000.0;
     }
 
-    /// <summary>
-    /// 只有显式设置环境变量 <c>BDS_PERF_GPU_TIMING=1</c> 才开启逐帧 GPU 测量——默认关闭，
-    /// 因为 <c>ViewportSetMeasureRenderTime</c> 的测量本身会引入开销/同步，不该影响玩家默认体验。
-    /// GodotSharp.xml：开启后 <c>ViewportGetMeasuredRenderTimeGpu</c> 返回「上一帧」的 GPU 时间（ms），
-    /// 未开启时恒为 0。这里只测根视口（其它 SubViewport 的 GPU 时间目前不汇总）。
-    /// </summary>
+    /// <summary>仅在 BDS_PERF_GPU_TIMING=1 时测量根视口 GPU，避免默认开销。</summary>
     private void SetupGpuTiming()
     {
         try
@@ -833,17 +793,12 @@ public partial class PerfFrameSampler : Node
         }
         catch
         {
-            // 开启失败只意味着报告里 GPU 列恒为 0，不影响其他采样。
             _gpuTimingEnabled = false;
             GpuTimingEnabled = false;
         }
     }
 
-    /// <summary>
-    /// 读根视口上一帧的 GPU 渲染时间（ms）。GodotSharp.xml：需要先开启
-    /// <c>ViewportSetMeasureRenderTime</c>，否则返回 0；驱动/平台异常或未启用时统一返回 0，
-    /// 保证异常不会抛进渲染循环。
-    /// </summary>
+    /// <summary>读取根视口 GPU 毫秒；未启用或异常返回 0。</summary>
     private static double ReadGpuRenderTimeMs(Rid viewportRid)
     {
         try
@@ -857,10 +812,7 @@ public partial class PerfFrameSampler : Node
         }
     }
 
-    /// <summary>
-    /// 把 GPU 时间折算成「刷新周期数」：&gt;1 表示本帧 GPU 工作量超过一个刷新窗口（GPU 真忙），
-    /// 与 Present 周期数对比可区分「GPU 忙」与「等合成器/驱动」。
-    /// </summary>
+    /// <summary>将 GPU 时间折算为刷新周期数。</summary>
     private static double GpuPeriods(double gpuMs, double refreshRateHz)
     {
         if (gpuMs <= 0 || !double.IsFinite(gpuMs) || !double.IsFinite(refreshRateHz) || refreshRateHz <= 0)
@@ -871,10 +823,7 @@ public partial class PerfFrameSampler : Node
         return gpuMs * refreshRateHz / 1000.0;
     }
 
-    /// <summary>
-    /// 1Hz 遍历一次场景树，统计 <c>SubViewport</c> / <c>CanvasGroup</c> / <c>WorldEnvironment</c> 的数量。
-    /// 这些节点会显著改变渲染路径成本（离屏渲染、离屏合成），但按帧遍历代价太高，所以只做每秒一次。
-    /// </summary>
+    /// <summary>每秒统计离屏与合成节点数量。</summary>
     private void CountSceneNodes(out int viewports, out int canvasGroups, out int worldEnvironments)
     {
         viewports = 0;
@@ -892,7 +841,7 @@ public partial class PerfFrameSampler : Node
         }
         catch
         {
-            // 遍历期间节点被释放等情况：保留已统计到的数字，不影响采样本身。
+            // 节点失效时保留已统计数据。
         }
     }
 
@@ -948,8 +897,7 @@ public partial class PerfFrameSampler : Node
         long mainMenuAtMs = PerfTimeline.MainMenuAtMs;
         if (mainMenuAtMs >= 0 && _mainMenuUsec < 0)
         {
-            // 只有在主菜单后不久就开启采样时，才值得单独写一份“启动报告”；
-            // 玩家中途才在设置页打开（重启后生效）的情况下跳过，交给 periodic/exit。
+            // 仅启动初期开启采样时写启动报告。
             if (PerfTimeline.ElapsedMs - mainMenuAtMs <= 120_000)
             {
                 _mainMenuUsec = now;
@@ -963,7 +911,7 @@ public partial class PerfFrameSampler : Node
         if (!_startupReported && _mainMenuUsec >= 0 && now - _mainMenuUsec >= StartupReportDelayUsec)
         {
             _startupReported = true;
-            // 主线程只做数据快照；文件写入交给后台线程，避免监测自己制造启动尖峰。
+            // 主线程快照，后台写盘。
             PerfSession.Dump("startup");
             _lastPeriodicReportUsec = now;
             return;
@@ -973,7 +921,7 @@ public partial class PerfFrameSampler : Node
         if (now - _lastPeriodicReportUsec >= intervalUs)
         {
             _lastPeriodicReportUsec = now;
-            // 安静会话不刷盘：只有最近几个 1Hz 样本里出现明显长帧/微卡时，才主动刷新一份报告。
+            // 仅出现长帧时主动刷新报告。
             if (HasRecentAnomaly())
             {
                 PerfSession.Dump("periodic");

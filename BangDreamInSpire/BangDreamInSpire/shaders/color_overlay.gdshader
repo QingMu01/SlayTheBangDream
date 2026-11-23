@@ -2,11 +2,9 @@ shader_type canvas_item;
 
 uniform vec3 overlay_color : source_color = vec3(1.0, 0.0, 0.0);
 
-// 亮度低于此值的区域被视为「暗区」
 uniform float dark_threshold : hint_range(0.0, 1.0) = 0.2;
-// 明暗过渡的平滑宽度（越大过渡越柔和）
 uniform float dark_falloff   : hint_range(0.001, 0.5) = 0.2;
-// 暗区的叠加强度倍率（0 = 暗区完全不上色，1 = 与亮区一致）
+// 0 = 暗区不上色，1 = 暗区与亮区一致
 uniform float dark_intensity : hint_range(0.0, 1.0) = 0.0;
 
 float overlay_channel(float base, float over) {

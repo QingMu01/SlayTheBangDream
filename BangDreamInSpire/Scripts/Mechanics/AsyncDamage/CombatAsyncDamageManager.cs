@@ -11,12 +11,8 @@ using MegaCrit.Sts2.Core.Nodes;
 
 namespace BangDreamInSpire.Scripts.Mechanics.AsyncDamage;
 
-/// <summary>
-/// 编排「发射 → 等待命中 → 结算」的异步伤害引擎。
-/// 发射阶段只做确定性锁定（目标与伤害）后立即返回，飞行由脱手的表现泵驱动，不占用同步 Action；
-/// 命中时刻由表现信号触发，入队一条独立的同步结算 Action，所有端按队列顺序在其内施加已锁定伤害。
-/// 玩法状态只在同步 Action 内变更，故多端顺序一致。
-/// </summary>
+/// <summary>发射时锁定目标与伤害，命中后通过同步 Action 结算，保证多端顺序一致；
+/// 无交互模式立即结算。</summary>
 public sealed class CombatAsyncDamageManager
 {
     private sealed class Session
@@ -73,7 +69,7 @@ public sealed class CombatAsyncDamageManager
 
     private readonly ConditionalWeakTable<ICombatState, Session> _sessions = new();
 
-    /// <summary>锁外锁定伤害期间目标失效时，重新选择目标的最大次数（有界重试，避免无限循环）。</summary>
+    /// <summary>目标失效后的最大重选次数。</summary>
     private const int MaxTargetSelectionAttempts = 4;
 
     public static CombatAsyncDamageManager Shared { get; } = new();
@@ -82,16 +78,8 @@ public sealed class CombatAsyncDamageManager
     {
     }
 
-    /// <summary>
-    /// 在同步 Action 内锁定整批根音符的目标与伤害后立即返回；飞行与命中由表现泵脱手驱动。
-    /// 无交互模式（测试 / 无渲染）下退化为当场结算，保证确定性。
-    /// <para>
-    /// 锁边界：<see cref="Session.Gate" /> 内只做数据读写（批次/音符登记、预留账本）；
-    /// 每枚音符的目标选择与 <see cref="IAsyncDamageEffect.GetLockedDamage" />
-    /// 都在锁外调用（见 <see cref="ReserveTarget" />）。外部实现因此可以安全重入
-    /// <c>LaunchAsync</c> / <c>SpawnAsync</c>，但不得在 hook 内操作 Godot 节点或长时间阻塞。
-    /// </para>
-    /// </summary>
+    /// <summary>锁定整批目标与伤害后脱手。Session.Gate 仅做数据读写；
+    /// 外部 hook 在锁外，可重入但不得操作节点或阻塞。</summary>
     public Task LaunchAsync(AsyncDamageBatchRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -105,14 +93,12 @@ public sealed class CombatAsyncDamageManager
         BatchState batch;
         var interactive = !NonInteractiveMode.IsActive;
 
-        // 批次号分配必须串行；登记过程中的外部调用全部在锁外执行。
+        // 批次号在锁内分配，外部调用在锁外。
         lock (session.Gate)
         {
             batch = new BatchState(session.NextBatchId++, request, combatState);
         }
 
-        // 每枚音符的「选目标 + 锁定伤害」统一走 ReserveTarget：
-        // 锁内只做数据快照与提交，GetTargetEffectiveHealth / GetLockedDamage 在锁外调用。
         for (var index = 0; index < request.Count; index++)
         {
             if (!CanResolveCombat(combatState, request))
@@ -140,8 +126,7 @@ public sealed class CombatAsyncDamageManager
                 return Task.CompletedTask;
         }
 
-        // 屏障租约在锁外获取（不触碰节点），再回锁与批次一起提交，
-        // 避免出现「批次已在 Batches 里可见、却还没有租约」的窗口。
+        // 先获取屏障租约，再在锁内与批次一起提交。
         var barrierLease = CombatResolutionBarrier.Acquire(combatState);
         lock (session.Gate)
         {
@@ -178,7 +163,7 @@ public sealed class CombatAsyncDamageManager
         await AdvanceAsync(session, note, spawnChains: true);
     }
 
-    /// <summary>战斗结束：清空该战斗的全部在飞记录并强制完成屏障。由机制在战斗结束事件中调用。</summary>
+    /// <summary>战斗结束时清空在飞记录并完成屏障。</summary>
     public void OnCombatEnded(ICombatState combatState)
     {
         if (_sessions.TryGetValue(combatState, out var session))
@@ -200,14 +185,7 @@ public sealed class CombatAsyncDamageManager
         CombatResolutionBarrier.ForceComplete(combatState);
     }
 
-    /// <summary>
-    /// 就地结算该战斗当前所有在飞音符（含弹跳），用于需要立即读取完整伤害记录的调用方。
-    /// 运行于调用方所属的同步 Action 内，故多端看到相同的结算集合与顺序。
-    /// <para>
-    /// <b>experimental / 预留入口</b>：当前没有任何调用点（见 docs/mechanic-authoring.md §7.6）。
-    /// 接入前需要确认调用点本身是同步 Action，否则多端结算顺序无法保证。
-    /// </para>
-    /// </summary>
+    /// <summary>在当前同步 Action 内就地结算全部在飞音符；调用前必须确保同步上下文。</summary>
     public async Task FlushPendingAsync(ICombatState combatState)
     {
         if (!_sessions.TryGetValue(combatState, out var session))
@@ -232,7 +210,7 @@ public sealed class CombatAsyncDamageManager
         }
     }
 
-    /// <summary>无表现路径：按注册顺序就地结算批次内全部音符与弹跳，随后收尾。</summary>
+    /// <summary>无表现时按注册顺序结算整个批次。</summary>
     private static async Task ResolveInlineAsync(Session session, BatchState batch)
     {
         while (true)
@@ -259,9 +237,7 @@ public sealed class CombatAsyncDamageManager
         await FinishBatchAsync(session, batch);
     }
 
-    /// <summary>
-    /// 无交互模式下的退化表现：仍走一次动画启动以获得上下文（保证批末回调语义不变），但不等待命中，立即结算。
-    /// </summary>
+    /// <summary>生成上下文后立即结算，不等待命中。</summary>
     private static async Task SpawnForInlineResolutionAsync(NoteState note)
     {
         var batch = note.Batch;
@@ -283,17 +259,13 @@ public sealed class CombatAsyncDamageManager
         }
     }
 
-    /// <summary>
-    /// 施加单枚音符的已锁定伤害，并确定性推进其弹跳链；在同步 Action 内运行。
-    /// </summary>
+    /// <summary>结算单枚音符并推进弹跳链。</summary>
     private static async Task AdvanceAsync(Session session, NoteState note, bool spawnChains)
     {
         var batch = note.Batch;
         var request = batch.Request;
 
-        // 伤害实现是外部代码（任意 IAsyncDamageEffect），抛异常不能连带中断下面的记账：
-        // 一旦跳过归还，目标预留与批次在飞数都不会回收，CombatResolutionBarrier 的租约永不释放，
-        // 回合结束会永久阻塞。先把异常收下来，记账照做，最后再记录。
+        // 外部伤害实现异常也必须归还预留与在飞计数，否则屏障无法释放。
         Exception? resolveError = null;
         if (CanResolveCombat(batch.CombatState, request) && note.Target.IsHittable)
         {
@@ -309,8 +281,7 @@ public sealed class CombatAsyncDamageManager
             }
         }
 
-        // 弹跳的目标选择同样要调用外部 hook，因此先在锁外完成「选目标 + 锁定伤害 + 登记」，
-        // 再回锁把新音符入队并归还本音符的预留（保持「先预留下一枚、再归还本枚」的旧顺序）。
+        // 先预留下一枚，再归还本枚；外部 hook 始终在锁外。
         var chain = ReserveChainNote(session, note);
 
         bool finished;
@@ -371,16 +342,14 @@ public sealed class CombatAsyncDamageManager
             session.PumpRunning = true;
         }
 
-        // 脱手只到「第一个真正未完成的 await」为止：异步方法会同步执行到那里。
-        // 因此 BeforeSpawnAsync / StartAnimationAsync 若同步完成，整批仍会留在调用方这个同步 Action 里。
-        // 需要真正脱手的实现必须在首个 await 处让出（见 docs/mechanic-authoring.md §7.2）。
+        // 异步方法仅执行到首个未完成 await；需要脱手的实现必须在该处让出。
         _ = PumpAsync(session);
     }
 
-    /// <summary>脱手表征泵：按注册顺序生成动画并观察命中，命中后请求同步结算。不占用同步 Action。</summary>
+    /// <summary>按顺序生成表现，命中后请求同步结算。</summary>
     private static async Task PumpAsync(Session session)
     {
-        // 正在生成的那枚不在 SpawnQueue 里：泵异常退出时必须单独兜底，否则它会永久未结算。
+        // 正在生成的音符需单独兜底。
         NoteState? inFlight = null;
         try
         {
@@ -424,12 +393,11 @@ public sealed class CombatAsyncDamageManager
         }
         finally
         {
-            // 泵异常退出时，仍在队列中的音符会悬挂并阻塞回合结束屏障，统一按无表现命中退化落地。
+            // 泵失败时按无表现命中，避免屏障悬挂。
             await DrainQueueAsync(session);
         }
     }
 
-    /// <summary>把表现泵队列中尚未生成的音符全部按失败兜底落地，避免悬挂。</summary>
     private static async Task DrainQueueAsync(Session session)
     {
         while (true)
@@ -461,12 +429,12 @@ public sealed class CombatAsyncDamageManager
         var request = batch.Request;
         if (!CanResolveCombat(batch.CombatState, request))
         {
-            // 战斗状态不再允许结算时也必须推进批次，否则在飞记录悬挂会让回合结束屏障永不完成。
+            // 状态关闭也要推进批次，确保屏障完成。
             await FailNoteAsync(session, note);
             return;
         }
 
-        // 可能已由同步补算路径就地结算（FlushPendingAsync 是预留入口，当前无调用点），此时不再生成表现。
+        // 已就地结算的批次不再生成表现。
         lock (session.Gate)
         {
             if (note.Resolved)
@@ -488,9 +456,7 @@ public sealed class CombatAsyncDamageManager
         catch (Exception exception)
         {
             BangDreamInSpireCore.Logger.Error($"Async damage animation launch error: {exception}");
-            // 表现生成失败不能只在本地静默丢弃伤害：若其它端照常命中，两端 HP 与目标预留会分叉。
-            // 改走与正常命中相同的同步结算路径，让所有端在队列同一位置施加同一份已锁定伤害；
-            // 网络层拒绝入队时由 RequestResolveOnArrival 兜底，不会让票据悬挂。
+            // 表现失败也走同步结算，避免各端伤害分叉。
             RunOnMainThread(() => RequestResolveOnArrival(session, note));
             return;
         }
@@ -503,7 +469,6 @@ public sealed class CombatAsyncDamageManager
         _ = ObserveArrivalAsync(session, note, handle);
     }
 
-    /// <summary>表现生成失败时的兜底结算：释放预留并推进批次，保证屏障最终完成。</summary>
     private static async Task FailNoteAsync(Session session, NoteState note)
     {
         bool finished;
@@ -521,7 +486,7 @@ public sealed class CombatAsyncDamageManager
             await FinishBatchAsync(session, note.Batch);
     }
 
-    /// <summary>在锁内递减批次在飞数并返回是否已全部结束。</summary>
+    /// <summary>递减在飞数并返回批次是否结束。</summary>
     private static void BatchReleaseResult(BatchState batch, out bool finished)
     {
         batch.PendingNotes--;
@@ -538,13 +503,12 @@ public sealed class CombatAsyncDamageManager
         {
             BangDreamInSpireCore.Logger.Warn(
                 $"Async damage landing observation error #{note.NoteId}: {exception}");
-            // Landing 抛异常（第三方 IAsyncDamageEffect 可能返回 faulted task）时不能让票据悬挂：
-            // 按「已命中」处理，走结算/兜底路径，保证批次与屏障最终收敛。
+            // Landing 失败按命中兜底，避免票据悬挂。
             RunOnMainThread(() => RequestResolveOnArrival(session, note));
             return;
         }
 
-        // 命中信号完成 TaskCompletionSource 时可能在线程池续体上恢复，切回主线程后再触碰动作队列。
+        // 命中续体可能在线程池，先切回主线程。
         RunOnMainThread(() => RequestResolveOnArrival(session, note));
     }
 
@@ -553,18 +517,14 @@ public sealed class CombatAsyncDamageManager
         if (TryRequestResolve(session, note))
             return;
 
-        // 网络层拒绝入队（断线 / 队列已关闭）：票据不能悬挂，本端就地结算兜底。
-        // 代价是这一枚伤害丢失，但回合结束屏障可以完成 —— 优先保证不卡死。
+        // 入队失败时就地兜底，优先保证屏障完成。
         BangDreamInSpireCore.Logger.Error(
             $"Async damage resolve rejected by network layer, settling locally " +
             $"(batch={note.Batch.BatchId}, note={note.NoteId}).");
         TaskHelper.RunSafely(FailNoteAsync(session, note));
     }
 
-    /// <summary>
-    /// 请求一条同步结算 Action。返回 <c>false</c> 表示网络层拒绝入队（调用方需兜底）；
-    /// 战斗已不允许结算、或本端不是发射者（由发射者负责请求）时返回 <c>true</c>。
-    /// </summary>
+    /// <summary>请求同步结算；false 表示入队被拒，非发射者或战斗关闭时无需请求。</summary>
     private static bool TryRequestResolve(Session session, NoteState note)
     {
         var request = note.Batch.Request;
@@ -630,25 +590,9 @@ public sealed class CombatAsyncDamageManager
         return note;
     }
 
-    /// <summary>
-    /// 为一次命中预留目标与锁定伤害。
-    /// <para>
-    /// <b>锁边界</b>：本方法自己按「快照（锁内）→ 外部 hook（锁外）→ 提交预留（锁内）」三段执行，
-    /// 因此调用方<b>不得</b>包在 <c>lock (session.Gate)</c> 里调用，也不得在持有该锁时调用它。
-    /// 锁内只做数据读写（候选列表、<see cref="Session.ReservedDamage" />），
-    /// 绝不在持锁时调用外部实现或操作 Godot 节点。
-    /// </para>
-    /// <para>
-    /// <b><c>GetTargetEffectiveHealth</c> / <c>GetLockedDamage</c> 的调用契约</b>：这两个是外部实现
-    /// （任意 <see cref="IAsyncDamageEffect" />），在锁外被调用，因此实现里<b>不得</b>假设自己持有任何锁；
-    /// 允许重入 <c>LaunchAsync</c> / <c>SpawnAsync</c>，但两者都在发射/弹跳的同步 Action 内执行，
-    /// 不得长时间阻塞，也不要在这里操作节点（节点操作属于表现层，走 StartAnimationAsync）。
-    /// </para>
-    /// <para>
-    /// 锁外窗口内没有 <c>await</c>，调用方都在主线程的同步 Action 里，因此不会与另一次选择交错；
-    /// 若将来把调用方移到并行上下文，需要为候选选择再补一层在飞预留，否则并发选择可能超订同一目标。
-    /// </para>
-    /// </summary>
+    /// <summary>按“锁内快照 → 锁外 hook → 锁内提交”预留目标与伤害。
+    /// 调用方不得持有 Session.Gate；外部 hook 可重入，但不得阻塞或操作节点。
+    /// 当前调用均在主线程同步 Action 内，锁外窗口无 await。</summary>
     private static (Creature Target, decimal Damage)? ReserveTarget(
         Session session,
         AsyncDamageBatchRequest request,
@@ -657,10 +601,10 @@ public sealed class CombatAsyncDamageManager
     {
         var combatState = request.Dealer.CombatState!;
 
-        // 目标在锁外被击杀/离场/换战斗时重新选择；次数有界，绝不无限循环。
+        // 目标失效时有界重试。
         for (var attempt = 0; attempt < MaxTargetSelectionAttempts; attempt++)
         {
-            // 1) 锁内快照：只读状态，不做任何外部调用。
+            // 锁内快照，不调用外部代码。
             Creature[] candidates;
             Creature? fixedCandidate = null;
             lock (session.Gate)
@@ -699,7 +643,7 @@ public sealed class CombatAsyncDamageManager
             }
             else
             {
-                // 2a) 锁外：容量口径是外部 hook，逐个候选调用。
+                // 锁外读取候选容量。
                 var capacities = new Dictionary<Creature, decimal>(ReferenceEqualityComparer.Instance);
                 foreach (var candidate in candidates)
                 {
@@ -707,7 +651,7 @@ public sealed class CombatAsyncDamageManager
                         new AsyncDamageTargetContext(combatState, request, candidate)));
                 }
 
-                // 2b) 锁内：按预留账本与快照容量选目标，并在同一临界区推进 RNG。
+                // 锁内选择目标并推进 RNG。
                 lock (session.Gate)
                 {
                     var selectable = candidates.Where(candidate =>
@@ -725,11 +669,11 @@ public sealed class CombatAsyncDamageManager
                     return null;
             }
 
-            // 2c) 锁外：锁定伤害是外部 hook。
+            // 锁外锁定伤害。
             var lockedDamage = Math.Max(0m, request.Effect.GetLockedDamage(
                 new AsyncDamageTargetContext(combatState, request, target)));
 
-            // 3) 回锁提交：目标在锁外窗口内失效则记 Warn 并重新选择。
+            // 回锁提交；目标失效则重试。
             lock (session.Gate)
             {
                 if (ReferenceEquals(target.CombatState, combatState) && target.IsHittable)
@@ -751,10 +695,7 @@ public sealed class CombatAsyncDamageManager
         return null;
     }
 
-    /// <summary>
-    /// 为已命中音符登记下一枚弹跳。本方法内部会走 <see cref="ReserveTarget" /> 的锁外外部调用，
-    /// 因此调用方<b>不得</b>在持有 <see cref="Session.Gate" /> 时调用它；登记本身在锁内完成。
-    /// </summary>
+    /// <summary>登记下一枚弹跳；调用方不得持有 Session.Gate。</summary>
     private static NoteState? ReserveChainNote(Session session, NoteState note)
     {
         var request = note.Batch.Request;
@@ -789,9 +730,7 @@ public sealed class CombatAsyncDamageManager
 
     private static bool IsLocalDealer(Player? dealer)
     {
-        // C-10 决策（C：保持现状）：dealer 无 Player 时每端都判定为本地 dealer。
-        // 当前所有发射点（音符 / 能力）的 dealer 都是玩家，该分支不可达；若将来接入敌方式发射器，
-        // 必须改为「固定宿主或按 dealer NetId」的确定性判定，否则会 N 端重复请求结算。
+        // 敌方式发射器尚无归属端；接入前必须固定宿主或 dealer NetId，避免重复结算。
         if (dealer == null || !LocalContext.NetId.HasValue)
             return true;
 

@@ -11,9 +11,7 @@ using MegaCrit.Sts2.Core.ValueProps;
 
 namespace ItsCrychic.Scripts.Power.Debuff;
 
-/// <summary>
-/// 拥有者本回合内造成的攻击伤害与音符伤害提高，回合结束时移除。
-/// </summary>
+/// <summary>本回合提高攻击与音符伤害，回合结束时移除。</summary>
 public class CrucifixXPower : BandPowerModel, IMusicNoteModifyHookListener
 {
     public override PowerType Type => PowerType.Buff;

@@ -38,7 +38,6 @@ public class Legato() : AbstractSakikoCard(CustomCost, CustomType, CustomRarity,
     {
         ArgumentNullException.ThrowIfNull(play.Target);
 
-        // 打击次数等于歌单中的牌数，歌单为空时不造成伤害。
         var hitCount = DynamicVars.ComputedValue("Count");
         if (hitCount <= 0)
         {

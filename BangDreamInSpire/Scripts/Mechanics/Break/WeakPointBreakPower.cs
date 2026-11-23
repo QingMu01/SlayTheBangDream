@@ -8,12 +8,7 @@ using MegaCrit.Sts2.Core.Models;
 
 namespace BangDreamInSpire.Scripts.Mechanics.Break;
 
-/// <summary>
-/// 弱点击破状态（1 回合）。目标破绽满层时由 <see cref="BreakCmd.Discover" /> 施加：
-/// 期间**不能再被发现破绽**（<see cref="BreakCmd.CanDiscover" /> 短路），
-/// 到期（目标一侧回合结束）时清空破绽并让常驻视觉淡出。
-/// <para>同样不做 Power 图标，视觉由 <see cref="NWeaknessBreakVfx" /> 的「破裂」形态承担。</para>
-/// </summary>
+/// <summary>弱点击破状态，持续目标一侧一个回合；期间不能继续施加破绽。</summary>
 public sealed class WeakPointBreakPower : BandPowerModel
 {
     public override PowerType Type => PowerType.Debuff;
@@ -22,14 +17,14 @@ public sealed class WeakPointBreakPower : BandPowerModel
 
     protected override bool IsVisibleInternal => false;
 
-    /// <summary>进入弱点击破：视觉切换为破裂形态。</summary>
+    /// <summary>进入时切换破裂视觉。</summary>
     public override Task AfterApplied(Creature? applier, CardModel? cardSource)
     {
         NWeaknessBreakVfx.Sync(Owner);
         return Task.CompletedTask;
     }
 
-    /// <summary>「1 回合」：在**目标一侧**的回合结束时递减，归零即移除。</summary>
+    /// <summary>目标一侧回合结束时递减。</summary>
     public override async Task AfterSideTurnEnd(PlayerChoiceContext choiceContext, CombatSide side,
         IEnumerable<Creature> participants)
     {
@@ -41,11 +36,10 @@ public sealed class WeakPointBreakPower : BandPowerModel
         await PowerCmd.TickDownDuration(this);
     }
 
-    /// <summary>退出弱点击破：清空破绽（连带视觉淡出）。</summary>
+    /// <summary>退出时清空破绽。</summary>
     public override async Task AfterRemoved(Creature oldOwner)
     {
-        // 死亡清理会由 RemoveAllPowersAfterDeath 统一移除；PowerCmd.Remove 内建 0.2-0.4s
-        // 等待，在死亡链上再排一次只会拖慢战斗结束。
+        // 死亡清理不再排额外移除等待。
         if (!oldOwner.IsDead)
         {
             await PowerCmd.Remove<WeaknessBreakPower>(oldOwner);
