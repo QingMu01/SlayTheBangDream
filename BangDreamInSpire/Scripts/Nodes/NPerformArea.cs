@@ -1,5 +1,6 @@
 using BangDreamInSpire.Scripts.Enums;
 using BangDreamInSpire.Scripts.Extensions;
+using BangDreamInSpire.Scripts.Interfaces.CardAugment;
 using BangDreamInSpire.Scripts.Interfaces.CharacterAugment;
 using BangDreamInSpire.Scripts.Interfaces.Mechanics;
 using BangDreamInSpire.Scripts.Mechanics.Perform;
@@ -651,10 +652,30 @@ public partial class NPerformArea : Control, IPerformArea
             slot.SuppressPortraitSweep();
         }
 
+        var relativeTransform = GlobalTransform.AffineInverse() * slotTransform;
+        if (TryPlaySealVfx(card, slotSize, relativeTransform))
+        {
+            return;
+        }
+
         var vfx = BangDreamPreloadManager.GetScene(PerformFlashVfxPath).Instantiate<PerformFlashVfx>();
         vfx.FlashColor = slot != null ? GetSlotColor(slot, card) : PerformSlotColors.Default;
-        vfx.ConfigureSlot(slotSize, GlobalTransform.AffineInverse() * slotTransform);
+        vfx.ConfigureSlot(slotSize, relativeTransform);
         AddVfx(vfx);
+    }
+
+    /// <summary>元素印牌走专属演奏反馈；场景缺失时回落通用扫光，不吞掉演奏反馈。</summary>
+    private bool TryPlaySealVfx(CardModel card, Vector2 slotSize, Transform2D relativeTransform)
+    {
+        if (card is not IPerformSealCard sealCard) return false;
+
+        var scenePath = PerformSealScenes.ScenePathOf(sealCard.PerformSeal);
+        if (scenePath == null || !ResourceLoader.Exists(scenePath)) return false;
+
+        var vfx = BangDreamPreloadManager.GetScene(scenePath).Instantiate<PerformSealVfx>();
+        vfx.ConfigureSlot(slotSize, relativeTransform);
+        AddVfx(vfx);
+        return true;
     }
 
     /// <summary>返回保留父级缩放与镜像的槽位中心变换。</summary>
