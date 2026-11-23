@@ -10,15 +10,8 @@ using MegaCrit.Sts2.Core.Nodes.Rooms;
 namespace BangDreamInSpire.Scripts.Nodes.VFX;
 
 /// <summary>
-/// 演奏身印：同一枚元素之印落在演奏者身上——一道元素墨自脚底升过身体、从头顶之上淡出，
-/// 胸口按下一枚与槽位同尺寸的小印并压出白热点，再由
-/// <see cref="PerformSealStreak" /> / <see cref="PerformSealEmitter" /> 按元素方向散尽。
-///
-/// 与槽位印框（<see cref="PerformSealVfx" />）是同一枚印的两种落点：同一对 shader（墨走纵向档、
-/// 小印走与槽位相同的横向档）、同一套配色、同一条时间线骨架；元素差异仍只落在
-/// 运动方向、颗粒形态与节拍数。身上**不放**放大版的槽位印框——那会读成罩住人的玻璃板。
-///
-/// 场景挂在 <c>NCombatRoom.CombatVfxContainer</c>（角色之上），按目标身体的 hitbox 世界矩形定尺。
+/// 演奏身印：同一枚元素之印落在演奏者身上（墨带升起 + 胸口小印 + 元素墨迹）。
+/// 与槽位印框共用 shader、配色与时间线骨架；设计见 docs/mechanic-authoring.md 12.2。
 /// </summary>
 [Tool]
 public partial class PerformBodyVfx : Node2D
@@ -42,16 +35,13 @@ public partial class PerformBodyVfx : Node2D
     /// <summary>设计基准：玩家角色的身体框（Sakiko 的 %Bounds 是 320×300），其余角色按比例换算。</summary>
     private static readonly Vector2 DesignBodySize = new(320f, 300f);
 
-    // ── 共享时间线（五张牌一致，改这里等于改整套设计语言）──
-    // 墨：自脚底升过身体、从头顶之上淡出。加法层在浅色背景上读不出来，
-    // 这层 MIX 墨是"经过"的证据，同时把演奏读成一个自下而上的动作。
+    // ── 共享时间线（五张牌一致）──
     private const float FlowStart = 0.04f;
     private const float FlowTravelTime = 0.26f;
     private const float FlowBandAlpha = 0.50f;
     private const float FlowBaseAlpha = 0.0f;
     private const float FlowEndTime = 0.40f;
-    /// <summary>墨带在画布内的起止位置（纵向档 0 在底、1 在顶）。刻意的：不让墨带走到画布边缘，
-    /// 否则会被 ColorRect 硬切成一条横杠；改为在腰以下聚起、在头顶之上淡掉。</summary>
+    /// <summary>墨带在画布内的起止位置；不走满画布，避免被 ColorRect 边缘切出横杠。</summary>
     private const float FlowBandFrom = 0.18f;
     private const float FlowBandTo = 0.82f;
 
@@ -60,15 +50,14 @@ public partial class PerformBodyVfx : Node2D
     private const float WashPeakAlpha = 0.07f;
     private const float WashScaleGain = 0.24f;
 
-    // 胸口落印：把同一枚印（同一 shader、同一斜切、与真实槽位同尺寸）按在奏者胸口，
-    // 是"牌上落印"与"奏者响应"之间的同一性凭证——不是第二个峰值，只亮 0.2s。
+    // 胸口落印：与槽位同尺寸的小印，只亮 0.2s。
     private const float StampStart = 0.10f;
     private const float StampDrawTime = 0.07f;
     private const float StampReleaseStart = 0.20f;
     private const float StampReleaseTime = 0.16f;
     private const float StampEndTime = 0.38f;
 
-    // 落印：比槽位落印晚约 0.04s，读成"牌上落印 → 奏者响应"。
+    // 落印比槽位晚约 0.04s。
     private const float CoreRiseTime = 0.07f;
     private const float CorePeakTime = 0.14f;
     private const float CoreEndTime = 0.38f;
@@ -79,27 +68,27 @@ public partial class PerformBodyVfx : Node2D
     /// <summary>拍子脉冲的衰减时长。</summary>
     private const float PulseDecay = 0.14f;
 
-    /// <summary>本体色：印框与墨迹的主色。</summary>
+    /// <summary>主色（印框与墨迹）。</summary>
     [Export]
     public Color BodyTint { get; set; } = new("#ff8a34");
 
-    /// <summary>高光色：胸口压点的白热点。</summary>
+    /// <summary>高光色（胸口白热点）。</summary>
     [Export]
     public Color CoreTint { get; set; } = new("#fff4d8");
 
-    /// <summary>辅色：墨迹笔尖的过渡色。</summary>
+    /// <summary>辅色（墨迹尖端）。</summary>
     [Export]
     public Color AccentTint { get; set; } = new("#d8402a");
 
-    /// <summary>深色墨：MIX 混合升过身体的底色。</summary>
+    /// <summary>深色墨（MIX 底色）。</summary>
     [Export]
     public Color DeepTint { get; set; } = new("#b23a12");
 
-    /// <summary>节拍时刻（秒，升序）。每次脉冲会点亮落印并发射对应拍的墨迹。</summary>
+    /// <summary>节拍时刻（秒，升序）；每拍点亮落印并发射墨迹。</summary>
     [Export]
     public float[] Beats { get; set; } = [0.14f];
 
-    /// <summary>墨带画布尺寸（设计基准下的像素）；比身体框高一截，墨带的推进范围收在画布内，不被边缘切出硬边。</summary>
+    /// <summary>墨带画布尺寸（设计基准像素）；比身体框高一截，推进范围收在画布内。</summary>
     [Export]
     public Vector2 InkSize { get; set; } = new(250f, 500f);
 
@@ -107,7 +96,7 @@ public partial class PerformBodyVfx : Node2D
     [Export]
     public Vector2 InkCenter { get; set; } = new(0f, -15f);
 
-    /// <summary>胸口落印的尺寸（设计基准像素）；与槽位印框同量级，读成同一枚印。</summary>
+    /// <summary>胸口落印尺寸（设计基准像素）；与槽位印框同量级。</summary>
     [Export]
     public Vector2 StampSize { get; set; } = new(108f, 48f);
 
@@ -183,7 +172,6 @@ public partial class PerformBodyVfx : Node2D
 
         ApplyBodyFit();
 
-        // 游戏内由调用方注入身体矩形；没注入（F6 单播）就按设计尺寸在视口中心播放。
         if (_hasBodyAnchor && !VfxPreviewSupport.IsPreview(this) && !Engine.IsEditorHint())
             GlobalPosition = _bodyCenter;
 
@@ -205,8 +193,8 @@ public partial class PerformBodyVfx : Node2D
     }
 
     /// <summary>
-    /// 注入演奏者的身体矩形（世界坐标：中心 + 尺寸）；调用方在入树前设置。
-    /// 典型来源是 <c>NCreature.Hitbox</c>——它就是各角色 %Bounds 换算出的世界矩形。
+    /// 注入演奏者的身体矩形（世界坐标：中心 + 尺寸）。
+    /// 典型来源是 <c>NCreature.Hitbox</c>。
     /// </summary>
     public void ConfigureBody(Vector2 center, Vector2 size)
     {
@@ -217,7 +205,7 @@ public partial class PerformBodyVfx : Node2D
         if (IsInsideTree() && !VfxPreviewSupport.IsPreview(this)) GlobalPosition = _bodyCenter;
     }
 
-    /// <summary>铺开几何：印框与墨贴合身体框并高出头顶，墨迹按比例散在身体与头顶周围。</summary>
+    /// <summary>按身体框铺开印框、墨带与粒团。</summary>
     private void ApplyBodyFit()
     {
         // 编辑器里保留作者摆放。
@@ -296,7 +284,7 @@ public partial class PerformBodyVfx : Node2D
         }
     }
 
-    /// <summary>复位到"什么都不显示"，避免重播时残留上一轮的状态。</summary>
+    /// <summary>复位到不显示任何层，避免重播残留。</summary>
     private void ResetLayers()
     {
         _nextBeat = 0;
@@ -324,7 +312,7 @@ public partial class PerformBodyVfx : Node2D
         ApplyBeats(elapsed);
     }
 
-    /// <summary>升墨：墨带自脚底升到头顶之上，带身最重、全程留一层薄底；0.46s 前退干净。</summary>
+    /// <summary>升墨：墨带自脚底升过身体并淡出。</summary>
     private void ApplyFlow(float elapsed)
     {
         if (_flow == null) return;
@@ -350,7 +338,7 @@ public partial class PerformBodyVfx : Node2D
         _flow.SetInstanceShaderParameter(BaseAlphaParameter, baseAlpha);
     }
 
-    /// <summary>胸口落印：与槽位印框同一 shader 的横向档，自左向右划开、再向右溢出熄。</summary>
+    /// <summary>胸口落印：自左向右划开、再向右溢出熄灭。</summary>
     private void ApplyStamp(float elapsed)
     {
         if (_stamp == null) return;
@@ -459,7 +447,7 @@ public partial class PerformBodyVfx : Node2D
         }
     }
 
-    /// <summary>拍子上叠加的衰减脉冲，用来给落印"打分"。</summary>
+    /// <summary>拍子上叠加的衰减脉冲。</summary>
     private float ResolvePulse(float elapsed)
     {
         var pulse = 0f;
@@ -498,10 +486,7 @@ public partial class PerformBodyVfx : Node2D
             Replay();
     }
 
-    // ── 触发：元素键 → 角色身上的身印场景 ──
-    // 键与槽位印框共用（卡牌的 IPerformSlotVfxCard.PerformSlotVfxKey），
-    // 于是同一张牌的两处反馈必然同色、同元素，不需要牌上再声明一次。
-
+    // ── 元素键 → 身上的身印场景 ──
     private static readonly (string Key, string ScenePath)[] BodyScenes =
     [
         (PerformSlotVfxKeys.SymbolFire, "res://BangDreamInSpire/scenes/vfx/perform_body_fire_vfx.tscn"),
@@ -532,8 +517,7 @@ public partial class PerformBodyVfx : Node2D
     }
 
     /// <summary>
-    /// 在演奏者身上播放该牌的身印；未登记元素、演出节点缺失或战斗房间不可用时静默跳过
-    /// ——身印是加成表现，缺了不能影响演奏结算。
+    /// 在演奏者身上播放该牌的身印；失败静默跳过，不影响演奏结算。
     /// </summary>
     public static void TryPlay(CardModel card)
     {

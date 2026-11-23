@@ -645,7 +645,7 @@ public partial class NPerformArea : Control, IPerformArea
     {
         if (!IsInsideTree()) return;
 
-        // 身印只认牌声明的元素键，与槽位几何无关，所以放在槽位布局判定之前。
+        // 身印与槽位几何无关，放在槽位布局判定之前。
         PerformBodyVfx.TryPlay(card);
 
         if (!TryGetCardSlotTransform(card, out var slotTransform, out var slotSize)) return;
@@ -669,8 +669,8 @@ public partial class NPerformArea : Control, IPerformArea
     }
 
     /// <summary>
-    /// 卡牌声明了登记键时走专属演奏反馈；键未登记、场景缺失或根节点不实现
-    /// <see cref="IPerformSlotVfx" /> 时回落通用扫光——演奏反馈不能因为表现资源缺失而消失。
+    /// 牌声明了登记键时走专属演奏反馈；键未登记、场景缺失或根节点不实现
+    /// <see cref="IPerformSlotVfx" /> 时回落通用扫光。
     /// </summary>
     private bool TryPlaySlotVfx(CardModel card, Vector2 slotSize, Transform2D relativeTransform)
     {

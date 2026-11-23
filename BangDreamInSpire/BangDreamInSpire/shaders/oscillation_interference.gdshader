@@ -1,28 +1,25 @@
 shader_type canvas_item;
 render_mode blend_add;
 
-// 反射驻波：迎面波压到物体表面以后，入射波与反射波在物体前方叠加成驻波。
-// 声学事实：刚性表面处是压力腹点，节线平行于表面、间距 λ/2，离开表面后按吸收衰减。
-// 于是「物体在震」不是靠抖它的贴图，而是靠它前方这片看得见的驻波条纹 ——
-// 条纹整体亮度按拍频脉动，而条纹位置不动，这正是驻波与行波的区别。
-// 见 docs/mechanic-authoring.md「震荡」章节。
+// 反射驻波：表面处压力腹点，条纹间距 λ/2，亮度按拍频脉动、位置不动。
+// 局部 +x 指向物体表面（节点按来波方向旋转过）。
+// 见 docs/mechanic-authoring.md 12.3。
 
-// 画布尺寸（px）；局部 +x 指向物体表面（节点按来波方向旋转过）。
 instance uniform vec2 quad_size = vec2(760.0, 620.0);
 
 // 物体表面在局部 x 的位置（px）。
 instance uniform float wall_offset = 0.0;
 
-// 相邻亮纹间距（px，约等于半波长）。脚本让它随拍频略变。
+// 相邻亮纹间距（px，约半波长）。
 instance uniform float spacing = 74.0;
 
 // 离开表面后的衰减长度（px）。
 instance uniform float fade_length = 230.0;
 
-// 亮纹弯曲量（px）：球面波前不是平面，条纹略弯才不像贴图。
+// 亮纹弯曲量（px）：球面波前不是平面。
 instance uniform float bow = 18.0;
 
-// 拍频包络 0..1：物体在响的节拍。
+// 拍频包络 0..1。
 instance uniform float pulse = 1.0;
 
 // 条纹锐度：0 柔和，1 细如刻线。
@@ -33,8 +30,7 @@ instance uniform float intensity = 1.0;
 uniform vec4 line_color : source_color = vec4(0.9, 0.95, 1.0, 1.0);
 uniform float peak_alpha = 0.9;
 
-// 软饱和：alpha 一旦硬 clamp 到 1，加色层会在「恰好等于 1」的位置留下一条等值线硬边
-// （球心看起来像被切开一条缝，且边缘成锯齿）。0.85 以下保持原样，之上平滑收敛到 1。
+// 软饱和：硬 clamp 到 1 会在加色层留下等值线硬边。
 float SaturateAlpha(float a)
 {
 	const float knee = 0.85;
@@ -63,7 +59,7 @@ void fragment()
 
 	float alpha = envelope * bright * vertical * (0.30 + 0.70 * pulse) * intensity * peak_alpha;
 
-	// 画布边缘羽化：任何一层都不许被方形画布硬切出一条直边。
+	// 画布边缘羽化。
 	float border = min(min(UV.x, 1.0 - UV.x), min(UV.y, 1.0 - UV.y));
 	alpha *= smoothstep(0.0, 0.06, border);
 

@@ -1,10 +1,6 @@
 namespace BangDreamInSpire.Scripts.Utils.Infos;
 
-/// <summary>
-/// 内置演奏反馈（元素之印）的登记键。
-/// 这五个键由核心在演奏机制注册时预先登记，任何角色/模组的音乐牌都可以直接用；
-/// 需要自己的形态就用 <see cref="PerformSlotVfxRegistry.Register" /> 登记新键。
-/// </summary>
+/// <summary>内置演奏反馈（元素之印）的登记键；由核心在演奏机制注册时预登记。</summary>
 public static class PerformSlotVfxKeys
 {
     /// <summary>火：上舔的火舌与上升余烬。</summary>

@@ -8,9 +8,8 @@ using MegaCrit.Sts2.Core.TestSupport;
 namespace BangDreamInSpire.Scripts.Nodes.VFX;
 
 /// <summary>
-/// 震荡命中：迎面波前压到目标身上塌成一条线 → 目标起驻波节线并按拍频跳动 → 节线碎裂
-/// → 一束反向波带着音符回波飞回演奏者。纯表现，不参与结算。
-/// 声学语汇见 docs/mechanic-authoring.md「震荡」章节；回波音符数量 = 该目标给与的余音数。
+/// 震荡命中：波前压到目标、驻波节线跳动后碎裂，反向波带回余音球。纯表现，不参与结算。
+/// 回波球数量 = 该目标给与的余音数；设计见 docs/mechanic-authoring.md 12.3。
 /// </summary>
 [Tool]
 public partial class OscillationHitVfx : Node2D
@@ -19,10 +18,10 @@ public partial class OscillationHitVfx : Node2D
 
     private const float Life = 0.58f;
 
-    /// <summary>身体框的设计基准（与 PerformBodyVfx 同口径），用于把节线花贴合目标体型。</summary>
+    /// <summary>身体框设计基准，用于把节线花贴合目标体型。</summary>
     private static readonly Vector2 DesignBodySize = new(320f, 300f);
 
-    /// <summary>迎面波前：从外压到目标身上的时刻。</summary>
+    /// <summary>迎面波前压到目标的时刻。</summary>
     private const float FrontStart = 0.00f;
 
     private const float FrontEnd = 0.11f;
@@ -30,7 +29,7 @@ public partial class OscillationHitVfx : Node2D
     /// <summary>压平后的余振结束时刻。</summary>
     private const float FrontSettleEnd = 0.30f;
 
-    /// <summary>反射驻波条纹：从表面压出来到散尽。</summary>
+    /// <summary>反射驻波条纹的起止时刻。</summary>
     private const float FringeStart = 0.03f;
 
     private const float FringeEnd = 0.30f;
@@ -57,7 +56,7 @@ public partial class OscillationHitVfx : Node2D
 
     private const float NoteFly = 0.24f;
 
-    /// <summary>回波抵达演奏者：弦再亮一次。</summary>
+    /// <summary>回波抵达演奏者的时刻。</summary>
     private const float AbsorbStart = 0.41f;
 
     private const float AbsorbEnd = 0.55f;
@@ -69,7 +68,7 @@ public partial class OscillationHitVfx : Node2D
 
     private const float NoteScale = 1f;
 
-    /// <summary>回波球的壳色：同族蓝里的三个分音色温，逐球微差。</summary>
+    /// <summary>回波球的壳色：三个分音色温。</summary>
     private static readonly Color[] BallShellColors =
     [
         new(0.45f, 0.72f, 1.00f),
@@ -146,7 +145,7 @@ public partial class OscillationHitVfx : Node2D
         var vfx = BangDreamPreloadManager.GetScene(ScenePath).Instantiate<OscillationHitVfx>();
         vfx._spawnWorld = targetNode.VfxSpawnPosition;
 
-        // 节线花贴合目标体格（命中框），与演奏身印同一套口径。
+        // 节线花按目标命中框铺开，与演奏身印同一套口径。
         var size = targetNode.Hitbox.Size;
         var fit = size is { X: > 0f, Y: > 0f }
             ? (size.X / DesignBodySize.X + size.Y / DesignBodySize.Y) * 0.5f
@@ -168,11 +167,7 @@ public partial class OscillationHitVfx : Node2D
         return vfx;
     }
 
-    /// <summary>
-    /// 合成预览用的接缝：手工指定回波终点（演奏者在局部坐标里的位置）与来波方向。
-    /// 游戏内由 <see cref="Create"/> 注入，这里供把特效摆进合成场景时使用，
-    /// 与 PerformBodyVfx.ConfigureBody 同一类用法。
-    /// </summary>
+    /// <summary>合成预览用的接缝：手工指定回波终点、来波方向与体型。</summary>
     public void ConfigureStage(Vector2 casterLocal, float incomingAngle, float bodyFit = 1f, int noteCount = 1)
     {
         _casterLocal = casterLocal;
@@ -192,7 +187,6 @@ public partial class OscillationHitVfx : Node2D
         _absorb = GetNode<Node2D>("Absorb");
         _absorbRing = GetNode<Sprite2D>("Absorb/Ring");
 
-        // 只读美术基准，编辑器里不改变视觉状态。
         _coreBaseScale = _core.Scale;
         _coreBaseColor = _core.Modulate;
         _absorbRingBaseScale = _absorbRing.Scale;
@@ -206,7 +200,6 @@ public partial class OscillationHitVfx : Node2D
             _shards.Add(new ShardTrack(shard, shard.Position, 0f, shard.Scale, shard.Modulate));
         }
 
-        // 槽位全部收集，实际枚数由 _noteCount 决定（预览态是 2）。
         for (var i = 0; i < MaxNotes; i++)
         {
             if (GetNodeOrNull<Node2D>($"Notes/Note{i}") is not { } note ||
@@ -219,11 +212,9 @@ public partial class OscillationHitVfx : Node2D
 
         _noteCount = Mathf.Clamp(_noteCount, 1, _notes.Count);
 
-        // 入树后再应用世界坐标。
         if (_spawnWorld != Vector2.Zero)
             GlobalPosition = _spawnWorld;
 
-        // 仅运行态播放。
         if (VfxPreviewSupport.AutoPlayOnReady)
             Replay();
     }
@@ -243,7 +234,7 @@ public partial class OscillationHitVfx : Node2D
         _tween.Finished += OnPlaybackFinished;
     }
 
-    /// <summary>预览：把「演奏者」摆在左前方，波从前方向右压入，回波飞回左侧。</summary>
+    /// <summary>预览摆位：演奏者在左前，波向右压入，回波飞回左侧。</summary>
     private void SetUpPreview()
     {
         VfxPreviewSupport.CenterForPreview(this);
@@ -257,14 +248,12 @@ public partial class OscillationHitVfx : Node2D
     /// <summary>按方向与体型铺开四块 shader 画布。</summary>
     private void ApplyGeometry()
     {
-        // 迎面波前：竖带垂直于来波方向，自带旋转让局部 +x 就是传播方向。
-        // 画布宽度要盖住全程 offset + bow：否则波带会从画布侧面「凭空出现」。
+        // 画布宽度要盖住全程 offset + bow，否则波带会从画布侧面「凭空出现」。
         var frontSize = new Vector2(DesignFrontWidth * 1.8f, 392f);
         ConfigureQuad(_front, frontSize);
         _front.Rotation = _incomingAngle;
 
-        // 反向波前：同一支 shader 转 180°，局部 +x 变成「回演奏者」的方向。
-        // 宽度同样要盖住 offset(0→300) + bow(96)，否则回推的波带会被画布侧面切断。
+        // 同一支 shader 转 180° 即反向波；宽度同样要盖住 offset(0→300) + bow(96)。
         var reflectSize = new Vector2(900f, 620f);
         ConfigureQuad(_reflection, reflectSize);
         _reflection.Rotation = _incomingAngle + Mathf.Pi;
@@ -303,11 +292,7 @@ public partial class OscillationHitVfx : Node2D
         _absorb.Position = _casterLocal;
     }
 
-    /// <summary>
-    /// 摆好一块 shader 画布：尺寸、以中心为轴（Control 的旋转轴是 pivot 而非中心，
-    /// 不设 pivot 直接旋转会把整块画布平移到别处 —— 录帧表现为「半空漂着一条光带」），
-    /// 以及与像素尺寸同源的 instance uniform。
-    /// </summary>
+    /// <summary>摆好一块 shader 画布：尺寸、以中心为轴（Control 的旋转轴是 pivot）、同步 quad_size。</summary>
     private static void ConfigureQuad(Control quad, Vector2 size)
     {
         quad.Position = -size * 0.5f;
@@ -354,10 +339,7 @@ public partial class OscillationHitVfx : Node2D
         ApplyAbsorb(time);
     }
 
-    /// <summary>
-    /// 迎面波前：从外压到目标身上，弧被压平成一条竖线；压平后这条线贴着表面
-    /// 左右急颤、振幅衰减 —— 这就是「震荡」本体，也是全片唯一的直线。
-    /// </summary>
+    /// <summary>迎面波前：压到目标身上后弧被压平，再贴着表面急颤衰减。</summary>
     private void ApplyFront(float time)
     {
         float offset;
@@ -391,7 +373,7 @@ public partial class OscillationHitVfx : Node2D
         _front.SetInstanceShaderParameter("intensity", intensity);
     }
 
-    /// <summary>反射驻波：条纹贴在目标表面、间距向外变宽，亮度按拍频跳动后散尽。</summary>
+    /// <summary>反射驻波：条纹贴在表面，亮度按拍频跳动后散尽。</summary>
     private void ApplyFringe(float time)
     {
         var span = FringeEnd - FringeStart;
@@ -402,16 +384,16 @@ public partial class OscillationHitVfx : Node2D
             return;
         }
 
-        // 拍频：响 — 弱 — 更弱，与波形自身的「一阵一阵」对齐。
+        // 拍频包络：响—弱—更弱。
         var beat = Mathf.Exp(-FringeBeatDecay * local) *
                    Mathf.Abs(Mathf.Cos(Mathf.Pi * local * FringeBeatCount));
         _fringe.SetInstanceShaderParameter("pulse", beat);
-        // 条纹间距随反射波离开而拉开（表面处的半波长在放松）。
+        // 条纹间距随反射波离开而拉开。
         _fringe.SetInstanceShaderParameter("spacing", Mathf.Lerp(78f, 112f, local));
         _fringe.SetInstanceShaderParameter("intensity", Mathf.Pow(1f - local, 1.15f) * (0.55f + 0.75f * beat));
     }
 
-    /// <summary>接触点的高压核心：极短、极小，只负责把峰值点亮。</summary>
+    /// <summary>接触点的高压核心。</summary>
     private void ApplyCore(float time)
     {
         var local = Mathf.Clamp(time / 0.11f, 0f, 1f);
@@ -420,7 +402,7 @@ public partial class OscillationHitVfx : Node2D
             _coreBaseColor.A * (1f - local) * (1f - local));
     }
 
-    /// <summary>节线断裂：碎片沿节线方向甩出并受重力，短促、有速度差。</summary>
+    /// <summary>节线断裂：碎片沿节线方向甩出并受重力。</summary>
     private void ApplyShards(float time)
     {
         for (var i = 0; i < _shards.Count; i++)
@@ -433,11 +415,11 @@ public partial class OscillationHitVfx : Node2D
                 continue;
 
             var velocity = ShardVelocity(i);
-            // 起跑点自带一小段位移：碎片是从断裂的节线上崩出来的，不在中心堆成一团。
+            // 起跑点自带一小段位移，避免碎片在中心堆成一团。
             var travel = local * ShardLife + 0.035f;
             shard.Node.Position = shard.Start + velocity * travel +
                                   new Vector2(0f, 240f * travel * travel);
-            // 碎晶贴图的长轴朝右上（-45°），旋转对齐速度方向才像被崩飞。
+            // 碎晶长轴朝右上，旋转对齐速度方向。
             shard.Node.Rotation = velocity.Angle() + Mathf.Pi * 0.25f + shard.Spin * local;
             shard.Node.Scale = shard.BaseScale * Mathf.Lerp(1.25f, 0.5f, local);
             shard.Node.Modulate = new Color(shard.BaseColor.R, shard.BaseColor.G, shard.BaseColor.B,
@@ -445,7 +427,7 @@ public partial class OscillationHitVfx : Node2D
         }
     }
 
-    /// <summary>反射波：从目标身上朝演奏者推回去，越走越散越淡。</summary>
+    /// <summary>反射波：从目标朝演奏者推回去，越走越散。</summary>
     private void ApplyReflection(float time)
     {
         var span = ReflectionEnd - ReflectionStart;
@@ -457,7 +439,7 @@ public partial class OscillationHitVfx : Node2D
             time < ReflectionStart ? 0f : Mathf.Sin(Mathf.Pi * Mathf.Pow(local, 0.72f)) * 0.72f);
     }
 
-    /// <summary>回波球：沿弧线飞回演奏者，抵达时收束成一点。</summary>
+    /// <summary>回波球：沿弧线飞回演奏者。</summary>
     private void ApplyNotes(float time)
     {
         // 只动实际使用的槽位：未配置的槽位 Delay 为 0，若一并参与就会在命中点凭空多一颗球。
@@ -470,7 +452,7 @@ public partial class OscillationHitVfx : Node2D
             if (!visible)
                 continue;
 
-            // 先慢后快：回波是被「吸」回演奏者的。
+            // 先慢后快，读成被吸回。
             var u = Mathf.Lerp(local, EaseInQuad(local), 0.55f);
             var position = QuadraticBezier(note.P0, note.Control, note.P1, u);
             var travelDirection = QuadraticBezier(note.P0, note.Control, note.P1,
@@ -482,7 +464,7 @@ public partial class OscillationHitVfx : Node2D
                 ? travelDirection.Normalized()
                 : Vector2.Left;
 
-            // 姿态：整颗球按航向拉长一点（速度感）；拖尾作为子节点就跟着走，不必各自旋转。
+            // 整颗球按航向拉长一点（速度感），拖尾作为子节点跟随。
             note.Node.Rotation = travelUnit.Angle();
             var pop = Mathf.Lerp(0.55f, 1f, Mathf.Clamp(local / 0.22f, 0f, 1f));
             var shrink = Mathf.Lerp(1f, 0.68f, Mathf.Clamp((local - 0.72f) / 0.28f, 0f, 1f));
@@ -493,12 +475,10 @@ public partial class OscillationHitVfx : Node2D
             var fadeOut = 1f - Mathf.Clamp((local - 0.84f) / 0.16f, 0f, 1f);
             note.Node.Modulate = new Color(1f, 1f, 1f, fadeIn * fadeOut);
 
-            // 球里在响：呼吸与内部条纹相位随飞行推进，且逐球错开。
+            // 球内条纹相位随飞行推进，逐球错开。
             note.Orb.SetInstanceShaderParameter("phase", local + i * 0.23f);
 
-            // 短拖尾：球节点已按航向旋转，拖尾只要在局部 -x 方向铺开即可。
-            // 拖尾整块往球后推半个球径，让它的前缘埋在球体里 —— 前缘落在球心上
-            // 会在球中间画出一条硬分界（录帧最明显的就是这一条）。
+            // 拖尾往球后推半个球径，让前缘埋进球体；落在球心上会画出一条硬分界。
             note.Trail.PivotOffset = note.Trail.Size * 0.5f;
             note.Trail.Position = new Vector2(-note.Trail.Size.X * 0.5f - OrbSizeFor(i) * 0.16f, 0f)
                     - note.Trail.Size * 0.5f;
@@ -506,7 +486,7 @@ public partial class OscillationHitVfx : Node2D
         }
     }
 
-    /// <summary>抵达：弦再亮一次 + 一圈收束环 —— 回波在这里变成余音。</summary>
+    /// <summary>抵达收束：环从外收束到一点。</summary>
     private void ApplyAbsorb(float time)
     {
         var span = AbsorbEnd - AbsorbStart;
@@ -520,16 +500,14 @@ public partial class OscillationHitVfx : Node2D
         _absorbRing.Scale = _absorbRingBaseScale * Mathf.Lerp(1.5f, 0.25f, EaseOutCubic(local));
         _absorbRing.Modulate = new Color(_absorbRingBaseColor.R, _absorbRingBaseColor.G,
             _absorbRingBaseColor.B, _absorbRingBaseColor.A * pop);
-
-        // 抵达即「收进身上」：环从外收束到一点，不再补竖直的弦（会读成禁止符）。
     }
 
-    /// <summary>第 i 颗回波球的画布边长（px）：可见球径约为它的 0.42，三颗不等大读成不同分音。</summary>
+    /// <summary>第 i 颗回波球的画布边长（px）。</summary>
     private static float OrbSizeFor(int index) => 131f - index * 13f;
 
     private Vector2 ShardVelocity(int index)
     {
-        // 被压向前的碎片占多数，其余向两侧甩；速度与尺寸刻意不齐。
+        // 向前与两侧甩开，速度与尺寸刻意不齐。
         var spread = index switch
         {
             0 => -58f,

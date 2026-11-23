@@ -1,11 +1,9 @@
 shader_type canvas_item;
 render_mode blend_add;
 
-// 回波拖尾：一条从球后方散开的锥形尾迹。
-// 刻意不用「拉伸一张光斑贴图」那种做法 —— 那样每一段等宽等亮，读成一根横杠。
-// 这里沿航向二次收细、亮度按 (1-t)^taper_power 衰减，短拖尾才有甩出去的方向感。
+// 回波拖尾：沿航向二次收细、按 (1-t)^taper_power 衰减的锥形尾迹。
 // 局部 +x 指向飞行方向，球在 +x 端，尾巴向 -x 展开。
-// 见 docs/mechanic-authoring.md「震荡」章节。
+// 见 docs/mechanic-authoring.md 12.3。
 
 instance uniform vec2 quad_size = vec2(300.0, 100.0);
 instance uniform float strength = 1.0;
@@ -17,8 +15,7 @@ uniform float taper_power = 3.0;
 // 尾端收细程度（尾端宽度 / 根部宽度）。
 uniform float tip_ratio = 0.07;
 
-// 软饱和：alpha 一旦硬 clamp 到 1，加色层会在「恰好等于 1」的位置留下一条等值线硬边
-// （球心看起来像被切开一条缝，且边缘成锯齿）。0.85 以下保持原样，之上平滑收敛到 1。
+// 软饱和：硬 clamp 到 1 会在加色层留下等值线硬边。
 float SaturateAlpha(float a)
 {
 	const float knee = 0.85;
@@ -42,10 +39,10 @@ void fragment()
 	float width = mix(0.86, tip_ratio, pow(back, 0.7));
 	float lateral = exp(-pow(p.y / (half_y * width), 2.0));
 
-	// 前端淡出：拖尾根部埋在球体里，但画布的前边缘不能留一条硬切。
+	// 前端淡出：拖尾根部埋在球体里，但画布前边缘不能留硬切。
 	float head = smoothstep(1.0, 0.86, x);
 
-	// 画布边缘羽化：任何一条边都不许被方形画布切出直边。
+	// 画布边缘羽化。
 	float border = min(min(UV.x, 1.0 - UV.x), min(UV.y, 1.0 - UV.y));
 	float edge = smoothstep(0.0, 0.10, border);
 

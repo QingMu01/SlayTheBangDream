@@ -8,9 +8,8 @@ using MegaCrit.Sts2.Core.TestSupport;
 namespace BangDreamInSpire.Scripts.Nodes.VFX;
 
 /// <summary>
-/// 震荡施法：击弦点抖出一列疏密相间的压力波包，朝敌方展开。纯表现，不参与结算。
-/// 声学语汇见 docs/mechanic-authoring.md「震荡」章节：声音是压缩与稀疏的交替，
-/// 且高次分音先死 —— 所以波包边跑边由「尖」变「软」，不是匀速放大的光环。
+/// 震荡施法：击弦点抖出一列压力波包，朝敌方展开。纯表现，不参与结算。
+/// 声学语汇见 docs/mechanic-authoring.md 12.3。
 /// </summary>
 [Tool]
 public partial class OscillationWaveVfx : Node2D
@@ -18,28 +17,27 @@ public partial class OscillationWaveVfx : Node2D
     private const string ScenePath = "res://BangDreamInSpire/scenes/vfx/oscillation_wave_vfx.tscn";
 
     /// <summary>
-    /// 波前从施法者抵达敌阵的用时。卡牌的 <c>WithWaitBeforeHit</c> 必须对齐这个值，
-    /// 伤害才落在「波压到目标身上」的那一刻，而不是先掉血后看见波。
+    /// 波前从施法者抵达敌阵的用时；卡牌的 <c>WithWaitBeforeHit</c> 必须对齐这个值。
     /// </summary>
     public const float FrontTravelSeconds = 0.15f;
 
     /// <summary>波包淡出完成的时刻。</summary>
     private const float Life = 0.34f;
 
-    /// <summary>起振：弦从「还在抖」收成一条实线。</summary>
+    /// <summary>起振：弦从抖动收成实线。</summary>
     private const float StringSettleSeconds = 0.09f;
 
     private const float StringFadeSeconds = 0.16f;
 
-    /// <summary>波前起始半径（px）：从弦的位置就开始算，线在这里变成弧。</summary>
+    /// <summary>波前起始半径（px）。</summary>
     private const float StartRadius = 34f;
 
-    /// <summary>各道压缩峰的相对振幅：传播中后峰先死（高次分音先衰减）。</summary>
+    /// <summary>各道压缩峰的相对振幅：传播中后峰先死。</summary>
     private static readonly Vector4 CrestAmplitudeStart = new(0.72f, 0.46f, 0.24f, 0f);
 
     private static readonly Vector4 CrestAmplitudeEnd = new(0.40f, 0.10f, 0f, 0f);
 
-    /// <summary>各道压缩峰与前缘的间距：传播中拉开，波列被「拉长」。</summary>
+    /// <summary>各道压缩峰与前缘的间距：传播中拉开。</summary>
     private static readonly Vector4 CrestSpacingStart = new(62f, 132f, 216f, 320f);
 
     private static readonly Vector4 CrestSpacingEnd = new(158f, 352f, 570f, 320f);
@@ -132,7 +130,6 @@ public partial class OscillationWaveVfx : Node2D
         _stringFar = GetNode<Sprite2D>("Source/StringFar");
         _core = GetNode<Sprite2D>("Source/Core");
 
-        // 只读美术基准，编辑器里不改变视觉状态。
         _stringBasePosition = _string.Position;
         _stringBaseScale = _string.Scale;
         _stringBaseColor = _string.Modulate;
@@ -143,11 +140,9 @@ public partial class OscillationWaveVfx : Node2D
         _nearBasePosition = _stringNear.Position;
         _farBasePosition = _stringFar.Position;
 
-        // 入树后再应用世界坐标。
         if (_spawnWorld != Vector2.Zero)
             GlobalPosition = _spawnWorld;
 
-        // 仅运行态播放。
         if (VfxPreviewSupport.AutoPlayOnReady)
             Replay();
     }
@@ -158,8 +153,7 @@ public partial class OscillationWaveVfx : Node2D
 
         VfxPreviewSupport.CenterForPreview(this);
 
-        // 预览态没有真实敌阵：自己造一个「演奏者在左、敌人在右」的摆位，
-        // 波包半径与方向按它算，F6 看到的才是实战比例。
+        // 预览态没有真实敌阵：自造摆位，按实战比例铺开。
         if (VfxPreviewSupport.IsPreviewRun(this))
         {
             Position += PreviewCasterOffset;
@@ -186,7 +180,6 @@ public partial class OscillationWaveVfx : Node2D
         _core.Scale = _coreBaseScale;
         _core.Modulate = _coreBaseColor;
 
-        // 所有状态由单一 TweenMethod 驱动。
         _tween = CreateTween();
         _tween.TweenMethod(Callable.From<float>(ApplyState), 0f, 1f, Life);
         _tween.Finished += OnPlaybackFinished;
@@ -204,14 +197,12 @@ public partial class OscillationWaveVfx : Node2D
     private void ApplyPacket(float time)
     {
         var speed = (_maxRadius - StartRadius) / FrontTravelSeconds;
-        // 前缘停在上限就不再前进；此时强度已接近 0，停住看不见。
+        // 前缘停在上限就不再前进；此时强度已接近 0。
         var radius = Mathf.Min(StartRadius + speed * time, _maxRadius * 1.14f);
         _packet.SetInstanceShaderParameter("front_radius", radius);
 
-        // 传播进度：0 = 刚离开弦，1 = 抵达并消散。
+        // 谐波衰减：后峰先消失、变宽、间距拉开。
         var travel = Mathf.Clamp(time / Life, 0f, 1f);
-
-        // 谐波衰减：后峰先消失、各峰变宽、间距拉开 —— 同一件事的三个侧面。
         var decay = Mathf.Clamp(travel / 0.78f, 0f, 1f);
         _packet.SetInstanceShaderParameter("crest_amplitude", new Vector4(
             Mathf.Lerp(CrestAmplitudeStart.X, CrestAmplitudeEnd.X, decay),
@@ -225,7 +216,7 @@ public partial class OscillationWaveVfx : Node2D
             CrestSpacingStart.W));
         _packet.SetInstanceShaderParameter("crest_softness", Mathf.Lerp(0.72f, 1.55f, decay));
 
-        // 起振 0.02s，抵达敌阵前后淡出。
+        // 起振 0.02s，抵达后淡出。
         var rise = Mathf.Clamp(time / 0.02f, 0f, 1f);
         var fade = time <= FrontTravelSeconds + 0.02f
             ? 1f
@@ -234,7 +225,7 @@ public partial class OscillationWaveVfx : Node2D
         _packet.SetInstanceShaderParameter("intensity", rise * Mathf.Pow(fade, 1.35f));
     }
 
-    /// <summary>声源：被击响的弦由「还在抖」收成一条实线，同时闪一下击弦核。</summary>
+    /// <summary>声源：弦由抖动收成实线，击弦核闪一下。</summary>
     private void ApplySource(float time)
     {
         var settle = Mathf.Clamp(time / StringSettleSeconds, 0f, 1f);
@@ -243,7 +234,7 @@ public partial class OscillationWaveVfx : Node2D
             : 1f - Mathf.Clamp((time - StringSettleSeconds) / (StringFadeSeconds - StringSettleSeconds),
                 0f, 1f);
 
-        // 抖动余量：从 ±15px 收到 0，宽度同步收敛 —— 读成余振衰减。
+        // 抖动余量：从 ±15px 收到 0，宽度同步收敛。
         var blur = (1f - settle) * 15f;
         var spread = Mathf.Lerp(2.4f, 1f, settle);
 

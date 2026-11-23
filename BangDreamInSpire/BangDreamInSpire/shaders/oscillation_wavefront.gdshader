@@ -1,14 +1,12 @@
 shader_type canvas_item;
 render_mode blend_add;
 
-// 单道压力波前：一条沿 y 弯曲的亮带，用来演「波压到物体上」与「反射波推回去」。
-// 与 oscillation_pressure_wave 的区别是它只有一道前缘、可以单独定位与压平，
-// 命中场景里要把「迎面弧」压成「一条竖线」，靠 bow 归零实现（弧 -> 弦）。
-// 见 docs/mechanic-authoring.md「震荡」章节。
+// 单道压力波前：一条沿 y 弯曲的亮带，用于「波压到物体上」与反射波。
+// bow 归零即把弧压平成竖线。见 docs/mechanic-authoring.md 12.3。
 
 instance uniform vec2 quad_size = vec2(512.0, 512.0);
 
-// 弯曲量（px）：带子中点相对两端的横向偏移。归零即压平成一条竖直的线。
+// 弯曲量（px）：归零即压平成竖线。
 instance uniform float bow = 46.0;
 
 // 位置（px，quad 中心为原点）：带子整体沿 x 的偏移。
@@ -18,10 +16,10 @@ instance uniform float offset = 0.0;
 instance uniform float thickness = 22.0;
 instance uniform float softness = 1.0;
 
-// 上下端的纵向羽化（0..1，按 quad 高度的比例），避免出现矩形的上下硬边。
+// 上下端的纵向羽化（0..1，按 quad 高度的比例）。
 instance uniform float vertical_fade = 0.30;
 
-// 干涉条纹：细密横纹数量（0 = 关）。压到目标身上时用少量条纹表示两波叠加。
+// 干涉条纹：细密横纹数量（0 = 关）。
 instance uniform float fringe_count = 0.0;
 instance uniform float fringe_contrast = 0.0;
 
@@ -30,8 +28,7 @@ instance uniform float intensity = 1.0;
 uniform vec4 crest_color : source_color = vec4(0.86, 0.93, 1.0, 1.0);
 uniform float peak_alpha = 0.95;
 
-// 软饱和：alpha 一旦硬 clamp 到 1，加色层会在「恰好等于 1」的位置留下一条等值线硬边
-// （球心看起来像被切开一条缝，且边缘成锯齿）。0.85 以下保持原样，之上平滑收敛到 1。
+// 软饱和：硬 clamp 到 1 会在加色层留下等值线硬边。
 float SaturateAlpha(float a)
 {
 	const float knee = 0.85;
@@ -63,7 +60,7 @@ void fragment()
 
 	float alpha = band * vertical * fringe * intensity * peak_alpha;
 
-	// 画布边缘羽化：任何一层都不许被方形画布硬切出一条直边。
+	// 画布边缘羽化。
 	float border = min(min(UV.x, 1.0 - UV.x), min(UV.y, 1.0 - UV.y));
 	alpha *= smoothstep(0.0, 0.06, border);
 

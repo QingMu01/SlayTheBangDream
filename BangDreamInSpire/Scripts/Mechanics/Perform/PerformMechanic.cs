@@ -48,7 +48,6 @@ public sealed class PerformMechanic : IBangDreamMechanic
         BangDreamConst.SymbolCard = context.RegisterCardTag("Symbol");
 
         PerformTargetTypes.EnsureRegistered();
-        // 内置元素之印在此登记（含战斗预载）；其它模组的自定义反馈在各自 Initialize 里注册。
         PerformSlotVfxRegistry.RegisterBuiltIns();
 
         BangDreamConst.PerformPile = context.CardPiles.RegisterOwned("Perform", new ModCardPileSpec

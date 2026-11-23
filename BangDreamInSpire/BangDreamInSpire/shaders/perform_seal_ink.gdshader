@@ -15,12 +15,11 @@ instance uniform float band_softness = 0.12;
 instance uniform float band_alpha = 0.0;
 // 全程薄薄压一层元素底色，用来交代"元素归属"。
 instance uniform float base_alpha = 0.0;
-// 纵向档的横向收口：墨带两端不能切出生硬竖边（否则读成一块平移的玻璃板）。
-// 0 = 不收口（槽位档），>0 = 两侧按该比例羽化。
+// 横向收口：>0 时两侧按该比例羽化，避免墨带两端切出生硬竖边。
 instance uniform float lateral_fade = 0.0;
 
 uniform float slant_slope : hint_range(-1.0, 1.0, 0.01) = 0.3;
-// 纵向模式：墨自脚底升到头顶之上，其余语法不变。演奏身印用这一档。
+// 纵向模式：墨自脚底升到头顶之上。
 uniform bool vertical = false;
 // 墨带前沿的湿边亮线；没有它，墨就只是一块平移的色块。
 uniform float front_light : hint_range(0.0, 1.0, 0.01) = 0.45;
@@ -35,7 +34,7 @@ void vertex() {
 void fragment() {
     vec2 size = max(rect_size, vec2(1.0));
     float normalized_y = clamp(local_position.y / size.y, 0.0, 1.0);
-    // 倾斜量与切分方向的短边同量级，纵向档不会斜穿整面。
+    // 倾斜量按切分方向的短边算，纵向档不会斜穿整面。
     float slant_offset = slant_slope * (vertical ? size.x : size.y);
     float shape_width = max(size.x - abs(slant_offset), 0.0001);
     float center = size.x * 0.5 + slant_offset * (0.5 - normalized_y);
@@ -45,7 +44,7 @@ void fragment() {
     float smoothing = max(fwidth(edge_distance), 0.001) + edge_softness;
     float shape_mask = smoothstep(-smoothing, smoothing, edge_distance);
 
-    // 沿切分方向归一化，保证斜切两端都在墨带范围内；纵向档 0 在脚底、1 在头顶之上。
+    // 沿切分方向归一化；纵向档 0 在脚底、1 在头顶之上。
     float u = vertical
         ? 1.0 - normalized_y
         : clamp((local_position.x - (size.x * 0.5 - shape_width * 0.5)) / shape_width, 0.0, 1.0);

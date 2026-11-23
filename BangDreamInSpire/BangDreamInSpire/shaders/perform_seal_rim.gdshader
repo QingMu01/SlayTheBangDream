@@ -4,8 +4,7 @@ render_mode blend_add;
 // 演奏印框：沿斜切平行四边形的一圈"边缘吃光"。
 // 不是矢量描边——卡图里没有硬边，所以只给柔光衰减 + 一点点极细的亮线做定义。
 // 自左向右点亮（draw_progress），再从右向左溢出熄灭（release_progress）。
-// 横向档盖在槽位（演奏印框），纵向档（vertical）包住角色（演奏身印）：
-// 同一枚印的两种落点，只有切分方向与推进方向不同。
+// 横向档盖槽位，纵向档包住角色：同一枚印的两种落点。
 // 五个元素印共用同一套参数，只有 tint 与节拍不同，读起来才像"同一枚印"。
 
 instance uniform vec2 rect_size = vec2(160.0, 50.0);
@@ -16,8 +15,7 @@ instance uniform vec4 tint : source_color = vec4(1.0, 1.0, 1.0, 1.0);
 
 // 与槽位一致的斜切斜率；改动会与卡面错位。
 uniform float slant_slope : hint_range(-1.0, 1.0, 0.01) = 0.3;
-// 纵向模式：形状改由高度方向切分，点亮方向与墨的推进方向都变成自下而上。
-// 演奏身印（角色身上）用这一档，槽位印框保持 false——两者共用同一套形状与推进语法。
+// 纵向模式：形状与推进方向都改为自下而上。
 uniform bool vertical = false;
 // 边缘柔光的衰减长度（像素）。
 uniform float edge_glow : hint_range(1.0, 20.0, 0.5) = 5.5;
@@ -34,15 +32,14 @@ void vertex() {
 
 void fragment() {
     vec2 size = max(rect_size, vec2(1.0));
-    // 倾斜量与「短边」同量级：横向切分时斜随高度，纵向切分时斜随宽度，
-    // 否则把同一斜率套到长边上会得到整面斜穿画面的平行四边形。
+    // 倾斜量按短边算，否则长边上会斜穿整面。
     float slant_offset = slant_slope * (vertical ? size.x : size.y);
     float shape_width = max(size.x - abs(slant_offset), 0.0001);
     float normalized_y = clamp(local_position.y / size.y, 0.0, 1.0);
     float center = size.x * 0.5 + slant_offset * (0.5 - normalized_y);
     float side_distance = (shape_width * 0.5 - abs(local_position.x - center)) / sqrt(1.0 + slant_slope * slant_slope);
     float vertical_distance = min(local_position.y, size.y - local_position.y);
-    // 纵向档只留两条竖边：包住身体的不能是"闭合方框/玻璃舱"，上下端由墨与元素自己收口。
+    // 纵向档只留两条竖边，上下端由墨与元素收口。
     float border_distance = vertical ? side_distance : min(side_distance, vertical_distance);
 
     float smoothing = max(fwidth(border_distance), 0.5);
@@ -50,7 +47,7 @@ void fragment() {
     float soft_edge = exp(-max(border_distance, 0.0) / max(edge_glow, 0.001)) * 0.55;
     float hard_line = (1.0 - smoothstep(0.4, 1.6, border_distance)) * edge_hot * 0.6;
 
-    // 推进方向归一化：横向 0 在左端、纵向 0 在底端，1 都在另一端。
+    // 推进方向：横向左→右，纵向底→顶。
     float u = vertical
         ? 1.0 - normalized_y
         : clamp(local_position.x / size.x, 0.0, 1.0);
@@ -64,8 +61,7 @@ void fragment() {
     float release_mask = 1.0 - smoothstep(u - 0.12, u + 0.02, release_progress * 1.30);
     float release_lead = exp(-abs(u - release_front) / 0.05) * step(0.001, release_progress);
 
-    // 纵向档的两端收口：否则矩形四角会留下四个亮方块，整条边读成"画框/面板"。
-    // 收口之后是两道自下而上抽起的笔触，而不是一个框。
+    // 纵向档收两端，否则四角会留下亮方块。
     float end_fade = 1.0;
     if (vertical) {
         float v = local_position.y / size.y;

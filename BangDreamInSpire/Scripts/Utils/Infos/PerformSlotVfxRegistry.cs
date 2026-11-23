@@ -3,19 +3,8 @@ using BangDreamInSpire.Scripts.Utils;
 namespace BangDreamInSpire.Scripts.Utils.Infos;
 
 /// <summary>
-/// 演奏槽位反馈的登记表：键 → 场景路径。
-///
-/// 卡牌只声明键（<see cref="Interfaces.CardAugment.IPerformSlotVfxCard" />），映射集中在这里，
-/// 于是新增一种演奏反馈不需要改核心的演奏流程，也不会把资源路径散落到内容模组里：
-///
-/// <code>
-/// // 内容模组 Initialize 里
-/// PerformSlotVfxRegistry.Register("mutsumi.freeze", "res://ItsCrychic/scenes/vfx/my_freeze_vfx.tscn");
-/// // 卡牌上
-/// public string? PerformSlotVfxKey => "mutsumi.freeze";
-/// </code>
-///
-/// 位于 Utils 层：内容模组（注册）与 UI 节点（解析）都能引用，且不会反向依赖机制/UI 层。
+/// 演奏槽位反馈的登记表：键 → 场景路径。内容模组可登记自己的场景，不必改核心演奏流程。
+/// 接入示例见 docs/mechanic-authoring.md 12.1。
 /// </summary>
 public static class PerformSlotVfxRegistry
 {
@@ -24,7 +13,7 @@ public static class PerformSlotVfxRegistry
     private static readonly HashSet<string> PreloadRegistered = new(StringComparer.Ordinal);
     private static bool _builtInsRegistered;
 
-    /// <summary>内置元素之印：五个元素场景随战斗预载。</summary>
+    /// <summary>内置元素之印的场景表。</summary>
     private static readonly (string Key, string ScenePath)[] BuiltIns =
     [
         (PerformSlotVfxKeys.SymbolFire, "res://BangDreamInSpire/scenes/vfx/perform_seal_fire_vfx.tscn"),
@@ -46,12 +35,10 @@ public static class PerformSlotVfxRegistry
         }
     }
 
-    /// <summary>
-    /// 登记一个演奏反馈场景。键必须全局唯一，建议带模组前缀（如 <c>crychic.freeze</c>）。
-    /// </summary>
+    /// <summary>登记一个演奏反馈场景；键必须全局唯一，建议带模组前缀。</summary>
     /// <param name="key">卡牌声明的键。</param>
     /// <param name="scenePath">场景路径；根节点需实现 <see cref="Interfaces.Mechanics.IPerformSlotVfx" />。</param>
-    /// <param name="preload">是否随战斗预载，避免首次演奏时在主线程同步加载。</param>
+    /// <param name="preload">是否随战斗预载。</param>
     public static void Register(string key, string scenePath, bool preload = true)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(key);
