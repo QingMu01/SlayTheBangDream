@@ -649,3 +649,39 @@ cloneTrack?.SetTrackTime(sourceTrack.GetTrackTime());
   骨架镜像只驱动 `SpineBody`（`_body`），切到 `%PhobiaModeVisuals` 后会停在 setup pose；
   加上克隆按生物缓存复用，创建之后再改该选项也不会同步。开启这一辅助选项的玩家，演出中的克隆显示普通体型。
 - **拿不到异步伤害批次句柄**：演出无法「等这批命中再推进下一段」，见 §7.6。
+
+---
+
+## 14. 手牌资源显示（主能量 / 余音）
+
+由「更直观的手牌 · 精简版」（ReadableHandLite 1.5.3）的渲染核心移植而来，现在作为本 mod 的内建 UI，
+**只对 Bang 系角色生效**，玩家不需要再额外安装那个独立 UI mod。
+
+### 14.1 生效范围
+
+角色判定优先看能力接口（`ILingeredResourceCharacter` / `IPerformableCharacter` / `IPuppeteerCharacter`
+/ `IGroupableCharacter` / `IExtraDeckSupportCharacter` / `ISkinSupportCharacter`），
+程序集名（`BangDreamInSpire` / `ItsCrychic` / `MutsumiNoDeck` / `TogawaSakiko`）只作旧角色兜底。
+新增角色只要实现上述任一接口就自动获得这套显示，不需要改这里。
+
+### 14.2 挂载与驱动
+
+- 覆盖层挂在本地玩家的 `NPlayerHand` 下（`HandPipsOrbs`），不设 `ZIndex`：手牌 `z=0`、悬停卡 `z=1`，
+  所以平时球在牌上、悬停时被牌盖住，与原 mod 一致。
+- 由 `OrbPatches` 补 `NEnergyCounter._Ready` / `_Process` 驱动，与 `SkinVisualSupportPatches`
+  对 `NEnergyCounter.Create` 的皮肤补丁**互不冲突**（不同方法）。
+- 资源图标来自本体资源；皮肤计数器拿不到图标时走 `EnergyIconPaths` 的回退链。
+
+### 14.3 设置与持久化
+
+- 设置页并入 `BangDreamInSpire` 现有页（`SettingsPage.AppendTo(page)`），分组键统一 `hand_pips_` 前缀，
+  避免与将来新增的分组撞名。
+- 持久化文件为 mod 目录下的 **`hand_pips.json`**；`Config.Load` 幂等，设置页注册时会先加载一次
+  （注册早于模组初始化，见 `BangDreamInSpireCore.Initialize` 的顺序）。
+
+### 14.4 自由摆放
+
+- **默认开启**。默认位置：屏幕水平居中、药水栏下方（`Y = max(150, 屏高 × 0.16)`），
+  首次进入时写入 `FreePlaceInitialized`，之后尊重玩家拖到的位置。
+- 范围锁定：拖拽与应用位置时都钳制在窗口内（`X ∈ [24, W−24]`、`Y ∈ [72, H−72]`），拖不出窗口。
+- 自由模式下覆盖层 `TopLevel = true`，不再继承手牌父变换——手牌出入场的补间不会带着球排上下跳。
