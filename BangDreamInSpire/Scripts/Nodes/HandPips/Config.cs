@@ -49,6 +49,9 @@ public sealed class Settings
     /// <summary>悬停/拖动时的三层内收波纹 + 宝石星芒 + 硬光斜扫 + 绿色预测球。</summary>
     public bool PreviewEffects { get; set; } = true;
 
+    /// <summary>音乐牌预知：余音将满 7 时，在角色头顶预告即将从曲库抽出的那张音乐牌。</summary>
+    public bool Precognition { get; set; } = true;
+
     /// <summary>获得时的一次性波纹 + 星芒/音符 + 边缘闪光。</summary>
     public bool GainEffects { get; set; } = true;
 

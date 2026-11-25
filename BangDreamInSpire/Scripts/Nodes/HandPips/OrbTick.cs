@@ -75,6 +75,8 @@ internal static partial class OrbRenderer
 
         overlay.LastTickFrame = frame;
 
+        LingeredPrecognition.Step(delta);
+
         // 手牌收起（回合结束 / 敌方回合）：球保留、变暗、平滑下沉；动画照常播。
         // 手牌消失满 60 ms 才算收起 —— 受击/动画期间 holder 的瞬时抖动不会打断。
         if (holders.Count == 0)

@@ -685,3 +685,17 @@ cloneTrack?.SetTrackTime(sourceTrack.GetTrackTime());
   首次进入时写入 `FreePlaceInitialized`，之后尊重玩家拖到的位置。
 - 范围锁定：拖拽与应用位置时都钳制在窗口内（`X ∈ [24, W−24]`、`Y ∈ [72, H−72]`），拖不出窗口。
 - 自由模式下覆盖层 `TopLevel = true`，不再继承手牌父变换——手牌出入场的补间不会带着球排上下跳。
+
+### 14.5 音乐牌预知
+
+余音满 `LingeredResourcesRule.HardMaxAmount`（7）时会把曲库顶张送进歌单，玩家看不到是哪一张；
+预知就是把这"下一张"提前显出来，省掉"打出去才发现被抽走哪张"的返工。
+
+- **触发**：悬停（或拖着）一张手牌，且 `当前余音 + 这张牌预计产出的余音 ≥ 7`、曲库非空。
+  休止牌与延迟结算按产出 0 处理，因此不会触发。
+- **数据同源**：显示 `ExtraDraw.Cards[0]`，与 `LingeredResourcesRule` 溢出结算的取牌口径一致；
+  渲染喂给 `NCard` 的是原型卡（`DeckVersion`），直接给曲库实例会变 Broken Card 占位。
+- **表现**：原地 0.55→1 弹出 + 0.18 s 淡入，松手 0.15 s 淡出，卡跟在头顶（指数插值）；不叠特效。
+  `Consider` 0.35 s 内没再被调用就自动收起，避免悬停回调中断后卡挂在屏幕上。
+- **开关**：`hand_pips.json` 的 `Precognition`（默认开）。排查时连 `Debug` 一起打开，
+  会多出 `precog show / hide` 与 `precog ACTUAL draw`（`PrecogProbe` 打的，是结算时实际被抽走的那张，用来对账）。

@@ -149,6 +149,9 @@ internal static partial class OrbRenderer
                 SetIncoming(r, 0);
             }
 
+            // 音乐牌预知跟着悬停走：没在悬停就收起（这里每帧都会进来，reason 只在 Debug 下有用）。
+            LingeredPrecognition.Hide("predict-clear");
+
             _predHolder = null;
             return;
         }
@@ -289,6 +292,9 @@ internal static partial class OrbRenderer
 
                 bool rest = !string.IsNullOrEmpty(desc) && desc.Contains("休止");
                 pred += rest ? 0 : cost;
+
+                // 音乐牌预知：这一张打出去会不会把余音顶到 7（进而抽走曲库顶张）。
+                LingeredPrecognition.Consider(player, card, delayed ? 0 : pred);
             }
 
             SetIncoming(row, delayed ? 0 : pred);
