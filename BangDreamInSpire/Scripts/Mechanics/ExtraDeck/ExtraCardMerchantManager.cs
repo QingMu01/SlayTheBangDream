@@ -121,14 +121,17 @@ internal static class ExtraCardMerchantManager
         {
             var duplicateGuard = new HashSet<CardModel>();
             var cardPool = ((IExtraDeckSupportCharacter)player.Character).ExtraCardPool;
+            // 0.114 起 MerchantEntry 购买路径要求 Id 非空（Inventory.Setup 只给 AllEntries 分配），
+            // 专用槽位不进入 AllEntries，必须自己发号，且避开原版的小整数区间。
+            var extraId = 1000u;
             foreach (var rarity in new[] { CardRarity.Uncommon, CardRarity.Uncommon, CardRarity.Rare })
             {
-                var entry = new MusicCardMerchantEntry(player, cardPool, rarity, duplicateGuard);
+                var entry = new MusicCardMerchantEntry(player, cardPool, rarity, duplicateGuard) { Id = extraId++ };
                 entry.Populate();
                 musicEntries.Add(entry);
             }
 
-            removalEntry = new ExtraDeckRemovalMerchantEntry(player);
+            removalEntry = new ExtraDeckRemovalMerchantEntry(player) { Id = extraId++ };
         }
 
         inventoryNode.Initialize(inventory, MerchantRoom.Dialogue);

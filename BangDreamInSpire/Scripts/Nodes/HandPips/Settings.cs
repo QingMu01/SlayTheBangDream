@@ -158,6 +158,12 @@ internal static class SettingsPage
                             ModSettingsText.Literal("只影响绿色发光，与上面的获得特效互相独立。"),
                             null);
 
+                        section.AddToggle("precog",
+                            ModSettingsText.Literal("音乐牌预知"),
+                            Toggle("precog", () => Config.Data.Precognition, v => Config.Data.Precognition = v),
+                            ModSettingsText.Literal("悬停一张会把余音顶到 7 的牌时，在角色头顶显示即将从曲库抽出的那一张。"),
+                            null);
+
                         section.AddToggle("consume_burst",
                             ModSettingsText.Literal("消耗碎屑"),
                             Toggle("consume_burst", () => Config.Data.ConsumeBurst, v => Config.Data.ConsumeBurst = v),

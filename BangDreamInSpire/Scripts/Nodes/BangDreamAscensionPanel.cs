@@ -175,8 +175,8 @@ public partial class BangDreamAscensionPanel : Control
     /// <summary>注册 Tab 升降档热键。</summary>
     private void PushHotkeys()
     {
-        NHotkeyManager.Instance?.PushHotkeyPressedBinding(TabLeftHotkey, DecrementAscension);
-        NHotkeyManager.Instance?.PushHotkeyPressedBinding(TabRightHotkey, IncrementAscension);
+        NHotkeyManager.Instance?.PushHotkeyPressedBinding(TabLeftHotkey, this, DecrementAscension);
+        NHotkeyManager.Instance?.PushHotkeyPressedBinding(TabRightHotkey, this, IncrementAscension);
         _hotkeysPushed = true;
     }
 
@@ -193,8 +193,8 @@ public partial class BangDreamAscensionPanel : Control
             return;
 
         _hotkeysPushed = false;
-        NHotkeyManager.Instance?.RemoveHotkeyPressedBinding(TabLeftHotkey, DecrementAscension);
-        NHotkeyManager.Instance?.RemoveHotkeyPressedBinding(TabRightHotkey, IncrementAscension);
+        NHotkeyManager.Instance?.RemoveHotkeyPressedBinding(TabLeftHotkey, this, DecrementAscension);
+        NHotkeyManager.Instance?.RemoveHotkeyPressedBinding(TabRightHotkey, this, IncrementAscension);
     }
 
     public void SetAscensionLevel(int ascension)
