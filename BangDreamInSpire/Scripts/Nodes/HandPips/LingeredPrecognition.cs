@@ -239,7 +239,20 @@ internal static class LingeredPrecognition
         cardNode.ZIndex = 10;
 
         root.AddChild(cardNode);
-        container.AddChild(root);
+        container.AddChild(root);   // 必须先入树：NCard.UpdateVisuals 依赖 tree/theme，入树前调用会渲染成占位卡
+        // NCard.Create 只建节点：不调 UpdateVisuals 会渲染成 Broken Card 占位
+        try
+        {
+            cardNode.UpdateVisuals(PileType.None, CardPreviewMode.Normal);
+        }
+        catch (Exception e)
+        {
+            if (Config.Data.Debug)
+            {
+                GD.PushWarning($"[BangDreamInSpire/handpips] precog UpdateVisuals: {e.Message}");
+            }
+        }
+
 
         _root = root;
         _cardNode = cardNode;
