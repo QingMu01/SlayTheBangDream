@@ -32,6 +32,7 @@ public static class BangDreamInSpireCore
         RegisterPerfSettingsPage();
 
         PerfTimeline.Measure("mod:BangDreamInSpire.Initialize", InitializeCore);
+        BangDreamInSpire.Scripts.Nodes.HandPips.HandPipsBootstrap.Initialize();
         PerfTimeline.Mark("mod:init:end");
     }
 
@@ -63,7 +64,9 @@ public static class BangDreamInSpireCore
     /// <summary>在 RitsuLib 设置页提供唯一的开关；改动需要重启游戏才会生效。</summary>
     private static void RegisterPerfSettingsPage()
     {
-        RitsuLibFramework.RegisterModSettings(BangDreamConst.ModId, page => page
+        RitsuLibFramework.RegisterModSettings(BangDreamConst.ModId, page =>
+        {
+            page
             .WithTitle(ModSettingsText.Literal("BangDreamInSpire"))
             .WithModDisplayName(ModSettingsText.Literal("BangDreamInSpire"))
             .AddSection("diagnostics", section => section
@@ -81,7 +84,9 @@ public static class BangDreamInSpireCore
                 .AddParagraph(
                     "perf_diagnostics_hint",
                     ModSettingsText.Literal("说明"),
-                    ModSettingsText.Literal("默认关闭，关闭时不加载任何采样逻辑。玩家反馈卡顿时打开本项并重启游戏，复现后执行 getlogs 把 zip 发给作者。"))));
+                    ModSettingsText.Literal("默认关闭，关闭时不加载任何采样逻辑。玩家反馈卡顿时打开本项并重启游戏，复现后执行 getlogs 把 zip 发给作者。")));
+            BangDreamInSpire.Scripts.Nodes.HandPips.SettingsPage.AppendTo(page);
+        });
     }
 
     private static void InitializeCore()
